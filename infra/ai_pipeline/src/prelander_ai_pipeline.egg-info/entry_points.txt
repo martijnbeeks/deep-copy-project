@@ -1,0 +1,2 @@
+[console_scripts]
+prelander-run = ai_pipeline.main:app
