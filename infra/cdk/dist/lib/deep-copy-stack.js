@@ -155,6 +155,18 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
             },
         });
         jobsTable.grantReadData(getJobLambda);
+        // Lambda to get job result JSON from S3
+        const getJobResultLambda = new aws_cdk_lib_1.aws_lambda.Function(this, 'GetJobResultLambda', {
+            runtime: aws_cdk_lib_1.aws_lambda.Runtime.PYTHON_3_11,
+            timeout: aws_cdk_lib_1.Duration.seconds(10),
+            memorySize: 256,
+            handler: 'get_job_result.handler',
+            code: aws_cdk_lib_1.aws_lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
+            environment: {
+                RESULTS_BUCKET: resultsBucket.bucketName,
+            },
+        });
+        resultsBucket.grantRead(getJobResultLambda);
         // Cognito User Pool for API auth
         const userPool = new aws_cdk_lib_1.aws_cognito.UserPool(this, 'UserPool', {
             signInAliases: { email: true },
@@ -225,6 +237,12 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
         });
         const jobIdRes = jobsRes.addResource('{id}');
         jobIdRes.addMethod('GET', new aws_cdk_lib_1.aws_apigateway.LambdaIntegration(getJobLambda), {
+            authorizer: cognitoAuthorizer,
+            authorizationType: aws_cdk_lib_1.aws_apigateway.AuthorizationType.COGNITO,
+            authorizationScopes: ['https://deep-copy.api/read'],
+        });
+        const jobResultRes = jobIdRes.addResource('result');
+        jobResultRes.addMethod('GET', new aws_cdk_lib_1.aws_apigateway.LambdaIntegration(getJobResultLambda), {
             authorizer: cognitoAuthorizer,
             authorizationType: aws_cdk_lib_1.aws_apigateway.AuthorizationType.COGNITO,
             authorizationScopes: ['https://deep-copy.api/read'],

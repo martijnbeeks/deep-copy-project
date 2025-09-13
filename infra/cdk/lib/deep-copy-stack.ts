@@ -168,6 +168,19 @@ export class DeepCopyStack extends Stack {
     });
     jobsTable.grantReadData(getJobLambda);
 
+    // Lambda to get job result JSON from S3
+    const getJobResultLambda = new lambda.Function(this, 'GetJobResultLambda', {
+      runtime: lambda.Runtime.PYTHON_3_11,
+      timeout: Duration.seconds(10),
+      memorySize: 256,
+      handler: 'get_job_result.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
+      environment: {
+        RESULTS_BUCKET: resultsBucket.bucketName,
+      },
+    });
+    resultsBucket.grantRead(getJobResultLambda);
+
     // Cognito User Pool for API auth
     const userPool = new cognito.UserPool(this, 'UserPool', {
       signInAliases: { email: true },
@@ -247,6 +260,13 @@ export class DeepCopyStack extends Stack {
 
     const jobIdRes = jobsRes.addResource('{id}');
     jobIdRes.addMethod('GET', new apigw.LambdaIntegration(getJobLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/read'],
+    });
+
+    const jobResultRes = jobIdRes.addResource('result');
+    jobResultRes.addMethod('GET', new apigw.LambdaIntegration(getJobResultLambda), {
       authorizer: cognitoAuthorizer,
       authorizationType: apigw.AuthorizationType.COGNITO,
       authorizationScopes: ['https://deep-copy.api/read'],

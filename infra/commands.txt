@@ -1,1 +1,22 @@
-export API_URL=https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/
+DeepCopyStack.ApiEndpoint4F160690 = https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/
+DeepCopyStack.ApiUrl = https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/
+DeepCopyStack.CognitoIssuer = https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_ilJPIuXjB
+DeepCopyStack.CognitoTokenEndpoint = https://deepcopy-613663743323-eu-west-1.auth.eu-west-1.amazoncognito.com/oauth2/token
+DeepCopyStack.JobsTableName = DeepCopyStack-JobsTable1970BC16-1BVYVOHK8WXTU
+DeepCopyStack.M2MClientId = 5e2k1st9li1eihp22fl33nd7if
+DeepCopyStack.ResultsBucketName = deepcopystack-resultsbucketa95a2103-zhwjflrlpfih
+DeepCopyStack.UserPoolId = eu-west-1_ilJPIuXjB
+
+
+
+ACCESS_TOKEN=$(curl -s -u "$CLIENT_ID:$CLIENT_SECRET" \
+  -d "grant_type=client_credentials&scope=https://deep-copy.api/read https://deep-copy.api/write" \
+  "$TOKEN_ENDPOINT" | jq -r .access_token)
+
+# POST /jobs (uses write)
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" -H "content-type: application/json" \
+  -d '{"example":"value"}' "${API_URL}jobs"
+
+# GET /jobs/{id} (uses read)
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID"
+

@@ -13,6 +13,7 @@ npx cdk deploy
 API:
 - POST /jobs → starts a Fargate task with your container. Body forwarded to the container via `JOB_EVENT_JSON`. Returns `{ jobId }`.
 - GET /jobs/{id} → returns job status and result prefix.
+- GET /jobs/{id}/result → returns the JSON from `s3://<bucket>/results/{id}/comprehensive_results.json` if present. 404 if missing.
 
 Auth (Cognito):
 - The API is protected by an API Gateway Cognito User Pools authorizer.
@@ -40,6 +41,14 @@ curl -H "Authorization: Bearer $ACCESS_TOKEN" \
      -H 'content-type: application/json' \
      -d '{"example":"value"}' \
      "${API_URL}jobs"
+
+# Get job status
+curl -H "Authorization: Bearer $ACCESS_TOKEN" \
+     "${API_URL}jobs/<jobId>"
+
+# Get job result JSON (404 until available)
+curl -H "Authorization: Bearer $ACCESS_TOKEN" \
+     "${API_URL}jobs/<jobId>/result"
 ```
 
 Container expectations:
