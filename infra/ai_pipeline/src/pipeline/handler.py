@@ -2,6 +2,7 @@ import json
 import os
 import base64
 import requests
+from botocore.exceptions import ClientError
 from openai import OpenAI
 import boto3
 import sys
@@ -618,7 +619,6 @@ def lambda_handler(event, context):
         "sales_page_url": "URL of the sales page to analyze",
         "s3_bucket": "S3 bucket to store results",
         "project_name": "Name of the project for organization",
-        "swipe_file_path": "Path to the swipe file template",
         "content_dir": "Directory containing content files (optional, defaults to src/pipeline/content/)"
     }
     """
@@ -636,14 +636,82 @@ def lambda_handler(event, context):
         except Exception:
             pass
         
-        # Extract parameters from event
-        brand_info = event.get("brand_info", "Hypowered is a brand that sells nose strips designed for sports people to enhance breathing and athletic performance")
-        sales_page_url = event.get("sales_page_url", "https://hypowered.nl/en")
+        # Extract parameters from event (fallback to env vars)
+        brand_info = event.get("brand_info") or os.environ.get("BRAND_INFO") or "Hypowered is a brand that sells nose strips designed for sports people to enhance breathing and athletic performance"
+        sales_page_url = event.get("sales_page_url") or os.environ.get("SALES_PAGE_URL") or "https://hypowered.nl/en"
         s3_bucket = event.get("s3_bucket", generator.s3_bucket)
-        project_name = event.get("project_name", "default-project")
-        swipe_file_path = event.get("swipe_file_path", "src/pipeline/listicle/melatonin_pills.html")
+        project_name = event.get("project_name") or os.environ.get("PROJECT_NAME") or "default-project"
+        swipe_file_id = event.get("swipe_file_id") or os.environ.get("SWIPE_FILE_ID")
+        content_library_bucket = event.get("content_library_bucket") or os.environ.get("CONTENT_LIBRARY_BUCKET") or "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih"
         content_dir = event.get("content_dir", "ai_pipeline/src/pipeline/content/")
         result_prefix = event.get("result_prefix") or f"results/{job_id}"
+        logger.info(
+            f"Pipeline inputs: project_name={project_name}, sales_page_url={sales_page_url}, "
+            f"brand_info_present={bool(brand_info)}, swipe_file_id={swipe_file_id}, content_dir={content_dir}"
+        )
+
+        # Require swipe_file_id when not provided return 400
+        if not swipe_file_id:
+            error_msg = "Missing required input: swipe_file_id"
+            logger.error(error_msg)
+            try:
+                generator.update_job_status(job_id, "FAILED", {"error": error_msg})
+            except Exception:
+                pass
+            return {
+                "statusCode": 400,
+                "body": {"error": error_msg}
+            }
+
+        # If a swipe_file_id is provided, retrieve the HTML from S3
+        if swipe_file_id:
+            try:
+                s3_key = f"content_library/{swipe_file_id}.html"
+                logger.info(f"Fetching swipe file from S3: s3://{content_library_bucket}/{s3_key}")
+                obj = generator.s3_client.get_object(Bucket=content_library_bucket, Key=s3_key)
+                html_bytes = obj["Body"].read()
+                html_text = html_bytes.decode("utf-8")
+                tmp_path = f"/tmp/swipe_{swipe_file_id}.html"
+                with open(tmp_path, "w", encoding="utf-8") as f:
+                    f.write(html_text)
+                swipe_file_path = tmp_path
+                logger.info(f"Swipe file saved to {swipe_file_path} and will be used in the workflow")
+            except ClientError as e:
+                code = (e.response or {}).get("Error", {}).get("Code")
+                http_status = (e.response or {}).get("ResponseMetadata", {}).get("HTTPStatusCode")
+                if code in ("NoSuchKey", "404", "NotFound") or http_status == 404:
+                    error_msg = f"Swipe file not found on S3: s3://{content_library_bucket}/{s3_key}"
+                    logger.error(error_msg)
+                    try:
+                        generator.update_job_status(job_id, "FAILED", {"error": error_msg})
+                    except Exception:
+                        pass
+                    return {
+                        "statusCode": 404,
+                        "body": {"error": error_msg}
+                    }
+                else:
+                    error_msg = f"Failed to fetch swipe file from S3: {str(e)}"
+                    logger.error(error_msg)
+                    try:
+                        generator.update_job_status(job_id, "FAILED", {"error": error_msg})
+                    except Exception:
+                        pass
+                    return {
+                        "statusCode": 500,
+                        "body": {"error": error_msg}
+                    }
+            except Exception as e:
+                error_msg = f"Unexpected error fetching swipe file from S3: {str(e)}"
+                logger.error(error_msg)
+                try:
+                    generator.update_job_status(job_id, "FAILED", {"error": error_msg})
+                except Exception:
+                    pass
+                return {
+                    "statusCode": 500,
+                    "body": {"error": error_msg}
+                }
         
         # # Step 1: Analyze research page
         # logger.info("Step 1: Analyzing research page")
@@ -772,8 +840,9 @@ if __name__ == "__main__":
             "sales_page_url": "https://hypowered.nl/en",
             "s3_bucket": os.environ.get("BUCKET_NAME", "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih"),
             "project_name": "test-project",
-            "swipe_file_path": "src/pipeline/listicle/melatonin_pills.html",
-            "content_dir": "src/pipeline/content/"
+            "content_dir": "src/pipeline/content/",
+            "swipe_file_id": "L00001",
+            "content_library_bucket": os.environ.get("CONTENT_LIBRARY_BUCKET") or "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih"
         }
     # Inject jobId and result prefix
     event["job_id"] = os.environ.get("JOB_ID") or event.get("job_id") or str(uuid.uuid4())

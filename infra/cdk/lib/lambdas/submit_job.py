@@ -61,6 +61,12 @@ def handler(event, _context):
             "body": json.dumps({"error": f"DynamoDB error: {e.response['Error'].get('Message', str(e))}"}),
         }
 
+    # Extract and forward specific fields as individual env vars for convenience
+    brand_info = body.get("brand_info")
+    sales_page_url = body.get("sales_page_url")
+    project_name = body.get("project_name")
+    swipe_file_id = body.get("swipe_file_id")
+
     env_overrides = [
         {"name": "JOB_ID", "value": job_id},
         {
@@ -68,6 +74,14 @@ def handler(event, _context):
             "value": json.dumps({**body, "job_id": job_id, "result_prefix": result_prefix}),
         },
     ]
+    if brand_info is not None:
+        env_overrides.append({"name": "BRAND_INFO", "value": str(brand_info)})
+    if sales_page_url is not None:
+        env_overrides.append({"name": "SALES_PAGE_URL", "value": str(sales_page_url)})
+    if project_name is not None:
+        env_overrides.append({"name": "PROJECT_NAME", "value": str(project_name)})
+    if swipe_file_id is not None:
+        env_overrides.append({"name": "SWIPE_FILE_ID", "value": str(swipe_file_id)})
 
     try:
         run_resp = _ecs.run_task(

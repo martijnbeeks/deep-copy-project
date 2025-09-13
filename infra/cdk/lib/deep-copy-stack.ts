@@ -67,6 +67,8 @@ export class DeepCopyStack extends Stack {
     });
     resultsBucket.grantPut(taskRole);
     resultsBucket.grantPutAcl(taskRole);
+    // Allow task to read swipe files stored under content_library/
+    resultsBucket.grantRead(taskRole, 'content_library/*');
     jobsTable.grantReadWriteData(taskRole);
 
     // Also allow SecretsManager read if your code pulls secrets
@@ -104,7 +106,8 @@ export class DeepCopyStack extends Stack {
         BUCKET_NAME: resultsBucket.bucketName,
         JOBS_TABLE_NAME: jobsTable.tableName,
         ENVIRONMENT: 'prod',
-        DISABLE_SCREENSHOT: '1',
+        DISABLE_SCREENSHOT: '0',
+        CONTENT_LIBRARY_BUCKET: resultsBucket.bucketName,
       },
     });
 

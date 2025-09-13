@@ -14,8 +14,16 @@ ACCESS_TOKEN=$(curl -s -u "$CLIENT_ID:$CLIENT_SECRET" \
   "$TOKEN_ENDPOINT" | jq -r .access_token)
 
 # POST /jobs (uses write)
-curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" -H "content-type: application/json" \
-  -d '{"example":"value"}' "${API_URL}jobs"
+curl -sS -X POST \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{
+    "brand_info": "Hypowered is a brand that sells nose strips designed for sports people to enhance breathing and athletic performance",
+    "sales_page_url": "https://hypowered.nl/en",
+    "project_name": "test-project",
+    "swipe_file_id": "L00001"
+  }' \
+  "${API_URL}jobs"
 
 # GET /jobs/{id} (uses read)
 curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID"
