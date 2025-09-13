@@ -168,7 +168,7 @@ class DeepCopy:
     def __init__(self):
         # Resolve secret id/name/arn and region from environment for ECS flexibility
         env = os.environ.get('ENVIRONMENT', 'dev')
-        secret_id = os.environ.get('SECRET_ARN') or os.environ.get('SECRET_NAME') or f'deepcopy-secret-{env}'
+        secret_id = "deepcopy-secret-dev"
         self.secrets = self.get_secrets(secret_id)
         self.client = OpenAI(api_key=self.secrets["OPENAI_API_KEY"]) 
         aws_region = os.environ.get('AWS_REGION') or os.environ.get('AWS_DEFAULT_REGION') or 'eu-west-1'

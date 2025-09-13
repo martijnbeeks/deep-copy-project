@@ -13,6 +13,7 @@ import {
   aws_lambda as lambda,
   aws_lambda_nodejs as lambdaNode,
   aws_apigateway as apigw,
+  aws_cognito as cognito,
   aws_ecr as ecr,
   aws_ecr_assets as ecrAssets,
   aws_events as events,
@@ -122,12 +123,13 @@ export class DeepCopyStack extends Stack {
       description: 'Allow outbound internet for API calls',
     });
 
-    // Small Lambda to submit tasks
-    const submitLambda = new lambdaNode.NodejsFunction(this, 'SubmitJobLambda', {
-      runtime: lambda.Runtime.NODEJS_20_X,
+    // Small Lambda to submit tasks (Python version)
+    const submitLambda = new lambda.Function(this, 'SubmitJobLambda', {
+      runtime: lambda.Runtime.PYTHON_3_11,
       timeout: Duration.seconds(10),
       memorySize: 256,
-      entry: path.join(__dirname, 'lambdas/submit-job.ts'),
+      handler: 'submit_job.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
       environment: {
         CLUSTER_ARN: cluster.clusterArn,
         TASK_DEF_ARN: taskDef.taskDefinitionArn,
@@ -166,6 +168,62 @@ export class DeepCopyStack extends Stack {
     });
     jobsTable.grantReadData(getJobLambda);
 
+    // Cognito User Pool for API auth
+    const userPool = new cognito.UserPool(this, 'UserPool', {
+      signInAliases: { email: true },
+      selfSignUpEnabled: false,
+      removalPolicy: RemovalPolicy.RETAIN,
+      standardAttributes: {
+        email: { required: true, mutable: false },
+      },
+    });
+
+    // OAuth resource server and scopes
+    const scopeRead = new cognito.ResourceServerScope({ scopeName: 'read', scopeDescription: 'Read jobs' });
+    const scopeWrite = new cognito.ResourceServerScope({ scopeName: 'write', scopeDescription: 'Submit jobs' });
+    const resourceServer = new cognito.UserPoolResourceServer(this, 'ApiResourceServer', {
+      userPool,
+      identifier: 'https://deep-copy.api',
+      userPoolResourceServerName: 'deep-copy-api',
+      scopes: [scopeRead, scopeWrite],
+    });
+
+    // App client for machine-to-machine (client credentials)
+    const m2mClient = userPool.addClient('M2MClient', {
+      generateSecret: true,
+      authFlows: { userPassword: false, userSrp: false, adminUserPassword: false },
+      oAuth: {
+        flows: { clientCredentials: true },
+        scopes: [
+          cognito.OAuthScope.resourceServer(resourceServer, scopeRead),
+          cognito.OAuthScope.resourceServer(resourceServer, scopeWrite),
+        ],
+      },
+    });
+
+    // Additional app client for Pravaha
+    const pravahaClient = userPool.addClient('PravahaClient', {
+      generateSecret: true,
+      authFlows: { userPassword: false, userSrp: false, adminUserPassword: false },
+      oAuth: {
+        flows: { clientCredentials: true },
+        scopes: [
+          cognito.OAuthScope.resourceServer(resourceServer, scopeRead),
+          cognito.OAuthScope.resourceServer(resourceServer, scopeWrite),
+        ],
+      },
+    });
+
+    // Domain for token endpoint
+    const domain = userPool.addDomain('CognitoDomain', {
+      cognitoDomain: {
+        domainPrefix: `deepcopy-${Stack.of(this).account}-${Stack.of(this).region}`.toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 63),
+      },
+    });
+
+    const tokenEndpoint = `https://${domain.domainName}.auth.${Stack.of(this).region}.amazoncognito.com/oauth2/token`;
+    const issuerUrl = `https://cognito-idp.${Stack.of(this).region}.amazonaws.com/${userPool.userPoolId}`;
+
     // API Gateway
     const api = new apigw.RestApi(this, 'Api', {
       restApiName: 'DeepCopy API',
@@ -174,11 +232,25 @@ export class DeepCopyStack extends Stack {
       },
     });
 
+    const cognitoAuthorizer = new apigw.CognitoUserPoolsAuthorizer(this, 'CognitoAuthorizer', {
+      cognitoUserPools: [userPool],
+      identitySource: apigw.IdentitySource.header('Authorization'),
+      resultsCacheTtl: Duration.seconds(60),
+    });
+
     const jobsRes = api.root.addResource('jobs');
-    jobsRes.addMethod('POST', new apigw.LambdaIntegration(submitLambda));
+    jobsRes.addMethod('POST', new apigw.LambdaIntegration(submitLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/write'],
+    });
 
     const jobIdRes = jobsRes.addResource('{id}');
-    jobIdRes.addMethod('GET', new apigw.LambdaIntegration(getJobLambda));
+    jobIdRes.addMethod('GET', new apigw.LambdaIntegration(getJobLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/read'],
+    });
 
     // Optional: EventBridge to mark RUNNING when task starts and final status on stop
     // You can also have the container call DynamoDB directly at the end, which the Python already supports
@@ -186,6 +258,11 @@ export class DeepCopyStack extends Stack {
     new CfnOutput(this, 'ApiUrl', { value: api.url });
     new CfnOutput(this, 'ResultsBucketName', { value: resultsBucket.bucketName });
     new CfnOutput(this, 'JobsTableName', { value: jobsTable.tableName });
+    new CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
+    new CfnOutput(this, 'M2MClientId', { value: m2mClient.userPoolClientId });
+    new CfnOutput(this, 'PravahaClientId', { value: pravahaClient.userPoolClientId });
+    new CfnOutput(this, 'CognitoTokenEndpoint', { value: tokenEndpoint });
+    new CfnOutput(this, 'CognitoIssuer', { value: issuerUrl });
   }
 }
 

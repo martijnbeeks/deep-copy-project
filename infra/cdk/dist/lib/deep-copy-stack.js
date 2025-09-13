@@ -117,12 +117,13 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
             allowAllOutbound: true,
             description: 'Allow outbound internet for API calls',
         });
-        // Small Lambda to submit tasks
-        const submitLambda = new aws_cdk_lib_1.aws_lambda_nodejs.NodejsFunction(this, 'SubmitJobLambda', {
-            runtime: aws_cdk_lib_1.aws_lambda.Runtime.NODEJS_20_X,
+        // Small Lambda to submit tasks (Python version)
+        const submitLambda = new aws_cdk_lib_1.aws_lambda.Function(this, 'SubmitJobLambda', {
+            runtime: aws_cdk_lib_1.aws_lambda.Runtime.PYTHON_3_11,
             timeout: aws_cdk_lib_1.Duration.seconds(10),
             memorySize: 256,
-            entry: path.join(__dirname, 'lambdas/submit-job.ts'),
+            handler: 'submit_job.handler',
+            code: aws_cdk_lib_1.aws_lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
             environment: {
                 CLUSTER_ARN: cluster.clusterArn,
                 TASK_DEF_ARN: taskDef.taskDefinitionArn,
@@ -142,17 +143,68 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
             resources: [taskDef.taskRole.roleArn, taskDef.executionRole.roleArn],
         }));
         jobsTable.grantReadWriteData(submitLambda);
-        // Lambda to get job status (reads DynamoDB)
-        const getJobLambda = new aws_cdk_lib_1.aws_lambda_nodejs.NodejsFunction(this, 'GetJobLambda', {
-            runtime: aws_cdk_lib_1.aws_lambda.Runtime.NODEJS_20_X,
+        // Lambda to get job status (reads DynamoDB) - Python version
+        const getJobLambda = new aws_cdk_lib_1.aws_lambda.Function(this, 'GetJobLambda', {
+            runtime: aws_cdk_lib_1.aws_lambda.Runtime.PYTHON_3_11,
             timeout: aws_cdk_lib_1.Duration.seconds(10),
             memorySize: 256,
-            entry: path.join(__dirname, 'lambdas/get-job.ts'),
+            handler: 'get_job.handler',
+            code: aws_cdk_lib_1.aws_lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
             environment: {
                 JOBS_TABLE_NAME: jobsTable.tableName,
             },
         });
         jobsTable.grantReadData(getJobLambda);
+        // Cognito User Pool for API auth
+        const userPool = new aws_cdk_lib_1.aws_cognito.UserPool(this, 'UserPool', {
+            signInAliases: { email: true },
+            selfSignUpEnabled: false,
+            removalPolicy: aws_cdk_lib_1.RemovalPolicy.RETAIN,
+            standardAttributes: {
+                email: { required: true, mutable: false },
+            },
+        });
+        // OAuth resource server and scopes
+        const scopeRead = new aws_cdk_lib_1.aws_cognito.ResourceServerScope({ scopeName: 'read', scopeDescription: 'Read jobs' });
+        const scopeWrite = new aws_cdk_lib_1.aws_cognito.ResourceServerScope({ scopeName: 'write', scopeDescription: 'Submit jobs' });
+        const resourceServer = new aws_cdk_lib_1.aws_cognito.UserPoolResourceServer(this, 'ApiResourceServer', {
+            userPool,
+            identifier: 'https://deep-copy.api',
+            userPoolResourceServerName: 'deep-copy-api',
+            scopes: [scopeRead, scopeWrite],
+        });
+        // App client for machine-to-machine (client credentials)
+        const m2mClient = userPool.addClient('M2MClient', {
+            generateSecret: true,
+            authFlows: { userPassword: false, userSrp: false, adminUserPassword: false },
+            oAuth: {
+                flows: { clientCredentials: true },
+                scopes: [
+                    aws_cdk_lib_1.aws_cognito.OAuthScope.resourceServer(resourceServer, scopeRead),
+                    aws_cdk_lib_1.aws_cognito.OAuthScope.resourceServer(resourceServer, scopeWrite),
+                ],
+            },
+        });
+        // Additional app client for Pravaha
+        const pravahaClient = userPool.addClient('PravahaClient', {
+            generateSecret: true,
+            authFlows: { userPassword: false, userSrp: false, adminUserPassword: false },
+            oAuth: {
+                flows: { clientCredentials: true },
+                scopes: [
+                    aws_cdk_lib_1.aws_cognito.OAuthScope.resourceServer(resourceServer, scopeRead),
+                    aws_cdk_lib_1.aws_cognito.OAuthScope.resourceServer(resourceServer, scopeWrite),
+                ],
+            },
+        });
+        // Domain for token endpoint
+        const domain = userPool.addDomain('CognitoDomain', {
+            cognitoDomain: {
+                domainPrefix: `deepcopy-${aws_cdk_lib_1.Stack.of(this).account}-${aws_cdk_lib_1.Stack.of(this).region}`.toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 63),
+            },
+        });
+        const tokenEndpoint = `https://${domain.domainName}.auth.${aws_cdk_lib_1.Stack.of(this).region}.amazoncognito.com/oauth2/token`;
+        const issuerUrl = `https://cognito-idp.${aws_cdk_lib_1.Stack.of(this).region}.amazonaws.com/${userPool.userPoolId}`;
         // API Gateway
         const api = new aws_cdk_lib_1.aws_apigateway.RestApi(this, 'Api', {
             restApiName: 'DeepCopy API',
@@ -160,15 +212,33 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
                 stageName: 'prod',
             },
         });
+        const cognitoAuthorizer = new aws_cdk_lib_1.aws_apigateway.CognitoUserPoolsAuthorizer(this, 'CognitoAuthorizer', {
+            cognitoUserPools: [userPool],
+            identitySource: aws_cdk_lib_1.aws_apigateway.IdentitySource.header('Authorization'),
+            resultsCacheTtl: aws_cdk_lib_1.Duration.seconds(60),
+        });
         const jobsRes = api.root.addResource('jobs');
-        jobsRes.addMethod('POST', new aws_cdk_lib_1.aws_apigateway.LambdaIntegration(submitLambda));
+        jobsRes.addMethod('POST', new aws_cdk_lib_1.aws_apigateway.LambdaIntegration(submitLambda), {
+            authorizer: cognitoAuthorizer,
+            authorizationType: aws_cdk_lib_1.aws_apigateway.AuthorizationType.COGNITO,
+            authorizationScopes: ['https://deep-copy.api/write'],
+        });
         const jobIdRes = jobsRes.addResource('{id}');
-        jobIdRes.addMethod('GET', new aws_cdk_lib_1.aws_apigateway.LambdaIntegration(getJobLambda));
+        jobIdRes.addMethod('GET', new aws_cdk_lib_1.aws_apigateway.LambdaIntegration(getJobLambda), {
+            authorizer: cognitoAuthorizer,
+            authorizationType: aws_cdk_lib_1.aws_apigateway.AuthorizationType.COGNITO,
+            authorizationScopes: ['https://deep-copy.api/read'],
+        });
         // Optional: EventBridge to mark RUNNING when task starts and final status on stop
         // You can also have the container call DynamoDB directly at the end, which the Python already supports
         new aws_cdk_lib_1.CfnOutput(this, 'ApiUrl', { value: api.url });
         new aws_cdk_lib_1.CfnOutput(this, 'ResultsBucketName', { value: resultsBucket.bucketName });
         new aws_cdk_lib_1.CfnOutput(this, 'JobsTableName', { value: jobsTable.tableName });
+        new aws_cdk_lib_1.CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
+        new aws_cdk_lib_1.CfnOutput(this, 'M2MClientId', { value: m2mClient.userPoolClientId });
+        new aws_cdk_lib_1.CfnOutput(this, 'PravahaClientId', { value: pravahaClient.userPoolClientId });
+        new aws_cdk_lib_1.CfnOutput(this, 'CognitoTokenEndpoint', { value: tokenEndpoint });
+        new aws_cdk_lib_1.CfnOutput(this, 'CognitoIssuer', { value: issuerUrl });
     }
 }
 exports.DeepCopyStack = DeepCopyStack;
