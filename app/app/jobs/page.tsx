@@ -1,6 +1,8 @@
 "use client"
 
-import { useAuth } from "@/components/auth/auth-provider"
+import { useAuthStore } from "@/stores/auth-store"
+import { useJobsStore } from "@/stores/jobs-store"
+import { Job } from "@/lib/db/types"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,65 +18,13 @@ import { useEffect, useState } from "react"
 import { Eye, Search, Filter, Plus, FileText, AlertCircle } from "lucide-react"
 import Link from "next/link"
 
-interface Job {
-  id: string
-  title: string
-  contentType: string
-  status: "pending" | "processing" | "completed" | "failed"
-  createdAt: string
-  progress?: number
-}
-
-const mockJobs: Job[] = [
-  {
-    id: "1",
-    title: "Blog Post: AI in Marketing",
-    contentType: "blog-post",
-    status: "completed",
-    createdAt: "2024-01-15T10:30:00Z",
-    progress: 100,
-  },
-  {
-    id: "2",
-    title: "Social Media Campaign",
-    contentType: "social-media",
-    status: "processing",
-    createdAt: "2024-01-15T09:15:00Z",
-    progress: 65,
-  },
-  {
-    id: "3",
-    title: "Product Description: Smart Watch",
-    contentType: "product-description",
-    status: "pending",
-    createdAt: "2024-01-15T08:45:00Z",
-  },
-  {
-    id: "4",
-    title: "Email Newsletter: Weekly Update",
-    contentType: "email",
-    status: "completed",
-    createdAt: "2024-01-14T16:20:00Z",
-    progress: 100,
-  },
-  {
-    id: "5",
-    title: "Landing Page Copy: SaaS Product",
-    contentType: "landing-page",
-    status: "failed",
-    createdAt: "2024-01-14T14:10:00Z",
-  },
-]
-
 export default function JobsPage() {
-  const { user } = useAuth()
+  const { user } = useAuthStore()
+  const { jobs, isLoading, error, fetchJobs } = useJobsStore()
   const router = useRouter()
-  const [jobs, setJobs] = useState<Job[]>(mockJobs)
-  const [filteredJobs, setFilteredJobs] = useState<Job[]>(mockJobs)
+  const [filteredJobs, setFilteredJobs] = useState(jobs)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) {
@@ -82,13 +32,8 @@ export default function JobsPage() {
       return
     }
 
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 1000)
-
-    return () => clearTimeout(timer)
-  }, [user, router])
+    fetchJobs()
+  }, [user, router, fetchJobs])
 
   useEffect(() => {
     let filtered = jobs
@@ -97,7 +42,7 @@ export default function JobsPage() {
       filtered = filtered.filter(
         (job) =>
           job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.contentType.toLowerCase().includes(searchTerm.toLowerCase()),
+          job.brand_info.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
@@ -222,9 +167,9 @@ export default function JobsPage() {
                             {getStatusBadge(job.status)}
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span className="capitalize">{job.contentType.replace("-", " ")}</span>
+                            <span className="capitalize">{job.template?.name || 'AI Generated'}</span>
                             <span>•</span>
-                            <span>{new Date(job.createdAt).toLocaleDateString()}</span>
+                            <span>{new Date(job.created_at).toLocaleDateString()}</span>
                             {job.progress !== undefined && (
                               <>
                                 <span>•</span>

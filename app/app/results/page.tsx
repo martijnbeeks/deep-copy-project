@@ -1,6 +1,7 @@
 "use client"
 
-import { useAuth } from "@/components/auth/auth-provider"
+import { useAuthStore } from "@/stores/auth-store"
+import { useJobsStore } from "@/stores/jobs-store"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,101 +17,41 @@ import { useEffect, useState } from "react"
 import { Eye, Search, Filter, Download, BarChart3, FileText, Calendar } from "lucide-react"
 import Link from "next/link"
 
-interface Result {
-  id: string
-  jobId: string
-  title: string
-  contentType: string
-  wordCount: number
-  qualityScore: number
-  createdAt: string
-  status: "completed" | "archived"
-}
-
-const mockResults: Result[] = [
-  {
-    id: "1",
-    jobId: "1",
-    title: "The Future of AI in Marketing: Transforming Customer Engagement",
-    contentType: "blog-post",
-    wordCount: 1247,
-    qualityScore: 87,
-    createdAt: "2024-01-15T10:45:00Z",
-    status: "completed",
-  },
-  {
-    id: "2",
-    jobId: "4",
-    title: "Weekly Newsletter: Product Updates and Industry News",
-    contentType: "email",
-    wordCount: 542,
-    qualityScore: 92,
-    createdAt: "2024-01-14T16:30:00Z",
-    status: "completed",
-  },
-  {
-    id: "3",
-    jobId: "6",
-    title: "Social Media Campaign: New Product Launch",
-    contentType: "social-media",
-    wordCount: 156,
-    qualityScore: 78,
-    createdAt: "2024-01-13T14:20:00Z",
-    status: "completed",
-  },
-  {
-    id: "4",
-    jobId: "8",
-    title: "Product Description: Smart Fitness Tracker",
-    contentType: "product-description",
-    wordCount: 324,
-    qualityScore: 85,
-    createdAt: "2024-01-12T11:15:00Z",
-    status: "archived",
-  },
-]
-
 export default function ResultsPage() {
-  const { user } = useAuth()
+  const { user } = useAuthStore()
+  const { jobs, isLoading, error, fetchJobs } = useJobsStore()
   const router = useRouter()
-  const [results, setResults] = useState<Result[]>(mockResults)
-  const [filteredResults, setFilteredResults] = useState<Result[]>(mockResults)
+  const [filteredResults, setFilteredResults] = useState(jobs.filter(job => job.status === 'completed'))
   const [searchTerm, setSearchTerm] = useState("")
   const [contentTypeFilter, setContentTypeFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [isLoading, setIsLoading] = useState(true)
-
   useEffect(() => {
     if (!user) {
       router.push("/login")
       return
     }
 
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 800)
-
-    return () => clearTimeout(timer)
-  }, [user, router])
+    fetchJobs()
+  }, [user, router, fetchJobs])
 
   useEffect(() => {
-    let filtered = results
+    const completedJobs = jobs.filter(job => job.status === 'completed')
+    let filtered = completedJobs
 
     if (searchTerm) {
-      filtered = filtered.filter((result) => result.title.toLowerCase().includes(searchTerm.toLowerCase()))
+      filtered = filtered.filter(
+        (job) =>
+          job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          job.brand_info.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
     }
 
     if (contentTypeFilter !== "all") {
-      filtered = filtered.filter((result) => result.contentType === contentTypeFilter)
-    }
-
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((result) => result.status === statusFilter)
+      filtered = filtered.filter((job) => job.template?.category === contentTypeFilter)
     }
 
     setFilteredResults(filtered)
-  }, [results, searchTerm, contentTypeFilter, statusFilter])
+  }, [jobs, searchTerm, contentTypeFilter])
 
   if (!user) {
     return <PageLoadingSpinner text="Loading results..." />
@@ -127,20 +68,16 @@ export default function ResultsPage() {
     )
   }
 
-  const getQualityBadge = (score: number) => {
-    if (score >= 85) return <Badge className="bg-green-100 text-green-800">Excellent</Badge>
-    if (score >= 70) return <Badge className="bg-yellow-100 text-yellow-800">Good</Badge>
-    return <Badge className="bg-red-100 text-red-800">Needs Work</Badge>
-  }
-
-  const getStatusBadge = (status: Result["status"]) => {
+  const getStatusBadge = (status: string) => {
     const variants = {
+      pending: "secondary",
+      processing: "default",
       completed: "default",
-      archived: "secondary",
+      failed: "destructive",
     } as const
 
     return (
-      <Badge variant={variants[status]} className="capitalize">
+      <Badge variant={variants[status as keyof typeof variants] || "secondary"} className="capitalize">
         {status}
       </Badge>
     )
@@ -174,32 +111,32 @@ export default function ResultsPage() {
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{results.length}</div>
+                  <div className="text-2xl font-bold">{filteredResults.length}</div>
                   <p className="text-xs text-muted-foreground">Generated content pieces</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Avg Quality Score</CardTitle>
+                  <CardTitle className="text-sm font-medium">Completed Jobs</CardTitle>
                   <BarChart3 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {Math.round(results.reduce((acc, r) => acc + r.qualityScore, 0) / results.length)}
+                    {jobs.filter(job => job.status === 'completed').length}
                   </div>
-                  <p className="text-xs text-muted-foreground">Content quality rating</p>
+                  <p className="text-xs text-muted-foreground">Completed jobs</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Words</CardTitle>
+                  <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {results.reduce((acc, r) => acc + r.wordCount, 0).toLocaleString()}
+                    {jobs.length > 0 ? Math.round((jobs.filter(job => job.status === 'completed').length / jobs.length) * 100) : 0}%
                   </div>
-                  <p className="text-xs text-muted-foreground">Words generated</p>
+                  <p className="text-xs text-muted-foreground">Success rate</p>
                 </CardContent>
               </Card>
               <Card>
@@ -209,9 +146,9 @@ export default function ResultsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {results.filter((r) => new Date(r.createdAt).getMonth() === new Date().getMonth()).length}
+                    {jobs.filter((job) => new Date(job.created_at).getMonth() === new Date().getMonth()).length}
                   </div>
-                  <p className="text-xs text-muted-foreground">New results</p>
+                  <p className="text-xs text-muted-foreground">New jobs this month</p>
                 </CardContent>
               </Card>
             </div>
@@ -277,24 +214,21 @@ export default function ResultsPage() {
               />
             ) : (
               <div className="grid gap-4">
-                {filteredResults.map((result) => (
-                  <Card key={result.id} className="hover:shadow-md transition-shadow">
+                {filteredResults.map((job) => (
+                  <Card key={job.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold">{result.title}</h3>
-                            {getStatusBadge(result.status)}
-                            {getQualityBadge(result.qualityScore)}
+                            <h3 className="text-lg font-semibold">{job.title}</h3>
+                            {getStatusBadge(job.status)}
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span className="capitalize">{result.contentType.replace("-", " ")}</span>
+                            <span className="capitalize">{job.template?.name || 'AI Generated'}</span>
                             <span>•</span>
-                            <span>{result.wordCount} words</span>
+                            <span>{new Date(job.created_at).toLocaleDateString()}</span>
                             <span>•</span>
-                            <span>{new Date(result.createdAt).toLocaleDateString()}</span>
-                            <span>•</span>
-                            <span>Quality: {result.qualityScore}%</span>
+                            <span>Progress: {job.progress}%</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -302,7 +236,7 @@ export default function ResultsPage() {
                             <Download className="h-4 w-4 mr-2" />
                             Download
                           </Button>
-                          <Link href={`/results/${result.id}`}>
+                          <Link href={`/results/${job.id}`}>
                             <Button variant="outline" size="sm">
                               <Eye className="h-4 w-4 mr-2" />
                               View

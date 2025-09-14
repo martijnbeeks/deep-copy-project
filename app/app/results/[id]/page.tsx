@@ -1,15 +1,18 @@
 "use client"
 
-import { useAuth } from "@/components/auth/auth-provider"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { ContentViewer } from "@/components/results/content-viewer"
 import { AnalyticsOverview } from "@/components/results/analytics-overview"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { ArrowLeft, BarChart3, FileText, RefreshCw } from "lucide-react"
+import { ArrowLeft, BarChart3, FileText, RefreshCw, Download, Eye, ExternalLink, Copy, Check } from "lucide-react"
 import Link from "next/link"
+import { useAuthStore } from "@/stores/auth-store"
+import { useJobsStore } from "@/stores/jobs-store"
 
 interface ResultData {
   id: string
@@ -46,89 +49,30 @@ interface ResultData {
 }
 
 export default function ResultDetailPage({ params }: { params: { id: string } }) {
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuthStore()
+  const { currentJob, fetchJob } = useJobsStore()
   const router = useRouter()
-  const [result, setResult] = useState<ResultData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    if (!user) {
+    if (!isAuthenticated || !user) {
       router.push("/login")
       return
     }
 
-    // Mock result data - replace with real API call
-    const mockResult: ResultData = {
-      id: params.id,
-      jobId: "1",
-      content: {
-        id: "content-1",
-        title: "The Future of AI in Marketing: Transforming Customer Engagement",
-        sections: [
-          {
-            id: "intro",
-            title: "Introduction",
-            content:
-              "Artificial Intelligence (AI) has revolutionized numerous industries, and marketing is no exception. As we advance into 2024, AI technologies are becoming increasingly sophisticated, offering marketers unprecedented opportunities to enhance customer engagement, personalize experiences, and drive business growth.\n\nThis comprehensive guide explores how AI is reshaping the marketing landscape, providing practical insights for businesses looking to leverage these powerful technologies.",
-            type: "paragraph",
-          },
-          {
-            id: "current-state",
-            title: "The Current State of AI in Marketing",
-            content:
-              "Today's marketing professionals are already experiencing the transformative power of AI through various applications:\n\n• Predictive analytics for customer behavior forecasting\n• Automated content generation and optimization\n• Real-time personalization engines\n• Intelligent chatbots and customer service automation\n• Advanced segmentation and targeting capabilities\n\nThese tools have enabled marketers to move beyond traditional demographic-based approaches, creating more nuanced and effective campaigns that resonate with individual customers.",
-            type: "paragraph",
-          },
-          {
-            id: "benefits",
-            title: "Key Benefits of AI-Powered Marketing",
-            content:
-              "The integration of AI into marketing strategies offers several compelling advantages:\n\n1. **Enhanced Personalization**: AI algorithms can analyze vast amounts of customer data to create highly personalized experiences across all touchpoints.\n\n2. **Improved Efficiency**: Automation of routine tasks allows marketing teams to focus on strategic initiatives and creative work.\n\n3. **Better ROI**: Data-driven insights lead to more effective campaign optimization and resource allocation.\n\n4. **Real-time Adaptation**: AI systems can adjust campaigns in real-time based on performance metrics and changing market conditions.",
-            type: "paragraph",
-          },
-          {
-            id: "future-trends",
-            title: "Emerging Trends and Future Outlook",
-            content:
-              "Looking ahead, several exciting developments are poised to further transform AI marketing:\n\n• **Conversational AI**: More sophisticated chatbots and voice assistants will enable natural, context-aware customer interactions\n• **Predictive Customer Lifetime Value**: Advanced models will help businesses identify and nurture high-value prospects\n• **Cross-channel Attribution**: AI will provide clearer insights into the customer journey across multiple touchpoints\n• **Ethical AI**: Growing emphasis on transparent, fair, and responsible AI implementation\n\nAs these technologies mature, we can expect even more innovative applications that will redefine how brands connect with their audiences.",
-            type: "paragraph",
-          },
-        ],
-        wordCount: 1247,
-        readingTime: 5,
-        tone: "professional",
-        contentType: "blog-post",
-        generatedAt: "2024-01-15T10:45:00Z",
-      },
-      analytics: {
-        qualityScore: 87,
-        readabilityScore: 82,
-        seoScore: 79,
-        toneAccuracy: 91,
-        keywordDensity: [
-          { keyword: "AI", density: 3.2, target: 2.5 },
-          { keyword: "marketing", density: 2.8, target: 3.0 },
-          { keyword: "automation", density: 1.5, target: 1.5 },
-          { keyword: "personalization", density: 2.1, target: 2.0 },
-        ],
-        contentMetrics: {
-          sentences: 42,
-          paragraphs: 8,
-          avgSentenceLength: 18,
-          fleschScore: 65,
-        },
-        performancePredictions: [
-          { metric: "Engagement", score: 78, benchmark: 65 },
-          { metric: "Shareability", score: 72, benchmark: 60 },
-          { metric: "Conversion", score: 68, benchmark: 55 },
-          { metric: "SEO Ranking", score: 75, benchmark: 70 },
-        ],
-      },
+    const loadJob = async () => {
+      try {
+        await fetchJob(params.id)
+        setIsLoading(false)
+      } catch (error) {
+        console.error('Failed to fetch job:', error)
+        setIsLoading(false)
+      }
     }
 
-    setResult(mockResult)
-    setIsLoading(false)
-  }, [user, router, params.id])
+    loadJob()
+  }, [isAuthenticated, user, router, params.id, fetchJob])
 
   const handleFeedback = (rating: "positive" | "negative", feedback?: string) => {
     // Handle feedback submission
@@ -140,6 +84,32 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
     console.log("Regenerate section:", sectionId)
   }
 
+  const handleDownload = () => {
+    if (currentJob?.result?.html_content) {
+      const blob = new Blob([currentJob.result.html_content], { type: 'text/html' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${currentJob.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }
+  }
+
+  const handleCopyHTML = async () => {
+    if (currentJob?.result?.html_content) {
+      try {
+        await navigator.clipboard.writeText(currentJob.result.html_content)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch (err) {
+        console.error('Failed to copy HTML:', err)
+      }
+    }
+  }
+
   if (!user || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -148,16 +118,16 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
     )
   }
 
-  if (!result) {
+  if (!currentJob || !currentJob.result) {
     return (
       <div className="flex h-screen bg-background">
         <Sidebar />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-2">Result Not Found</h2>
-            <p className="text-muted-foreground mb-4">The requested result could not be found.</p>
-            <Link href="/results">
-              <Button>Return to Results</Button>
+            <p className="text-muted-foreground mb-4">The requested result could not be found or is not yet available.</p>
+            <Link href="/dashboard">
+              <Button>Return to Dashboard</Button>
             </Link>
           </div>
         </main>
@@ -184,14 +154,48 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Link href={`/jobs/${result.jobId}`}>
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                {currentJob.status}
+              </Badge>
+              <Link href={`/jobs/${currentJob.id}`}>
                 <Button variant="outline" size="sm">
-                  View Job Details
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Job Details
                 </Button>
               </Link>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl font-bold">Content Preview</DialogTitle>
+                    <DialogDescription>
+                      Full preview of your generated content
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="overflow-auto max-h-[70vh] border rounded-lg bg-white">
+                    <div 
+                      className="w-full"
+                      dangerouslySetInnerHTML={{ __html: currentJob.result.html_content }}
+                    />
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <Button variant="outline" size="sm" onClick={handleCopyHTML}>
+                {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+                {copied ? 'Copied!' : 'Copy HTML'}
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleDownload}>
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </Button>
               <Button variant="outline" size="sm" onClick={() => handleRegenerate()}>
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Regenerate All
+                Regenerate
               </Button>
             </div>
           </div>
@@ -209,11 +213,54 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
             </TabsList>
 
             <TabsContent value="content">
-              <ContentViewer content={result.content} onFeedback={handleFeedback} onRegenerate={handleRegenerate} />
+              <div className="space-y-6">
+                <div className="bg-gradient-to-br from-white to-blue-50/30 border border-blue-200 rounded-xl p-8 shadow-lg">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">{currentJob.title}</h2>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <span>Template: <span className="font-medium">{currentJob.template?.name || 'Unknown'}</span></span>
+                        <span>•</span>
+                        <span>Generated: <span className="font-medium">{new Date(currentJob.result.created_at).toLocaleDateString()}</span></span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+                        {currentJob.template?.category || 'General'}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                    <div className="prose max-w-none p-6">
+                      <div dangerouslySetInnerHTML={{ __html: currentJob.result.html_content }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="analytics">
-              <AnalyticsOverview analytics={result.analytics} />
+              <div className="bg-white border rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4">Content Analytics</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Generated At</p>
+                    <p className="font-medium">{new Date(currentJob.result.created_at).toLocaleString()}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Template Used</p>
+                    <p className="font-medium">{currentJob.template?.name || 'Unknown'}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Status</p>
+                    <p className="font-medium capitalize">{currentJob.status}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Progress</p>
+                    <p className="font-medium">{currentJob.progress}%</p>
+                  </div>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </div>

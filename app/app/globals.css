@@ -124,4 +124,36 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Add cursor pointer for clickable elements */
+  button, 
+  [role="button"], 
+  a, 
+  input[type="button"], 
+  input[type="submit"], 
+  input[type="reset"],
+  [data-radix-collection-item],
+  [data-state="open"],
+  [data-state="closed"] {
+    cursor: pointer;
+  }
+  
+  /* Ensure dropdown menu items are clickable */
+  [data-slot="dropdown-menu-item"] {
+    cursor: pointer !important;
+  }
+  
+  /* Ensure buttons have pointer cursor */
+  button {
+    cursor: pointer !important;
+  }
+}
+
+@layer utilities {
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 }
