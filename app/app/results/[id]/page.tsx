@@ -5,9 +5,11 @@ import { ContentViewer } from "@/components/results/content-viewer"
 import { AnalyticsOverview } from "@/components/results/analytics-overview"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { ArrowLeft, BarChart3, FileText, RefreshCw, Download } from "lucide-react"
+import { ArrowLeft, BarChart3, FileText, RefreshCw, Download, Eye, ExternalLink, Copy, Check } from "lucide-react"
 import Link from "next/link"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
@@ -51,6 +53,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
   const { currentJob, fetchJob } = useJobsStore()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -92,6 +95,18 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
+    }
+  }
+
+  const handleCopyHTML = async () => {
+    if (currentJob?.result?.html_content) {
+      try {
+        await navigator.clipboard.writeText(currentJob.result.html_content)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch (err) {
+        console.error('Failed to copy HTML:', err)
+      }
     }
   }
 
@@ -139,14 +154,44 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                {currentJob.status}
+              </Badge>
               <Link href={`/jobs/${currentJob.id}`}>
                 <Button variant="outline" size="sm">
-                  View Job Details
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Job Details
                 </Button>
               </Link>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl font-bold">Content Preview</DialogTitle>
+                    <DialogDescription>
+                      Full preview of your generated content
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="overflow-auto max-h-[70vh] border rounded-lg bg-white">
+                    <div 
+                      className="w-full"
+                      dangerouslySetInnerHTML={{ __html: currentJob.result.html_content }}
+                    />
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <Button variant="outline" size="sm" onClick={handleCopyHTML}>
+                {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+                {copied ? 'Copied!' : 'Copy HTML'}
+              </Button>
               <Button variant="outline" size="sm" onClick={handleDownload}>
                 <Download className="h-4 w-4 mr-2" />
-                Download HTML
+                Download
               </Button>
               <Button variant="outline" size="sm" onClick={() => handleRegenerate()}>
                 <RefreshCw className="h-4 w-4 mr-2" />
@@ -168,11 +213,27 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
             </TabsList>
 
             <TabsContent value="content">
-              <div className="space-y-4">
-                <div className="bg-white border rounded-lg p-6">
-                  <h2 className="text-xl font-semibold mb-4">{currentJob.title}</h2>
-                  <div className="prose max-w-none">
-                    <div dangerouslySetInnerHTML={{ __html: currentJob.result.html_content }} />
+              <div className="space-y-6">
+                <div className="bg-gradient-to-br from-white to-blue-50/30 border border-blue-200 rounded-xl p-8 shadow-lg">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">{currentJob.title}</h2>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <span>Template: <span className="font-medium">{currentJob.template?.name || 'Unknown'}</span></span>
+                        <span>•</span>
+                        <span>Generated: <span className="font-medium">{new Date(currentJob.result.created_at).toLocaleDateString()}</span></span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+                        {currentJob.template?.category || 'General'}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                    <div className="prose max-w-none p-6">
+                      <div dangerouslySetInnerHTML={{ __html: currentJob.result.html_content }} />
+                    </div>
                   </div>
                 </div>
               </div>

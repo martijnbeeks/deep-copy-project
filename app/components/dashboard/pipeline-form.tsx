@@ -8,13 +8,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Loader2, Plus, X, AlertCircle, Eye } from "lucide-react"
 import { useTemplatesStore } from "@/stores/templates-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useAuthStore } from "@/stores/auth-store"
+import { TemplatePreview } from "@/components/template-preview"
 
 interface PipelineFormData {
   title: string
@@ -40,7 +41,6 @@ export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps)
     template_id: "",
   })
   const [errors, setErrors] = useState<Partial<Record<keyof PipelineFormData, string>>>({})
-  const [showTemplatePreview, setShowTemplatePreview] = useState(false)
 
   useEffect(() => {
     fetchTemplates()
@@ -170,68 +170,26 @@ export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps)
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="template_id">
+            <Label>
               Select Template <span className="text-destructive">*</span>
             </Label>
-            <Select
-              value={formData.template_id}
-              onValueChange={handleTemplateChange}
-              disabled={isLoading}
-            >
-              <SelectTrigger className={errors.template_id ? "border-destructive" : ""}>
-                <SelectValue placeholder="Choose a template for your content" />
-              </SelectTrigger>
-              <SelectContent>
-                {templates.map((template) => (
-                  <SelectItem key={template.id} value={template.id}>
-                    <div className="flex items-center justify-between w-full">
-                      <span>{template.name}</span>
-                      <Badge variant="secondary" className="ml-2">
-                        {template.category}
-                      </Badge>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {templates.map((template) => (
+                <TemplatePreview
+                  key={template.id}
+                  template={template}
+                  isSelected={formData.template_id === template.id}
+                  onClick={() => handleTemplateChange(template.id)}
+                />
+              ))}
+            </div>
             {errors.template_id && (
               <p className="text-sm text-destructive flex items-center gap-1">
                 <AlertCircle className="h-3 w-3" />
                 {errors.template_id}
               </p>
             )}
-            {selectedTemplate && (
-              <div className="mt-2 p-3 bg-muted rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{selectedTemplate.name}</p>
-                    <p className="text-sm text-muted-foreground">{selectedTemplate.description}</p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowTemplatePreview(!showTemplatePreview)}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Preview
-                  </Button>
-                </div>
-              </div>
-            )}
           </div>
-
-          {showTemplatePreview && selectedTemplate && (
-            <div className="space-y-2">
-              <Label>Template Preview</Label>
-              <div className="border rounded-lg p-4 bg-muted max-h-96 overflow-auto">
-                <div 
-                  className="prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: selectedTemplate.html_content }}
-                />
-              </div>
-            </div>
-          )}
 
           {Object.keys(errors).length > 0 && (
             <Alert variant="destructive">

@@ -3,13 +3,15 @@
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { PipelineForm } from "@/components/dashboard/pipeline-form"
 import { RecentJobs } from "@/components/dashboard/recent-jobs"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { PageLoadingSpinner } from "@/components/ui/loading-spinner"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { OfflineBanner } from "@/components/ui/offline-banner"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { BarChart3, FileText, Clock, TrendingUp, AlertCircle } from "lucide-react"
+import Link from "next/link"
+import { BarChart3, FileText, Clock, TrendingUp, AlertCircle, Zap } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
@@ -69,7 +71,6 @@ export default function DashboardPage() {
               <p className="text-muted-foreground">Welcome back, {user.name}! Create amazing content with AI.</p>
             </div>
 
-            {/* Stats Cards with Error Handling */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -119,7 +120,6 @@ export default function DashboardPage() {
               </Card>
             </div>
 
-            {/* Error Display */}
             {error && (
               <Card className="mb-6 border-destructive">
                 <CardContent className="p-4">
@@ -131,14 +131,33 @@ export default function DashboardPage() {
               </Card>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ErrorBoundary>
-                <PipelineForm />
-              </ErrorBoundary>
-              <ErrorBoundary>
-                <RecentJobs />
-              </ErrorBoundary>
-            </div>
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+               <Card className="lg:col-span-2">
+                 <CardHeader>
+                   <CardTitle>Quick Actions</CardTitle>
+                   <CardDescription>Get started with creating new content</CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                   <div className="flex flex-col sm:flex-row gap-4">
+                     <Link href="/create" className="flex-1">
+                       <Button className="w-full h-16 text-lg">
+                         <Zap className="h-5 w-5 mr-2" />
+                         Create New Content
+                       </Button>
+                     </Link>
+                     <Link href="/jobs" className="flex-1">
+                       <Button variant="outline" className="w-full h-16 text-lg">
+                         <FileText className="h-5 w-5 mr-2" />
+                         View All Jobs
+                       </Button>
+                     </Link>
+                   </div>
+                 </CardContent>
+               </Card>
+               <ErrorBoundary>
+                 <RecentJobs />
+               </ErrorBoundary>
+             </div>
           </div>
         </main>
       </div>

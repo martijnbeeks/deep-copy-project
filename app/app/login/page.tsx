@@ -4,6 +4,7 @@ import { LoginForm } from "@/components/auth/login-form"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { useAuthStore } from "@/stores/auth-store"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export default function LoginPage() {
   const { user, isAuthenticated, login, isLoading, error } = useAuthStore()
@@ -21,6 +22,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-primary mb-2">AI Copywriting</h1>
