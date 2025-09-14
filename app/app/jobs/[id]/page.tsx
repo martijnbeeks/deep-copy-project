@@ -1,6 +1,5 @@
 "use client"
 
-import { useAuth } from "@/components/auth/auth-provider"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { JobDetails } from "@/components/jobs/job-details"
 import { JobProgress } from "@/components/jobs/job-progress"
@@ -10,162 +9,44 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { ArrowLeft, RefreshCw, Download, Eye } from "lucide-react"
 import Link from "next/link"
-
-interface JobData {
-  id: string
-  title: string
-  description: string
-  contentType: string
-  tone: string
-  targetAudience: string
-  keywords: string[]
-  additionalInstructions: string
-  status: "pending" | "processing" | "completed" | "failed"
-  createdAt: string
-  updatedAt: string
-  createdBy: string
-  progress: number
-  steps: Array<{
-    id: string
-    name: string
-    status: "pending" | "processing" | "completed" | "failed"
-    startTime?: string
-    endTime?: string
-    duration?: number
-  }>
-  logs: Array<{
-    id: string
-    timestamp: string
-    level: "info" | "warning" | "success" | "error"
-    message: string
-    details?: string
-  }>
-}
+import { useAuthStore } from "@/stores/auth-store"
+import { useJobsStore } from "@/stores/jobs-store"
+import { JobWithResult } from "@/lib/db/types"
 
 export default function JobDetailPage({ params }: { params: { id: string } }) {
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuthStore()
+  const { currentJob, fetchJob, pollJobStatus } = useJobsStore()
   const router = useRouter()
-  const [job, setJob] = useState<JobData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isPolling, setIsPolling] = useState(false)
 
   useEffect(() => {
-    if (!user) {
+    if (!isAuthenticated || !user) {
       router.push("/login")
       return
     }
 
-    // Mock job data - replace with real API call
-    const mockJob: JobData = {
-      id: params.id,
-      title: "Blog Post: AI in Marketing",
-      description:
-        "Create a comprehensive blog post about the impact of AI on modern marketing strategies, including practical examples and future predictions.",
-      contentType: "blog-post",
-      tone: "professional",
-      targetAudience: "Marketing professionals and business owners",
-      keywords: ["AI", "marketing", "automation", "strategy", "digital transformation"],
-      additionalInstructions: "Include real-world case studies and actionable insights. Target 1500-2000 words.",
-      status: "processing",
-      createdAt: "2024-01-15T10:30:00Z",
-      updatedAt: "2024-01-15T10:35:00Z",
-      createdBy: user.id,
-      progress: 65,
-      steps: [
-        {
-          id: "1",
-          name: "Content Analysis",
-          status: "completed",
-          startTime: "2024-01-15T10:30:00Z",
-          endTime: "2024-01-15T10:31:30Z",
-          duration: 90,
-        },
-        {
-          id: "2",
-          name: "Research & Data Gathering",
-          status: "completed",
-          startTime: "2024-01-15T10:31:30Z",
-          endTime: "2024-01-15T10:33:45Z",
-          duration: 135,
-        },
-        {
-          id: "3",
-          name: "Content Generation",
-          status: "processing",
-          startTime: "2024-01-15T10:33:45Z",
-        },
-        {
-          id: "4",
-          name: "Quality Review",
-          status: "pending",
-        },
-        {
-          id: "5",
-          name: "Final Optimization",
-          status: "pending",
-        },
-      ],
-      logs: [
-        {
-          id: "1",
-          timestamp: "2024-01-15T10:30:00Z",
-          level: "info",
-          message: "Pipeline started successfully",
-          details: "Initializing AI content generation pipeline with provided parameters",
-        },
-        {
-          id: "2",
-          timestamp: "2024-01-15T10:31:30Z",
-          level: "success",
-          message: "Content analysis completed",
-          details: "Successfully analyzed content requirements and target audience",
-        },
-        {
-          id: "3",
-          timestamp: "2024-01-15T10:33:45Z",
-          level: "info",
-          message: "Starting content generation phase",
-          details: "Using GPT-4 model for high-quality content creation",
-        },
-        {
-          id: "4",
-          timestamp: "2024-01-15T10:35:00Z",
-          level: "info",
-          message: "Content generation in progress",
-          details: "Generated 850 words so far, targeting 1500-2000 words total",
-        },
-      ],
-    }
-
-    setJob(mockJob)
-    setIsLoading(false)
-
-    // Start polling if job is processing
-    if (mockJob.status === "processing") {
-      setIsPolling(true)
-      const interval = setInterval(() => {
-        // Mock progress updates
-        setJob((prev) => {
-          if (!prev || prev.status !== "processing") return prev
-
-          const newProgress = Math.min(prev.progress + Math.random() * 10, 100)
-          const newStatus = newProgress >= 100 ? "completed" : "processing"
-
-          return {
-            ...prev,
-            progress: newProgress,
-            status: newStatus,
-            updatedAt: new Date().toISOString(),
-          }
-        })
-      }, 3000)
-
-      return () => {
-        clearInterval(interval)
-        setIsPolling(false)
+    const loadJob = async () => {
+      try {
+        await fetchJob(params.id)
+        setIsLoading(false)
+      } catch (error) {
+        console.error('Failed to fetch job:', error)
+        setIsLoading(false)
       }
     }
-  }, [user, router, params.id])
+
+    loadJob()
+  }, [isAuthenticated, user, router, params.id, fetchJob])
+
+  useEffect(() => {
+    if (currentJob && (currentJob.status === 'pending' || currentJob.status === 'processing')) {
+      setIsPolling(true)
+      pollJobStatus(currentJob.id)
+    } else {
+      setIsPolling(false)
+    }
+  }, [currentJob, pollJobStatus])
 
   if (!user || isLoading) {
     return (
@@ -175,7 +56,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     )
   }
 
-  if (!job) {
+  if (!currentJob) {
     return (
       <div className="flex h-screen bg-background">
         <Sidebar />
@@ -217,9 +98,9 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
                   Auto-refreshing
                 </div>
               )}
-              {job.status === "completed" && (
+              {currentJob.status === "completed" && (
                 <>
-                  <Link href={`/results/${job.id}`}>
+                  <Link href={`/results/${currentJob.id}`}>
                     <Button variant="outline" size="sm">
                       <Eye className="h-4 w-4 mr-2" />
                       View Results
@@ -236,14 +117,14 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-6">
-              <JobDetails job={job} />
-              <JobLogs logs={job.logs} />
+              <JobDetails job={currentJob} />
+              <JobLogs logs={[]} />
             </div>
             <div>
               <JobProgress
-                steps={job.steps}
-                overallProgress={job.progress}
-                currentStep={job.steps.find((s) => s.status === "processing")?.id}
+                steps={[]}
+                overallProgress={currentJob.progress}
+                currentStep={undefined}
               />
             </div>
           </div>

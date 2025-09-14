@@ -1,0 +1,180 @@
+import { query } from './connection'
+import { User, Template, Job, Result, JobWithTemplate, JobWithResult } from './types'
+import bcrypt from 'bcryptjs'
+
+// User queries
+export const createUser = async (email: string, password: string, name: string): Promise<User> => {
+  const passwordHash = await bcrypt.hash(password, 10)
+  const result = await query(
+    'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING *',
+    [email, passwordHash, name]
+  )
+  return result.rows[0]
+}
+
+export const getUserByEmail = async (email: string): Promise<User | null> => {
+  const result = await query('SELECT * FROM users WHERE email = $1', [email])
+  return result.rows[0] || null
+}
+
+export const validatePassword = async (password: string, hash: string): Promise<boolean> => {
+  return bcrypt.compare(password, hash)
+}
+
+// Template queries
+export const getTemplates = async (filters: { category?: string; search?: string } = {}): Promise<Template[]> => {
+  let sql = 'SELECT * FROM templates'
+  const params: any[] = []
+  const conditions: string[] = []
+
+  if (filters.category) {
+    conditions.push('category = $' + (params.length + 1))
+    params.push(filters.category)
+  }
+
+  if (filters.search) {
+    conditions.push('(name ILIKE $' + (params.length + 1) + ' OR description ILIKE $' + (params.length + 1) + ')')
+    params.push(`%${filters.search}%`)
+  }
+
+  if (conditions.length > 0) {
+    sql += ' WHERE ' + conditions.join(' AND ')
+  }
+
+  sql += ' ORDER BY created_at DESC'
+
+  const result = await query(sql, params)
+  return result.rows
+}
+
+export const getTemplateById = async (id: string): Promise<Template | null> => {
+  const result = await query('SELECT * FROM templates WHERE id = $1', [id])
+  return result.rows[0] || null
+}
+
+// Job queries
+export const createJob = async (jobData: {
+  user_id: string
+  title: string
+  brand_info: string
+  sales_page_url?: string
+  template_id?: string
+}): Promise<Job> => {
+  const result = await query(
+    'INSERT INTO jobs (user_id, title, brand_info, sales_page_url, template_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    [jobData.user_id, jobData.title, jobData.brand_info, jobData.sales_page_url, jobData.template_id]
+  )
+  return result.rows[0]
+}
+
+export const getJobsByUserId = async (userId: string, filters: { status?: string; search?: string } = {}): Promise<JobWithTemplate[]> => {
+  let sql = `
+    SELECT j.*, t.name as template_name, t.description as template_description, t.html_content as template_html_content, t.category as template_category
+    FROM jobs j
+    LEFT JOIN templates t ON j.template_id = t.id
+    WHERE j.user_id = $1
+  `
+  const params: any[] = [userId]
+  const conditions: string[] = []
+
+  if (filters.status) {
+    conditions.push('j.status = $' + (params.length + 1))
+    params.push(filters.status)
+  }
+
+  if (filters.search) {
+    conditions.push('(j.title ILIKE $' + (params.length + 1) + ' OR j.brand_info ILIKE $' + (params.length + 1) + ')')
+    params.push(`%${filters.search}%`)
+  }
+
+  if (conditions.length > 0) {
+    sql += ' AND ' + conditions.join(' AND ')
+  }
+
+  sql += ' ORDER BY j.created_at DESC'
+
+  const result = await query(sql, params)
+  return result.rows.map(row => ({
+    ...row,
+    template: row.template_id ? {
+      id: row.template_id,
+      name: row.template_name,
+      description: row.template_description,
+      html_content: row.template_html_content,
+      category: row.template_category,
+      created_at: '',
+      updated_at: ''
+    } : undefined
+  }))
+}
+
+export const getJobById = async (id: string, userId?: string): Promise<JobWithResult | null> => {
+  let sql = `
+    SELECT j.*, t.name as template_name, t.description as template_description, t.html_content as template_html_content, t.category as template_category,
+           r.id as result_id, r.html_content as result_html_content, r.metadata as result_metadata, r.created_at as result_created_at
+    FROM jobs j
+    LEFT JOIN templates t ON j.template_id = t.id
+    LEFT JOIN results r ON j.id = r.job_id
+    WHERE j.id = $1
+  `
+  const params: any[] = [id]
+
+  if (userId) {
+    sql += ' AND j.user_id = $2'
+    params.push(userId)
+  }
+
+  const result = await query(sql, params)
+  if (result.rows.length === 0) return null
+
+  const row = result.rows[0]
+  return {
+    ...row,
+    template: row.template_id ? {
+      id: row.template_id,
+      name: row.template_name,
+      description: row.template_description,
+      html_content: row.template_html_content,
+      category: row.template_category,
+      created_at: '',
+      updated_at: ''
+    } : undefined,
+    result: row.result_id ? {
+      id: row.result_id,
+      job_id: row.id,
+      html_content: row.result_html_content,
+      metadata: row.result_metadata,
+      created_at: row.result_created_at
+    } : undefined
+  }
+}
+
+export const updateJobStatus = async (id: string, status: string, progress?: number, execution_id?: string): Promise<void> => {
+  const updates: string[] = ['status = $2', 'updated_at = NOW()']
+  const params: any[] = [id, status]
+
+  if (progress !== undefined) {
+    updates.push('progress = $' + (params.length + 1))
+    params.push(progress)
+  }
+
+  if (execution_id) {
+    updates.push('execution_id = $' + (params.length + 1))
+    params.push(execution_id)
+  }
+
+  if (status === 'completed' || status === 'failed') {
+    updates.push('completed_at = NOW()')
+  }
+
+  await query(`UPDATE jobs SET ${updates.join(', ')} WHERE id = $1`, params)
+}
+
+// Result queries
+export const createResult = async (jobId: string, htmlContent: string, metadata?: Record<string, any>): Promise<Result> => {
+  const result = await query(
+    'INSERT INTO results (job_id, html_content, metadata) VALUES ($1, $2, $3) RETURNING *',
+    [jobId, htmlContent, JSON.stringify(metadata)]
+  )
+  return result.rows[0]
+}

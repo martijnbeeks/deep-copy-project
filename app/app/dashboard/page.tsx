@@ -1,6 +1,5 @@
 "use client"
 
-import { useAuth } from "@/components/auth/auth-provider"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { PipelineForm } from "@/components/dashboard/pipeline-form"
 import { RecentJobs } from "@/components/dashboard/recent-jobs"
@@ -12,49 +11,41 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { BarChart3, FileText, Clock, TrendingUp, AlertCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useAuthStore } from "@/stores/auth-store"
+import { useJobsStore } from "@/stores/jobs-store"
 
 export default function DashboardPage() {
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuthStore()
+  const { jobs, fetchJobs } = useJobsStore()
   const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
-    if (!user) {
+    if (!isAuthenticated || !user) {
       router.push("/login")
+    } else {
+      fetchJobs()
     }
-  }, [user, router])
+  }, [isAuthenticated, user, router, fetchJobs])
 
   if (!user) {
     return <PageLoadingSpinner text="Loading dashboard..." />
   }
 
   const handlePipelineSubmit = async (data: any) => {
-    setIsSubmitting(true)
     setError(null)
 
     try {
-      // Mock API call - replace with real implementation
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          // Simulate occasional failures for demo
-          if (Math.random() > 0.8) {
-            reject(new Error("Failed to create pipeline. Please try again."))
-          } else {
-            resolve(true)
-          }
-        }, 2000)
-      })
+      const { createJob } = useJobsStore.getState()
+      const job = await createJob(data)
 
       toast({
         title: "Pipeline created successfully",
         description: "Your AI content generation has started.",
       })
 
-      // Simulate job creation and redirect to job detail
-      const jobId = Math.random().toString(36).substr(2, 9)
-      router.push(`/jobs/${jobId}`)
+      router.push(`/jobs/${job.id}`)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to create pipeline"
       setError(errorMessage)
@@ -63,8 +54,6 @@ export default function DashboardPage() {
         description: errorMessage,
         variant: "destructive",
       })
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -88,8 +77,8 @@ export default function DashboardPage() {
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">24</div>
-                  <p className="text-xs text-muted-foreground">+3 from last week</p>
+                  <div className="text-2xl font-bold">{jobs.length}</div>
+                  <p className="text-xs text-muted-foreground">All time</p>
                 </CardContent>
               </Card>
               <Card>
@@ -98,7 +87,9 @@ export default function DashboardPage() {
                   <Clock className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">3</div>
+                  <div className="text-2xl font-bold">
+                    {jobs.filter(job => job.status === 'pending' || job.status === 'processing').length}
+                  </div>
                   <p className="text-xs text-muted-foreground">Currently processing</p>
                 </CardContent>
               </Card>
@@ -108,18 +99,22 @@ export default function DashboardPage() {
                   <BarChart3 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">21</div>
-                  <p className="text-xs text-muted-foreground">87.5% success rate</p>
+                  <div className="text-2xl font-bold">
+                    {jobs.filter(job => job.status === 'completed').length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {jobs.length > 0 ? Math.round((jobs.filter(job => job.status === 'completed').length / jobs.length) * 100) : 0}% success rate
+                  </p>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Words Generated</CardTitle>
+                  <CardTitle className="text-sm font-medium">Templates</CardTitle>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">45.2K</div>
-                  <p className="text-xs text-muted-foreground">+12% from last month</p>
+                  <div className="text-2xl font-bold">3</div>
+                  <p className="text-xs text-muted-foreground">Available templates</p>
                 </CardContent>
               </Card>
             </div>
@@ -138,7 +133,7 @@ export default function DashboardPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <ErrorBoundary>
-                <PipelineForm onSubmit={handlePipelineSubmit} isLoading={isSubmitting} />
+                <PipelineForm />
               </ErrorBoundary>
               <ErrorBoundary>
                 <RecentJobs />

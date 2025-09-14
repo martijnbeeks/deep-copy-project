@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,35 +11,40 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Plus, X, AlertCircle } from "lucide-react"
+import { Loader2, Plus, X, AlertCircle, Eye } from "lucide-react"
+import { useTemplatesStore } from "@/stores/templates-store"
+import { useJobsStore } from "@/stores/jobs-store"
+import { useAuthStore } from "@/stores/auth-store"
 
 interface PipelineFormData {
   title: string
-  description: string
-  contentType: string
-  tone: string
-  targetAudience: string
-  keywords: string[]
-  additionalInstructions: string
+  brand_info: string
+  sales_page_url?: string
+  template_id?: string
 }
 
 interface PipelineFormProps {
-  onSubmit: (data: PipelineFormData) => Promise<void>
+  onSubmit?: (data: PipelineFormData) => Promise<void>
   isLoading?: boolean
 }
 
 export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps) {
+  const { templates, fetchTemplates, selectedTemplate, setSelectedTemplate } = useTemplatesStore()
+  const { createJob } = useJobsStore()
+  const { user } = useAuthStore()
+  
   const [formData, setFormData] = useState<PipelineFormData>({
     title: "",
-    description: "",
-    contentType: "",
-    tone: "",
-    targetAudience: "",
-    keywords: [],
-    additionalInstructions: "",
+    brand_info: "",
+    sales_page_url: "",
+    template_id: "",
   })
-  const [keywordInput, setKeywordInput] = useState("")
   const [errors, setErrors] = useState<Partial<Record<keyof PipelineFormData, string>>>({})
+  const [showTemplatePreview, setShowTemplatePreview] = useState(false)
+
+  useEffect(() => {
+    fetchTemplates()
+  }, [fetchTemplates])
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof PipelineFormData, string>> = {}
@@ -48,18 +53,14 @@ export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps)
       newErrors.title = "Project title is required"
     }
 
-    if (!formData.description.trim()) {
-      newErrors.description = "Content description is required"
-    } else if (formData.description.trim().length < 10) {
-      newErrors.description = "Description must be at least 10 characters"
+    if (!formData.brand_info.trim()) {
+      newErrors.brand_info = "Brand information is required"
+    } else if (formData.brand_info.trim().length < 10) {
+      newErrors.brand_info = "Brand information must be at least 10 characters"
     }
 
-    if (!formData.contentType) {
-      newErrors.contentType = "Content type is required"
-    }
-
-    if (!formData.tone) {
-      newErrors.tone = "Tone selection is required"
+    if (!formData.template_id) {
+      newErrors.template_id = "Template selection is required"
     }
 
     setErrors(newErrors)
@@ -74,242 +75,163 @@ export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps)
     }
 
     try {
-      await onSubmit(formData)
+      if (onSubmit) {
+        await onSubmit(formData)
+      } else {
+        // Use store directly if no onSubmit prop
+        await createJob(formData)
+      }
+      
       // Reset form on success
       setFormData({
         title: "",
-        description: "",
-        contentType: "",
-        tone: "",
-        targetAudience: "",
-        keywords: [],
-        additionalInstructions: "",
+        brand_info: "",
+        sales_page_url: "",
+        template_id: "",
       })
+      setSelectedTemplate(null)
       setErrors({})
     } catch (error) {
-      // Error handling is done in parent component
+      console.error('Form submission error:', error)
     }
   }
 
-  const addKeyword = () => {
-    const keyword = keywordInput.trim()
-    if (keyword && !formData.keywords.includes(keyword)) {
-      if (formData.keywords.length >= 10) {
-        setErrors((prev) => ({ ...prev, keywords: "Maximum 10 keywords allowed" }))
-        return
-      }
-      setFormData((prev) => ({
-        ...prev,
-        keywords: [...prev.keywords, keyword],
-      }))
-      setKeywordInput("")
-      setErrors((prev) => ({ ...prev, keywords: undefined }))
-    }
-  }
-
-  const removeKeyword = (keyword: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      keywords: prev.keywords.filter((k) => k !== keyword),
-    }))
-  }
-
-  const handleKeywordKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault()
-      addKeyword()
-    }
+  const handleTemplateChange = (templateId: string) => {
+    const template = templates.find(t => t.id === templateId)
+    setFormData(prev => ({ ...prev, template_id: templateId }))
+    setSelectedTemplate(template || null)
+    if (errors.template_id) setErrors(prev => ({ ...prev, template_id: undefined }))
   }
 
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Create New AI Content</CardTitle>
-        <CardDescription>Configure your AI copywriting pipeline to generate high-quality content</CardDescription>
+        <CardDescription>Generate marketing content using our AI-powered templates</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">
-                Project Title <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="title"
-                placeholder="e.g., Blog Post: AI in Marketing"
-                value={formData.title}
-                onChange={(e) => {
-                  setFormData((prev) => ({ ...prev, title: e.target.value }))
-                  if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }))
-                }}
-                disabled={isLoading}
-                className={errors.title ? "border-destructive" : ""}
-              />
-              {errors.title && (
-                <p className="text-sm text-destructive flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  {errors.title}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contentType">
-                Content Type <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={formData.contentType}
-                onValueChange={(value) => {
-                  setFormData((prev) => ({ ...prev, contentType: value }))
-                  if (errors.contentType) setErrors((prev) => ({ ...prev, contentType: undefined }))
-                }}
-                disabled={isLoading}
-              >
-                <SelectTrigger className={errors.contentType ? "border-destructive" : ""}>
-                  <SelectValue placeholder="Select content type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="blog-post">Blog Post</SelectItem>
-                  <SelectItem value="social-media">Social Media Post</SelectItem>
-                  <SelectItem value="email">Email Campaign</SelectItem>
-                  <SelectItem value="product-description">Product Description</SelectItem>
-                  <SelectItem value="ad-copy">Advertisement Copy</SelectItem>
-                  <SelectItem value="landing-page">Landing Page Copy</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.contentType && (
-                <p className="text-sm text-destructive flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  {errors.contentType}
-                </p>
-              )}
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="title">
+              Project Title <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="title"
+              placeholder="e.g., Product Launch Landing Page"
+              value={formData.title}
+              onChange={(e) => {
+                setFormData((prev) => ({ ...prev, title: e.target.value }))
+                if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }))
+              }}
+              disabled={isLoading}
+              className={errors.title ? "border-destructive" : ""}
+            />
+            {errors.title && (
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {errors.title}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">
-              Content Description <span className="text-destructive">*</span>
+            <Label htmlFor="brand_info">
+              Brand Information <span className="text-destructive">*</span>
             </Label>
             <Textarea
-              id="description"
-              placeholder="Describe what you want to create. Be specific about the topic, key points, and desired outcome..."
-              value={formData.description}
+              id="brand_info"
+              placeholder="Describe your brand, product, or service. Include key features, benefits, target audience, and any specific messaging you want to convey..."
+              value={formData.brand_info}
               onChange={(e) => {
-                setFormData((prev) => ({ ...prev, description: e.target.value }))
-                if (errors.description) setErrors((prev) => ({ ...prev, description: undefined }))
+                setFormData((prev) => ({ ...prev, brand_info: e.target.value }))
+                if (errors.brand_info) setErrors((prev) => ({ ...prev, brand_info: undefined }))
               }}
               rows={4}
               disabled={isLoading}
-              className={errors.description ? "border-destructive" : ""}
+              className={errors.brand_info ? "border-destructive" : ""}
             />
-            {errors.description && (
+            {errors.brand_info && (
               <p className="text-sm text-destructive flex items-center gap-1">
                 <AlertCircle className="h-3 w-3" />
-                {errors.description}
+                {errors.brand_info}
               </p>
             )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="tone">
-                Tone & Style <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={formData.tone}
-                onValueChange={(value) => {
-                  setFormData((prev) => ({ ...prev, tone: value }))
-                  if (errors.tone) setErrors((prev) => ({ ...prev, tone: undefined }))
-                }}
-                disabled={isLoading}
-              >
-                <SelectTrigger className={errors.tone ? "border-destructive" : ""}>
-                  <SelectValue placeholder="Select tone" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="professional">Professional</SelectItem>
-                  <SelectItem value="casual">Casual & Friendly</SelectItem>
-                  <SelectItem value="persuasive">Persuasive</SelectItem>
-                  <SelectItem value="informative">Informative</SelectItem>
-                  <SelectItem value="creative">Creative & Engaging</SelectItem>
-                  <SelectItem value="formal">Formal</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.tone && (
-                <p className="text-sm text-destructive flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  {errors.tone}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="targetAudience">Target Audience</Label>
-              <Input
-                id="targetAudience"
-                placeholder="e.g., Marketing professionals, Small business owners"
-                value={formData.targetAudience}
-                onChange={(e) => setFormData((prev) => ({ ...prev, targetAudience: e.target.value }))}
-                disabled={isLoading}
-              />
-            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="keywords">Keywords</Label>
-            <div className="flex gap-2">
-              <Input
-                id="keywords"
-                placeholder="Add keywords and press Enter"
-                value={keywordInput}
-                onChange={(e) => setKeywordInput(e.target.value)}
-                onKeyPress={handleKeywordKeyPress}
-                disabled={isLoading}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={addKeyword}
-                disabled={isLoading || !keywordInput.trim()}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            {errors.keywords && (
+            <Label htmlFor="sales_page_url">Current Sales Page URL (Optional)</Label>
+            <Input
+              id="sales_page_url"
+              placeholder="https://example.com/current-page"
+              value={formData.sales_page_url}
+              onChange={(e) => setFormData((prev) => ({ ...prev, sales_page_url: e.target.value }))}
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="template_id">
+              Select Template <span className="text-destructive">*</span>
+            </Label>
+            <Select
+              value={formData.template_id}
+              onValueChange={handleTemplateChange}
+              disabled={isLoading}
+            >
+              <SelectTrigger className={errors.template_id ? "border-destructive" : ""}>
+                <SelectValue placeholder="Choose a template for your content" />
+              </SelectTrigger>
+              <SelectContent>
+                {templates.map((template) => (
+                  <SelectItem key={template.id} value={template.id}>
+                    <div className="flex items-center justify-between w-full">
+                      <span>{template.name}</span>
+                      <Badge variant="secondary" className="ml-2">
+                        {template.category}
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.template_id && (
               <p className="text-sm text-destructive flex items-center gap-1">
                 <AlertCircle className="h-3 w-3" />
-                {errors.keywords}
+                {errors.template_id}
               </p>
             )}
-            {formData.keywords.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {formData.keywords.map((keyword) => (
-                  <Badge key={keyword} variant="secondary" className="gap-1">
-                    {keyword}
-                    <button
-                      type="button"
-                      onClick={() => removeKeyword(keyword)}
-                      disabled={isLoading}
-                      className="ml-1 hover:text-destructive"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
+            {selectedTemplate && (
+              <div className="mt-2 p-3 bg-muted rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{selectedTemplate.name}</p>
+                    <p className="text-sm text-muted-foreground">{selectedTemplate.description}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowTemplatePreview(!showTemplatePreview)}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview
+                  </Button>
+                </div>
               </div>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="additionalInstructions">Additional Instructions</Label>
-            <Textarea
-              id="additionalInstructions"
-              placeholder="Any specific requirements, constraints, or additional context..."
-              value={formData.additionalInstructions}
-              onChange={(e) => setFormData((prev) => ({ ...prev, additionalInstructions: e.target.value }))}
-              rows={3}
-              disabled={isLoading}
-            />
-          </div>
+          {showTemplatePreview && selectedTemplate && (
+            <div className="space-y-2">
+              <Label>Template Preview</Label>
+              <div className="border rounded-lg p-4 bg-muted max-h-96 overflow-auto">
+                <div 
+                  className="prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: selectedTemplate.html_content }}
+                />
+              </div>
+            </div>
+          )}
 
           {Object.keys(errors).length > 0 && (
             <Alert variant="destructive">
@@ -325,7 +247,7 @@ export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps)
                 Creating Content...
               </>
             ) : (
-              "Start AI Pipeline"
+              "Generate AI Content"
             )}
           </Button>
         </form>

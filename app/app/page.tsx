@@ -1,20 +1,20 @@
 "use client"
 
-import { useAuth } from "@/components/auth/auth-provider"
+import { useAuthStore } from "@/stores/auth-store"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
 export default function HomePage() {
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuthStore()
   const router = useRouter()
 
   useEffect(() => {
-    if (user) {
+    if (isAuthenticated && user) {
       router.push("/dashboard")
     } else {
       router.push("/login")
     }
-  }, [user, router])
+  }, [isAuthenticated, user, router])
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">

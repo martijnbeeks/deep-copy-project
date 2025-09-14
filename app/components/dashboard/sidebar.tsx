@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { useAuth } from "@/components/auth/auth-provider"
+import { useAuthStore } from "@/stores/auth-store"
 import { LayoutDashboard, FileText, BarChart3, Settings, LogOut, PenTool } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -15,7 +15,7 @@ const navigation = [
 ]
 
 export function Sidebar() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuthStore()
   const pathname = usePathname()
 
   return (
