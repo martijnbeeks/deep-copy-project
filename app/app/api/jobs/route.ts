@@ -63,27 +63,26 @@ export async function POST(request: NextRequest) {
       template_id
     })
 
-    // Process job in background
-    setTimeout(async () => {
-      try {
-        const { updateJobStatus, createResult } = await import('@/lib/db/queries')
-        
-        await updateJobStatus(job.id, 'processing', 25, `exec_${job.id}`)
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        await updateJobStatus(job.id, 'processing', 75)
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        let resultHtml = ''
-        if (template_id) {
-          const { getTemplateById } = await import('@/lib/db/queries')
-          const template = await getTemplateById(template_id)
-          if (template) {
-            resultHtml = template.html_content
-          }
+    // Process job immediately with shorter delays
+    try {
+      const { updateJobStatus, createResult } = await import('@/lib/db/queries')
+      
+      await updateJobStatus(job.id, 'processing', 25, `exec_${job.id}`)
+      await new Promise(resolve => setTimeout(resolve, 500))
+      await updateJobStatus(job.id, 'processing', 75)
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      let resultHtml = ''
+      if (template_id) {
+        const { getTemplateById } = await import('@/lib/db/queries')
+        const template = await getTemplateById(template_id)
+        if (template) {
+          resultHtml = template.html_content
         }
-        
-        if (!resultHtml) {
-          resultHtml = `
+      }
+      
+      if (!resultHtml) {
+        resultHtml = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -124,22 +123,21 @@ export async function POST(request: NextRequest) {
     </div>
 </body>
 </html>`
-        }
-
-        await createResult(job.id, resultHtml, {
-          generated_at: new Date().toISOString(),
-          word_count: resultHtml.split(' ').length,
-          template_used: template_id
-        })
-        
-        await updateJobStatus(job.id, 'completed', 100)
-        
-      } catch (error) {
-        console.error('Job processing error:', error)
-        const { updateJobStatus } = await import('@/lib/db/queries')
-        await updateJobStatus(job.id, 'failed')
       }
-    }, 100)
+
+      await createResult(job.id, resultHtml, {
+        generated_at: new Date().toISOString(),
+        word_count: resultHtml.split(' ').length,
+        template_used: template_id
+      })
+      
+      await updateJobStatus(job.id, 'completed', 100)
+      
+    } catch (error) {
+      console.error('Job processing error:', error)
+      const { updateJobStatus } = await import('@/lib/db/queries')
+      await updateJobStatus(job.id, 'failed')
+    }
 
     return NextResponse.json(job)
   } catch (error) {

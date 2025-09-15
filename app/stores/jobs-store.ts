@@ -125,19 +125,16 @@ export const useJobsStore = create<JobsState & JobsActions>((set, get) => ({
 
       if (!response.ok) {
         const errorData = await response.json()
-        console.error('Job creation failed:', errorData)
         throw new Error(errorData.error || 'Failed to create job')
       }
 
       const job = await response.json()
-      console.log('Job created successfully:', job)
       set((state) => ({ 
         jobs: [job, ...state.jobs],
         isLoading: false 
       }))
       return job
     } catch (error) {
-      console.error('Job creation error:', error)
       set({ 
         error: error instanceof Error ? error.message : 'Failed to create job',
         isLoading: false 

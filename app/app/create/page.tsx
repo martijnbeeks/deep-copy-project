@@ -89,9 +89,7 @@ export default function CreatePage() {
 
     try {
       setIsLoading(true)
-      console.log('Creating job with data:', formData)
-      const job = await createJob(formData)
-      console.log('Job created, redirecting to jobs page')
+      await createJob(formData)
       
       setFormData({
         title: "",
