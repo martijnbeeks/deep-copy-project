@@ -34,12 +34,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== JOB CREATION START ===')
     const { title, brand_info, sales_page_url, template_id } = await request.json()
-    console.log('Request data:', { title, brand_info, sales_page_url, template_id })
 
     if (!title || !brand_info) {
-      console.log('Validation failed: missing required fields')
       return NextResponse.json(
         { error: 'Title and brand info are required' },
         { status: 400 }
@@ -48,21 +45,17 @@ export async function POST(request: NextRequest) {
 
     const authHeader = request.headers.get('authorization')
     const userEmail = authHeader?.replace('Bearer ', '') || 'demo@example.com'
-    console.log('User email:', userEmail)
     
     const { getUserByEmail } = await import('@/lib/db/queries')
     const user = await getUserByEmail(userEmail)
-    console.log('User found:', user ? 'Yes' : 'No')
     
     if (!user) {
-      console.log('User not found, returning 404')
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       )
     }
     
-    console.log('Creating job for user:', user.id)
     const job = await createJob({
       user_id: user.id,
       title,
@@ -70,18 +63,14 @@ export async function POST(request: NextRequest) {
       sales_page_url,
       template_id
     })
-    console.log('Job created successfully:', job.id)
 
     // Process job immediately with minimal delays
     try {
-      console.log('Starting job processing...')
       const { updateJobStatus, createResult } = await import('@/lib/db/queries')
       
-      console.log('Updating to 25%')
       await updateJobStatus(job.id, 'processing', 25, `exec_${job.id}`)
       await new Promise(resolve => setTimeout(resolve, 200))
       
-      console.log('Updating to 75%')
       await updateJobStatus(job.id, 'processing', 75)
       await new Promise(resolve => setTimeout(resolve, 200))
       
@@ -138,16 +127,13 @@ export async function POST(request: NextRequest) {
 </html>`
       }
 
-      console.log('Creating result...')
       await createResult(job.id, resultHtml, {
         generated_at: new Date().toISOString(),
         word_count: resultHtml.split(' ').length,
         template_used: template_id
       })
       
-      console.log('Marking as completed')
       await updateJobStatus(job.id, 'completed', 100)
-      console.log('Job processing completed successfully')
       
     } catch (error) {
       console.error('Job processing error:', error)
@@ -155,21 +141,11 @@ export async function POST(request: NextRequest) {
       await updateJobStatus(job.id, 'failed')
     }
 
-    console.log('=== JOB CREATION END ===')
     return NextResponse.json(job)
   } catch (error) {
     console.error('Job creation error:', error)
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : undefined
-    })
     return NextResponse.json(
-      { 
-        error: 'Failed to create job',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        type: error instanceof Error ? error.name : 'UnknownError'
-      },
+      { error: 'Failed to create job' },
       { status: 500 }
     )
   }
