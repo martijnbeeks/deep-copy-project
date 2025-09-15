@@ -114,6 +114,7 @@ export const useJobsStore = create<JobsState & JobsActions>((set, get) => ({
       const { user } = useAuthStore.getState()
       const userEmail = user?.email || 'demo@example.com'
       
+      // Create the job
       const response = await fetch('/api/jobs', {
         method: 'POST',
         headers: { 
@@ -129,6 +130,16 @@ export const useJobsStore = create<JobsState & JobsActions>((set, get) => ({
       }
 
       const job = await response.json()
+      
+      // Start processing the job in background
+      fetch('/api/jobs/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId: job.id }),
+      }).catch(error => {
+        console.error('Failed to start job processing:', error)
+      })
+      
       set((state) => ({ 
         jobs: [job, ...state.jobs],
         isLoading: false 
