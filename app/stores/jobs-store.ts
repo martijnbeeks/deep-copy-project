@@ -113,6 +113,8 @@ export const useJobsStore = create<JobsState & JobsActions>((set, get) => ({
     try {
       const { user } = useAuthStore.getState()
       const userEmail = user?.email || 'demo@example.com'
+      console.log('Creating job with data:', jobData)
+      console.log('User email:', userEmail)
       
       // Create the job
       const response = await fetch('/api/jobs', {
@@ -124,12 +126,17 @@ export const useJobsStore = create<JobsState & JobsActions>((set, get) => ({
         body: JSON.stringify(jobData),
       })
 
+      console.log('Response status:', response.status)
+      console.log('Response ok:', response.ok)
+
       if (!response.ok) {
         const errorData = await response.json()
+        console.error('API error:', errorData)
         throw new Error(errorData.error || 'Failed to create job')
       }
 
       const job = await response.json()
+      console.log('Job created successfully:', job)
       
       set((state) => ({ 
         jobs: [job, ...state.jobs],
@@ -138,6 +145,7 @@ export const useJobsStore = create<JobsState & JobsActions>((set, get) => ({
       
       return job
     } catch (error) {
+      console.error('Job creation error in store:', error)
       set({ 
         error: error instanceof Error ? error.message : 'Failed to create job',
         isLoading: false 
