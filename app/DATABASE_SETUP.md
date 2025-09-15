@@ -1,6 +1,6 @@
 # Database Setup Guide
 
-This guide contains all the commands needed to set up the AI Copywriting database in PostgreSQL.
+This guide contains all the commands needed to set up the  database in PostgreSQL.
 
 ## Prerequisites
 

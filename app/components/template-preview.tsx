@@ -24,7 +24,7 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
     // Use the exact same HTML as full preview, just add scaling
     return htmlContent.replace(
       /<body([^>]*)>/i,
-      '<body$1 style="transform: scale(0.3); transform-origin: top left; width: 333%; height: 333%; overflow: hidden;">'
+      '<body$1 style="transform: scale(0.3); transform-origin: top left; width: 333%; height: 333%; overflow: hidden;">'  
     )
   }
 
@@ -90,10 +90,10 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
   return (
     <div
       key={template.id}
-      className={`relative cursor-pointer rounded-xl border-2 p-3 md:p-4 transition-all hover:shadow-lg h-[350px] md:h-[400px] flex flex-col ${
+      className={`relative cursor-pointer rounded-xl border-2 p-3 md:p-4 transition-all h-[350px] md:h-[400px] flex flex-col ${
         isSelected
           ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-          : 'border-border hover:border-primary/50 bg-card'
+          : 'border-border bg-card'
       }`}
       onClick={onClick}
     >
@@ -129,13 +129,13 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
           }}
         />
 
-        {/* Full Preview Button */}
-        <div className="absolute inset-0 bg-transparent hover:bg-gray-900 hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center">
+        {/* Full Preview Button - Hidden overlay */}
+        <div className="absolute inset-0 bg-transparent flex items-center justify-center">
           <Dialog>
             <DialogTrigger asChild>
               <button
                 type="button"
-                className="opacity-0 hover:opacity-100 transition-opacity bg-secondary text-secondary-foreground hover:bg-secondary/80 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-2 cursor-pointer"
+                className="opacity-0 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-2 cursor-pointer"
                 onClick={(e) => e.stopPropagation()}
               >
                 <Eye className="h-4 w-4" />
