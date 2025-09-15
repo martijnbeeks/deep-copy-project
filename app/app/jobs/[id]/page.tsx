@@ -7,15 +7,17 @@ import { JobLogs } from "@/components/jobs/job-logs"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { ArrowLeft, RefreshCw, Download, Eye } from "lucide-react"
+import { ArrowLeft, RefreshCw, Download, Eye, Menu, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
+import { useSidebar } from "@/contexts/sidebar-context"
 import { JobWithResult } from "@/lib/db/types"
 
 export default function JobDetailPage({ params }: { params: { id: string } }) {
   const { user, isAuthenticated } = useAuthStore()
   const { currentJob, fetchJob, pollJobStatus } = useJobsStore()
+  const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [isPolling, setIsPolling] = useState(false)
@@ -76,21 +78,50 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
   return (
     <div className="flex h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 overflow-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
+      <main className="flex-1 overflow-auto md:ml-0">
+        <div className="p-4 md:p-6">
+          <div className="flex items-start justify-between mb-4 md:mb-6 gap-4">
             <div className="flex items-center gap-4">
-              <Link href="/dashboard">
+              <Link href="/jobs">
                 <Button variant="ghost" size="sm">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Dashboard
+                  <span className="hidden sm:inline">Back to Jobs</span>
+                  <span className="sm:hidden">Back</span>
                 </Button>
               </Link>
               <div>
-                <h1 className="text-2xl font-bold">Job Details</h1>
-                <p className="text-muted-foreground">Monitor your AI content generation progress</p>
+                <h1 className="text-xl md:text-2xl font-bold">Job Details</h1>
+                <p className="text-sm md:text-base text-muted-foreground">Monitor your AI content generation progress</p>
               </div>
             </div>
+            <div className="flex gap-2">
+              {/* Mobile menu button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="h-8 w-8 p-0 md:hidden"
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
+              
+              {/* Desktop collapse button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="h-8 w-8 p-0 hidden md:flex"
+              >
+                {isCollapsed ? (
+                  <ChevronRight className="h-4 w-4" />
+                ) : (
+                  <ChevronLeft className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-end mb-4">
             <div className="flex items-center gap-2">
               {isPolling && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -115,7 +146,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             <div className="space-y-6">
               <JobDetails job={currentJob} />
               <JobLogs logs={[]} />

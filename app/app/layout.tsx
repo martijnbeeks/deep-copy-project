@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/contexts/app-context";
+import { SidebarProvider } from "@/contexts/sidebar-context";
 import { Toaster } from "@/components/ui/toaster";
 ;
 
@@ -42,7 +43,6 @@ export default function RootLayout({
                     document.documentElement.classList.remove('dark');
                   }
                 } catch (e) {
-                  console.log('Theme script error:', e);
                 }
               })();
             `,
@@ -53,8 +53,10 @@ export default function RootLayout({
         className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`}
       >
         <AppProvider>
-          {children}
-          <Toaster />
+          <SidebarProvider>
+            {children}
+            <Toaster />
+          </SidebarProvider>
         </AppProvider>
       </body>
     </html>

@@ -9,10 +9,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { ArrowLeft, BarChart3, FileText, RefreshCw, Download, Eye, ExternalLink, Copy, Check } from "lucide-react"
+import { ArrowLeft, BarChart3, FileText, RefreshCw, Download, Eye, ExternalLink, Copy, Check, Menu, ChevronLeft, ChevronRight, Maximize2 } from "lucide-react"
 import Link from "next/link"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
+import { useSidebar } from "@/contexts/sidebar-context"
 
 interface ResultData {
   id: string
@@ -51,6 +52,7 @@ interface ResultData {
 export default function ResultDetailPage({ params }: { params: { id: string } }) {
   const { user, isAuthenticated } = useAuthStore()
   const { currentJob, fetchJob } = useJobsStore()
+  const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -76,12 +78,10 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
 
   const handleFeedback = (rating: "positive" | "negative", feedback?: string) => {
     // Handle feedback submission
-    console.log("Feedback:", rating, feedback)
   }
 
   const handleRegenerate = (sectionId?: string) => {
     // Handle content regeneration
-    console.log("Regenerate section:", sectionId)
   }
 
   const handleDownload = () => {
@@ -138,21 +138,50 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
   return (
     <div className="flex h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 overflow-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
+      <main className="flex-1 overflow-auto md:ml-0">
+        <div className="p-4 md:p-6">
+          <div className="flex items-start justify-between mb-4 md:mb-6 gap-4">
             <div className="flex items-center gap-4">
               <Link href="/results">
                 <Button variant="ghost" size="sm">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Results
+                  <span className="hidden sm:inline">Back to Results</span>
+                  <span className="sm:hidden">Back</span>
                 </Button>
               </Link>
               <div>
-                <h1 className="text-2xl font-bold">Content Results</h1>
-                <p className="text-muted-foreground">View and analyze your generated content</p>
+                <h1 className="text-xl md:text-2xl font-bold">Content Results</h1>
+                <p className="text-sm md:text-base text-muted-foreground">View and analyze your generated content</p>
               </div>
             </div>
+            <div className="flex gap-2">
+              {/* Mobile menu button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="h-8 w-8 p-0 md:hidden"
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
+              
+              {/* Desktop collapse button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="h-8 w-8 p-0 hidden md:flex"
+              >
+                {isCollapsed ? (
+                  <ChevronRight className="h-4 w-4" />
+                ) : (
+                  <ChevronLeft className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-end mb-4">
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="bg-green-100 text-green-800">
                 {currentJob.status}
@@ -163,6 +192,12 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                   Job Details
                 </Button>
               </Link>
+              <Link href={`/preview/${currentJob.id}`}>
+                <Button variant="outline" size="sm">
+                  <Maximize2 className="h-4 w-4 mr-2" />
+                  View Full Screen
+                </Button>
+              </Link>
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -170,17 +205,25 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                     Preview
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-                  <DialogHeader>
+                <DialogContent className="!max-w-[95vw] !max-h-[95vh] !w-[95vw] !h-[95vh] overflow-hidden p-4">
+                  <DialogHeader className="pb-4">
                     <DialogTitle className="text-xl font-bold">Content Preview</DialogTitle>
                     <DialogDescription>
                       Full preview of your generated content
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="overflow-auto max-h-[70vh] border rounded-lg bg-white">
-                    <div 
-                      className="w-full"
-                      dangerouslySetInnerHTML={{ __html: currentJob.result.html_content }}
+                  <div className="overflow-hidden max-h-[calc(95vh-120px)] border rounded-lg bg-white">
+                    <iframe
+                      srcDoc={currentJob.result.html_content}
+                      className="w-full h-full min-h-[600px]"
+                      sandbox="allow-same-origin allow-scripts"
+                      style={{
+                        border: 'none',
+                        transform: 'scale(0.8)',
+                        transformOrigin: 'top left',
+                        width: '125%',
+                        height: '125%'
+                      }}
                     />
                   </div>
                 </DialogContent>
@@ -231,8 +274,19 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                     </div>
                   </div>
                   <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                    <div className="prose max-w-none p-6">
-                      <div dangerouslySetInnerHTML={{ __html: currentJob.result.html_content }} />
+                    <div className="p-6">
+                      <div className="text-center py-12">
+                        <h3 className="text-lg font-semibold mb-4">Template Preview</h3>
+                        <p className="text-muted-foreground mb-6">
+                          Click "View Full Screen" to see the complete template rendering
+                        </p>
+                        <Link href={`/preview/${currentJob.id}`}>
+                          <Button>
+                            <Maximize2 className="h-4 w-4 mr-2" />
+                            View Full Screen
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </div>

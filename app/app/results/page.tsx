@@ -2,6 +2,7 @@
 
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
+import { useSidebar } from "@/contexts/sidebar-context"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,12 +15,13 @@ import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { OfflineBanner } from "@/components/ui/offline-banner"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Eye, Search, Filter, Download, BarChart3, FileText, Calendar } from "lucide-react"
+import { Eye, Search, Filter, Download, BarChart3, FileText, Calendar, Menu, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 
 export default function ResultsPage() {
   const { user } = useAuthStore()
   const { jobs, isLoading, error, fetchJobs } = useJobsStore()
+  const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
   const [filteredResults, setFilteredResults] = useState(jobs.filter(job => job.status === 'completed'))
   const [searchTerm, setSearchTerm] = useState("")
@@ -88,23 +90,50 @@ export default function ResultsPage() {
       <div className="flex h-screen bg-background">
         <OfflineBanner />
         <Sidebar />
-        <main className="flex-1 overflow-auto">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-3xl font-bold">Content Results</h1>
-                <p className="text-muted-foreground">Browse and manage your generated content</p>
+        <main className="flex-1 overflow-auto md:ml-0">
+          <div className="p-4 md:p-6">
+            <div className="flex items-start justify-between mb-4 md:mb-6 gap-4">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl md:text-3xl font-bold">Content Results</h1>
+                <p className="text-sm md:text-base text-muted-foreground mt-1">Browse and manage your generated content</p>
               </div>
-              <Link href="/dashboard">
-                <Button>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Create New Content
+              <div className="flex gap-2">
+                <Link href="/dashboard">
+                  <Button className="text-sm md:text-base">
+                    <FileText className="h-4 w-4 mr-2" />
+                    <span className="hidden sm:inline">Create New Content</span>
+                    <span className="sm:hidden">Create</span>
+                  </Button>
+                </Link>
+                
+                {/* Mobile menu button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsCollapsed(!isCollapsed)}
+                  className="h-8 w-8 p-0 md:hidden"
+                >
+                  <Menu className="h-4 w-4" />
                 </Button>
-              </Link>
+                
+                {/* Desktop collapse button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsCollapsed(!isCollapsed)}
+                  className="h-8 w-8 p-0 hidden md:flex"
+                >
+                  {isCollapsed ? (
+                    <ChevronRight className="h-4 w-4" />
+                  ) : (
+                    <ChevronLeft className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Results</CardTitle>
@@ -153,13 +182,13 @@ export default function ResultsPage() {
               </Card>
             </div>
 
-            <Card className="mb-6">
+            <Card className="mb-4 md:mb-6">
               <CardHeader>
                 <CardTitle>Filter Results</CardTitle>
                 <CardDescription>Search and filter your generated content</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -171,29 +200,31 @@ export default function ResultsPage() {
                       />
                     </div>
                   </div>
-                  <Select value={contentTypeFilter} onValueChange={setContentTypeFilter}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Content type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="blog-post">Blog Post</SelectItem>
-                      <SelectItem value="social-media">Social Media</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="product-description">Product Description</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-48">
-                      <Filter className="h-4 w-4 mr-2" />
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="archived">Archived</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-2">
+                    <Select value={contentTypeFilter} onValueChange={setContentTypeFilter}>
+                      <SelectTrigger className="w-full sm:w-48">
+                        <SelectValue placeholder="Content type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="blog-post">Blog Post</SelectItem>
+                        <SelectItem value="social-media">Social Media</SelectItem>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="product-description">Product Description</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-full sm:w-48">
+                        <Filter className="h-4 w-4 mr-2" />
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -213,33 +244,35 @@ export default function ResultsPage() {
                 }}
               />
             ) : (
-              <div className="grid gap-4">
+              <div className="grid gap-3 md:gap-4">
                 {filteredResults.map((job) => (
                   <Card key={job.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold">{job.title}</h3>
+                    <CardContent className="p-4 md:p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                            <h3 className="text-base md:text-lg font-semibold truncate">{job.title}</h3>
                             {getStatusBadge(job.status)}
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs md:text-sm text-muted-foreground">
                             <span className="capitalize">{job.template?.name || 'AI Generated'}</span>
-                            <span>•</span>
+                            <span className="hidden sm:inline">•</span>
                             <span>{new Date(job.created_at).toLocaleDateString()}</span>
-                            <span>•</span>
+                            <span className="hidden sm:inline">•</span>
                             <span>Progress: {job.progress}%</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" className="w-full sm:w-auto">
                             <Download className="h-4 w-4 mr-2" />
-                            Download
+                            <span className="hidden sm:inline">Download</span>
+                            <span className="sm:hidden">DL</span>
                           </Button>
                           <Link href={`/results/${job.id}`}>
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" className="w-full sm:w-auto">
                               <Eye className="h-4 w-4 mr-2" />
-                              View
+                              <span className="hidden sm:inline">View</span>
+                              <span className="sm:hidden">View</span>
                             </Button>
                           </Link>
                         </div>
