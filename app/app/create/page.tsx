@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Loader2, AlertCircle, Eye, ChevronRight, ChevronLeft } from "lucide-react"
+import { Loader2, AlertCircle, Eye, ChevronRight, ChevronLeft, Menu } from "lucide-react"
 import { useTemplatesStore } from "@/stores/templates-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useAuthStore } from "@/stores/auth-store"
@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { TemplatePreview } from "@/components/template-preview"
+import { useSidebar } from "@/contexts/sidebar-context"
 
 interface PipelineFormData {
   title: string
@@ -25,13 +26,11 @@ interface PipelineFormData {
   template_id?: string
 }
 
-
-// Use the imported TemplatePreview component
-
 export default function CreatePage() {
   const { templates, fetchTemplates, selectedTemplate, setSelectedTemplate } = useTemplatesStore()
   const { createJob } = useJobsStore()
   const { user, isAuthenticated } = useAuthStore()
+  const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
 
   const [currentStep, setCurrentStep] = useState(1)
@@ -102,7 +101,7 @@ export default function CreatePage() {
       setErrors({})
       setCurrentStep(1)
       
-      router.push("/dashboard")
+      router.push("/jobs")
     } catch (error) {
       console.error('Form submission error:', error)
     } finally {
@@ -129,13 +128,42 @@ export default function CreatePage() {
     <ErrorBoundary>
       <div className="flex h-screen bg-background">
         <Sidebar />
-        <main className="flex-1 overflow-auto">
-          <div className="p-6">
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold text-foreground">Create New Content</h1>
-              <p className="text-muted-foreground">Choose a template and generate AI-powered marketing content</p>
+        <main className="flex-1 overflow-auto md:ml-0">
+          <div className="p-4 md:p-6">
+            <div className="mb-4 md:mb-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">Create New Content</h1>
+                  <p className="text-sm md:text-base text-muted-foreground mt-1">Choose a template and generate AI-powered marketing content</p>
+                </div>
+                <div className="flex gap-2">
+                  {/* Mobile menu button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                    className="h-8 w-8 p-0 md:hidden"
+                  >
+                    <Menu className="h-4 w-4" />
+                  </Button>
+                  
+                  {/* Desktop collapse button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                    className="h-8 w-8 p-0 hidden md:flex"
+                  >
+                    {isCollapsed ? (
+                      <ChevronRight className="h-4 w-4" />
+                    ) : (
+                      <ChevronLeft className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
               
-              <div className="flex items-center gap-4 mt-4">
+              <div className="flex items-center gap-2 md:gap-4 mt-3 md:mt-4">
                 <div className={`flex items-center gap-2 ${currentStep >= 1 ? 'text-primary' : 'text-muted-foreground'}`}>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                     currentStep >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted'
@@ -144,7 +172,7 @@ export default function CreatePage() {
                   </div>
                   <span className="text-sm font-medium">Choose Template</span>
                 </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <ChevronRight className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
                 <div className={`flex items-center gap-2 ${currentStep >= 2 ? 'text-primary' : 'text-muted-foreground'}`}>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                     currentStep >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted'
@@ -166,7 +194,7 @@ export default function CreatePage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className={`grid gap-4 md:gap-6 ${isCollapsed ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2'}`}>
                       {templates.map((template) => (
                         <TemplatePreview
                           key={template.id}

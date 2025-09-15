@@ -77,8 +77,20 @@ export async function POST(request: NextRequest) {
         // Additional processing
         await new Promise(resolve => setTimeout(resolve, 2000))
         
-        // Create result
-        const mockHtml = `
+        // Get template content if template_id is provided
+        let resultHtml = ''
+        if (template_id) {
+          const { getTemplateById } = await import('@/lib/db/queries')
+          const template = await getTemplateById(template_id)
+          if (template) {
+            // Use the actual template HTML content
+            resultHtml = template.html_content
+          }
+        }
+        
+        // Fallback to generic content if no template or template not found
+        if (!resultHtml) {
+          resultHtml = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -119,10 +131,11 @@ export async function POST(request: NextRequest) {
     </div>
 </body>
 </html>`
+        }
 
-        await createResult(job.id, mockHtml, {
+        await createResult(job.id, resultHtml, {
           generated_at: new Date().toISOString(),
-          word_count: mockHtml.split(' ').length,
+          word_count: resultHtml.split(' ').length,
           template_used: template_id
         })
         

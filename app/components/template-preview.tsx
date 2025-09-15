@@ -20,10 +20,20 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
   const [isLoaded, setIsLoaded] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
-  const createPreviewHTML = (htmlContent: string) => {
+  const createSmallPreviewHTML = (htmlContent: string) => {
+    // Use the exact same HTML as full preview, just add scaling
+    return htmlContent.replace(
+      /<body([^>]*)>/i,
+      '<body$1 style="transform: scale(0.3); transform-origin: top left; width: 333%; height: 333%; overflow: hidden;">'
+    )
+  }
+
+  const createFullPreviewHTML = (htmlContent: string) => {
+    // For full preview, use the original complete HTML structure
     if (htmlContent.includes('<!DOCTYPE') || htmlContent.includes('<html')) {
       return htmlContent
     }
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -79,7 +89,8 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
 
   return (
     <div
-      className={`relative cursor-pointer rounded-xl border-2 p-4 transition-all hover:shadow-lg h-[400px] flex flex-col ${
+      key={template.id}
+      className={`relative cursor-pointer rounded-xl border-2 p-3 md:p-4 transition-all hover:shadow-lg h-[350px] md:h-[400px] flex flex-col ${
         isSelected
           ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
           : 'border-border hover:border-primary/50 bg-card'
@@ -87,12 +98,12 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
       onClick={onClick}
     >
       {/* Template Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-start justify-between mb-2 md:mb-3 gap-2">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-lg text-foreground truncate">{template.name}</h3>
-          <p className="text-sm text-muted-foreground truncate">{template.description || 'No description available'}</p>
+          <h3 className="font-semibold text-base md:text-lg text-foreground truncate">{template.name}</h3>
+          <p className="text-xs md:text-sm text-muted-foreground truncate">{template.description || 'No description available'}</p>
         </div>
-        <div className="flex items-center gap-2 ml-3">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <span className="px-2 py-1 text-xs font-medium bg-secondary text-secondary-foreground rounded-full">
             {template.category || 'General'}
           </span>
@@ -101,44 +112,25 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
 
       {/* Preview Area */}
       <div className="flex-1 relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border">
-        {!isLoaded && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-              <p className="text-sm text-muted-foreground">Loading preview...</p>
-            </div>
-          </div>
-        )}
         
-        <div className="w-full h-full bg-white overflow-hidden" style={{ padding: '2px' }}>
-          <iframe
-            ref={iframeRef}
-            srcDoc={createPreviewHTML(template.html_content)}
-            className="w-full h-full border-0"
-            style={{
-              transform: 'scale(0.3)',
-              transformOrigin: 'top left',
-              width: '333%',
-              height: '333%',
-              border: 'none',
-              background: 'white'
-            }}
-            sandbox="allow-same-origin allow-scripts"
-            loading="eager"
-            title={`Preview of ${template.name}`}
-            onLoad={() => {
-              console.log(`Template ${template.name} loaded successfully`)
-              setTimeout(() => setIsLoaded(true), 200)
-            }}
-            onError={() => {
-              console.error(`Failed to load template: ${template.name}`)
-              setIsLoaded(true) // Show the frame even if there's an error
-            }}
-          />
-        </div>
+        <iframe
+          key={template.id}
+          ref={iframeRef}
+          srcDoc={createSmallPreviewHTML(template.html_content)}
+          className="w-full h-full border-0"
+          sandbox="allow-same-origin allow-scripts"
+          loading="eager"
+          title={`Preview of ${template.name}`}
+          onLoad={() => {
+            setTimeout(() => setIsLoaded(true), 200)
+          }}
+          onError={() => {
+            setIsLoaded(true)
+          }}
+        />
 
         {/* Full Preview Button */}
-        <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center">
+        <div className="absolute inset-0 bg-transparent hover:bg-gray-900 hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center">
           <Dialog>
             <DialogTrigger asChild>
               <button
@@ -161,7 +153,7 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
               </div>
               <div className="flex-1 border-t bg-white overflow-hidden">
                 <iframe
-                  srcDoc={createPreviewHTML(template.html_content)}
+                  srcDoc={createFullPreviewHTML(template.html_content)}
                   className="w-full h-full border-0"
                   sandbox="allow-same-origin"
                   style={{ 
@@ -200,7 +192,7 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
             </div>
             <div className="flex-1 border-t bg-white overflow-hidden">
               <iframe
-                srcDoc={createPreviewHTML(template.html_content)}
+                srcDoc={createFullPreviewHTML(template.html_content)}
                 className="w-full h-full border-0"
                 sandbox="allow-same-origin"
                 style={{ 
