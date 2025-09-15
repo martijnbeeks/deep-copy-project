@@ -136,17 +136,6 @@ export const useJobsStore = create<JobsState & JobsActions>((set, get) => ({
         isLoading: false 
       }))
       
-      // Start processing the job in background (non-blocking)
-      setTimeout(() => {
-        fetch('/api/jobs/process', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jobId: job.id }),
-        }).catch(error => {
-          console.error('Failed to start job processing:', error)
-        })
-      }, 100)
-      
       return job
     } catch (error) {
       set({ 
