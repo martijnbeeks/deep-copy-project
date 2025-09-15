@@ -12,30 +12,43 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get the job
-    const job = await getJobById(jobId)
-    if (!job) {
+    // Get the job (without user restriction for processing)
+    const { query } = await import('@/lib/db/connection')
+    const result = await query('SELECT * FROM jobs WHERE id = $1', [jobId])
+    
+    if (result.rows.length === 0) {
       return NextResponse.json(
         { error: 'Job not found' },
         { status: 404 }
       )
     }
+    
+    const job = result.rows[0]
 
+    console.log('Processing job:', job.id)
+    
     // Process the job
     await updateJobStatus(job.id, 'processing', 25, `exec_${job.id}`)
+    console.log('Updated to 25%')
+    
     await new Promise(resolve => setTimeout(resolve, 500))
     await updateJobStatus(job.id, 'processing', 75)
+    console.log('Updated to 75%')
+    
     await new Promise(resolve => setTimeout(resolve, 500))
     
     let resultHtml = ''
     if (job.template_id) {
+      console.log('Getting template:', job.template_id)
       const template = await getTemplateById(job.template_id)
       if (template) {
         resultHtml = template.html_content
+        console.log('Using template content')
       }
     }
     
     if (!resultHtml) {
+      console.log('Using fallback content')
       resultHtml = `
 <!DOCTYPE html>
 <html lang="en">
@@ -79,13 +92,16 @@ export async function POST(request: NextRequest) {
 </html>`
     }
 
+    console.log('Creating result for job:', job.id)
     await createResult(job.id, resultHtml, {
       generated_at: new Date().toISOString(),
       word_count: resultHtml.split(' ').length,
       template_used: job.template_id
     })
     
+    console.log('Marking job as completed')
     await updateJobStatus(job.id, 'completed', 100)
+    console.log('Job processing completed successfully')
 
     return NextResponse.json({ success: true, message: 'Job processed successfully' })
     
