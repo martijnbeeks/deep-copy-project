@@ -7,9 +7,11 @@ export async function GET(
 ) {
   try {
     const jobId = params.id
-    // Get user ID from demo user
+    const authHeader = request.headers.get('authorization')
+    const userEmail = authHeader?.replace('Bearer ', '') || 'demo@example.com'
+    
     const { getUserByEmail } = await import('@/lib/db/queries')
-    const user = await getUserByEmail('demo@example.com')
+    const user = await getUserByEmail(userEmail)
     
     if (!user) {
       return NextResponse.json(

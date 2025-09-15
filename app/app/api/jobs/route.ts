@@ -3,9 +3,11 @@ import { getJobsByUserId, createJob } from '@/lib/db/queries'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get user ID from demo user
+    const authHeader = request.headers.get('authorization')
+    const userEmail = authHeader?.replace('Bearer ', '') || 'demo@example.com'
+    
     const { getUserByEmail } = await import('@/lib/db/queries')
-    const user = await getUserByEmail('demo@example.com')
+    const user = await getUserByEmail(userEmail)
     
     if (!user) {
       return NextResponse.json(
@@ -41,9 +43,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user ID from demo user
+    const authHeader = request.headers.get('authorization')
+    const userEmail = authHeader?.replace('Bearer ', '') || 'demo@example.com'
+    
     const { getUserByEmail } = await import('@/lib/db/queries')
-    const user = await getUserByEmail('demo@example.com')
+    const user = await getUserByEmail(userEmail)
     
     if (!user) {
       return NextResponse.json(
@@ -51,7 +55,6 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       )
     }
-
     const job = await createJob({
       user_id: user.id,
       title,
@@ -60,39 +63,23 @@ export async function POST(request: NextRequest) {
       template_id
     })
 
-    // Process job immediately (synchronous processing)
     try {
       const { updateJobStatus, createResult } = await import('@/lib/db/queries')
       
-      console.log(`Starting processing for job ${job.id}`)
-      
-      // Update job status to processing
       await updateJobStatus(job.id, 'processing', 25, `exec_${job.id}`)
-      console.log(`Updated job ${job.id} to 25%`)
-      
-      // Processing delay
       await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Update progress
       await updateJobStatus(job.id, 'processing', 75)
-      console.log(`Updated job ${job.id} to 75%`)
-      
-      // Additional processing
       await new Promise(resolve => setTimeout(resolve, 1000))
       
-      // Get template content if template_id is provided
       let resultHtml = ''
       if (template_id) {
         const { getTemplateById } = await import('@/lib/db/queries')
         const template = await getTemplateById(template_id)
         if (template) {
-          // Use the actual template HTML content
           resultHtml = template.html_content
-          console.log(`Using template ${template_id} for job ${job.id}`)
         }
       }
       
-      // Fallback to generic content if no template or template not found
       if (!resultHtml) {
         resultHtml = `
 <!DOCTYPE html>
@@ -135,26 +122,20 @@ export async function POST(request: NextRequest) {
     </div>
 </body>
 </html>`
-        console.log(`Using fallback content for job ${job.id}`)
       }
 
-      console.log(`Creating result for job ${job.id}`)
       await createResult(job.id, resultHtml, {
         generated_at: new Date().toISOString(),
         word_count: resultHtml.split(' ').length,
         template_used: template_id
       })
       
-      // Mark job as completed
       await updateJobStatus(job.id, 'completed', 100)
-      console.log(`Completed job ${job.id} successfully`)
       
     } catch (error) {
       console.error('Job processing error:', error)
-      // Mark job as failed
       const { updateJobStatus } = await import('@/lib/db/queries')
       await updateJobStatus(job.id, 'failed')
-      console.log(`Marked job ${job.id} as failed`)
     }
 
     return NextResponse.json(job)
