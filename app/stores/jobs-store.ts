@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { Job, JobWithTemplate, JobWithResult } from '@/lib/db/types'
+import { useAuthStore } from './auth-store'
 
 interface JobsState {
   jobs: JobWithTemplate[]
@@ -58,13 +59,20 @@ export const useJobsStore = create<JobsState & JobsActions>((set, get) => ({
   fetchJobs: async () => {
     set({ isLoading: true, error: null })
     try {
+      const { user } = useAuthStore.getState()
+      const userEmail = user?.email || 'demo@example.com'
+      
       const { filters } = get()
       const params = new URLSearchParams()
       Object.entries(filters).forEach(([key, value]) => {
         if (value) params.append(key, value)
       })
 
-      const response = await fetch(`/api/jobs?${params}`)
+      const response = await fetch(`/api/jobs?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${userEmail}`
+        }
+      })
       if (!response.ok) throw new Error('Failed to fetch jobs')
       
       const { jobs } = await response.json()
@@ -80,7 +88,14 @@ export const useJobsStore = create<JobsState & JobsActions>((set, get) => ({
   fetchJob: async (id: string) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await fetch(`/api/jobs/${id}`)
+      const { user } = useAuthStore.getState()
+      const userEmail = user?.email || 'demo@example.com'
+      
+      const response = await fetch(`/api/jobs/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${userEmail}`
+        }
+      })
       if (!response.ok) throw new Error('Failed to fetch job')
       
       const job = await response.json()
@@ -96,9 +111,15 @@ export const useJobsStore = create<JobsState & JobsActions>((set, get) => ({
   createJob: async (jobData) => {
     set({ isLoading: true, error: null })
     try {
+      const { user } = useAuthStore.getState()
+      const userEmail = user?.email || 'demo@example.com'
+      
       const response = await fetch('/api/jobs', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userEmail}`
+        },
         body: JSON.stringify(jobData),
       })
 
