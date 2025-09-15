@@ -60,37 +60,41 @@ export async function POST(request: NextRequest) {
       template_id
     })
 
-    // Process job in background
-    setTimeout(async () => {
-      try {
-        const { updateJobStatus, createResult } = await import('@/lib/db/queries')
-        
-        // Update job status to processing
-        await updateJobStatus(job.id, 'processing', 25, `exec_${job.id}`)
-        
-        // Processing delay
-        await new Promise(resolve => setTimeout(resolve, 3000))
-        
-        // Update progress
-        await updateJobStatus(job.id, 'processing', 75)
-        
-        // Additional processing
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        
-        // Get template content if template_id is provided
-        let resultHtml = ''
-        if (template_id) {
-          const { getTemplateById } = await import('@/lib/db/queries')
-          const template = await getTemplateById(template_id)
-          if (template) {
-            // Use the actual template HTML content
-            resultHtml = template.html_content
-          }
+    // Process job immediately (synchronous processing)
+    try {
+      const { updateJobStatus, createResult } = await import('@/lib/db/queries')
+      
+      console.log(`Starting processing for job ${job.id}`)
+      
+      // Update job status to processing
+      await updateJobStatus(job.id, 'processing', 25, `exec_${job.id}`)
+      console.log(`Updated job ${job.id} to 25%`)
+      
+      // Processing delay
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // Update progress
+      await updateJobStatus(job.id, 'processing', 75)
+      console.log(`Updated job ${job.id} to 75%`)
+      
+      // Additional processing
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Get template content if template_id is provided
+      let resultHtml = ''
+      if (template_id) {
+        const { getTemplateById } = await import('@/lib/db/queries')
+        const template = await getTemplateById(template_id)
+        if (template) {
+          // Use the actual template HTML content
+          resultHtml = template.html_content
+          console.log(`Using template ${template_id} for job ${job.id}`)
         }
-        
-        // Fallback to generic content if no template or template not found
-        if (!resultHtml) {
-          resultHtml = `
+      }
+      
+      // Fallback to generic content if no template or template not found
+      if (!resultHtml) {
+        resultHtml = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -131,23 +135,27 @@ export async function POST(request: NextRequest) {
     </div>
 </body>
 </html>`
-        }
-
-        await createResult(job.id, resultHtml, {
-          generated_at: new Date().toISOString(),
-          word_count: resultHtml.split(' ').length,
-          template_used: template_id
-        })
-        
-        // Mark job as completed
-        await updateJobStatus(job.id, 'completed', 100)
-      } catch (error) {
-        console.error('Background processing error:', error)
-        // Mark job as failed
-        const { updateJobStatus } = await import('@/lib/db/queries')
-        await updateJobStatus(job.id, 'failed')
+        console.log(`Using fallback content for job ${job.id}`)
       }
-    }, 1000)
+
+      console.log(`Creating result for job ${job.id}`)
+      await createResult(job.id, resultHtml, {
+        generated_at: new Date().toISOString(),
+        word_count: resultHtml.split(' ').length,
+        template_used: template_id
+      })
+      
+      // Mark job as completed
+      await updateJobStatus(job.id, 'completed', 100)
+      console.log(`Completed job ${job.id} successfully`)
+      
+    } catch (error) {
+      console.error('Job processing error:', error)
+      // Mark job as failed
+      const { updateJobStatus } = await import('@/lib/db/queries')
+      await updateJobStatus(job.id, 'failed')
+      console.log(`Marked job ${job.id} as failed`)
+    }
 
     return NextResponse.json(job)
   } catch (error) {
