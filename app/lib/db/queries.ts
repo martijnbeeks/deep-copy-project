@@ -163,8 +163,22 @@ export const updateJobStatus = async (id: string, status: string, progress?: num
     params.push(execution_id)
   }
 
+  // Only add completed_at if the column exists (for backward compatibility)
   if (status === 'completed' || status === 'failed') {
-    updates.push('completed_at = NOW()')
+    try {
+      // Check if completed_at column exists
+      const columnCheck = await query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'jobs' AND column_name = 'completed_at'
+      `)
+      
+      if (columnCheck.rows.length > 0) {
+        updates.push('completed_at = NOW()')
+      }
+    } catch (error) {
+      console.log('completed_at column not found, skipping...')
+    }
   }
 
   await query(`UPDATE jobs SET ${updates.join(', ')} WHERE id = $1`, params)
