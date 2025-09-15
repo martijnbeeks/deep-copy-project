@@ -132,7 +132,9 @@ export const useJobsStore = create<JobsState & JobsActions>((set, get) => ({
       if (!response.ok) {
         const errorData = await response.json()
         console.error('API error:', errorData)
-        throw new Error(errorData.error || 'Failed to create job')
+        const errorMessage = errorData.details || errorData.error || 'Failed to create job'
+        console.error('Error message:', errorMessage)
+        throw new Error(errorMessage)
       }
 
       const job = await response.json()

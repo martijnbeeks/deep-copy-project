@@ -159,8 +159,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(job)
   } catch (error) {
     console.error('Job creation error:', error)
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    })
     return NextResponse.json(
-      { error: 'Failed to create job' },
+      { 
+        error: 'Failed to create job',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        type: error instanceof Error ? error.name : 'UnknownError'
+      },
       { status: 500 }
     )
   }
