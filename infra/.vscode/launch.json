@@ -24,7 +24,8 @@
             "justMyCode": true,
             "cwd": "${workspaceFolder}/ai_pipeline",
             "env": {
-                "AWS_PROFILE": "personal-cdk-dev"
+                "AWS_PROFILE": "personal-cdk-dev",
+                "JOB_EVENT_JSON": "{\"brand_info\": \"Nooro, Inc. was founded in 2022 on the belief that health is not born, it is built. —It happens when you can walk with confidence… knowing that you’re safe, secured and in good condition. We got our start from conversations with people sharing their agonizing pain, be it knees, feet or eyes. The unhealthy lifestyle we often go through stops at nothing to destroy our “happy lives.” So, you need to be ready before the worst happens, and this was the inspiration for Nooro. To start our journey on designing specific products for specific problems.\", \"sales_page_url\": \"https://nooro-us.com/\", \"project_name\": \"Nooro\", \"swipe_file_id\": \"L00003\"}"
             }
         },
     ]

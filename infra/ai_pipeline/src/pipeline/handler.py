@@ -8,7 +8,6 @@ import boto3
 import sys
 import logging
 from datetime import datetime, timezone
-import subprocess
 import uuid
 
 from typing import List, Optional
@@ -20,7 +19,26 @@ from playwright.sync_api import sync_playwright
 
 # Configure logging
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+# Derive log level from env, default INFO
+_log_level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
+_log_level = getattr(logging, _log_level_name, logging.INFO)
+logger.setLevel(_log_level)
+
+# Add stdout handler if none exist (local/ECS), otherwise align existing handlers' levels (Lambda)
+if not logger.handlers:
+    _stdout_handler = logging.StreamHandler(stream=sys.stdout)
+    _stdout_handler.setLevel(_log_level)
+    _formatter = logging.Formatter(
+        fmt="%(asctime)s %(levelname)s %(name)s - %(message)s"
+    )
+    _stdout_handler.setFormatter(_formatter)
+    logger.addHandler(_stdout_handler)
+else:
+    for _h in logger.handlers:
+        try:
+            _h.setLevel(_log_level)
+        except Exception:
+            pass
 
 
 
@@ -111,26 +129,6 @@ class Avatar(BaseModel):
     )
 
 
-def install_playwright():
-    """Install Playwright and its browser dependencies."""
-    # Skip installation inside AWS Lambda or when explicitly disabled
-    if os.environ.get("AWS_LAMBDA_RUNTIME_API") or os.environ.get("SKIP_PLAYWRIGHT_INSTALL") == "1":
-        logger.info("Skipping Playwright installation in Lambda / disabled via env flag")
-        return
-    try:
-        print("Installing Playwright (local environment)...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "playwright"])        
-        print("Installing Playwright browser dependencies (local environment)...")
-        subprocess.check_call([sys.executable, "-m", "playwright", "install", "chromium"])        
-        print("Playwright installation completed successfully (local).")
-    except subprocess.CalledProcessError as e:
-        print(f"Error during installation: {e}")
-        sys.exit(1)
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-        sys.exit(1)
-
-
 def save_fullpage_png(url: str, out_file: str = "page.png"):
     with sync_playwright() as p:
         launch_args = {
@@ -158,7 +156,7 @@ def save_fullpage_png(url: str, out_file: str = "page.png"):
         # Take a full-page screenshot
         page.screenshot(path=out_file, full_page=True)
 
-        print(f"Saved full-page screenshot to {out_file}")
+        logger.info(f"Saved full-page screenshot to {out_file}")
 
         page.close()
         context.close()
@@ -170,11 +168,12 @@ class DeepCopy:
         # Resolve secret id/name/arn and region from environment for ECS flexibility
         env = os.environ.get('ENVIRONMENT', 'dev')
         secret_id = "deepcopy-secret-dev"
+        self.openai_model = "gpt-5-mini"
         self.secrets = self.get_secrets(secret_id)
         self.client = OpenAI(api_key=self.secrets["OPENAI_API_KEY"]) 
         aws_region = os.environ.get('AWS_REGION') or os.environ.get('AWS_DEFAULT_REGION') or 'eu-west-1'
         self.s3_client = boto3.client('s3', region_name=aws_region)
-        self.s3_bucket = os.environ.get('BUCKET_NAME', f'deepcopy-{env}-{os.environ.get("AWS_ACCOUNT_ID", "")}'.strip('-'))
+        self.s3_bucket = "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih"
         # Optional DynamoDB for job status updates
         self.ddb_client = boto3.client('dynamodb', region_name=aws_region)
         self.jobs_table_name = os.environ.get('JOBS_TABLE_NAME', "DeepCopyStack-JobsTable1970BC16-1BVYVOHK8WXTU")
@@ -203,22 +202,21 @@ class DeepCopy:
         """Analyze the sales page using GPT-5 Vision"""
         try:
             base64_image = None
-            if os.environ.get("DISABLE_SCREENSHOT") == "1":
-                logger.info("DISABLE_SCREENSHOT=1 set; skipping Playwright install and screenshot capture")
-            else:
-                logger.info(f"Installing playwright and capturing page: {sales_page_url}")
-                # install_playwright()
+            logger.info(f"Capturing page: {sales_page_url}")
+            try:
+                image_path = save_fullpage_png(sales_page_url)
+                logger.info(f"Image captured at: {image_path}")
+                base64_image = self.encode_image(image_path)
+            except Exception as e:
+                logger.error(f"Failed to capture or encode image from {sales_page_url}: {e}")
+                raise
+            finally:
+                # Clean up the image file if it was created
                 try:
-                    image_path = save_fullpage_png(sales_page_url)
-                    logger.info(f"Image captured at: {image_path}")
-                    base64_image = self.encode_image(image_path)
-                finally:
-                    # Clean up the image file if it was created
-                    try:
-                        if 'image_path' in locals() and image_path and os.path.exists(image_path):
-                            os.remove(image_path)
-                    except Exception:
-                        pass
+                    if 'image_path' in locals() and image_path and os.path.exists(image_path):
+                        os.remove(image_path)
+                except Exception as cleanup_exc:
+                    logger.warning(f"Failed to clean up image file {image_path}: {cleanup_exc}")
             
             prompt = f"""
             You are my expert copywriter specializing in persuasive direct-response copy for my e-commerce brand.
@@ -231,14 +229,10 @@ class DeepCopy:
             """
             
             logger.info("Calling GPT-5 Vision API for research page analysis")
-            content_payload = [{"type": "input_text", "text": prompt}]
-            if base64_image:
-                content_payload.append({
-                    "type": "input_image",
-                    "image_url": f"data:image/jpeg;base64,{base64_image}",
-                })
+            content_payload = [{"type": "input_text", "text": prompt}, {"type": "input_image", "image_url": f"data:image/jpeg;base64,{base64_image}"}]
+            
             response = self.client.responses.create(
-                model="gpt-5",
+                model=self.openai_model,
                 input=[{"role": "user", "content": content_payload}]
             )
             logger.info("GPT-5 Vision API call completed for research page analysis")
@@ -260,7 +254,7 @@ class DeepCopy:
             
             logger.info(f"Calling GPT-5 API for research document analysis: {doc_name}")
             response = self.client.responses.create(
-                model="gpt-5",
+                model=self.openai_model,
                 input=[{
                     "role": "user", 
                     "content": [{"type": "input_text", "text": prompt}]
@@ -280,6 +274,7 @@ class DeepCopy:
             prompt = f"""
             Now that you understand how to conduct research, create a full, best-practice prompt for Deep Research tool to research {brand_info}. 
             Be as specific as possible, and include instructions to compile all findings into a single document of at least six pages.
+            Please only return the actual prompt that directly can be used in the Deep Research tool, no other text.
 
             Research Page analysis:
             {research_page_analysis}
@@ -293,7 +288,7 @@ class DeepCopy:
             
             logger.info("Calling GPT-5 API to create deep research prompt")
             response = self.client.responses.create(
-                model="gpt-5",
+                model=self.openai_model,
                 input=[{
                     "role": "user", 
                     "content": [{"type": "input_text", "text": prompt}]
@@ -323,10 +318,9 @@ class DeepCopy:
             payload = {
                 "model": model_name,
                 "messages": [
-                    {"role": "system", "content": "You are a world-class research assistant."},
+                    {"role": "system", "content": "You are a world-class research assistant. Please execute the research prompt below and adhere to the instructions provided."},
                     {"role": "user", "content": prompt},
                 ],
-                "temperature": 0.2,
             }
             
             logger.info("Calling Perplexity API for deep research execution")
@@ -355,7 +349,7 @@ class DeepCopy:
 
             logger.info("Calling GPT-5 API to complete avatar sheet")
             response = self.client.responses.parse(
-                model="gpt-5",
+                model=self.openai_model,
                 input=[{
                     "role": "user", 
                     "content": [{"type": "input_text", "text": prompt}]
@@ -388,7 +382,7 @@ class DeepCopy:
 
             logger.info("Calling GPT-5 API to complete offer brief")
             response = self.client.responses.create(
-                model="gpt-5",
+                model=self.openai_model,
                 input=[{
                     "role": "user", 
                     "content": [{"type": "input_text", "text": prompt}]
@@ -428,7 +422,7 @@ class DeepCopy:
 
             logger.info("Calling GPT-5 API to analyze marketing philosophy")
             response = self.client.responses.create(
-                model="gpt-5",
+                model=self.openai_model,
                 input=[{
                     "role": "user", 
                     "content": [{"type": "input_text", "text": prompt}]
@@ -463,7 +457,7 @@ class DeepCopy:
             
             logger.info("Calling GPT-5 API to create summary")
             response = self.client.responses.create(
-                model="gpt-5",
+                model=self.openai_model,
                 input=[{
                     "role": "user", 
                     "content": [{"type": "input_text", "text": prompt}]
@@ -477,7 +471,7 @@ class DeepCopy:
             logger.error(f"Error creating summary: {e}")
             raise
     
-    def rewrite_swipe_files(self, brand_info, angles, avatar_sheet, summary, swipe_file_path, s3_bucket, result_prefix: str = ""):
+    def rewrite_swipe_files(self, brand_info, angles, avatar_sheet, summary, swipe_file_path):
         """Rewrite swipe files for each marketing angle"""
         try:
             with open(swipe_file_path, "r", encoding="utf-8") as f:
@@ -503,7 +497,7 @@ class DeepCopy:
 
                 logger.info(f"Calling GPT-5 API to rewrite swipe file for angle: {angle}")
                 response = self.client.responses.create(
-                    model="gpt-5",
+                    model=self.openai_model,
                     input=[{
                         "role": "user", 
                         "content": [{"type": "input_text", "text": prompt}]
@@ -517,45 +511,26 @@ class DeepCopy:
                     "content": result
                 })
                 
-                
-                # save to txt
-                with open(f"src/pipeline/output/{angle}_output.txt", "w", encoding="utf-8") as f:
-                    f.write(result)
-                    
-                logger.info(f"Uploaded {angle} output to txt: {f'src/pipeline/content/swipe_files/{angle}_output.txt'}")
-                
-                # # Save to S3
-                # prefix = result_prefix or ""
-                # if prefix and not prefix.endswith('/'):
-                #     prefix = prefix + '/'
-                # s3_key = f'{prefix}swipe_files/{angle}_output.html'
-                # self.s3_client.put_object(
-                #     Bucket=s3_bucket,
-                #     Key=s3_key,
-                #     Body=result,
-                #     ContentType='text/html'
-                # )
-                
-                # logger.info(f"Uploaded {angle} output to S3: {s3_key}")
-            
             return results
             
         except Exception as e:
             logger.error(f"Error rewriting swipe files: {e}")
             raise
     
-    def save_results_to_s3(self, results, s3_bucket, project_name, result_prefix: str = ""):
+    def save_results_to_s3(self, results, s3_bucket, project_name, job_id):
         """Save all results to S3"""
         try:
             # Save comprehensive results
             comprehensive_results = {
                 "project_name": project_name,
-                "timestamp": str(os.getenv("AWS_LAMBDA_LOG_STREAM_NAME", "")),
                 "timestamp_iso": datetime.now(timezone.utc).isoformat(),
-                "results": results
+                "results": results,
+                "job_id": job_id
             }
             
-            s3_key = f'projects/{project_name}/comprehensive_results.json'
+            # add datetime to the s3 key
+            datetime_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            s3_key = f'projects/{project_name}/{datetime_str}/comprehensive_results.json'
             self.s3_client.put_object(
                 Bucket=s3_bucket,
                 Key=s3_key,
@@ -563,21 +538,10 @@ class DeepCopy:
                 ContentType='application/json'
             )
             
+            # Also save under project id
+            s3_key = f'results/{job_id}/comprehensive_results.json'
+            
             logger.info(f"Saved comprehensive results to S3: {s3_key}")
-
-            # Also write to job-scoped results prefix if provided
-            if result_prefix:
-                prefix = result_prefix
-                if prefix and not prefix.endswith('/'):
-                    prefix = prefix + '/'
-                s3_key2 = f'{prefix}comprehensive_results.json'
-                self.s3_client.put_object(
-                    Bucket=s3_bucket,
-                    Key=s3_key2,
-                    Body=json.dumps(comprehensive_results, ensure_ascii=False, indent=4),
-                    ContentType='application/json'
-                )
-                logger.info(f"Saved comprehensive results to S3: {s3_key2}")
             
         except Exception as e:
             logger.error(f"Error saving results to S3: {e}")
@@ -609,9 +573,9 @@ class DeepCopy:
         except Exception as e:
             logger.error(f"Failed to update job status for {job_id}: {e}")
 
-def lambda_handler(event, context):
+def run_pipeline(event, context):
     """
-    Lambda handler for the Prelander Generator pipeline
+    Prelander Generator pipeline
     
     Expected event structure:
     {
@@ -642,9 +606,7 @@ def lambda_handler(event, context):
         s3_bucket = event.get("s3_bucket", generator.s3_bucket)
         project_name = event.get("project_name") or os.environ.get("PROJECT_NAME") or "default-project"
         swipe_file_id = event.get("swipe_file_id") or os.environ.get("SWIPE_FILE_ID")
-        content_library_bucket = event.get("content_library_bucket") or os.environ.get("CONTENT_LIBRARY_BUCKET") or "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih"
-        content_dir = event.get("content_dir", "ai_pipeline/src/pipeline/content/")
-        result_prefix = event.get("result_prefix") or f"results/{job_id}"
+        content_dir = event.get("content_dir", "src/pipeline/content/")
         logger.info(
             f"Pipeline inputs: project_name={project_name}, sales_page_url={sales_page_url}, "
             f"brand_info_present={bool(brand_info)}, swipe_file_id={swipe_file_id}, content_dir={content_dir}"
@@ -667,8 +629,8 @@ def lambda_handler(event, context):
         if swipe_file_id:
             try:
                 s3_key = f"content_library/{swipe_file_id}.html"
-                logger.info(f"Fetching swipe file from S3: s3://{content_library_bucket}/{s3_key}")
-                obj = generator.s3_client.get_object(Bucket=content_library_bucket, Key=s3_key)
+                logger.info(f"Fetching swipe file from S3: s3://{s3_bucket}/{s3_key}")
+                obj = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key)
                 html_bytes = obj["Body"].read()
                 html_text = html_bytes.decode("utf-8")
                 tmp_path = f"/tmp/swipe_{swipe_file_id}.html"
@@ -680,7 +642,7 @@ def lambda_handler(event, context):
                 code = (e.response or {}).get("Error", {}).get("Code")
                 http_status = (e.response or {}).get("ResponseMetadata", {}).get("HTTPStatusCode")
                 if code in ("NoSuchKey", "404", "NotFound") or http_status == 404:
-                    error_msg = f"Swipe file not found on S3: s3://{content_library_bucket}/{s3_key}"
+                    error_msg = f"Swipe file not found on S3: s3://{s3_bucket}/{s3_key}"
                     logger.error(error_msg)
                     try:
                         generator.update_job_status(job_id, "FAILED", {"error": error_msg})
@@ -713,77 +675,74 @@ def lambda_handler(event, context):
                     "body": {"error": error_msg}
                 }
         
-        # # Step 1: Analyze research page
-        # logger.info("Step 1: Analyzing research page")
-        # research_page_analysis = generator.analyze_research_page(brand_info, sales_page_url)
+        # Step 1: Analyze research page
+        logger.info("Step 1: Analyzing research page")
+        research_page_analysis = generator.analyze_research_page(brand_info, sales_page_url)
         
-        # # Step 2: Analyze research documents
-        # logger.info("Step 2: Analyzing research documents")
-        # doc1_analysis = generator.analyze_research_document(
-        #     f"{content_dir}research_doc1_content.txt", "Research Doc 1"
-        # )
-        # doc2_analysis = generator.analyze_research_document(
-        #     f"{content_dir}research_doc2_content.txt", "Research Doc 2"
-        # )
+        # Step 2: Analyze research documents
+        logger.info("Step 2: Analyzing research documents")
+        doc1_analysis = generator.analyze_research_document(
+            f"{content_dir}research_doc1_content.txt", "Research Doc 1"
+        )
+        doc2_analysis = generator.analyze_research_document(
+            f"{content_dir}research_doc2_content.txt", "Research Doc 2"
+        )
         
-        # # Step 3: Create deep research prompt
-        # logger.info("Step 3: Creating deep research prompt")
-        # deep_research_prompt = generator.create_deep_research_prompt(
-        #     brand_info, research_page_analysis, doc1_analysis, doc2_analysis
-        # )
+        # Step 3: Create deep research prompt
+        logger.info("Step 3: Creating deep research prompt")
+        deep_research_prompt = generator.create_deep_research_prompt(
+            brand_info, research_page_analysis, doc1_analysis, doc2_analysis
+        )
         
-        # # Step 4: Execute deep research
-        # logger.info("Step 4: Executing deep research")
-        # # deep_research_output = generator.execute_deep_research(deep_research_prompt)
+        # Step 4: Execute deep research
+        logger.info("Step 4: Executing deep research")
+        deep_research_output = generator.execute_deep_research(deep_research_prompt)
         # deep_research_output = open("src/pipeline/content/deep_research_output.txt", "r", encoding="utf-8").read()
         
-        # # Step 5: Complete avatar sheet
-        # logger.info("Step 5: Completing avatar sheet")
-        # avatar_parsed, avatar_sheet = generator.complete_avatar_sheet(deep_research_output)
-        # angles = avatar_parsed.marketing_angles
+        # Step 5: Complete avatar sheet
+        logger.info("Step 5: Completing avatar sheet")
+        avatar_parsed, avatar_sheet = generator.complete_avatar_sheet(deep_research_output)
+        angles = avatar_parsed.marketing_angles
         
-        # # Step 6: Complete offer brief
-        # logger.info("Step 6: Completing offer brief")
-        # offer_brief = generator.complete_offer_brief(deep_research_output)
+        # Step 6: Complete offer brief
+        logger.info("Step 6: Completing offer brief")
+        offer_brief = generator.complete_offer_brief(deep_research_output)
         
-        # # Step 7: Analyze marketing philosophy
-        # logger.info("Step 7: Analyzing marketing philosophy")
-        # marketing_philosophy_analysis = generator.analyze_marketing_philosophy(
-        #     avatar_sheet, offer_brief, deep_research_output
-        # )
+        # Step 7: Analyze marketing philosophy
+        logger.info("Step 7: Analyzing marketing philosophy")
+        marketing_philosophy_analysis = generator.analyze_marketing_philosophy(
+            avatar_sheet, offer_brief, deep_research_output
+        )
         
-        # # Step 8: Create summary
-        # logger.info("Step 8: Creating summary")
-        # summary = generator.create_summary(
-        #     avatar_sheet, offer_brief, deep_research_output, marketing_philosophy_analysis
-        # )
+        # Step 8: Create summary
+        logger.info("Step 8: Creating summary")
+        summary = generator.create_summary(
+            avatar_sheet, offer_brief, deep_research_output, marketing_philosophy_analysis
+        )
         
-        # # Step 9: Rewrite swipe files
-        # logger.info("Step 9: Rewriting swipe files")
-        # swipe_results = generator.rewrite_swipe_files(
-        #     brand_info, angles, avatar_sheet, summary, swipe_file_path, s3_bucket, result_prefix
-        # )
+        # Step 9: Rewrite swipe files
+        logger.info("Step 9: Rewriting swipe files")
+        swipe_results = generator.rewrite_swipe_files(
+            brand_info, angles, avatar_sheet, summary, swipe_file_path
+        )
         
-        # # Step 10: Save all results
-        # logger.info("Step 10: Saving results")
-        # all_results = {
-        #     "research_page_analysis": research_page_analysis,
-        #     "doc1_analysis": doc1_analysis,
-        #     "doc2_analysis": doc2_analysis,
-        #     "deep_research_prompt": deep_research_prompt,
-        #     "deep_research_output": deep_research_output,
-        #     "avatar_sheet": avatar_sheet,
-        #     "offer_brief": offer_brief,
-        #     "marketing_philosophy_analysis": marketing_philosophy_analysis,
-        #     "summary": summary,
-        #     "swipe_results": swipe_results,
-        #     "marketing_angles": angles
-        # }
-        all_results = {"test": "test"}
-        angles = ["test"]
-        swipe_results = ["test"]
+        # Step 10: Save all results
+        logger.info("Step 10: Saving results")
+        all_results = {
+            "research_page_analysis": research_page_analysis,
+            "doc1_analysis": doc1_analysis,
+            "doc2_analysis": doc2_analysis,
+            "deep_research_prompt": deep_research_prompt,
+            "deep_research_output": deep_research_output,
+            "avatar_sheet": avatar_sheet,
+            "offer_brief": offer_brief,
+            "marketing_philosophy_analysis": marketing_philosophy_analysis,
+            "summary": summary,
+            "swipe_results": swipe_results,
+            "marketing_angles": angles
+        }
         
-        generator.save_results_to_s3(all_results, s3_bucket, project_name, result_prefix)
+        generator.save_results_to_s3(all_results, s3_bucket, project_name, job_id)
         
         # Return success response
         response = {
@@ -795,14 +754,14 @@ def lambda_handler(event, context):
                 "marketing_angles_count": len(angles),
                 "swipe_files_generated": len(swipe_results),
                 "results_location": f"s3://{s3_bucket}/projects/{project_name}/",
-                "job_results_prefix": f"s3://{s3_bucket}/{result_prefix}/",
+                "job_results_location": f"s3://{s3_bucket}/results/{job_id}/",
                 "job_id": job_id
             }
         }
         
         logger.info("Pipeline completed successfully")
         try:
-            generator.update_job_status(job_id, "SUCCEEDED", {"resultPrefix": f"s3://{s3_bucket}/{result_prefix}/"})
+            generator.update_job_status(job_id, "SUCCEEDED", {"resultPrefix": f"s3://{s3_bucket}/projects/{project_name}/"})
         except Exception:
             pass
         return response
@@ -828,24 +787,11 @@ def lambda_handler(event, context):
 if __name__ == "__main__":
     # Allow ECS task to pass inputs via env var JOB_EVENT_JSON and JOB_ID
     job_event_env = os.environ.get("JOB_EVENT_JSON")
-    if job_event_env:
-        try:
-            event = json.loads(job_event_env)
-        except Exception:
-            event = {}
-    else:
-        # Fallback for local test
-        event = {
-            "brand_info": "Hypowered is a brand that sells nose strips designed for sports people to enhance breathing and athletic performance",
-            "sales_page_url": "https://hypowered.nl/en",
-            "s3_bucket": os.environ.get("BUCKET_NAME", "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih"),
-            "project_name": "test-project",
-            "content_dir": "src/pipeline/content/",
-            "swipe_file_id": "L00001",
-            "content_library_bucket": os.environ.get("CONTENT_LIBRARY_BUCKET") or "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih"
-        }
+    try:    
+        event = json.loads(job_event_env)
+    except Exception:
+        raise Exception("Failed to load JOB_EVENT_JSON")
     # Inject jobId and result prefix
     event["job_id"] = os.environ.get("JOB_ID") or event.get("job_id") or str(uuid.uuid4())
-    event["result_prefix"] = event.get("result_prefix") or f"results/{event['job_id']}"
-    result = lambda_handler(event, None)
-    print(json.dumps(result, indent=2))
+    result = run_pipeline(event, None)
+    
