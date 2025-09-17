@@ -16,6 +16,8 @@ Default behavior (render-safe):
   - Remove aria-* and role attributes; remove non-visual attrs (loading, integrity, crossorigin, title, tabindex, etc.)
   - Remove inline event handler attributes (onclick, onload, onerror, ...)
   - Remove non-visual form and anchor attributes (form action/method, anchor target/rel, etc.)
+  - Dedupe identical stylesheet links; drop media="all" and type="text/css" on CSS links
+  - Remove unreferenced SVG <symbol> and <defs> children (keep only referenced IDs)
   - Keep: <link rel="stylesheet">, <style> blocks, <meta name="viewport">, inline SVG/defs, and noscript CSS fallbacks
 
 You can also run in scripts-only mode to only remove <script> tags.
@@ -298,6 +300,87 @@ def remove_form_and_anchor_attrs(soup: BeautifulSoup) -> None:
                 del tag["autocomplete"]
 
 
+def dedupe_stylesheets_and_prune_css_link_attrs(soup: BeautifulSoup) -> None:
+    seen_hrefs: Set[str] = set()
+    for link in list(soup.find_all("link")):
+        rel_values = normalize_rel(link.get("rel"))
+        if "stylesheet" not in rel_values:
+            continue
+        href = (link.get("href") or "").strip()
+        # remove media="all" and type="text/css" (redundant)
+        media = (link.get("media") or "").strip().lower()
+        if media == "all":
+            del link["media"]
+        ltype = (link.get("type") or "").strip().lower()
+        if ltype == "text/css":
+            del link["type"]
+        if href and href in seen_hrefs:
+            link.decompose()
+        else:
+            if href:
+                seen_hrefs.add(href)
+
+
+def prune_empty_and_default_attributes(soup: BeautifulSoup) -> None:
+    for tag in soup.find_all(True):
+        # empty class/id/style
+        if "class" in tag.attrs and (not tag["class"] or (isinstance(tag["class"], str) and not tag["class"].strip())):
+            del tag["class"]
+        if "id" in tag.attrs and (not str(tag["id"]).strip()):
+            del tag["id"]
+        if "style" in tag.attrs and (not str(tag.get("style") or "").strip()):
+            del tag["style"]
+        # default input type
+        if tag.name.lower() == "input":
+            t = (tag.get("type") or "").strip().lower()
+            if t == "text":
+                del tag["type"]
+
+
+def _collect_referenced_ids(soup: BeautifulSoup) -> Set[str]:
+    import re
+    used: Set[str] = set()
+    url_ref = re.compile(r"url\(#([^)]+)\)")
+    attrs_with_url = [
+        "fill", "stroke", "clip-path", "mask", "filter", "marker-start", "marker-mid", "marker-end",
+    ]
+    # 1) <use href="#id"> or xlink:href
+    for use in soup.find_all("use"):
+        href = (use.get("href") or use.get("xlink:href") or "").strip()
+        if href.startswith("#") and len(href) > 1:
+            used.add(href[1:])
+    # 2) attributes with url(#id)
+    for el in soup.find_all(True):
+        for attr in attrs_with_url:
+            val = el.get(attr)
+            if not val:
+                continue
+            for m in url_ref.finditer(str(val)):
+                used.add(m.group(1))
+        # also scan style="...url(#id)..."
+        style = el.get("style")
+        if style:
+            for m in url_ref.finditer(str(style)):
+                used.add(m.group(1))
+    return used
+
+
+def remove_unreferenced_svg_defs_and_symbols(soup: BeautifulSoup) -> None:
+    used_ids = _collect_referenced_ids(soup)
+    # Remove <symbol id> not referenced
+    for sym in list(soup.find_all("symbol")):
+        sid = (sym.get("id") or "").strip()
+        if sid and sid not in used_ids:
+            sym.decompose()
+    # Remove <defs> children with ids not referenced (gradients, filters, etc.)
+    for defs in soup.find_all("defs"):
+        for child in list(defs.find_all(True)):
+            cid = (child.get("id") or "").strip()
+            # If child has an id and is not used anywhere, drop it
+            if cid and cid not in used_ids:
+                child.decompose()
+
+
 def clean_html(
     html_text: str,
     mode_scripts_only: bool = False,
@@ -346,6 +429,11 @@ def clean_html(
 
     if strip_form_and_anchor_attrs:
         remove_form_and_anchor_attrs(soup)
+
+    # Post-pass: dedupe/prune stylesheets and common defaults
+    dedupe_stylesheets_and_prune_css_link_attrs(soup)
+    prune_empty_and_default_attributes(soup)
+    remove_unreferenced_svg_defs_and_symbols(soup)
 
     # Write back as string; BeautifulSoup will normalize minor formatting
     return str(soup)
