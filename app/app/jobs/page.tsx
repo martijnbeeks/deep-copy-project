@@ -10,7 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { LoadingSpinner, PageLoadingSpinner } from "@/components/ui/loading-spinner"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { JobCardSkeleton } from "@/components/ui/skeleton-loaders"
 import { EmptyState } from "@/components/ui/empty-state"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { OfflineBanner } from "@/components/ui/offline-banner"
@@ -56,15 +57,113 @@ export default function JobsPage() {
   }, [jobs, searchTerm, statusFilter])
 
   if (!user) {
-    return <PageLoadingSpinner text="Loading jobs..." />
+    return (
+      <div className="flex h-screen bg-background">
+        <div className="w-64 border-r bg-card">
+          <div className="p-6 space-y-4">
+            <div className="h-8 w-32 bg-muted animate-pulse-slow rounded" />
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-10 w-full bg-muted animate-pulse-slow rounded" />
+              ))}
+            </div>
+          </div>
+        </div>
+        <main className="flex-1 p-6">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="h-8 w-48 bg-muted animate-pulse-slow rounded" />
+                <div className="h-4 w-64 bg-muted animate-pulse-slow rounded" />
+              </div>
+              <div className="h-10 w-32 bg-muted animate-pulse-slow rounded" />
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="p-6 border rounded-lg bg-card space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-2">
+                      <div className="h-5 w-3/4 bg-muted animate-pulse-slow rounded" />
+                      <div className="h-4 w-1/2 bg-muted animate-pulse-slow rounded" />
+                    </div>
+                    <div className="h-6 w-16 bg-muted animate-pulse-slow rounded" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-full bg-muted animate-pulse-slow rounded" />
+                    <div className="h-4 w-2/3 bg-muted animate-pulse-slow rounded" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex space-x-2">
+                      <div className="h-6 w-20 bg-muted animate-pulse-slow rounded" />
+                      <div className="h-6 w-16 bg-muted animate-pulse-slow rounded" />
+                    </div>
+                    <div className="h-8 w-8 bg-muted animate-pulse-slow rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   if (isLoading) {
     return (
       <div className="flex h-screen bg-background">
         <Sidebar />
-        <main className="flex-1 flex items-center justify-center">
-          <LoadingSpinner size="lg" text="Loading your jobs..." />
+        <main className="flex-1 overflow-auto md:ml-0">
+          <div className="p-4 md:p-6">
+            {/* Header skeleton */}
+            <div className="flex items-start justify-between mb-4 md:mb-6 gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="h-8 w-48 bg-muted animate-pulse-slow rounded-md" />
+                <div className="h-4 w-64 bg-muted animate-pulse-slow rounded-md mt-1" />
+              </div>
+              <div className="flex gap-2">
+                <div className="h-10 w-32 bg-muted animate-pulse-slow rounded-md" />
+                <div className="h-8 w-8 bg-muted animate-pulse-slow rounded-md" />
+              </div>
+            </div>
+
+            {/* Filter card skeleton */}
+            <div className="mb-4 md:mb-6">
+              <div className="border rounded-lg p-6">
+                <div className="h-6 w-32 bg-muted animate-pulse-slow rounded-md mb-2" />
+                <div className="h-4 w-64 bg-muted animate-pulse-slow rounded-md mb-4" />
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <div className="h-10 w-full bg-muted animate-pulse-slow rounded-md" />
+                  </div>
+                  <div className="h-10 w-48 bg-muted animate-pulse-slow rounded-md" />
+                </div>
+              </div>
+            </div>
+
+            {/* Jobs list skeleton */}
+            <div className="grid gap-3 md:gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="border rounded-lg p-4 md:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                        <div className="h-5 w-3/4 bg-muted animate-pulse-slow rounded-md" />
+                        <div className="h-6 w-16 bg-muted animate-pulse-slow rounded-full" />
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                        <div className="h-4 w-24 bg-muted animate-pulse-slow rounded-md" />
+                        <div className="h-4 w-20 bg-muted animate-pulse-slow rounded-md" />
+                        <div className="h-4 w-16 bg-muted animate-pulse-slow rounded-md" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-24 bg-muted animate-pulse-slow rounded-md" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </main>
       </div>
     )

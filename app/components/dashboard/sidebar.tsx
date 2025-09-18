@@ -3,11 +3,12 @@
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/stores/auth-store"
-import { LayoutDashboard, FileText, BarChart3, Settings, LogOut, PenTool } from "lucide-react"
+import { LayoutDashboard, FileText, BarChart3, Settings, LogOut, PenTool, Loader2 } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useSidebar } from "@/contexts/sidebar-context"
+import { useState } from "react"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -20,7 +21,26 @@ const navigation = [
 export function Sidebar() {
   const { user, logout } = useAuthStore()
   const pathname = usePathname()
+  const router = useRouter()
   const { isCollapsed, setIsCollapsed } = useSidebar()
+  const [loadingItem, setLoadingItem] = useState<string | null>(null)
+
+  const handleNavigation = async (href: string) => {
+    if (href === pathname) return
+    
+    const item = navigation.find(nav => nav.href === href)
+    setLoadingItem(href)
+    
+    // Add a very short delay to show loading state
+    await new Promise(resolve => setTimeout(resolve, 50))
+    
+    router.push(href)
+    
+    // Clear loading state after navigation
+    setTimeout(() => {
+      setLoadingItem(null)
+    }, 200)
+  }
 
   return (
     <>
@@ -51,23 +71,45 @@ export function Sidebar() {
         <nav className="flex-1 space-y-1 px-3 py-4">
           {navigation.map((item) => {
             const isActive = pathname === item.href
+            const isLoading = loadingItem === item.href
             return (
-              <Link key={item.name} href={item.href} className="cursor-pointer">
-                <Button
-                  variant={isActive ? "default" : "ghost"}
-                  className={cn(
-                    "w-full cursor-pointer",
-                    isCollapsed ? "justify-center px-2" : "justify-start gap-3",
-                    isActive
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              <button
+                key={item.name}
+                onClick={() => handleNavigation(item.href)}
+                disabled={isLoading}
+                data-active={isActive}
+                className={cn(
+                  "sidebar-nav-item w-full group relative overflow-hidden rounded-md transition-all duration-200 ease-in-out",
+                  "flex items-center gap-3 px-3 py-2.5 text-sm font-medium",
+                  isCollapsed ? "justify-center px-2" : "justify-start",
+                  isActive
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                    : "text-sidebar-foreground",
+                  isLoading && "opacity-70 cursor-not-allowed",
+                  "hover:scale-[1.02] active:scale-[0.98]"
+                )}
+                title={isCollapsed ? item.name : undefined}
+              >
+                <div className="flex items-center gap-3 w-full">
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <item.icon className="h-4 w-4 flex-shrink-0" />
                   )}
-                  title={isCollapsed ? item.name : undefined}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {!isCollapsed && item.name}
-                </Button>
-              </Link>
+                  {!isCollapsed && (
+                    <span className="truncate">
+                      {item.name}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Hover effect overlay */}
+                <div className={cn(
+                  "absolute inset-0 bg-sidebar-accent/20 opacity-0 transition-opacity duration-200",
+                  "group-hover:opacity-100",
+                  isActive && "opacity-0"
+                )} />
+              </button>
             )
           })}
         </nav>
@@ -121,21 +163,41 @@ export function Sidebar() {
         <nav className="flex-1 space-y-1 px-3 py-4">
           {navigation.map((item) => {
             const isActive = pathname === item.href
+            const isLoading = loadingItem === item.href
             return (
-              <Link key={item.name} href={item.href} className="cursor-pointer">
-                <Button
-                  variant={isActive ? "default" : "ghost"}
-                  className={cn(
-                    "w-full cursor-pointer justify-start gap-3",
-                    isActive
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              <button
+                key={item.name}
+                onClick={() => handleNavigation(item.href)}
+                disabled={isLoading}
+                data-active={isActive}
+                className={cn(
+                  "sidebar-nav-item w-full group relative overflow-hidden rounded-md transition-all duration-200 ease-in-out",
+                  "flex items-center gap-3 px-3 py-2.5 text-sm font-medium justify-start",
+                  isActive
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                    : "text-sidebar-foreground",
+                  isLoading && "opacity-70 cursor-not-allowed",
+                  "hover:scale-[1.02] active:scale-[0.98]"
+                )}
+              >
+                <div className="flex items-center gap-3 w-full">
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <item.icon className="h-4 w-4 flex-shrink-0" />
                   )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.name}
-                </Button>
-              </Link>
+                  <span className="truncate">
+                    {item.name}
+                  </span>
+                </div>
+                
+                {/* Hover effect overlay */}
+                <div className={cn(
+                  "absolute inset-0 bg-sidebar-accent/20 opacity-0 transition-opacity duration-200",
+                  "group-hover:opacity-100",
+                  isActive && "opacity-0"
+                )} />
+              </button>
             )
           })}
         </nav>

@@ -2,23 +2,33 @@
 
 import { useAuthStore } from "@/stores/auth-store"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { InitialLoading } from "@/components/ui/initial-loading"
 
 export default function HomePage() {
   const { user, isAuthenticated } = useAuthStore()
   const router = useRouter()
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      router.push("/dashboard")
-    } else {
-      router.push("/login")
-    }
+    // Small delay to prevent flash of content
+    const timer = setTimeout(() => {
+      if (isAuthenticated && user) {
+        setIsRedirecting(true)
+        router.push("/dashboard")
+      } else {
+        setIsRedirecting(true)
+        router.push("/login")
+      }
+    }, 100)
+
+    return () => clearTimeout(timer)
   }, [isAuthenticated, user, router])
 
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    </div>
-  )
+  // Show optimized loading page immediately instead of a spinner
+  if (!isRedirecting) {
+    return <InitialLoading />
+  }
+
+  return null
 }

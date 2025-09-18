@@ -5,7 +5,6 @@ import { PipelineForm } from "@/components/dashboard/pipeline-form"
 import { RecentJobs } from "@/components/dashboard/recent-jobs"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { PageLoadingSpinner } from "@/components/ui/loading-spinner"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { OfflineBanner } from "@/components/ui/offline-banner"
 import { useRouter } from "next/navigation"
@@ -34,7 +33,42 @@ export default function DashboardPage() {
   }, [isAuthenticated, user, router, fetchJobs])
 
   if (!user) {
-    return <PageLoadingSpinner text="Loading dashboard..." />
+    return (
+      <div className="flex h-screen bg-background">
+        <div className="w-64 border-r bg-card">
+          <div className="p-6 space-y-4">
+            <div className="h-8 w-32 bg-muted animate-pulse-slow rounded" />
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-10 w-full bg-muted animate-pulse-slow rounded" />
+              ))}
+            </div>
+          </div>
+        </div>
+        <main className="flex-1 p-6">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="h-8 w-48 bg-muted animate-pulse-slow rounded" />
+                <div className="h-4 w-64 bg-muted animate-pulse-slow rounded" />
+              </div>
+              <div className="h-10 w-32 bg-muted animate-pulse-slow rounded" />
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="p-6 border rounded-lg bg-card">
+                  <div className="space-y-2">
+                    <div className="h-4 w-20 bg-muted animate-pulse-slow rounded" />
+                    <div className="h-8 w-16 bg-muted animate-pulse-slow rounded" />
+                    <div className="h-3 w-24 bg-muted animate-pulse-slow rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   const handlePipelineSubmit = async (data: any) => {

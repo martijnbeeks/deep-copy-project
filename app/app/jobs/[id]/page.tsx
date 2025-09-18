@@ -13,6 +13,7 @@ import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useSidebar } from "@/contexts/sidebar-context"
 import { JobWithResult } from "@/lib/db/types"
+import { JobDetailsSkeleton } from "@/components/ui/skeleton-loaders"
 
 export default function JobDetailPage({ params }: { params: { id: string } }) {
   const { user, isAuthenticated } = useAuthStore()
@@ -52,8 +53,11 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
 
   if (!user || isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex h-screen bg-background">
+        <Sidebar />
+        <main className="flex-1 p-6">
+          <JobDetailsSkeleton />
+        </main>
       </div>
     )
   }
