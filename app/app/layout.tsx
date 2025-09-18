@@ -5,6 +5,7 @@ import "./globals.css";
 import { AppProvider } from "@/contexts/app-context";
 import { SidebarProvider } from "@/contexts/sidebar-context";
 import { Toaster } from "@/components/ui/toaster";
+import { PageTransition } from "@/components/ui/page-transition";
 ;
 
 const inter = Inter({
@@ -21,6 +22,17 @@ export const metadata: Metadata = {
   title: "AI Copywriting Dashboard",
   description: "Professional AI-powered content creation platform",
   generator: "v0.app",
+  robots: "index, follow",
+  openGraph: {
+    title: "AI Copywriting Dashboard",
+    description: "Professional AI-powered content creation platform",
+    type: "website",
+  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -49,16 +61,18 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body
-        className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`}
-      >
-        <AppProvider>
-          <SidebarProvider>
-            {children}
-            <Toaster />
-          </SidebarProvider>
-        </AppProvider>
-      </body>
+                  <body
+                    className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`}
+                  >
+                    <AppProvider>
+                      <SidebarProvider>
+                        <PageTransition>
+                          {children}
+                        </PageTransition>
+                        <Toaster />
+                      </SidebarProvider>
+                    </AppProvider>
+                  </body>
     </html>
   );
 }

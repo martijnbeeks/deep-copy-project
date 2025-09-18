@@ -7,6 +7,7 @@ import { Eye, Clock, CheckCircle, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useJobsStore } from "@/stores/jobs-store"
 import { JobWithTemplate } from "@/lib/db/types"
+import { RecentJobsSkeleton } from "@/components/ui/skeleton-loaders"
 
 const getStatusIcon = (status: JobWithTemplate["status"]) => {
   switch (status) {
@@ -37,8 +38,12 @@ const getStatusBadge = (status: JobWithTemplate["status"]) => {
 }
 
 export function RecentJobs() {
-  const { jobs } = useJobsStore()
+  const { jobs, isLoading } = useJobsStore()
   const recentJobs = jobs.slice(0, 5) // Show only the 5 most recent jobs
+
+  if (isLoading) {
+    return <RecentJobsSkeleton />
+  }
 
   return (
     <Card>

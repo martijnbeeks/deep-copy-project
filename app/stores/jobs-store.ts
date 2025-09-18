@@ -1,6 +1,19 @@
 import { create } from 'zustand'
+import { subscribeWithSelector } from 'zustand/middleware'
 import { Job, JobWithTemplate, JobWithResult } from '@/lib/db/types'
 import { useAuthStore } from './auth-store'
+
+// Debounce utility for performance
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout)
+    timeout = setTimeout(() => func(...args), wait)
+  }
+}
 
 interface JobsState {
   jobs: JobWithTemplate[]
@@ -32,7 +45,8 @@ interface JobsActions {
   pollJobStatus: (jobId: string) => void
 }
 
-export const useJobsStore = create<JobsState & JobsActions>((set, get) => ({
+export const useJobsStore = create<JobsState & JobsActions>()(
+  subscribeWithSelector((set, get) => ({
   jobs: [],
   currentJob: null,
   isLoading: false,
@@ -166,3 +180,4 @@ export const useJobsStore = create<JobsState & JobsActions>((set, get) => ({
     poll()
   },
 }))
+)
