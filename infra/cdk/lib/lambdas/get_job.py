@@ -39,21 +39,13 @@ def handler(event, _context):
         return _response(404, "Not found")
 
     status = item.get("status", {}).get("S")
-    result_prefix = item.get("resultPrefix", {}).get("S")
-    results_raw = item.get("results", {}).get("S")
 
-    try:
-        results = json.loads(results_raw) if results_raw else None
-    except json.JSONDecodeError:
-        results = None
 
     return _response(
         200,
         {
             "jobId": job_id,
             "status": status,
-            "resultPrefix": result_prefix,
-            "results": results,
         },
     )
 

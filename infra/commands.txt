@@ -7,6 +7,16 @@ DeepCopyStack.M2MClientId = 5e2k1st9li1eihp22fl33nd7if
 DeepCopyStack.ResultsBucketName = deepcopystack-resultsbucketa95a2103-zhwjflrlpfih
 DeepCopyStack.UserPoolId = eu-west-1_ilJPIuXjB
 
+DeepCopyStack.ApiEndpoint4F160690 = https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/
+DeepCopyStack.ApiUrl = https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/
+DeepCopyStack.CognitoIssuer = https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_ilJPIuXjB
+DeepCopyStack.CognitoTokenEndpoint = https://deepcopy-613663743323-eu-west-1.auth.eu-west-1.amazoncognito.com/oauth2/token
+DeepCopyStack.JobsTableName = DeepCopyStack-JobsTable1970BC16-1BVYVOHK8WXTU
+DeepCopyStack.M2MClientId = 5e2k1st9li1eihp22fl33nd7if
+DeepCopyStack.PravahaClientId = 5mbatc7uv35hr23qip437s2ai5
+DeepCopyStack.ResultsBucketName = deepcopystack-resultsbucketa95a2103-zhwjflrlpfih
+DeepCopyStack.UserPoolId = eu-west-1_ilJPIuXjB
+
 
 
 ACCESS_TOKEN=$(curl -s -u "$CLIENT_ID:$CLIENT_SECRET" \
@@ -18,13 +28,14 @@ curl -sS -X POST \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "content-type: application/json" \
   -d '{
-    "brand_info": "Hypowered is a brand that sells nose strips designed for sports people to enhance breathing and athletic performance",
-    "sales_page_url": "https://hypowered.nl/en",
-    "project_name": "test-project",
-    "swipe_file_id": "L00001"
+    "sales_page_url": "https://try.meritrelief.com/",
+    "project_name": "meritrelief",
+    "swipe_file_id": "L00005",
+    "advertorial_type": "Listicle"
   }' \
   "${API_URL}jobs"
 
 # GET /jobs/{id} (uses read)
 curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID"
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID/result"
 

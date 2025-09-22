@@ -10,7 +10,7 @@ import logging
 from datetime import datetime, timezone
 import uuid
 
-from typing import List, Optional
+from typing import List, Optional, Literal
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -198,7 +198,7 @@ class DeepCopy:
             logger.error(f"Error encoding image: {e}")
             raise
     
-    def analyze_research_page(self, brand_info, sales_page_url):
+    def analyze_research_page(self, sales_page_url):
         """Analyze the sales page using GPT-5 Vision"""
         try:
             base64_image = None
@@ -221,9 +221,6 @@ class DeepCopy:
             prompt = f"""
             You are my expert copywriter specializing in persuasive direct-response copy for my e-commerce brand.
             I've attached my current sales page.
-
-            Here is additional information about the brand and product:
-            {brand_info}
 
             Analyze this page and please let me know your thoughts.
             """
@@ -268,13 +265,14 @@ class DeepCopy:
             logger.error(f"Error analyzing research document {doc_name}: {e}")
             raise
     
-    def create_deep_research_prompt(self, brand_info, research_page_analysis, doc1_analysis, doc2_analysis):
+    def create_deep_research_prompt(self, sales_page_url, research_page_analysis, doc1_analysis, doc2_analysis):
         """Create a comprehensive research prompt"""
         try:
             prompt = f"""
-            Now that you understand how to conduct research, create a full, best-practice prompt for Deep Research tool to research {brand_info}. 
+            Now that you understand how to conduct research, create a full, best-practice prompt for Deep Research tool to research products from {sales_page_url} according to the sections below. 
             Be as specific as possible, and include instructions to compile all findings into a single document of at least six pages.
-            Please only return the actual prompt that directly can be used in the Deep Research tool, no other text.
+            Please only return the actual prompt that directly can be used in the Deep Research tool, no other text or return questions.
+            Do not ask to add any appendices, everything should be text and in a single document.
 
             Research Page analysis:
             {research_page_analysis}
@@ -341,7 +339,7 @@ class DeepCopy:
         try:
             
             prompt = f"""
-            Amazing work! Now that you have properly completed the research portion, I want you to please complete the Avatar sheet template as tool using the deep research output:
+            Amazing work! Now that you have properly completed the research portion, I want you to please complete the Avatar sheet template using the deep research output:
             
             Deep research output:
             {deep_research_output}
@@ -405,7 +403,7 @@ class DeepCopy:
             prompt = f"""
             Great work! Now that you understand that marketing at his core is simply about changing the existing beliefs of a customer into the belief that align with them empowering them to purchase our product, 
             I want you to please analyze the following documents about my prospect and write out the few absolutely necessary, beliefs that a prospect must have before purchasing my product. 
-            It should be no more than 6 beliefs. I also want you to structure these as "I believe that…" statements. Go ahead.
+            It should be no more than 6 beliefs. I also want you to structure these as "I believe that…" statements.
             
             Marketing philosophy:
             {marketing_philosophy}
@@ -471,33 +469,35 @@ class DeepCopy:
             logger.error(f"Error creating summary: {e}")
             raise
     
-    def rewrite_swipe_files(self, brand_info, angles, avatar_sheet, summary, swipe_file_path):
+    def rewrite_swipe_files(self, angles, avatar_sheet, summary, swipe_file_path, advertorial_type: Literal["Advertorial", "Listicle"]):
         """Rewrite swipe files for each marketing angle"""
         try:
             with open(swipe_file_path, "r", encoding="utf-8") as f:
                 swipe_file_html = f.read()
             
             results = []
-            # Use a max of 3 angles to avoid overwhelming the API
+            # Use a max of 3 angles to avoid overwhelming the API and use Listicle
             for angle in angles[:3]:
                 prompt = f"""
-                Great, now I want you to please rewrite this advertorial but using all of the information around the {brand_info}. 
+                Great, now I want you to please rewrite this {advertorial_type} but using all of the information around products stated below. 
                 I want you to specifically focus on the first marketing angle from the avatar sheet: {angle}. 
-                Please rewrite the advertorial with the new content and output it in html format.
+                Please rewrite the {advertorial_type} with the new content and output it in html format. 
+                Make sure to exactly match the style and format of the example {advertorial_type}. 
+                Keep all the images and style components from the example and add them into the new html file.
                 
                 Avatar sheet:
                 {avatar_sheet}
                 
-                Content for the advertorial:
+                Content for the {advertorial_type}:
                 {summary}
                 
-                Swipe file in html format:
+                Example {advertorial_type} in html format:
                 {swipe_file_html}
                 """
 
                 logger.info(f"Calling GPT-5 API to rewrite swipe file for angle: {angle}")
                 response = self.client.responses.create(
-                    model=self.openai_model,
+                    model="gpt-5",
                     input=[{
                         "role": "user", 
                         "content": [{"type": "input_text", "text": prompt}]
@@ -540,6 +540,12 @@ class DeepCopy:
             
             # Also save under project id
             s3_key = f'results/{job_id}/comprehensive_results.json'
+            self.s3_client.put_object(
+                Bucket=s3_bucket,
+                Key=s3_key,
+                Body=json.dumps(comprehensive_results, ensure_ascii=False, indent=4),
+                ContentType='application/json'
+            )
             
             logger.info(f"Saved comprehensive results to S3: {s3_key}")
             
@@ -579,7 +585,6 @@ def run_pipeline(event, context):
     
     Expected event structure:
     {
-        "brand_info": "Description of the brand and product",
         "sales_page_url": "URL of the sales page to analyze",
         "s3_bucket": "S3 bucket to store results",
         "project_name": "Name of the project for organization",
@@ -601,15 +606,15 @@ def run_pipeline(event, context):
             pass
         
         # Extract parameters from event (fallback to env vars)
-        brand_info = event.get("brand_info") or os.environ.get("BRAND_INFO") or "Hypowered is a brand that sells nose strips designed for sports people to enhance breathing and athletic performance"
-        sales_page_url = event.get("sales_page_url") or os.environ.get("SALES_PAGE_URL") or "https://hypowered.nl/en"
+        sales_page_url = event.get("sales_page_url") or os.environ.get("SALES_PAGE_URL")
         s3_bucket = event.get("s3_bucket", generator.s3_bucket)
         project_name = event.get("project_name") or os.environ.get("PROJECT_NAME") or "default-project"
         swipe_file_id = event.get("swipe_file_id") or os.environ.get("SWIPE_FILE_ID")
+        advertorial_type = event.get("advertorial_type")
         content_dir = event.get("content_dir", "src/pipeline/content/")
         logger.info(
             f"Pipeline inputs: project_name={project_name}, sales_page_url={sales_page_url}, "
-            f"brand_info_present={bool(brand_info)}, swipe_file_id={swipe_file_id}, content_dir={content_dir}"
+            f"swipe_file_id={swipe_file_id}, content_dir={content_dir}"
         )
 
         # Require swipe_file_id when not provided return 400
@@ -677,7 +682,7 @@ def run_pipeline(event, context):
         
         # Step 1: Analyze research page
         logger.info("Step 1: Analyzing research page")
-        research_page_analysis = generator.analyze_research_page(brand_info, sales_page_url)
+        research_page_analysis = generator.analyze_research_page(sales_page_url)
         
         # Step 2: Analyze research documents
         logger.info("Step 2: Analyzing research documents")
@@ -691,7 +696,7 @@ def run_pipeline(event, context):
         # Step 3: Create deep research prompt
         logger.info("Step 3: Creating deep research prompt")
         deep_research_prompt = generator.create_deep_research_prompt(
-            brand_info, research_page_analysis, doc1_analysis, doc2_analysis
+            sales_page_url, research_page_analysis, doc1_analysis, doc2_analysis
         )
         
         # Step 4: Execute deep research
@@ -722,8 +727,9 @@ def run_pipeline(event, context):
         
         # Step 9: Rewrite swipe files
         logger.info("Step 9: Rewriting swipe files")
+        
         swipe_results = generator.rewrite_swipe_files(
-            brand_info, angles, avatar_sheet, summary, swipe_file_path
+            angles, avatar_sheet, summary, swipe_file_path, advertorial_type
         )
         
         # Step 10: Save all results

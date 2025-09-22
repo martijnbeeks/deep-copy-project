@@ -29,15 +29,44 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# System deps (minimal); Playwright disabled at runtime via env
+# System deps required by Chromium on Debian
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl \
+    ca-certificates \
+    curl \
+    libglib2.0-0 \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libatspi2.0-0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2 \
+    libxshmfence1 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxext6 \
+    libxrender1 \
+    fonts-liberation \
+    fonts-unifont \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy deps and app
 COPY --from=build /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=build /usr/local/bin /usr/local/bin
 COPY . /app
+
+# Install Chromium browser binaries in the final image
+RUN playwright install chromium
 
 # Precompile (non-fatal)
 RUN python -m compileall -q /app || true
