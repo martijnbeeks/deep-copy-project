@@ -35,7 +35,7 @@ export default function ResultsPage() {
     }
 
     fetchJobs()
-  }, [user, router, fetchJobs])
+  }, [user, router])
 
   useEffect(() => {
     const completedJobs = jobs.filter(job => job.status === 'completed')
@@ -377,7 +377,7 @@ export default function ResultsPage() {
                             <span className="hidden sm:inline">•</span>
                             <span>{new Date(job.created_at).toLocaleDateString()}</span>
                             <span className="hidden sm:inline">•</span>
-                            <span>Progress: {job.progress}%</span>
+                            <span>Status: {job.status}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">

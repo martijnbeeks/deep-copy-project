@@ -1,0 +1,418 @@
+import { query } from '@/lib/db/connection'
+import { deepCopyClient } from '@/lib/api/deepcopy-client'
+import { updateJobStatus, createResult } from '@/lib/db/queries'
+
+// Global polling manager for background polling
+const backgroundPollingManager = new Map<string, NodeJS.Timeout>()
+
+export class BackgroundPollingService {
+  private static instance: BackgroundPollingService
+  private isRunning = false
+  private pollInterval: NodeJS.Timeout | null = null
+
+  static getInstance(): BackgroundPollingService {
+    if (!BackgroundPollingService.instance) {
+      BackgroundPollingService.instance = new BackgroundPollingService()
+    }
+    return BackgroundPollingService.instance
+  }
+
+  start() {
+    if (this.isRunning) {
+      console.log('🔄 Background polling already running')
+      return
+    }
+
+    this.isRunning = true
+    console.log('🚀 Starting background polling service...')
+    
+    // Check for jobs every 30 seconds
+    this.pollInterval = setInterval(() => {
+      this.checkAllJobs()
+    }, 30000)
+
+    // Initial check
+    this.checkAllJobs()
+  }
+
+  stop() {
+    if (!this.isRunning) {
+      return
+    }
+
+    this.isRunning = false
+    console.log('🛑 Stopping background polling service...')
+    
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval)
+      this.pollInterval = null
+    }
+
+    // Stop all individual job polling
+    backgroundPollingManager.forEach((timeoutId, jobId) => {
+      clearTimeout(timeoutId)
+      console.log(`🛑 Stopped background polling for job ${jobId}`)
+    })
+    backgroundPollingManager.clear()
+  }
+
+  private async checkAllJobs() {
+    try {
+      console.log('🔍 Background check: Looking for jobs that need polling...')
+      
+      // Get all jobs that are not completed/failed
+      const result = await query(`
+        SELECT id, execution_id, status, updated_at 
+        FROM jobs 
+        WHERE status IN ('pending', 'processing')
+        ORDER BY updated_at DESC
+      `)
+      
+      const jobsToPoll = result.rows
+      console.log(`🔍 Found ${jobsToPoll.length} jobs that need background polling`)
+      
+      for (const job of jobsToPoll) {
+        // Only start polling if not already polling
+        if (!backgroundPollingManager.has(job.id)) {
+          // Use the job ID directly as the DeepCopy job ID (since we now use DeepCopy job ID as primary key)
+          this.startJobPolling(job.id, job.id)
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Error in background polling check:', error)
+    }
+  }
+
+  private startJobPolling(jobId: string, deepCopyJobId: string) {
+    console.log(`🔄 Starting background polling for job ${jobId}`)
+    
+    let pollCount = 0
+    const maxPolls = 60 // Maximum 15 minutes of polling (60 * 15 seconds)
+    
+    const poll = async () => {
+      try {
+        pollCount++
+        console.log(`🔄 Background polling job ${jobId} (attempt ${pollCount}/${maxPolls})`)
+        
+        console.log(`📡 Polling DeepCopy API: https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/jobs/${deepCopyJobId}`)
+        
+        const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
+        console.log(`📊 DeepCopy API response for job ${jobId}:`, statusResponse)
+        
+        if (statusResponse.status === 'SUCCEEDED') {
+          // Job completed - get results and store them
+          console.log(`✅ Job ${jobId} succeeded, fetching results...`)
+          const result = await deepCopyClient.getJobResult(deepCopyJobId)
+          await this.storeJobResults(jobId, result, deepCopyJobId)
+          await updateJobStatus(jobId, 'completed', 100)
+          console.log(`✅ Background polling completed job: ${jobId}`)
+          
+          // Stop polling
+          backgroundPollingManager.delete(jobId)
+          return
+          
+        } else if (statusResponse.status === 'FAILED') {
+          // Job failed
+          await updateJobStatus(jobId, 'failed')
+          console.log(`❌ Background polling failed job: ${jobId}`)
+          
+          // Stop polling
+          backgroundPollingManager.delete(jobId)
+          return
+          
+        } else if (['RUNNING', 'SUBMITTED', 'PENDING'].includes(statusResponse.status)) {
+          // Job still processing - update progress and continue
+          const progress = statusResponse.status === 'SUBMITTED' ? 25 : 
+                         statusResponse.status === 'RUNNING' ? 50 : 30
+          await updateJobStatus(jobId, 'processing', progress)
+          console.log(`🔄 Job ${jobId} still processing (${statusResponse.status}) - continuing background polling`)
+          
+          // Continue polling if we haven't reached max polls
+          if (pollCount < maxPolls) {
+            const timeoutId = setTimeout(poll, 15000) // Poll every 15 seconds
+            backgroundPollingManager.set(jobId, timeoutId)
+          } else {
+            console.log(`⏰ Job ${jobId} reached max polling attempts, stopping`)
+            backgroundPollingManager.delete(jobId)
+          }
+          
+        } else {
+          // Unknown status - mark as failed
+          await updateJobStatus(jobId, 'failed')
+          console.log(`❓ Unknown status for job ${jobId}: ${statusResponse.status}`)
+          backgroundPollingManager.delete(jobId)
+        }
+        
+      } catch (error) {
+        console.error(`❌ Background polling error for job ${jobId}:`, error)
+        backgroundPollingManager.delete(jobId)
+      }
+    }
+
+    // Start polling after a short delay
+    const timeoutId = setTimeout(poll, 3000)
+    backgroundPollingManager.set(jobId, timeoutId)
+  }
+
+  private async storeJobResults(localJobId: string, result: any, deepCopyJobId: string) {
+    try {
+      console.log(`📊 Background polling storing results for job ${localJobId}:`, {
+        hasResults: !!result.results,
+        hasSwipeResults: !!(result.results && result.results.swipe_results),
+        swipeResultsCount: result.results?.swipe_results?.length || 0,
+        projectName: result.project_name
+      })
+      
+      // Create HTML content for display
+      let htmlContent = ''
+      let sections: string[] = []
+      
+      if (result.results) {
+        // Handle nested results structure
+        if (result.results.research_page_analysis) sections.push('Research Analysis')
+        if (result.results.doc1_analysis) sections.push('Market Research')
+        if (result.results.doc2_analysis) sections.push('Customer Research')
+        if (result.results.deep_research_output) sections.push('Research Report')
+        if (result.results.avatar_sheet) sections.push('Customer Avatars')
+        if (result.results.html_content) sections.push('Generated HTML')
+        
+        // Check for swipe_results
+        if (result.results.swipe_results && Array.isArray(result.results.swipe_results)) {
+          sections.push(`Swipe Results (${result.results.swipe_results.length} templates)`)
+        }
+        
+        htmlContent = this.createResultsHTML(result.results, sections)
+      } else {
+        // Handle direct content
+        htmlContent = typeof result === 'string' ? result : JSON.stringify(result, null, 2)
+      }
+      
+      // Extract HTML templates count for metadata
+      const htmlTemplates = this.extractHTMLTemplates(result)
+      const templateCount = htmlTemplates.length
+      
+      console.log(`📄 Background polling found ${templateCount} HTML templates in job results`)
+      
+      // Store the result with full metadata
+      await createResult(localJobId, htmlContent, {
+        deepcopy_job_id: deepCopyJobId,
+        project_name: result.project_name,
+        timestamp_iso: result.timestamp_iso,
+        full_result: result,
+        generated_at: new Date().toISOString(),
+        word_count: htmlContent.split(' ').length,
+        html_templates_count: templateCount
+      })
+      
+      console.log(`✅ Background polling successfully stored results for job ${localJobId} with ${templateCount} HTML templates`)
+      
+    } catch (error) {
+      console.error('❌ Error storing job results in background polling:', error)
+    }
+  }
+
+  // Extract HTML templates from DeepCopy results
+  private extractHTMLTemplates(results: any): Array<{name: string, type: string, html: string, timestamp: string, angle?: string}> {
+    const templates: Array<{name: string, type: string, html: string, timestamp: string, angle?: string}> = []
+    
+    try {
+      // Check if results has swipe_results array
+      if (results.swipe_results && Array.isArray(results.swipe_results)) {
+        results.swipe_results.forEach((swipe: any, index: number) => {
+          // Extract angle information
+          const angle = swipe.angle || swipe.angle_name || swipe.angle_type || `Angle ${index + 1}`
+          
+          // Extract HTML from each swipe result
+          if (swipe.html) {
+            templates.push({
+              name: swipe.name || `Swipe ${index + 1}`,
+              type: swipe.type || 'Unknown',
+              html: swipe.html,
+              timestamp: swipe.timestamp || new Date().toISOString(),
+              angle: angle
+            })
+          }
+          
+          // Check for nested HTML in content field (this is the main one the user mentioned)
+          if (swipe.content && typeof swipe.content === 'string') {
+            // Check if content contains HTML
+            if (swipe.content.includes('<html') || swipe.content.includes('<div') || swipe.content.includes('<p')) {
+              templates.push({
+                name: `${swipe.name || `Swipe ${index + 1}`} - Content`,
+                type: 'Content HTML',
+                html: swipe.content,
+                timestamp: swipe.timestamp || new Date().toISOString(),
+                angle: angle
+              })
+            }
+          }
+          
+          // Check for HTML in other potential fields
+          const htmlFields = ['html_content', 'generated_html', 'template_html', 'output_html', 'rendered_html', 'final_html']
+          htmlFields.forEach(field => {
+            if (swipe[field] && typeof swipe[field] === 'string' && swipe[field].includes('<html')) {
+              templates.push({
+                name: `${swipe.name || `Swipe ${index + 1}`} - ${field}`,
+                type: field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                html: swipe[field],
+                timestamp: swipe.timestamp || new Date().toISOString(),
+                angle: angle
+              })
+            }
+          })
+        })
+      }
+      
+      // Also check for HTML in other result fields
+      if (results.html_content && typeof results.html_content === 'string' && results.html_content.includes('<html')) {
+        templates.push({
+          name: 'Main HTML Content',
+          type: 'Main Content',
+          html: results.html_content,
+          timestamp: results.timestamp_iso || new Date().toISOString()
+        })
+      }
+      
+      // Check for HTML in results.results
+      if (results.results && typeof results.results === 'object') {
+        const htmlFields = ['html_content', 'generated_html', 'template_html', 'output_html']
+        htmlFields.forEach(field => {
+          if (results.results[field] && typeof results.results[field] === 'string' && results.results[field].includes('<html')) {
+            templates.push({
+              name: `Results - ${field}`,
+              type: field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+              html: results.results[field],
+              timestamp: results.timestamp_iso || new Date().toISOString()
+            })
+          }
+        })
+      }
+      
+      console.log(`📄 Background polling extracted ${templates.length} HTML templates from results`)
+      
+    } catch (error) {
+      console.error('Error extracting HTML templates in background polling:', error)
+    }
+    
+    return templates
+  }
+
+  // Create HTML content from DeepCopy results
+  private createResultsHTML(results: any, sections: string[]) {
+    // Extract HTML templates from swipe_results
+    const htmlTemplates = this.extractHTMLTemplates(results)
+    
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepCopy AI Results</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; }
+        .section { background: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #667eea; }
+        .section h3 { color: #333; margin-top: 0; }
+        .content { line-height: 1.6; }
+        .preview { background: #fff; padding: 15px; border-radius: 6px; border: 1px solid #e9ecef; max-height: 300px; overflow-y: auto; }
+        .stats { display: flex; gap: 20px; margin: 20px 0; }
+        .stat { background: white; padding: 15px; border-radius: 8px; text-align: center; flex: 1; }
+        .stat-number { font-size: 24px; font-weight: bold; color: #667eea; }
+        .stat-label { font-size: 14px; color: #666; }
+        .html-template { background: #fff; padding: 20px; margin: 15px 0; border-radius: 8px; border: 2px solid #28a745; }
+        .html-template h4 { color: #28a745; margin-top: 0; }
+        .html-preview { background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #dee2e6; max-height: 400px; overflow-y: auto; }
+        .html-source { background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 12px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+        .template-meta { background: #e3f2fd; padding: 10px; border-radius: 4px; margin-bottom: 10px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>DeepCopy AI Generated Content</h1>
+        <p>Comprehensive research and analysis results</p>
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-number">${sections.length}</div>
+                <div class="stat-label">Content Sections</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">${htmlTemplates.length}</div>
+                <div class="stat-label">HTML Templates</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">${results.project_name || 'N/A'}</div>
+                <div class="stat-label">Project Name</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="content">
+        <h2>Generated Content Sections</h2>
+        ${sections.map(section => `
+            <div class="section">
+                <h3>${section}</h3>
+                <div class="preview">
+                    ${this.getSectionContent(results, section)?.substring(0, 1000) || 'Content preview not available'}...
+                </div>
+            </div>
+        `).join('')}
+        
+        ${htmlTemplates.length > 0 ? `
+        <h2>HTML Templates Generated</h2>
+        ${htmlTemplates.map((template, index) => `
+            <div class="html-template">
+                <h4>Template ${index + 1}: ${template.name || 'Unnamed Template'}</h4>
+                <div class="template-meta">
+                    <strong>Type:</strong> ${template.type || 'Unknown'} | 
+                    <strong>Angle:</strong> ${template.angle || 'N/A'} |
+                    <strong>Size:</strong> ${template.html ? template.html.length : 0} characters |
+                    <strong>Generated:</strong> ${template.timestamp || 'Unknown time'}
+                </div>
+                <div class="html-preview">
+                    <h5>Preview:</h5>
+                    <div style="border: 1px solid #ccc; padding: 10px; background: white;">
+                        ${template.html || 'No HTML content available'}
+                    </div>
+                </div>
+                <div class="html-source">
+                    <h5>Source Code:</h5>
+                    ${template.html ? this.escapeHtml(template.html) : 'No HTML source available'}
+                </div>
+            </div>
+        `).join('')}
+        ` : '<div class="section"><h3>No HTML Templates Found</h3><p>No HTML templates were generated for this job.</p></div>'}
+    </div>
+</body>
+</html>`
+  }
+
+  // Escape HTML for display in source code sections
+  private escapeHtml(text: string): string {
+    const map: { [key: string]: string } = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    }
+    return text.replace(/[&<>"']/g, (m) => map[m])
+  }
+
+  // Get content for a specific section
+  private getSectionContent(results: any, section: string): string {
+    const key = section.toLowerCase().replace(/\s+/g, '_')
+    return results[key] || results[section] || ''
+  }
+
+  getStatus() {
+    return {
+      isRunning: this.isRunning,
+      activeJobs: Array.from(backgroundPollingManager.keys())
+    }
+  }
+}
+
+// Export singleton instance
+export const backgroundPollingService = BackgroundPollingService.getInstance()

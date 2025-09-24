@@ -6,7 +6,7 @@ import { JobProgress } from "@/components/jobs/job-progress"
 import { JobLogs } from "@/components/jobs/job-logs"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { ArrowLeft, RefreshCw, Download, Eye, Menu, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useAuthStore } from "@/stores/auth-store"
@@ -17,11 +17,21 @@ import { JobDetailsSkeleton } from "@/components/ui/skeleton-loaders"
 
 export default function JobDetailPage({ params }: { params: { id: string } }) {
   const { user, isAuthenticated } = useAuthStore()
-  const { currentJob, fetchJob, pollJobStatus } = useJobsStore()
+  const { currentJob, fetchJob } = useJobsStore()
   const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [isPolling, setIsPolling] = useState(false)
+
+  const loadJob = useCallback(async () => {
+    try {
+      await fetchJob(params.id)
+      setIsLoading(false)
+    } catch (error) {
+      console.error('Failed to fetch job:', error)
+      setIsLoading(false)
+    }
+  }, [fetchJob, params.id])
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -29,27 +39,18 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
       return
     }
 
-    const loadJob = async () => {
-      try {
-        await fetchJob(params.id)
-        setIsLoading(false)
-      } catch (error) {
-        console.error('Failed to fetch job:', error)
-        setIsLoading(false)
-      }
-    }
-
     loadJob()
-  }, [isAuthenticated, user, router, params.id, fetchJob])
+  }, [isAuthenticated, user, router, loadJob])
 
+  // Background polling is now handled by the background service
+  // No need to poll here - just display the current status
   useEffect(() => {
-    if (currentJob && (currentJob.status === 'pending' || currentJob.status === 'processing')) {
-      setIsPolling(true)
-      pollJobStatus(currentJob.id)
+    if (currentJob) {
+      setIsPolling(currentJob.status === 'pending' || currentJob.status === 'processing')
     } else {
       setIsPolling(false)
     }
-  }, [currentJob, pollJobStatus])
+  }, [currentJob])
 
   if (!user || isLoading) {
     return (
@@ -158,7 +159,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
             <div>
               <JobProgress
                 steps={[]}
-                overallProgress={currentJob.progress}
+                overallProgress={0}
                 currentStep={undefined}
               />
             </div>

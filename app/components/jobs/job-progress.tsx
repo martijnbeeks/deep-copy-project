@@ -56,14 +56,6 @@ export function JobProgress({ steps, currentStep, overallProgress }: JobProgress
         <CardDescription>Track your AI content generation process</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Overall Progress</span>
-            <span>{overallProgress}%</span>
-          </div>
-          <Progress value={overallProgress} className="h-2" />
-        </div>
-
         <div className="space-y-3">
           {steps.map((step, index) => (
             <div key={step.id} className="flex items-center gap-3 p-3 border rounded-lg">

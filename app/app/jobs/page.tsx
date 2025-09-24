@@ -16,8 +16,8 @@ import { EmptyState } from "@/components/ui/empty-state"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { OfflineBanner } from "@/components/ui/offline-banner"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { Eye, Search, Filter, Plus, FileText, AlertCircle, Menu, ChevronLeft, ChevronRight } from "lucide-react"
+import { useEffect, useState, useCallback } from "react"
+import { Eye, Search, Filter, Plus, FileText, AlertCircle, Menu, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react"
 import Link from "next/link"
 
 export default function JobsPage() {
@@ -28,6 +28,18 @@ export default function JobsPage() {
   const [filteredJobs, setFilteredJobs] = useState(jobs)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const loadJobs = useCallback(async () => {
+    try {
+      setIsRefreshing(true)
+      await fetchJobs()
+    } catch (error) {
+      console.error('Failed to fetch jobs:', error)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }, [fetchJobs])
 
   useEffect(() => {
     if (!user) {
@@ -35,8 +47,21 @@ export default function JobsPage() {
       return
     }
 
-    fetchJobs()
-  }, [user, router, fetchJobs])
+    loadJobs()
+  }, [user, router, loadJobs])
+
+  // Auto-refresh for processing jobs every 10 seconds
+  useEffect(() => {
+    const hasProcessingJobs = jobs.some(job => job.status === 'processing' || job.status === 'pending')
+    
+    if (hasProcessingJobs) {
+      const interval = setInterval(() => {
+        loadJobs()
+      }, 10000) // Refresh every 10 seconds
+
+      return () => clearInterval(interval)
+    }
+  }, [jobs, loadJobs])
 
   useEffect(() => {
     let filtered = jobs
@@ -196,7 +221,12 @@ export default function JobsPage() {
           <div className="p-4 md:p-6">
             <div className="flex items-start justify-between mb-4 md:mb-6 gap-4">
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl md:text-3xl font-bold">All Jobs</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl md:text-3xl font-bold">All Jobs</h1>
+                  {isRefreshing && (
+                    <RefreshCw className="h-5 w-5 text-muted-foreground animate-spin" />
+                  )}
+                </div>
                 <p className="text-sm md:text-base text-muted-foreground mt-1">Manage and monitor your AI content generation tasks</p>
               </div>
               <div className="flex gap-2">
@@ -298,12 +328,6 @@ export default function JobsPage() {
                             <span className="capitalize">{job.template?.name || 'AI Generated'}</span>
                             <span className="hidden sm:inline">•</span>
                             <span>{new Date(job.created_at).toLocaleDateString()}</span>
-                            {job.progress !== undefined && (
-                              <>
-                                <span className="hidden sm:inline">•</span>
-                                <span>{job.progress}% complete</span>
-                              </>
-                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">

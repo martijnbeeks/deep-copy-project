@@ -7,6 +7,7 @@ export async function GET(
 ) {
   try {
     const jobId = params.id
+    console.log(`🔍 API: Fetching job ${jobId}`)
     const authHeader = request.headers.get('authorization')
     const userEmail = authHeader?.replace('Bearer ', '') || 'demo@example.com'
     
@@ -28,6 +29,7 @@ export async function GET(
       )
     }
 
+    console.log(`✅ API: Job ${jobId} fetched successfully`)
     return NextResponse.json(job)
   } catch (error) {
     console.error('Job fetch error:', error)

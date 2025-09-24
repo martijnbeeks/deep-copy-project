@@ -31,7 +31,7 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
     }
 
     loadJob()
-  }, [isAuthenticated, user, router, params.id, fetchJob])
+  }, [isAuthenticated, user, router, params.id])
 
   const handleDownload = () => {
     if (currentJob?.result?.html_content) {

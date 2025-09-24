@@ -59,12 +59,24 @@ export const createJob = async (jobData: {
   brand_info: string
   sales_page_url?: string
   template_id?: string
+  execution_id?: string
+  custom_id?: string
 }): Promise<Job> => {
-  const result = await query(
-    'INSERT INTO jobs (user_id, title, brand_info, sales_page_url, template_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-    [jobData.user_id, jobData.title, jobData.brand_info, jobData.sales_page_url, jobData.template_id]
-  )
-  return result.rows[0]
+  if (jobData.custom_id) {
+    // Use custom ID (DeepCopy job ID) as the primary key
+    const result = await query(
+      'INSERT INTO jobs (id, user_id, title, brand_info, sales_page_url, template_id, execution_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [jobData.custom_id, jobData.user_id, jobData.title, jobData.brand_info, jobData.sales_page_url, jobData.template_id, jobData.execution_id]
+    )
+    return result.rows[0]
+  } else {
+    // Use default UUID generation
+    const result = await query(
+      'INSERT INTO jobs (user_id, title, brand_info, sales_page_url, template_id, execution_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [jobData.user_id, jobData.title, jobData.brand_info, jobData.sales_page_url, jobData.template_id, jobData.execution_id]
+    )
+    return result.rows[0]
+  }
 }
 
 export const getJobsByUserId = async (userId: string, filters: { status?: string; search?: string } = {}): Promise<JobWithTemplate[]> => {
@@ -182,6 +194,10 @@ export const updateJobStatus = async (id: string, status: string, progress?: num
   }
 
   await query(`UPDATE jobs SET ${updates.join(', ')} WHERE id = $1`, params)
+}
+
+export const updateJobExecutionId = async (id: string, execution_id: string): Promise<void> => {
+  await query('UPDATE jobs SET execution_id = $2, updated_at = NOW() WHERE id = $1', [id, execution_id])
 }
 
 // Result queries

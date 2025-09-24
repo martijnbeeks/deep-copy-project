@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { OfflineBanner } from "@/components/ui/offline-banner"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import { BarChart3, FileText, Clock, TrendingUp, AlertCircle, Zap, Menu, ChevronLeft, ChevronRight } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -24,13 +24,17 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
 
+  const loadJobs = useCallback(async () => {
+    await fetchJobs()
+  }, [fetchJobs])
+
   useEffect(() => {
     if (!isAuthenticated || !user) {
       router.push("/login")
     } else {
-      fetchJobs()
+      loadJobs()
     }
-  }, [isAuthenticated, user, router, fetchJobs])
+  }, [isAuthenticated, user, router, loadJobs])
 
   if (!user) {
     return (

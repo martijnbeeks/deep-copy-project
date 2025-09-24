@@ -1,54 +1,19 @@
 "use client"
 
 import { Sidebar } from "@/components/dashboard/sidebar"
-import { ContentViewer } from "@/components/results/content-viewer"
-import { AnalyticsOverview } from "@/components/results/analytics-overview"
+import { DeepCopyResults } from "@/components/results/deepcopy-results"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { ArrowLeft, BarChart3, FileText, RefreshCw, Download, Eye, ExternalLink, Copy, Check, Menu, ChevronLeft, ChevronRight, Maximize2 } from "lucide-react"
+import { useEffect, useState, useCallback } from "react"
+import { ArrowLeft, BarChart3, FileText, RefreshCw, ExternalLink, Menu, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useSidebar } from "@/contexts/sidebar-context"
 import { ContentViewerSkeleton } from "@/components/ui/skeleton-loaders"
 
-interface ResultData {
-  id: string
-  jobId: string
-  content: {
-    id: string
-    title: string
-    sections: Array<{
-      id: string
-      title: string
-      content: string
-      type: "heading" | "paragraph" | "list" | "quote"
-    }>
-    wordCount: number
-    readingTime: number
-    tone: string
-    contentType: string
-    generatedAt: string
-  }
-  analytics: {
-    qualityScore: number
-    readabilityScore: number
-    seoScore: number
-    toneAccuracy: number
-    keywordDensity: Array<{ keyword: string; density: number; target: number }>
-    contentMetrics: {
-      sentences: number
-      paragraphs: number
-      avgSentenceLength: number
-      fleschScore: number
-    }
-    performancePredictions: Array<{ metric: string; score: number; benchmark: number }>
-  }
-}
 
 export default function ResultDetailPage({ params }: { params: { id: string } }) {
   const { user, isAuthenticated } = useAuthStore()
@@ -56,7 +21,20 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
   const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
-  const [copied, setCopied] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const loadJob = useCallback(async () => {
+    try {
+      setIsRefreshing(true)
+      await fetchJob(params.id)
+      setIsLoading(false)
+    } catch (error) {
+      console.error('Failed to fetch job:', error)
+      setIsLoading(false)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }, [fetchJob, params.id])
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -64,52 +42,19 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
       return
     }
 
-    const loadJob = async () => {
-      try {
-        await fetchJob(params.id)
-        setIsLoading(false)
-      } catch (error) {
-        console.error('Failed to fetch job:', error)
-        setIsLoading(false)
-      }
-    }
-
     loadJob()
-  }, [isAuthenticated, user, router, params.id, fetchJob])
+  }, [isAuthenticated, user, router, loadJob])
 
-  const handleFeedback = (rating: "positive" | "negative", feedback?: string) => {
-    // Handle feedback submission
-  }
+  useEffect(() => {
+    if (currentJob && (currentJob.status === 'processing' || currentJob.status === 'pending')) {
+      const interval = setInterval(() => {
+        loadJob()
+      }, 10000)
 
-  const handleRegenerate = (sectionId?: string) => {
-    // Handle content regeneration
-  }
-
-  const handleDownload = () => {
-    if (currentJob?.result?.html_content) {
-      const blob = new Blob([currentJob.result.html_content], { type: 'text/html' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${currentJob.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      return () => clearInterval(interval)
     }
-  }
+  }, [currentJob, loadJob])
 
-  const handleCopyHTML = async () => {
-    if (currentJob?.result?.html_content) {
-      try {
-        await navigator.clipboard.writeText(currentJob.result.html_content)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-      } catch (err) {
-        console.error('Failed to copy HTML:', err)
-      }
-    }
-  }
 
   if (!user || isLoading) {
     return (
@@ -154,12 +99,16 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                 </Button>
               </Link>
               <div>
-                <h1 className="text-xl md:text-2xl font-bold">Content Results</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl md:text-2xl font-bold">Content Results</h1>
+                  {isRefreshing && (
+                    <RefreshCw className="h-5 w-5 text-muted-foreground animate-spin" />
+                  )}
+                </div>
                 <p className="text-sm md:text-base text-muted-foreground">View and analyze your generated content</p>
               </div>
             </div>
             <div className="flex gap-2">
-              {/* Mobile menu button */}
               <Button
                 variant="outline"
                 size="sm"
@@ -168,8 +117,6 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
               >
                 <Menu className="h-4 w-4" />
               </Button>
-              
-              {/* Desktop collapse button */}
               <Button
                 variant="outline"
                 size="sm"
@@ -196,54 +143,6 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                   Job Details
                 </Button>
               </Link>
-              <Link href={`/preview/${currentJob.id}`}>
-                <Button variant="outline" size="sm">
-                  <Maximize2 className="h-4 w-4 mr-2" />
-                  View Full Screen
-                </Button>
-              </Link>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Eye className="h-4 w-4 mr-2" />
-                    Preview
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="!max-w-[95vw] !max-h-[95vh] !w-[95vw] !h-[95vh] overflow-hidden p-4">
-                  <DialogHeader className="pb-4">
-                    <DialogTitle className="text-xl font-bold">Content Preview</DialogTitle>
-                    <DialogDescription>
-                      Full preview of your generated content
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="overflow-hidden max-h-[calc(95vh-120px)] border rounded-lg bg-white">
-                    <iframe
-                      srcDoc={currentJob.result.html_content}
-                      className="w-full h-full min-h-[600px]"
-                      sandbox="allow-same-origin allow-scripts"
-                      style={{
-                        border: 'none',
-                        transform: 'scale(0.8)',
-                        transformOrigin: 'top left',
-                        width: '125%',
-                        height: '125%'
-                      }}
-                    />
-                  </div>
-                </DialogContent>
-              </Dialog>
-              <Button variant="outline" size="sm" onClick={handleCopyHTML}>
-                {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-                {copied ? 'Copied!' : 'Copy HTML'}
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleDownload}>
-                <Download className="h-4 w-4 mr-2" />
-                Download
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleRegenerate()}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Regenerate
-              </Button>
             </div>
           </div>
 
@@ -260,64 +159,98 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
             </TabsList>
 
             <TabsContent value="content">
-              <div className="space-y-6">
-                <div className="bg-gradient-to-br from-white to-blue-50/30 border border-blue-200 rounded-xl p-8 shadow-lg">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">{currentJob.title}</h2>
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span>Template: <span className="font-medium">{currentJob.template?.name || 'Unknown'}</span></span>
-                        <span>•</span>
-                        <span>Generated: <span className="font-medium">{new Date(currentJob.result.created_at).toLocaleDateString()}</span></span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
-                        {currentJob.template?.category || 'General'}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                    <div className="p-6">
-                      <div className="text-center py-12">
-                        <h3 className="text-lg font-semibold mb-4">Template Preview</h3>
-                        <p className="text-muted-foreground mb-6">
-                          Click "View Full Screen" to see the complete template rendering
-                        </p>
-                        <Link href={`/preview/${currentJob.id}`}>
-                          <Button>
-                            <Maximize2 className="h-4 w-4 mr-2" />
-                            View Full Screen
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <DeepCopyResults 
+                result={currentJob.result} 
+                jobTitle={currentJob.title}
+              />
             </TabsContent>
 
             <TabsContent value="analytics">
-              <div className="bg-white border rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Content Analytics</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Generated At</p>
-                    <p className="font-medium">{new Date(currentJob.result.created_at).toLocaleString()}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Template Used</p>
-                    <p className="font-medium">{currentJob.template?.name || 'Unknown'}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Status</p>
-                    <p className="font-medium capitalize">{currentJob.status}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Progress</p>
-                    <p className="font-medium">{currentJob.progress}%</p>
+              <div className="space-y-6">
+                <div className="bg-white border rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">Job Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Generated At</p>
+                      <p className="font-medium">{new Date(currentJob.result.created_at).toLocaleString()}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Template Used</p>
+                      <p className="font-medium">L00005 (DeepCopy)</p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Status</p>
+                      <p className="font-medium capitalize">{currentJob.status}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Progress</p>
+                      <p className="font-medium">Processing</p>
+                    </div>
+                    {currentJob.result.metadata?.deepcopy_job_id && (
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">DeepCopy Job ID</p>
+                        <p className="font-medium font-mono text-sm">{currentJob.result.metadata.deepcopy_job_id}</p>
+                      </div>
+                    )}
+                    {currentJob.result.metadata?.project_name && (
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Project Name</p>
+                        <p className="font-medium">{currentJob.result.metadata.project_name}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {currentJob.result.metadata?.word_count && (
+                  <div className="bg-white border rounded-lg p-6">
+                    <h3 className="text-lg font-semibold mb-4">Content Metrics</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Generated At</p>
+                        <p className="text-sm">{currentJob.result.metadata.generated_at ? new Date(currentJob.result.metadata.generated_at).toLocaleString() : 'Unknown'}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">API Timestamp</p>
+                        <p className="text-sm">{currentJob.result.metadata.timestamp_iso ? new Date(currentJob.result.metadata.timestamp_iso).toLocaleString() : 'Unknown'}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {currentJob.result.metadata?.full_result?.results && (
+                  <div className="bg-white border rounded-lg p-6">
+                    <h3 className="text-lg font-semibold mb-4">Analysis Summary</h3>
+                    <div className="space-y-4">
+                      {currentJob.result.metadata.full_result.results.research_page_analysis && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">Page Analysis</p>
+                          <p className="text-sm line-clamp-3">
+                            {currentJob.result.metadata.full_result.results.research_page_analysis.substring(0, 200)}...
+                          </p>
+                        </div>
+                      )}
+                      {currentJob.result.metadata.full_result.results.doc1_analysis && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">Document Analysis 1</p>
+                          <p className="text-sm line-clamp-3">
+                            {currentJob.result.metadata.full_result.results.doc1_analysis.substring(0, 200)}...
+                          </p>
+                        </div>
+                      )}
+                      {currentJob.result.metadata.full_result.results.html_templates && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">HTML Templates</p>
+                          <p className="text-sm">
+                            {Array.isArray(currentJob.result.metadata.full_result.results.html_templates) 
+                              ? `${currentJob.result.metadata.full_result.results.html_templates.length} template(s) generated`
+                              : '1 template generated'
+                            }
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>

@@ -6,7 +6,7 @@ import { AppProvider } from "@/contexts/app-context";
 import { SidebarProvider } from "@/contexts/sidebar-context";
 import { Toaster } from "@/components/ui/toaster";
 import { PageTransition } from "@/components/ui/page-transition";
-;
+import "./globals";
 
 const inter = Inter({
   variable: "--font-sans",

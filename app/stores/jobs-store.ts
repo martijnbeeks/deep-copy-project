@@ -3,6 +3,8 @@ import { subscribeWithSelector } from 'zustand/middleware'
 import { Job, JobWithTemplate, JobWithResult } from '@/lib/db/types'
 import { useAuthStore } from './auth-store'
 
+// Polling is now handled by the background service
+
 // Debounce utility for performance
 function debounce<T extends (...args: any[]) => any>(
   func: T,
@@ -43,6 +45,8 @@ interface JobsActions {
     template_id?: string
   }) => Promise<JobWithTemplate>
   pollJobStatus: (jobId: string) => void
+  stopPolling: (jobId: string) => void
+  stopAllPolling: () => void
 }
 
 export const useJobsStore = create<JobsState & JobsActions>()(
@@ -100,6 +104,7 @@ export const useJobsStore = create<JobsState & JobsActions>()(
   },
 
   fetchJob: async (id: string) => {
+    console.log(`🔍 Frontend: Fetching job ${id}`)
     set({ isLoading: true, error: null })
     try {
       const { user } = useAuthStore.getState()
@@ -113,8 +118,10 @@ export const useJobsStore = create<JobsState & JobsActions>()(
       if (!response.ok) throw new Error('Failed to fetch job')
       
       const job = await response.json()
+      console.log(`✅ Frontend: Job ${id} fetched successfully`)
       set({ currentJob: job, isLoading: false })
     } catch (error) {
+      console.error(`❌ Frontend: Failed to fetch job ${id}:`, error)
       set({ 
         error: error instanceof Error ? error.message : 'Failed to fetch job',
         isLoading: false 
@@ -160,24 +167,16 @@ export const useJobsStore = create<JobsState & JobsActions>()(
   },
 
   pollJobStatus: (jobId: string) => {
-    const poll = async () => {
-      try {
-        const response = await fetch(`/api/jobs/${jobId}`)
-        if (!response.ok) return
+    // Background polling is now handled by the background service
+    // This function is kept for compatibility but does nothing
+  },
 
-        const job = await response.json()
-        get().updateJob(jobId, job)
+  stopPolling: (jobId: string) => {
+    // Background polling is now handled by the background service
+  },
 
-        // Continue polling if job is still processing
-        if (job.status === 'pending' || job.status === 'processing') {
-          setTimeout(poll, 2000) // Poll every 2 seconds
-        }
-      } catch (error) {
-        console.error('Polling error:', error)
-      }
-    }
-
-    poll()
+  stopAllPolling: () => {
+    // Background polling is now handled by the background service
   },
 }))
 )
