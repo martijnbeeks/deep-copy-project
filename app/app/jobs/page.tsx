@@ -3,6 +3,7 @@
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useSidebar } from "@/contexts/sidebar-context"
+import { useJobs, useInvalidateJobs } from "@/lib/hooks/use-jobs"
 import { Job } from "@/lib/db/types"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Button } from "@/components/ui/button"
@@ -22,64 +23,45 @@ import Link from "next/link"
 
 export default function JobsPage() {
   const { user } = useAuthStore()
-  const { jobs, isLoading, error, fetchJobs } = useJobsStore()
   const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
-  const [filteredJobs, setFilteredJobs] = useState(jobs)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const loadJobs = useCallback(async () => {
-    try {
-      setIsRefreshing(true)
-      await fetchJobs()
-    } catch (error) {
-      console.error('Failed to fetch jobs:', error)
-    } finally {
-      setIsRefreshing(false)
-    }
-  }, [fetchJobs])
+  // Use TanStack Query for data fetching
+  const { data: jobs = [], isLoading, error, refetch } = useJobs()
+  const invalidateJobs = useInvalidateJobs()
 
   useEffect(() => {
     if (!user) {
       router.push("/login")
       return
     }
-
-    loadJobs()
-  }, [user, router, loadJobs])
+  }, [user, router])
 
   // Auto-refresh for processing jobs every 10 seconds
   useEffect(() => {
-    const hasProcessingJobs = jobs.some(job => job.status === 'processing' || job.status === 'pending')
+    const hasProcessingJobs = jobs.some((job: any) => job.status === 'processing' || job.status === 'pending')
     
     if (hasProcessingJobs) {
       const interval = setInterval(() => {
-        loadJobs()
+        invalidateJobs()
       }, 10000) // Refresh every 10 seconds
 
       return () => clearInterval(interval)
     }
-  }, [jobs, loadJobs])
+  }, [jobs, invalidateJobs])
 
-  useEffect(() => {
-    let filtered = jobs
-
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (job) =>
-          job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.brand_info.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-    }
-
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((job) => job.status === statusFilter)
-    }
-
-    setFilteredJobs(filtered)
-  }, [jobs, searchTerm, statusFilter])
+  // Filter jobs based on search and status
+  const filteredJobs = jobs.filter((job: any) => {
+    const matchesSearch = !searchTerm || 
+      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.brand_info.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    const matchesStatus = statusFilter === "all" || job.status === statusFilter
+    
+    return matchesSearch && matchesStatus
+  })
 
   if (!user) {
     return (
@@ -203,8 +185,8 @@ export default function JobsPage() {
             <CardContent className="p-6 text-center">
               <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Failed to load jobs</h3>
-              <p className="text-muted-foreground mb-4">{error}</p>
-              <Button onClick={() => window.location.reload()}>Try Again</Button>
+              <p className="text-muted-foreground mb-4">{error instanceof Error ? error.message : 'Unknown error'}</p>
+              <Button onClick={() => refetch()}>Try Again</Button>
             </CardContent>
           </Card>
         </main>
@@ -223,7 +205,7 @@ export default function JobsPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl md:text-3xl font-bold">All Jobs</h1>
-                  {isRefreshing && (
+                  {isLoading && (
                     <RefreshCw className="h-5 w-5 text-muted-foreground animate-spin" />
                   )}
                 </div>
@@ -315,7 +297,7 @@ export default function JobsPage() {
               />
             ) : (
               <div className="grid gap-3 md:gap-4">
-                {filteredJobs.map((job) => (
+                {filteredJobs.map((job: any) => (
                   <Card key={job.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4 md:p-6">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

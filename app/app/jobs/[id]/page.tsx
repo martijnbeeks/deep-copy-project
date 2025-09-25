@@ -12,35 +12,25 @@ import Link from "next/link"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useSidebar } from "@/contexts/sidebar-context"
+import { useJob } from "@/lib/hooks/use-jobs"
 import { JobWithResult } from "@/lib/db/types"
 import { JobDetailsSkeleton } from "@/components/ui/skeleton-loaders"
 
 export default function JobDetailPage({ params }: { params: { id: string } }) {
   const { user, isAuthenticated } = useAuthStore()
-  const { currentJob, fetchJob } = useJobsStore()
   const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(true)
   const [isPolling, setIsPolling] = useState(false)
 
-  const loadJob = useCallback(async () => {
-    try {
-      await fetchJob(params.id)
-      setIsLoading(false)
-    } catch (error) {
-      console.error('Failed to fetch job:', error)
-      setIsLoading(false)
-    }
-  }, [fetchJob, params.id])
+  // Use TanStack Query for data fetching
+  const { data: currentJob, isLoading, error } = useJob(params.id)
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
       router.push("/login")
       return
     }
-
-    loadJob()
-  }, [isAuthenticated, user, router, loadJob])
+  }, [isAuthenticated, user, router])
 
   // Background polling is now handled by the background service
   // No need to poll here - just display the current status

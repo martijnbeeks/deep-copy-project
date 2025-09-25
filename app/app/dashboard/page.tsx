@@ -15,26 +15,24 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useSidebar } from "@/contexts/sidebar-context"
+import { useJobs, useCreateJob } from "@/lib/hooks/use-jobs"
 
 export default function DashboardPage() {
   const { user, isAuthenticated } = useAuthStore()
-  const { jobs, fetchJobs } = useJobsStore()
   const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
 
-  const loadJobs = useCallback(async () => {
-    await fetchJobs()
-  }, [fetchJobs])
+  // Use TanStack Query for data fetching
+  const { data: jobs = [], isLoading, error: queryError } = useJobs()
+  const createJobMutation = useCreateJob()
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
       router.push("/login")
-    } else {
-      loadJobs()
     }
-  }, [isAuthenticated, user, router, loadJobs])
+  }, [isAuthenticated, user, router])
 
   if (!user) {
     return (
@@ -79,15 +77,14 @@ export default function DashboardPage() {
     setError(null)
 
     try {
-      const { createJob } = useJobsStore.getState()
-      const job = await createJob(data)
+      const job = await createJobMutation.mutateAsync(data)
 
       toast({
         title: "Pipeline created successfully",
         description: "Your AI content generation has started.",
       })
 
-      router.push(`/jobs/${job.id}`)
+      router.push(`/jobs/${job.job.id}`)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to create pipeline"
       setError(errorMessage)

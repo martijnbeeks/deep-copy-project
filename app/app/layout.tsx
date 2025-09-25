@@ -4,6 +4,7 @@ import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/contexts/app-context";
 import { SidebarProvider } from "@/contexts/sidebar-context";
+import { QueryProvider } from "@/lib/providers/query-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { PageTransition } from "@/components/ui/page-transition";
 import "./globals";
@@ -64,14 +65,16 @@ export default function RootLayout({
                   <body
                     className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`}
                   >
-                    <AppProvider>
-                      <SidebarProvider>
-                        <PageTransition>
-                          {children}
-                        </PageTransition>
-                        <Toaster />
-                      </SidebarProvider>
-                    </AppProvider>
+                    <QueryProvider>
+                      <AppProvider>
+                        <SidebarProvider>
+                          <PageTransition>
+                            {children}
+                          </PageTransition>
+                          <Toaster />
+                        </SidebarProvider>
+                      </AppProvider>
+                    </QueryProvider>
                   </body>
     </html>
   );

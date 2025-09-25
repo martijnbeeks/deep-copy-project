@@ -7,16 +7,16 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🔄 Starting job recovery process...')
     
-    // Get all jobs that are not completed/failed (including failed ones that might still be running)
+
     const result = await query(`
       SELECT id, execution_id, status, updated_at 
       FROM jobs 
-      WHERE status IN ('pending', 'processing', 'failed')
+      WHERE status = 'processing'
       ORDER BY updated_at DESC
     `)
     
     const jobsToCheck = result.rows
-    console.log(`Found ${jobsToCheck.length} jobs with DeepCopy execution IDs`)
+    console.log(`Found ${jobsToCheck.length} processing jobs to check`)
     
     if (jobsToCheck.length === 0) {
       console.log('✓ No jobs need recovery')
@@ -105,12 +105,7 @@ async function checkJobStatus(job: { id: string; execution_id: string; status: s
                      statusResponse.status === 'RUNNING' ? 50 : 30
       await updateJobStatus(job.id, 'processing', progress)
       
-      // If job was previously marked as failed but is actually running, log this
-      if (job.status === 'failed') {
-        console.log(`🔄 Job ${job.id} was marked as failed but is actually still running (${statusResponse.status}) - corrected status`)
-      } else {
-        console.log(`🔄 Job ${job.id} still processing (${statusResponse.status}) - will continue polling`)
-      }
+      console.log(`🔄 Job ${job.id} still processing (${statusResponse.status}) - will continue polling`)
       
     } else {
       // Unknown status - mark as failed
