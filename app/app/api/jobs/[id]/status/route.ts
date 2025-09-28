@@ -55,7 +55,22 @@ export async function GET(
       console.log(`🔄 Job ${jobId} still processing (${statusResponse.status})`)
     }
     
-    return NextResponse.json(statusResponse)
+    // Get updated job status from database
+    const updatedJob = await query(`
+      SELECT status, progress, updated_at 
+      FROM jobs 
+      WHERE id = $1
+    `, [jobId])
+    
+    const currentStatus = updatedJob.rows[0]
+    
+    return NextResponse.json({
+      status: currentStatus.status,
+      progress: currentStatus.progress || 0,
+      updated_at: currentStatus.updated_at,
+      deepcopy_status: statusResponse.status,
+      deepcopy_response: statusResponse
+    })
     
   } catch (error) {
     console.error(`Error checking job status for ${params.id}:`, error)

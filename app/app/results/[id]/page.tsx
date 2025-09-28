@@ -13,6 +13,7 @@ import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useSidebar } from "@/contexts/sidebar-context"
 import { ContentViewerSkeleton } from "@/components/ui/skeleton-loaders"
+import { useJobPolling } from "@/hooks/use-job-polling"
 
 
 export default function ResultDetailPage({ params }: { params: { id: string } }) {
@@ -36,6 +37,32 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
     }
   }, [fetchJob, params.id])
 
+  // Use client-side polling for job status updates
+  const { 
+    jobStatus, 
+    isPolling, 
+    attempts, 
+    maxAttempts 
+  } = useJobPolling({
+    jobId: params.id,
+    enabled: currentJob?.status === 'processing' || currentJob?.status === 'pending',
+    interval: 5000, // Poll every 5 seconds
+    maxAttempts: 120, // Max 10 minutes
+    onStatusChange: (status, progress) => {
+      console.log(`Job ${params.id} status changed:`, { status, progress })
+      // Refetch job data when status changes
+      loadJob()
+    },
+    onComplete: (result) => {
+      console.log(`Job ${params.id} completed!`, result)
+      // Refetch to get updated job data
+      loadJob()
+    },
+    onError: (error) => {
+      console.error(`Job ${params.id} polling error:`, error)
+    }
+  })
+
   useEffect(() => {
     if (!isAuthenticated || !user) {
       router.push("/login")
@@ -44,16 +71,6 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
 
     loadJob()
   }, [isAuthenticated, user, router, loadJob])
-
-  useEffect(() => {
-    if (currentJob && (currentJob.status === 'processing' || currentJob.status === 'pending')) {
-      const interval = setInterval(() => {
-        loadJob()
-      }, 10000)
-
-      return () => clearInterval(interval)
-    }
-  }, [currentJob, loadJob])
 
 
   if (!user || isLoading) {
@@ -101,7 +118,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl md:text-2xl font-bold">Content Results</h1>
-                  {isRefreshing && (
+                  {(isRefreshing || isPolling) && (
                     <RefreshCw className="h-5 w-5 text-muted-foreground animate-spin" />
                   )}
                 </div>
@@ -134,6 +151,17 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
           
           <div className="flex items-center justify-end mb-4">
             <div className="flex items-center gap-2">
+              {isPolling && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <span>Polling DeepCopy API ({attempts}/{maxAttempts})</span>
+                  {jobStatus.progress && (
+                    <span className="text-blue-600 font-medium">
+                      {jobStatus.progress}%
+                    </span>
+                  )}
+                </div>
+              )}
               <Badge variant="secondary" className="bg-green-100 text-green-800">
                 {currentJob.status}
               </Badge>

@@ -15,15 +15,41 @@ import { useSidebar } from "@/contexts/sidebar-context"
 import { useJob } from "@/lib/hooks/use-jobs"
 import { JobWithResult } from "@/lib/db/types"
 import { JobDetailsSkeleton } from "@/components/ui/skeleton-loaders"
+import { useJobPolling } from "@/hooks/use-job-polling"
 
 export default function JobDetailPage({ params }: { params: { id: string } }) {
   const { user, isAuthenticated } = useAuthStore()
   const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
-  const [isPolling, setIsPolling] = useState(false)
 
   // Use TanStack Query for data fetching
-  const { data: currentJob, isLoading, error } = useJob(params.id)
+  const { data: currentJob, isLoading, error, refetch } = useJob(params.id)
+
+  // Use client-side polling for job status updates
+  const { 
+    jobStatus, 
+    isPolling, 
+    attempts, 
+    maxAttempts 
+  } = useJobPolling({
+    jobId: params.id,
+    enabled: currentJob?.status === 'processing' || currentJob?.status === 'pending',
+    interval: 5000, // Poll every 5 seconds
+    maxAttempts: 120, // Max 10 minutes
+    onStatusChange: (status, progress) => {
+      console.log(`Job ${params.id} status changed:`, { status, progress })
+      // Refetch job data when status changes
+      refetch()
+    },
+    onComplete: (result) => {
+      console.log(`Job ${params.id} completed!`, result)
+      // Refetch to get updated job data
+      refetch()
+    },
+    onError: (error) => {
+      console.error(`Job ${params.id} polling error:`, error)
+    }
+  })
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -31,16 +57,6 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
       return
     }
   }, [isAuthenticated, user, router])
-
-  // Background polling is now handled by the background service
-  // No need to poll here - just display the current status
-  useEffect(() => {
-    if (currentJob) {
-      setIsPolling(currentJob.status === 'pending' || currentJob.status === 'processing')
-    } else {
-      setIsPolling(false)
-    }
-  }, [currentJob])
 
   if (!user || isLoading) {
     return (
@@ -121,7 +137,12 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
               {isPolling && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <RefreshCw className="h-4 w-4 animate-spin" />
-                  Auto-refreshing
+                  <span>Polling DeepCopy API ({attempts}/{maxAttempts})</span>
+                  {jobStatus.progress && (
+                    <span className="text-blue-600 font-medium">
+                      {jobStatus.progress}%
+                    </span>
+                  )}
                 </div>
               )}
               {currentJob.status === "completed" && (

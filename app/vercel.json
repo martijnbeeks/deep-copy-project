@@ -2,15 +2,6 @@
   "functions": {
     "app/api/jobs/route.ts": {
       "maxDuration": 30
-    },
-    "app/api/cron/check-job-status/route.ts": {
-      "maxDuration": 60
     }
-  },
-  "crons": [
-    {
-      "path": "/api/cron/check-job-status",
-      "schedule": "*/2 * * * *"
-    }
-  ]
+  }
 }
