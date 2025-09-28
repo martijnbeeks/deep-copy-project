@@ -14,45 +14,56 @@ interface GlobalPollingContextType {
 const GlobalPollingContext = createContext<GlobalPollingContextType | undefined>(undefined)
 
 export function GlobalPollingProvider({ children }: { children: React.ReactNode }) {
-  const { fetchJobs } = useJobsStore()
-  
-  const {
-    isPolling,
-    pollingJobsCount,
-    addJobToPolling,
-    removeJobFromPolling,
-    startPolling,
-    stopPolling
-  } = useGlobalJobPolling({
-    interval: 10000, // Poll every 10 seconds
-    onJobUpdate: (jobId, status, progress) => {
-      console.log(`🔄 Global polling updated job ${jobId}: ${status} (${progress}%)`)
-      // Refresh jobs list to show updated status
-      fetchJobs()
-    },
-    onJobComplete: (jobId, result) => {
-      console.log(`✅ Global polling completed job ${jobId}`)
-      // Refresh jobs list to show completed status
-      fetchJobs()
-    }
-  })
-
-  // Auto-start polling when component mounts
-  useEffect(() => {
-    startPolling()
-    return () => stopPolling()
-  }, [startPolling, stopPolling])
-
-  return (
-    <GlobalPollingContext.Provider value={{
+  try {
+    const { fetchJobs } = useJobsStore()
+    
+    const {
       isPolling,
       pollingJobsCount,
       addJobToPolling,
-      removeJobFromPolling
-    }}>
-      {children}
-    </GlobalPollingContext.Provider>
-  )
+      removeJobFromPolling,
+      startPolling,
+      stopPolling
+    } = useGlobalJobPolling({
+      interval: 10000, // Poll every 10 seconds
+      onJobUpdate: (jobId, status, progress) => {
+        console.log(`🔄 Global polling updated job ${jobId}: ${status} (${progress}%)`)
+        // Refresh jobs list to show updated status
+        try {
+          fetchJobs()
+        } catch (error) {
+          console.error('Error refreshing jobs:', error)
+        }
+      },
+      onJobComplete: (jobId, result) => {
+        console.log(`✅ Global polling completed job ${jobId}`)
+        // Refresh jobs list to show completed status
+        try {
+          fetchJobs()
+        } catch (error) {
+          console.error('Error refreshing jobs:', error)
+        }
+      }
+    })
+
+    // Don't auto-start polling to avoid issues
+    // Polling will start when jobs are added via addJobToPolling
+
+    return (
+      <GlobalPollingContext.Provider value={{
+        isPolling,
+        pollingJobsCount,
+        addJobToPolling,
+        removeJobFromPolling
+      }}>
+        {children}
+      </GlobalPollingContext.Provider>
+    )
+  } catch (error) {
+    console.error('Error in GlobalPollingProvider:', error)
+    // Fallback: render children without polling
+    return <>{children}</>
+  }
 }
 
 export function useGlobalPolling() {
