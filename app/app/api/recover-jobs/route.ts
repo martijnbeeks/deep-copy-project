@@ -5,8 +5,13 @@ import { updateJobStatus, createResult } from '@/lib/db/queries'
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 Starting job recovery process...')
+    console.log('🔄 Starting manual job recovery process...')
     
+    // Optional: Add authentication for admin access
+    const authHeader = request.headers.get('authorization')
+    if (process.env.ADMIN_SECRET && authHeader !== `Bearer ${process.env.ADMIN_SECRET}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     const result = await query(`
       SELECT id, execution_id, status, updated_at 
@@ -23,12 +28,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         success: true, 
         message: 'No jobs need recovery',
-        recovered: 0 
+        checked: 0,
+        completed: 0,
+        failed: 0
       })
     }
     
-    let recovered = 0
+    let completed = 0
     let failed = 0
+    let stillProcessing = 0
     
     // Process jobs in parallel (but limit concurrency)
     const batchSize = 3
@@ -40,7 +48,10 @@ export async function POST(request: NextRequest) {
       
       results.forEach((result, index) => {
         if (result.status === 'fulfilled') {
-          recovered++
+          const status = result.value
+          if (status === 'completed') completed++
+          else if (status === 'failed') failed++
+          else stillProcessing++
         } else {
           failed++
           console.error(`Failed to recover job ${batch[index].id}:`, result.reason)
@@ -53,14 +64,15 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    console.log(`✓ Job recovery completed - Recovered: ${recovered}, Failed: ${failed}`)
+    console.log(`✓ Manual job recovery completed - Completed: ${completed}, Failed: ${failed}, Still Processing: ${stillProcessing}`)
     
     return NextResponse.json({
       success: true,
-      message: `Recovered ${recovered} jobs, ${failed} failed`,
-      recovered,
+      message: `Job recovery completed - Completed: ${completed}, Failed: ${failed}, Still Processing: ${stillProcessing}`,
+      checked: jobsToCheck.length,
+      completed,
       failed,
-      total: jobsToCheck.length
+      stillProcessing
     })
     
   } catch (error) {
@@ -76,7 +88,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Check and update a single job
-async function checkJobStatus(job: { id: string; execution_id: string; status: string; updated_at: string }) {
+async function checkJobStatus(job: { id: string; execution_id: string; status: string; updated_at: string }): Promise<string> {
   try {
     // Use the job ID directly as the DeepCopy job ID (since we now use DeepCopy job ID as primary key)
     const deepCopyJobId = job.id
@@ -93,11 +105,13 @@ async function checkJobStatus(job: { id: string; execution_id: string; status: s
       await storeJobResults(job.id, result, deepCopyJobId)
       await updateJobStatus(job.id, 'completed', 100)
       console.log(`✓ Recovered completed job: ${job.id}`)
+      return 'completed'
       
     } else if (statusResponse.status === 'FAILED') {
       // Job failed
       await updateJobStatus(job.id, 'failed')
       console.log(`❌ Job ${job.id} failed on DeepCopy API`)
+      return 'failed'
       
     } else if (['RUNNING', 'SUBMITTED', 'PENDING'].includes(statusResponse.status)) {
       // Job still processing - update progress and let it continue
@@ -106,17 +120,20 @@ async function checkJobStatus(job: { id: string; execution_id: string; status: s
       await updateJobStatus(job.id, 'processing', progress)
       
       console.log(`🔄 Job ${job.id} still processing (${statusResponse.status}) - will continue polling`)
+      return 'processing'
       
     } else {
       // Unknown status - mark as failed
       await updateJobStatus(job.id, 'failed')
       console.log(`❓ Unknown status for job ${job.id}: ${statusResponse.status}`)
+      return 'failed'
     }
     
   } catch (error) {
-    console.error(`❌ Error checking job ${job.id}:`, error)
+    console.error(`Error checking job ${job.id}:`, error)
     // If we can't check the status, mark as failed
     await updateJobStatus(job.id, 'failed')
+    return 'failed'
   }
 }
 

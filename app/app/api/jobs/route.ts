@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getJobsByUserId, createJob, updateJobStatus } from '@/lib/db/queries'
+import { getJobsByUserId, createJob, updateJobStatus, createResult } from '@/lib/db/queries'
 import { deepCopyClient } from '@/lib/api/deepcopy-client'
 
 export async function GET(request: NextRequest) {
@@ -103,7 +103,38 @@ export async function POST(request: NextRequest) {
     // Update job status to processing
     await updateJobStatus(job.id, 'processing')
 
-    console.log(`Job ${job.id} created with DeepCopy ID: ${deepCopyJobId} - background polling will handle status updates`)
+    // Immediately check the job status to get initial progress
+    try {
+      console.log(`🔍 Checking initial status for job ${job.id}`)
+      const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
+      console.log(`📊 Initial DeepCopy API response for job ${job.id}:`, statusResponse)
+      
+      if (statusResponse.status === 'SUCCEEDED') {
+        // Job completed immediately - get results and store them
+        console.log(`✅ Job ${job.id} completed immediately, fetching results...`)
+        const result = await deepCopyClient.getJobResult(deepCopyJobId)
+        await storeJobResults(job.id, result, deepCopyJobId)
+        await updateJobStatus(job.id, 'completed', 100)
+        console.log(`✅ Job ${job.id} marked as completed`)
+        
+      } else if (statusResponse.status === 'FAILED') {
+        // Job failed immediately
+        await updateJobStatus(job.id, 'failed')
+        console.log(`❌ Job ${job.id} failed immediately`)
+        
+      } else if (['RUNNING', 'SUBMITTED', 'PENDING'].includes(statusResponse.status)) {
+        // Job is processing - update progress
+        const progress = statusResponse.status === 'SUBMITTED' ? 25 : 
+                       statusResponse.status === 'RUNNING' ? 50 : 30
+        await updateJobStatus(job.id, 'processing', progress)
+        console.log(`🔄 Job ${job.id} is processing (${statusResponse.status}) - cron will handle updates`)
+      }
+    } catch (statusError) {
+      console.error(`Error checking initial status for job ${job.id}:`, statusError)
+      // Continue with job creation even if status check fails
+    }
+
+    console.log(`Job ${job.id} created with DeepCopy ID: ${deepCopyJobId} - cron will handle status updates`)
 
     return NextResponse.json(job)
   } catch (error) {
@@ -115,4 +146,121 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Background polling is now handled by the background service
+// Store job results in database
+async function storeJobResults(localJobId: string, result: any, deepCopyJobId: string) {
+  try {
+    console.log(`💾 Storing results for job ${localJobId}`)
+    
+    // Extract HTML templates from the result
+    const templates = extractHTMLTemplates(result)
+    
+    if (templates.length === 0) {
+      console.log(`⚠️ No templates found in result for job ${localJobId}`)
+      return
+    }
+    
+    // Store each template as a result
+    for (const template of templates) {
+      await createResult(localJobId, template.html, {
+        deepcopy_job_id: deepCopyJobId,
+        name: template.name,
+        type: template.type,
+        created_at: new Date(template.timestamp)
+      })
+    }
+    
+    console.log(`✅ Stored ${templates.length} templates for job ${localJobId}`)
+    
+  } catch (error) {
+    console.error(`Error storing results for job ${localJobId}:`, error)
+    throw error
+  }
+}
+
+// Extract HTML templates from DeepCopy results
+function extractHTMLTemplates(results: any): Array<{name: string, type: string, html: string, timestamp: string}> {
+  const templates: Array<{name: string, type: string, html: string, timestamp: string}> = []
+  
+  try {
+    // Handle different result structures
+    if (results.templates && Array.isArray(results.templates)) {
+      // Direct templates array
+      results.templates.forEach((template: any, index: number) => {
+        if (template.html) {
+          templates.push({
+            name: template.name || `Template ${index + 1}`,
+            type: template.type || 'html',
+            html: template.html,
+            timestamp: template.timestamp || new Date().toISOString()
+          })
+        }
+      })
+    } else if (results.html) {
+      // Single HTML result
+      templates.push({
+        name: 'Generated Content',
+        type: 'html',
+        html: results.html,
+        timestamp: new Date().toISOString()
+      })
+    } else if (typeof results === 'string') {
+      // String result
+      templates.push({
+        name: 'Generated Content',
+        type: 'html',
+        html: results,
+        timestamp: new Date().toISOString()
+      })
+    } else if (results.content) {
+      // Content field
+      templates.push({
+        name: 'Generated Content',
+        type: 'html',
+        html: results.content,
+        timestamp: new Date().toISOString()
+      })
+    } else {
+      // Try to find HTML in various possible locations
+      const possibleKeys = ['output', 'result', 'generated', 'copy', 'text', 'body']
+      for (const key of possibleKeys) {
+        if (results[key] && typeof results[key] === 'string') {
+          templates.push({
+            name: `Generated Content (${key})`,
+            type: 'html',
+            html: results[key],
+            timestamp: new Date().toISOString()
+          })
+          break
+        }
+      }
+    }
+    
+    // If still no templates found, try to extract from nested objects
+    if (templates.length === 0) {
+      const extractFromObject = (obj: any, path: string = ''): void => {
+        if (typeof obj === 'object' && obj !== null) {
+          for (const [key, value] of Object.entries(obj)) {
+            const currentPath = path ? `${path}.${key}` : key
+            if (typeof value === 'string' && value.includes('<')) {
+              templates.push({
+                name: `Generated Content (${currentPath})`,
+                type: 'html',
+                html: value,
+                timestamp: new Date().toISOString()
+              })
+            } else if (typeof value === 'object') {
+              extractFromObject(value, currentPath)
+            }
+          }
+        }
+      }
+      
+      extractFromObject(results)
+    }
+    
+  } catch (error) {
+    console.error('Error extracting HTML templates:', error)
+  }
+  
+  return templates
+}

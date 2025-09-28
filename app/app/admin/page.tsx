@@ -10,6 +10,12 @@ import { toast } from "@/hooks/use-toast"
 export default function AdminPage() {
   const [loading, setLoading] = useState(false)
   const [lastRecovery, setLastRecovery] = useState<string | null>(null)
+  const [recoveryStats, setRecoveryStats] = useState<{
+    checked: number
+    completed: number
+    failed: number
+    stillProcessing: number
+  } | null>(null)
 
   const handleRecoverJobs = async () => {
     setLoading(true)
@@ -19,10 +25,12 @@ export default function AdminPage() {
       })
       
       if (response.ok) {
+        const data = await response.json()
         setLastRecovery(new Date().toLocaleString())
+        setRecoveryStats(data)
         toast({
           title: "Recovery Successful",
-          description: "Job recovery process completed successfully"
+          description: `Checked ${data.checked} jobs: ${data.completed} completed, ${data.failed} failed, ${data.stillProcessing} still processing`
         })
       } else {
         throw new Error('Recovery failed')
@@ -90,6 +98,31 @@ export default function AdminPage() {
                 )}
               </div>
 
+              {recoveryStats && (
+                <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                  <h4 className="font-medium mb-2 text-green-800 dark:text-green-200">Last Recovery Results:</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Jobs Checked:</span>
+                      <span className="ml-2 font-medium">{recoveryStats.checked}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Completed:</span>
+                      <span className="ml-2 font-medium text-green-600">{recoveryStats.completed}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Failed:</span>
+                      <span className="ml-2 font-medium text-red-600">{recoveryStats.failed}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Still Processing:</span>
+                      <span className="ml-2 font-medium text-yellow-600">{recoveryStats.stillProcessing}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              </div>
+
               <div className="bg-muted p-4 rounded-lg">
                 <h4 className="font-medium mb-2">What this does:</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
@@ -113,16 +146,20 @@ export default function AdminPage() {
             <CardContent>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Auto Recovery:</span>
-                  <span className="text-green-600">✓ Enabled</span>
+                  <span>Cron Job Status:</span>
+                  <span className="text-green-600">✓ Running (every 2 minutes)</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Startup Recovery:</span>
-                  <span className="text-green-600">✓ Enabled</span>
+                  <span>Immediate Status Check:</span>
+                  <span className="text-green-600">✓ Enabled on job creation</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Manual Recovery:</span>
                   <span className="text-green-600">✓ Available</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Serverless Compatible:</span>
+                  <span className="text-green-600">✓ Yes (Vercel Cron)</span>
                 </div>
               </div>
             </CardContent>
