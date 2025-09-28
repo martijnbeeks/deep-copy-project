@@ -11,7 +11,7 @@ export async function GET(
     const jobId = params.id
     console.log(`🔍 Checking status for job ${jobId}`)
     
-    // Get job from database to find DeepCopy job ID
+    // Get job from database
     const result = await query(`
       SELECT id, execution_id, status 
       FROM jobs 
@@ -24,11 +24,8 @@ export async function GET(
     
     const job = result.rows[0]
     
-    if (!job.execution_id || !job.execution_id.startsWith('deepcopy_')) {
-      return NextResponse.json({ error: 'No DeepCopy job ID found' }, { status: 400 })
-    }
-    
-    const deepCopyJobId = job.execution_id.replace('deepcopy_', '')
+    // Use the job ID directly as the DeepCopy job ID (since we now use DeepCopy job ID as primary key)
+    const deepCopyJobId = jobId
     console.log(`📡 Polling DeepCopy API for job ID: ${deepCopyJobId}`)
     
     // Poll the DeepCopy API

@@ -51,6 +51,15 @@ export function useJobPolling({
       })
 
       if (!response.ok) {
+        if (response.status === 400) {
+          console.log(`Job ${jobId} returned 400 - likely completed or invalid, stopping polling`)
+          setIsPolling(false)
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current)
+            intervalRef.current = null
+          }
+          return
+        }
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
@@ -143,12 +152,15 @@ export function useJobPolling({
     }
   }, [jobId])
 
-  // Auto-start polling when enabled
+  // Auto-start polling when enabled and job is processing
   useEffect(() => {
     if (enabled && jobId && !isPolling) {
-      startPolling()
+      // Only start polling if we don't have job status yet or job is processing
+      if (!jobStatus.status || jobStatus.status === 'processing' || jobStatus.status === 'pending') {
+        startPolling()
+      }
     }
-  }, [enabled, jobId, isPolling, startPolling])
+  }, [enabled, jobId, isPolling, jobStatus.status, startPolling])
 
   // Cleanup on unmount
   useEffect(() => {
