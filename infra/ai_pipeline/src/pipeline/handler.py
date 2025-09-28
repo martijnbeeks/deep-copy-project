@@ -10,6 +10,7 @@ import logging
 from datetime import datetime, timezone
 import uuid
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional, Literal
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -270,7 +271,7 @@ class DeepCopy:
         try:
             prompt = f"""
             Now that you understand how to conduct research, create a full, best-practice prompt for Deep Research tool to research products from {sales_page_url} according to the sections below. 
-            Be as specific as possible, and include instructions to compile all findings into a single document of at least six pages.
+            Be as concise as possible, and include instructions to compile all findings into a single document of max 3 pages.
             Please only return the actual prompt that directly can be used in the Deep Research tool, no other text or return questions.
             Do not ask to add any appendices, everything should be text and in a single document.
 
@@ -303,7 +304,7 @@ class DeepCopy:
     def execute_deep_research(self, prompt):
         """Execute deep research using Perplexity API"""
         try:
-            model_name = "sonar-deep-research"
+            model_name = "sonar"
             api_key = self.secrets["PERPLEXITY_API_KEY"]
             if not api_key:
                 raise RuntimeError("PERPLEXITY_API_KEY not set in environment")
@@ -475,9 +476,10 @@ class DeepCopy:
             with open(swipe_file_path, "r", encoding="utf-8") as f:
                 swipe_file_html = f.read()
             
-            results = []
-            # Use a max of 3 angles to avoid overwhelming the API and use Listicle
-            for angle in angles[:3]:
+            # Use a max of 3 angles to avoid overwhelming the API
+            limited_angles = list(angles or [])[:3]
+
+            def _rewrite_for_angle(angle: str):
                 prompt = f"""
                 Great, now I want you to please rewrite this {advertorial_type} but using all of the information around products stated below. 
                 I want you to specifically focus on the first marketing angle from the avatar sheet: {angle}. 
@@ -504,14 +506,25 @@ class DeepCopy:
                     }]
                 )
                 logger.info(f"GPT-5 API call completed for swipe file rewrite (angle: {angle})")
+                return {"angle": angle, "content": response.output_text}
 
-                result = response.output_text
-                results.append({
-                    "angle": angle,
-                    "content": result
-                })
-                
-            return results
+            # Run API calls in parallel while preserving the original order
+            results_by_index = [None] * len(limited_angles)
+            if not limited_angles:
+                return results_by_index
+
+            max_workers = min(3, len(limited_angles))
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                future_to_index = {}
+                for idx, angle in enumerate(limited_angles):
+                    future = executor.submit(_rewrite_for_angle, angle)
+                    future_to_index[future] = idx
+                for future in as_completed(future_to_index):
+                    idx = future_to_index[future]
+                    # Propagate exceptions if any to maintain previous failure semantics
+                    results_by_index[idx] = future.result()
+
+            return results_by_index
             
         except Exception as e:
             logger.error(f"Error rewriting swipe files: {e}")

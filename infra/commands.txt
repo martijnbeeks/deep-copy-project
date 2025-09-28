@@ -39,3 +39,4 @@ curl -sS -X POST \
 curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID"
 curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID/result"
 
+AWS_PROFILE=personal-cdk-dev npx cdk deploy
