@@ -5,6 +5,7 @@ import "./globals.css";
 import { AppProvider } from "@/contexts/app-context";
 import { SidebarProvider } from "@/contexts/sidebar-context";
 import { QueryProvider } from "@/lib/providers/query-provider";
+import { GlobalPollingProvider } from "@/contexts/global-polling-context";
 import { Toaster } from "@/components/ui/toaster";
 import { PageTransition } from "@/components/ui/page-transition";
 import "./globals";
@@ -68,10 +69,12 @@ export default function RootLayout({
                     <QueryProvider>
                       <AppProvider>
                         <SidebarProvider>
-                          <PageTransition>
-                            {children}
-                          </PageTransition>
-                          <Toaster />
+                          <GlobalPollingProvider>
+                            <PageTransition>
+                              {children}
+                            </PageTransition>
+                            <Toaster />
+                          </GlobalPollingProvider>
                         </SidebarProvider>
                       </AppProvider>
                     </QueryProvider>

@@ -3,6 +3,7 @@
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useSidebar } from "@/contexts/sidebar-context"
+import { useGlobalPolling } from "@/contexts/global-polling-context"
 import { useJobs, useInvalidateJobs } from "@/lib/hooks/use-jobs"
 import { Job } from "@/lib/db/types"
 import { Sidebar } from "@/components/dashboard/sidebar"
@@ -24,6 +25,7 @@ import Link from "next/link"
 export default function JobsPage() {
   const { user } = useAuthStore()
   const { isCollapsed, setIsCollapsed } = useSidebar()
+  const { addJobToPolling, isPolling, pollingJobsCount } = useGlobalPolling()
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -31,6 +33,15 @@ export default function JobsPage() {
   // Use TanStack Query for data fetching
   const { data: jobs = [], isLoading, error, refetch } = useJobs()
   const invalidateJobs = useInvalidateJobs()
+
+  // Add processing jobs to global polling
+  useEffect(() => {
+    jobs.forEach(job => {
+      if (job.status === 'processing' || job.status === 'pending') {
+        addJobToPolling(job.id, job.status, job.progress)
+      }
+    })
+  }, [jobs, addJobToPolling])
 
   useEffect(() => {
     if (!user) {
@@ -207,6 +218,12 @@ export default function JobsPage() {
                   <h1 className="text-2xl md:text-3xl font-bold">All Jobs</h1>
                   {isLoading && (
                     <RefreshCw className="h-5 w-5 text-muted-foreground animate-spin" />
+                  )}
+                  {isPolling && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      <span>Polling {pollingJobsCount} jobs</span>
+                    </div>
                   )}
                 </div>
                 <p className="text-sm md:text-base text-muted-foreground mt-1">Manage and monitor your AI content generation tasks</p>
