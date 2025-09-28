@@ -4,6 +4,7 @@ import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useSidebar } from "@/contexts/sidebar-context"
 import { useJobs, useInvalidateJobs } from "@/lib/hooks/use-jobs"
+import { useSimplePolling } from "@/hooks/use-simple-polling"
 import { Job } from "@/lib/db/types"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Button } from "@/components/ui/button"
@@ -32,7 +33,50 @@ export default function JobsPage() {
   const { data: jobs = [], isLoading, error, refetch } = useJobs()
   const invalidateJobs = useInvalidateJobs()
 
-  // Global polling temporarily disabled
+  // Simple global polling - refreshes jobs list every 10 seconds
+  const { isPolling } = useSimplePolling({ 
+    enabled: true, // Always enabled when on jobs page
+    interval: 10000 // Poll every 10 seconds
+  })
+
+  // Poll individual job statuses for processing jobs
+  useEffect(() => {
+    const pollProcessingJobs = async () => {
+      const processingJobs = jobs.filter(job => 
+        job.status === 'processing' || job.status === 'pending'
+      )
+      
+      if (processingJobs.length === 0) return
+
+      console.log(`🔄 Polling ${processingJobs.length} processing jobs...`)
+      
+      for (const job of processingJobs) {
+        try {
+          const response = await fetch(`/api/jobs/${job.id}/status`)
+          if (response.ok) {
+            const data = await response.json()
+            console.log(`📊 Job ${job.id} status:`, data.status)
+            
+            // If job completed, refresh the jobs list
+            if (data.status === 'completed' || data.status === 'failed') {
+              console.log(`✅ Job ${job.id} finished, refreshing jobs list`)
+              refetch()
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Error polling job ${job.id}:`, error)
+        }
+      }
+    }
+
+    // Poll processing jobs every 15 seconds
+    const interval = setInterval(pollProcessingJobs, 15000)
+    
+    // Poll immediately
+    pollProcessingJobs()
+
+    return () => clearInterval(interval)
+  }, [jobs, refetch])
 
   useEffect(() => {
     if (!user) {
@@ -209,6 +253,17 @@ export default function JobsPage() {
                   <h1 className="text-2xl md:text-3xl font-bold">All Jobs</h1>
                   {isLoading && (
                     <RefreshCw className="h-5 w-5 text-muted-foreground animate-spin" />
+                  )}
+                  {isPolling && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      <span>Auto-refreshing every 10s</span>
+                      {jobs.filter(job => job.status === 'processing' || job.status === 'pending').length > 0 && (
+                        <span className="text-blue-600">
+                          ({jobs.filter(job => job.status === 'processing' || job.status === 'pending').length} processing)
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
                 <p className="text-sm md:text-base text-muted-foreground mt-1">Manage and monitor your AI content generation tasks</p>
