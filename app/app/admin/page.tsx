@@ -121,7 +121,6 @@ export default function AdminPage() {
                   </div>
                 </div>
               )}
-              </div>
 
               <div className="bg-muted p-4 rounded-lg">
                 <h4 className="font-medium mb-2">What this does:</h4>
@@ -146,8 +145,8 @@ export default function AdminPage() {
             <CardContent>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Cron Job Status:</span>
-                  <span className="text-green-600">✓ Running (every 2 minutes)</span>
+                  <span>Client-Side Polling:</span>
+                  <span className="text-green-600">✓ Active (every 5 seconds)</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Immediate Status Check:</span>
@@ -158,8 +157,8 @@ export default function AdminPage() {
                   <span className="text-green-600">✓ Available</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Serverless Compatible:</span>
-                  <span className="text-green-600">✓ Yes (Vercel Cron)</span>
+                  <span>Vercel Free Tier:</span>
+                  <span className="text-green-600">✓ Compatible</span>
                 </div>
               </div>
             </CardContent>
