@@ -27,15 +27,15 @@ export function Sidebar() {
 
   const handleNavigation = async (href: string) => {
     if (href === pathname) return
-    
+
     const item = navigation.find(nav => nav.href === href)
     setLoadingItem(href)
-    
+
     // Add a very short delay to show loading state
     await new Promise(resolve => setTimeout(resolve, 50))
-    
+
     router.push(href)
-    
+
     // Clear loading state after navigation
     setTimeout(() => {
       setLoadingItem(null)
@@ -46,12 +46,12 @@ export function Sidebar() {
     <>
       {/* Mobile overlay */}
       {!isCollapsed && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={() => setIsCollapsed(true)}
         />
       )}
-      
+
       <div className={cn(
         "flex h-full flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 z-50",
         // Desktop behavior
@@ -102,7 +102,7 @@ export function Sidebar() {
                     </span>
                   )}
                 </div>
-                
+
                 {/* Hover effect overlay */}
                 <div className={cn(
                   "absolute inset-0 bg-sidebar-accent/20 opacity-0 transition-opacity duration-200",
@@ -190,7 +190,7 @@ export function Sidebar() {
                     {item.name}
                   </span>
                 </div>
-                
+
                 {/* Hover effect overlay */}
                 <div className={cn(
                   "absolute inset-0 bg-sidebar-accent/20 opacity-0 transition-opacity duration-200",
