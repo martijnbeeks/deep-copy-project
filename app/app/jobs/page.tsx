@@ -34,7 +34,7 @@ export default function JobsPage() {
   const invalidateJobs = useInvalidateJobs()
 
   // Simple global polling - refreshes jobs list every 10 seconds
-  const { isPolling } = useSimplePolling({ 
+  const { isPolling } = useSimplePolling({
     enabled: true, // Always enabled when on jobs page
     interval: 10000 // Poll every 10 seconds
   })
@@ -42,21 +42,21 @@ export default function JobsPage() {
   // Poll individual job statuses for processing jobs
   useEffect(() => {
     const pollProcessingJobs = async () => {
-      const processingJobs = jobs.filter(job => 
+      const processingJobs = jobs.filter(job =>
         job.status === 'processing' || job.status === 'pending'
       )
-      
+
       if (processingJobs.length === 0) return
 
       console.log(`🔄 Polling ${processingJobs.length} processing jobs...`)
-      
+
       for (const job of processingJobs) {
         try {
           const response = await fetch(`/api/jobs/${job.id}/status`)
           if (response.ok) {
             const data = await response.json()
             console.log(`📊 Job ${job.id} status:`, data.status)
-            
+
             // If job completed, refresh the jobs list
             if (data.status === 'completed' || data.status === 'failed') {
               console.log(`✅ Job ${job.id} finished, refreshing jobs list`)
@@ -71,7 +71,7 @@ export default function JobsPage() {
 
     // Poll processing jobs every 15 seconds
     const interval = setInterval(pollProcessingJobs, 15000)
-    
+
     // Poll immediately
     pollProcessingJobs()
 
@@ -88,7 +88,7 @@ export default function JobsPage() {
   // Auto-refresh for processing jobs every 10 seconds
   useEffect(() => {
     const hasProcessingJobs = jobs.some((job: any) => job.status === 'processing' || job.status === 'pending')
-    
+
     if (hasProcessingJobs) {
       const interval = setInterval(() => {
         invalidateJobs()
@@ -100,12 +100,12 @@ export default function JobsPage() {
 
   // Filter jobs based on search and status
   const filteredJobs = jobs.filter((job: any) => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.brand_info.toLowerCase().includes(searchTerm.toLowerCase())
-    
+
     const matchesStatus = statusFilter === "all" || job.status === statusFilter
-    
+
     return matchesSearch && matchesStatus
   })
 
@@ -251,20 +251,6 @@ export default function JobsPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl md:text-3xl font-bold">All Jobs</h1>
-                  {isLoading && (
-                    <RefreshCw className="h-5 w-5 text-muted-foreground animate-spin" />
-                  )}
-                  {isPolling && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                      <span>Auto-refreshing every 10s</span>
-                      {jobs.filter(job => job.status === 'processing' || job.status === 'pending').length > 0 && (
-                        <span className="text-blue-600">
-                          ({jobs.filter(job => job.status === 'processing' || job.status === 'pending').length} processing)
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
                 <p className="text-sm md:text-base text-muted-foreground mt-1">Manage and monitor your AI content generation tasks</p>
               </div>
@@ -276,7 +262,7 @@ export default function JobsPage() {
                     <span className="sm:hidden">New</span>
                   </Button>
                 </Link>
-                
+
                 {/* Mobile menu button */}
                 <Button
                   variant="outline"
@@ -286,7 +272,7 @@ export default function JobsPage() {
                 >
                   <Menu className="h-4 w-4" />
                 </Button>
-                
+
                 {/* Desktop collapse button */}
                 <Button
                   variant="outline"
