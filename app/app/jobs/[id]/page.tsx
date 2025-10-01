@@ -2,8 +2,6 @@
 
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { JobDetails } from "@/components/jobs/job-details"
-import { JobProgress } from "@/components/jobs/job-progress"
-import { JobLogs } from "@/components/jobs/job-logs"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useCallback } from "react"
@@ -162,18 +160,8 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-            <div className="space-y-6">
-              <JobDetails job={currentJob} />
-              <JobLogs logs={[]} />
-            </div>
-            <div>
-              <JobProgress
-                steps={[]}
-                overallProgress={0}
-                currentStep={undefined}
-              />
-            </div>
+          <div className="space-y-6">
+            <JobDetails job={currentJob} />
           </div>
         </div>
       </main>
