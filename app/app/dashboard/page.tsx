@@ -2,37 +2,132 @@
 
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { PipelineForm } from "@/components/dashboard/pipeline-form"
-import { RecentJobs } from "@/components/dashboard/recent-jobs"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { OfflineBanner } from "@/components/ui/offline-banner"
+import { EmptyState } from "@/components/ui/empty-state"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
-import { BarChart3, FileText, Clock, TrendingUp, AlertCircle, Zap, Menu, ChevronLeft, ChevronRight } from "lucide-react"
+import { BarChart3, FileText, Clock, TrendingUp, AlertCircle, Zap, Menu, ChevronLeft, ChevronRight, Eye, Search, Filter, Download, Calendar } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useSidebar } from "@/contexts/sidebar-context"
-import { useJobs, useCreateJob } from "@/lib/hooks/use-jobs"
+import { useJobs, useCreateJob, useInvalidateJobs } from "@/lib/hooks/use-jobs"
+import { useSimplePolling } from "@/hooks/use-simple-polling"
+import { Job } from "@/lib/db/types"
 
 export default function DashboardPage() {
   const { user, isAuthenticated } = useAuthStore()
   const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
   const { toast } = useToast()
 
   // Use TanStack Query for data fetching
-  const { data: jobs = [], isLoading, error: queryError } = useJobs()
+  const { data: jobs = [], isLoading, error: queryError, refetch } = useJobs()
   const createJobMutation = useCreateJob()
+  const invalidateJobs = useInvalidateJobs()
+
+  // Simple global polling - refreshes jobs list every 10 seconds
+  const { isPolling } = useSimplePolling({
+    enabled: true, // Always enabled when on dashboard
+    interval: 10000 // Poll every 10 seconds
+  })
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
       router.push("/login")
     }
   }, [isAuthenticated, user, router])
+
+  // Poll individual job statuses for processing jobs
+  useEffect(() => {
+    const pollProcessingJobs = async () => {
+      const processingJobs = jobs.filter(job =>
+        job.status === 'processing' || job.status === 'pending'
+      )
+
+      if (processingJobs.length === 0) return
+
+      console.log(`🔄 Polling ${processingJobs.length} processing jobs...`)
+
+      for (const job of processingJobs) {
+        try {
+          const response = await fetch(`/api/jobs/${job.id}/status`)
+          if (response.ok) {
+            const data = await response.json()
+            console.log(`📊 Job ${job.id} status:`, data.status)
+
+            // If job completed, refresh the jobs list
+            if (data.status === 'completed' || data.status === 'failed') {
+              console.log(`✅ Job ${job.id} finished, refreshing jobs list`)
+              refetch()
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Error polling job ${job.id}:`, error)
+        }
+      }
+    }
+
+    // Poll processing jobs every 15 seconds
+    const interval = setInterval(pollProcessingJobs, 15000)
+
+    // Poll immediately
+    pollProcessingJobs()
+
+    return () => clearInterval(interval)
+  }, [jobs, refetch])
+
+  // Auto-refresh for processing jobs every 10 seconds
+  useEffect(() => {
+    const hasProcessingJobs = jobs.some((job: any) => job.status === 'processing' || job.status === 'pending')
+
+    if (hasProcessingJobs) {
+      const interval = setInterval(() => {
+        invalidateJobs()
+      }, 10000) // Refresh every 10 seconds
+
+      return () => clearInterval(interval)
+    }
+  }, [jobs, invalidateJobs])
+
+  // Filter jobs based on search and status
+  const filteredJobs = jobs.filter((job: any) => {
+    const matchesSearch = !searchTerm ||
+      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.brand_info.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchesStatus = statusFilter === "all" || job.status === statusFilter
+
+    return matchesSearch && matchesStatus
+  })
+
+  // Filter completed jobs for results
+  const completedJobs = jobs.filter((job: any) => job.status === 'completed')
+
+  const getStatusBadge = (status: Job["status"]) => {
+    const variants = {
+      completed: "default",
+      processing: "secondary",
+      pending: "outline",
+      failed: "destructive",
+    } as const
+
+    return (
+      <Badge variant={variants[status]} className="capitalize">
+        {status}
+      </Badge>
+    )
+  }
 
   if (!user) {
     return (
@@ -197,8 +292,8 @@ export default function DashboardPage() {
               </Card>
             )}
 
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-               <Card className="lg:col-span-2">
+            {/* Quick Actions */}
+            <Card className="mb-6">
                  <CardHeader>
                    <CardTitle>Quick Actions</CardTitle>
                    <CardDescription>Get started with creating new content</CardDescription>
@@ -211,18 +306,155 @@ export default function DashboardPage() {
                          Create New Content
                        </Button>
                      </Link>
-                     <Link href="/jobs" className="flex-1">
-                       <Button variant="outline" className="w-full h-16 text-lg">
-                         <FileText className="h-5 w-5 mr-2" />
-                         View All Jobs
-                       </Button>
-                     </Link>
-                   </div>
-                 </CardContent>
-               </Card>
-               <ErrorBoundary>
-                 <RecentJobs />
-               </ErrorBoundary>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Jobs List and Results Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+              {/* Jobs List */}
+              <Card className="flex flex-col">
+                <CardHeader>
+                  <CardTitle>All Jobs</CardTitle>
+                  <CardDescription>Manage and monitor your AI content generation tasks</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col">
+                  {/* Search and Filter */}
+                  <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search jobs..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-full sm:w-48">
+                        <Filter className="h-4 w-4 mr-2" />
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="processing">Processing</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="failed">Failed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Jobs List */}
+                  {filteredJobs.length === 0 ? (
+                    <div className="flex-1 flex items-center justify-center">
+                      <EmptyState
+                        icon={FileText}
+                        title="No jobs found"
+                        description={
+                          searchTerm || statusFilter !== "all"
+                            ? "Try adjusting your search or filter criteria"
+                            : "Create your first AI content generation job to get started"
+                        }
+                        action={{
+                          label: "Create New Job",
+                          onClick: () => router.push("/create"),
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-3 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent hover:scrollbar-thumb-muted-foreground/30 max-h-96">
+                      {filteredJobs.map((job: any) => (
+                        <Card key={job.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push(`/jobs/${job.id}`)}>
+                          <CardContent className="p-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                                  <h3 className="text-base md:text-lg font-semibold truncate">{job.title}</h3>
+                                  {getStatusBadge(job.status)}
+                                </div>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs md:text-sm text-muted-foreground">
+                                  <span className="capitalize">{job.template?.name || 'AI Generated'}</span>
+                                  <span className="hidden sm:inline">•</span>
+                                  <span>{new Date(job.created_at).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  <span className="hidden sm:inline">View Details</span>
+                                  <span className="sm:hidden">View</span>
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Results Grid */}
+              <Card className="flex flex-col">
+                <CardHeader>
+                  <CardTitle>Recent Results</CardTitle>
+                  <CardDescription>View your completed AI-generated content</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col">
+                  {completedJobs.length === 0 ? (
+                    <div className="flex-1 flex items-center justify-center">
+                      <EmptyState
+                        icon={BarChart3}
+                        title="No results yet"
+                        description="Complete some jobs to see your AI-generated content here"
+                        action={{
+                          label: "Create New Job",
+                          onClick: () => router.push("/create"),
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-3 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent hover:scrollbar-thumb-muted-foreground/30 max-h-96">
+                      {completedJobs.slice(0, 6).map((job: any) => (
+                        <Card key={job.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push(`/results/${job.id}`)}>
+                          <CardContent className="p-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                                  <h4 className="text-base md:text-lg font-semibold truncate">{job.title}</h4>
+                                  <Badge variant="default" className="capitalize text-xs">
+                                    completed
+                                  </Badge>
+                                </div>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs md:text-sm text-muted-foreground">
+                                  <span className="capitalize">{job.template?.name || 'AI Generated'}</span>
+                                  <span className="hidden sm:inline">•</span>
+                                  <span>{new Date(job.created_at).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  <span className="hidden sm:inline">View Results</span>
+                                  <span className="sm:hidden">View</span>
+                                </Button>
+                                <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                                  <Download className="h-4 w-4 mr-2" />
+                                  <span className="hidden sm:inline">Download</span>
+                                  <span className="sm:hidden">↓</span>
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
              </div>
           </div>
         </main>
