@@ -31,7 +31,10 @@ info:
         "sales_page_url": "https://try.meritrelief.com/",
         "project_name": "meritrelief",
         "swipe_file_id": "L00005",
-        "advertorial_type": "Listicle"
+        "advertorial_type": "Listicle",
+        "persona": "Health-conscious professionals",
+        "age_range": "30-45",
+        "gender": "female"
       }' \
       "${API_URL}jobs"
 
@@ -70,6 +73,9 @@ paths:
                   project_name: "meritrelief"
                   swipe_file_id: "L00005"
                   advertorial_type: "Listicle"
+                  persona: "Health-conscious professionals"
+                  age_range: "30-45"
+                  gender: "female"
       responses:
         '202':
           description: Job accepted
@@ -107,7 +113,10 @@ paths:
                 "sales_page_url": "https://try.meritrelief.com/",
                 "project_name": "meritrelief",
                 "swipe_file_id": "L00005",
-                "advertorial_type": "Listicle"
+                "advertorial_type": "Listicle",
+                "persona": "Health-conscious professionals",
+                "age_range": "30-45",
+                "gender": "female"
               }' \
               "${API_URL}jobs"
   /jobs/{id}:
@@ -220,11 +229,20 @@ components:
           description: S3 key under content_library/ or other identifier
         advertorial_type:
           type: string
+        persona:
+          type: string
+        age_range:
+          type: string
+        gender:
+          type: string
       example:
         sales_page_url: "https://try.meritrelief.com/"
         project_name: "meritrelief"
         swipe_file_id: "L00005"
         advertorial_type: "Listicle"
+        persona: "Health-conscious professionals"
+        age_range: "30-45"
+        gender: "female"
     SubmitJobResponse:
       type: object
       required: [jobId, status]
@@ -249,8 +267,118 @@ components:
           description: Current job status, e.g. SUBMITTED, RUNNING, SUCCEEDED, FAILED
     JobResult:
       type: object
-      description: Arbitrary JSON produced by the pipeline.
-      additionalProperties: true
+      description: Structured JSON produced by the pipeline including rewritten advertorial content.
+      additionalProperties: false
+      properties:
+        project_name:
+          type: string
+        timestamp_iso:
+          type: string
+          format: date-time
+        job_id:
+          type: string
+        results:
+          type: object
+          additionalProperties: false
+          properties:
+            research_page_analysis:
+              type: string
+            doc1_analysis:
+              type: string
+            doc2_analysis:
+              type: string
+            deep_research_prompt:
+              type: string
+            deep_research_output:
+              type: string
+            avatar_sheet:
+              type: string
+            offer_brief:
+              type: string
+            marketing_philosophy_analysis:
+              type: string
+            summary:
+              type: string
+            swipe_results:
+              type: array
+              items:
+                $ref: '#/components/schemas/SwipeResult'
+            marketing_angles:
+              type: array
+              items:
+                type: string
+      required: [project_name, timestamp_iso, results, job_id]
+    SwipeResult:
+      type: object
+      description: Result item for a specific marketing angle containing structured advertorial content.
+      required: [angle, content]
+      properties:
+        angle:
+          type: string
+          description: Marketing angle used to generate the content.
+        content:
+          description: Structured content; either a Listicle or an Avertorial.
+          oneOf:
+            - $ref: '#/components/schemas/Listicle'
+            - $ref: '#/components/schemas/Avertorial'
+    ListicleItem:
+      type: object
+      required: [number, title, description]
+      properties:
+        number:
+          type: integer
+          description: Number of the listicle item.
+        title:
+          type: string
+          description: Title of the listicle item.
+        description:
+          type: string
+          description: Description of the listicle item.
+    Listicle:
+      type: object
+      description: Structured Listicle content returned by the pipeline.
+      required: [title, author, summary, listicles, cta, conclusion]
+      properties:
+        title:
+          type: string
+          description: Title of the listicle.
+        author:
+          type: string
+          description: Author and date of the listicle.
+        summary:
+          type: string
+          description: Intro/summary paragraph of the listicle.
+        listicles:
+          type: array
+          description: List of listicle items.
+          items:
+            $ref: '#/components/schemas/ListicleItem'
+        cta:
+          type: string
+          description: Call-to-action of the listicle.
+        conclusion:
+          type: string
+          description: Conclusion of the listicle.
+    Avertorial:
+      type: object
+      description: Structured Advertorial content returned by the pipeline.
+      required: [title, subtitle, body, cta, captions]
+      properties:
+        title:
+          type: string
+          description: Title of the advertorial.
+        subtitle:
+          type: string
+          description: Subtitle of the advertorial.
+        body:
+          type: string
+          description: Body/content of the advertorial.
+        cta:
+          type: string
+          description: Call-to-action of the advertorial.
+        captions:
+          type: string
+          description: Captions of the advertorial.
     ErrorResponse:
       type: object
       properties:

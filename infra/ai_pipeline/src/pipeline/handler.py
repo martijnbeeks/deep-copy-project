@@ -41,7 +41,27 @@ else:
         except Exception:
             pass
 
+class Avertorial(BaseModel):
+    """Avertorial template"""
+    title: str = Field(..., description="Title of the advertorial.")
+    subtitle: str = Field(..., description="Subtitle of the advertorial.")
+    body: str = Field(..., description="Content of the advertorial.")
+    cta: str = Field(..., description="Call-to-action of the advertorial.")
+    captions: str = Field(..., description="Captions of the advertorial.")
 
+class ListicleItem(BaseModel):
+    """Listicle item template"""
+    number: int = Field(..., description="Number of the listicle item.")
+    title: str = Field(..., description="Title of the listicle item.")
+    description: str = Field(..., description="Description of the listicle item.")
+class Listicle(BaseModel):
+    """Listicle template"""
+    title: str = Field(..., description="Title of the listicle.")
+    author: str = Field(..., description="Author and date of the listicle.")
+    summary: str = Field(..., description="Summary / intro paragraph of the listicle.")
+    listicles: List[ListicleItem] = Field(..., description="List of listicles.")
+    cta: str = Field(..., description="Call-to-action of the listicle.")
+    conclusion: str = Field(..., description="Conclusion of the listicle.")
 
 class Demographics(BaseModel):
     """Demographic & general information about the avatar."""
@@ -199,7 +219,7 @@ class DeepCopy:
             logger.error(f"Error encoding image: {e}")
             raise
     
-    def analyze_research_page(self, sales_page_url):
+    def analyze_research_page(self, sales_page_url, persona, age_range, gender):
         """Analyze the sales page using GPT-5 Vision"""
         try:
             base64_image = None
@@ -220,8 +240,8 @@ class DeepCopy:
                     logger.warning(f"Failed to clean up image file {image_path}: {cleanup_exc}")
             
             prompt = f"""
-            You are my expert copywriter specializing in persuasive direct-response copy for my e-commerce brand.
-            I've attached my current sales page.
+            You are my expert copywriter and you specialise in writing highly persuasive direct response style copy for my companies targeting {persona} with an age range of {age_range} and a gender of {gender}. 
+            I've attached my current sales page.    
 
             Analyze this page and please let me know your thoughts.
             """
@@ -473,50 +493,42 @@ class DeepCopy:
     def rewrite_swipe_files(self, angles, avatar_sheet, summary, swipe_file_path, advertorial_type: Literal["Advertorial", "Listicle"]):
         """Rewrite swipe files for each marketing angle"""
         try:
-            with open(swipe_file_path, "r", encoding="utf-8") as f:
-                swipe_file_html = f.read()
-            
-            # Use a max of 3 angles to avoid overwhelming the API
-            limited_angles = list(angles or [])[:3]
 
+            
             def _rewrite_for_angle(angle: str):
                 prompt = f"""
                 Great, now I want you to please rewrite this {advertorial_type} but using all of the information around products stated below. 
                 I want you to specifically focus on the first marketing angle from the avatar sheet: {angle}. 
-                Please rewrite the {advertorial_type} with the new content and output it in html format. 
-                Make sure to exactly match the style and format of the example {advertorial_type}. 
-                Keep all the images and style components from the example and add them into the new html file.
+                Please rewrite the {advertorial_type} with the new content and output it in provided format. 
                 
                 Avatar sheet:
                 {avatar_sheet}
                 
                 Content for the {advertorial_type}:
                 {summary}
-                
-                Example {advertorial_type} in html format:
-                {swipe_file_html}
                 """
 
                 logger.info(f"Calling GPT-5 API to rewrite swipe file for angle: {angle}")
-                response = self.client.responses.create(
-                    model="gpt-5",
+                response = self.client.responses.parse(
+                    model="gpt-5-mini",
                     input=[{
                         "role": "user", 
                         "content": [{"type": "input_text", "text": prompt}]
-                    }]
+                    }],
+                    text_format=Listicle if advertorial_type == "Listicle" else Avertorial,
                 )
                 logger.info(f"GPT-5 API call completed for swipe file rewrite (angle: {angle})")
                 return {"angle": angle, "content": response.output_text}
 
             # Run API calls in parallel while preserving the original order
-            results_by_index = [None] * len(limited_angles)
-            if not limited_angles:
+            results_by_index = [None] * len(angles)
+            if not angles:
                 return results_by_index
 
-            max_workers = min(3, len(limited_angles))
+            max_workers = min(3, len(angles))
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 future_to_index = {}
-                for idx, angle in enumerate(limited_angles):
+                for idx, angle in enumerate(angles):
                     future = executor.submit(_rewrite_for_angle, angle)
                     future_to_index[future] = idx
                 for future in as_completed(future_to_index):
@@ -624,6 +636,9 @@ def run_pipeline(event, context):
         project_name = event.get("project_name") or os.environ.get("PROJECT_NAME") or "default-project"
         swipe_file_id = event.get("swipe_file_id") or os.environ.get("SWIPE_FILE_ID")
         advertorial_type = event.get("advertorial_type")
+        persona = event.get("persona")
+        age_range = event.get("age_range")
+        gender = event.get("gender")
         content_dir = event.get("content_dir", "src/pipeline/content/")
         logger.info(
             f"Pipeline inputs: project_name={project_name}, sales_page_url={sales_page_url}, "
@@ -692,10 +707,12 @@ def run_pipeline(event, context):
                     "statusCode": 500,
                     "body": {"error": error_msg}
                 }
+        # TODO: 
+        # Return Avertorial / Listicle and let frontend how to render it in a html template with placeholders
         
         # Step 1: Analyze research page
         logger.info("Step 1: Analyzing research page")
-        research_page_analysis = generator.analyze_research_page(sales_page_url)
+        research_page_analysis = generator.analyze_research_page(sales_page_url, persona, age_range, gender)
         
         # Step 2: Analyze research documents
         logger.info("Step 2: Analyzing research documents")

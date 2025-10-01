@@ -1,0 +1,174 @@
+a<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Listicle Template</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --max: 1100px;
+      --fg: #0a0a0a;
+      --muted:#4b4b4b;
+      --bg:#ffffff;
+      --divider:#eaeaea;
+      --accent:#111;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font:16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+      color:var(--fg);
+      background:var(--bg);
+    }
+    .container{max-width:var(--max); margin:0 auto; padding:24px 20px;}
+    header h1{
+      font-size: clamp(28px, 4.2vw, 46px);
+      line-height:1.1;
+      letter-spacing:-0.02em;
+      margin:8px 0 10px;
+      text-wrap:balance;
+    }
+    .byline{color:var(--muted); margin-bottom:16px;}
+    .summary{font-size:clamp(16px, 2.2vw, 18px); color:#1b1b1b; margin:10px 0 28px; max-width:72ch}
+    .cta-wrap{margin: 18px 0 42px;}
+    .cta{
+      display:inline-block; background:var(--accent); color:#fff; text-decoration:none;
+      padding:12px 18px; border-radius:999px; font-weight:600;
+    }
+    /* Listicle items */
+    .item{
+      display:grid; grid-template-columns: 1fr; gap:18px; align-items:center;
+      padding:36px 0; border-top:1px solid var(--divider);
+    }
+    .item:last-of-type{border-bottom:1px solid var(--divider);}
+    .item-media{
+      width:100%;
+      aspect-ratio: 16 / 10;
+      overflow:hidden;
+      border-radius:12px;
+      background:#f3f3f3;
+      margin-bottom:18px; /* 🔥 space below image on mobile */
+    }
+    .item-media img{width:100%; height:100%; object-fit:cover; display:block}
+    .item-title{
+      font-size: clamp(22px, 3vw, 28px);
+      line-height:1.25;
+      margin:0 0 6px;
+    }
+    .item-title .num{font-weight:800; margin-right:6px}
+    .item-desc{color:#232323; margin:8px 0 0}
+    /* Alternate image/text on desktop like your reference */
+    @media (min-width: 880px){
+      .item{
+        grid-template-columns: minmax(0, 56%) minmax(0, 40%);
+        gap:60px; /* 🔥 more horizontal spacing */
+        padding:64px 0;
+      }
+      .item.flip{grid-template-columns: minmax(0, 40%) minmax(0, 56%);}
+      .item.flip .item-media{order:2; margin-bottom:0;}
+      .item.flip .item-copy{order:1;}
+    }
+    /* Footer */
+    .footer{padding:28px 0 8px}
+    .conclusion{font-size:clamp(16px, 2.2vw, 18px); margin:0 0 18px; max-width:72ch}
+    .muted{color:var(--muted); font-size:.95rem}
+  </style>
+</head>
+<body>
+  <main id="app" class="container">
+    <!-- Content will be injected here by JS -->
+  </main>
+
+  <script>
+    (function () {
+      const IMAGE_URL = "https://i.postimg.cc/ZnrzyPCZ/Chat-GPT-Image-Sep-28-2025-07-52-51-PM.png";
+
+      // Use the data you provide from your backend:
+      // window.LISTICLE_DATA = <your JSON matching the Pydantic models>;
+      const data = (window.LISTICLE_DATA && typeof window.LISTICLE_DATA === "object")
+        ? window.LISTICLE_DATA
+        : demoData(); // fallback preview so you can open the file directly
+
+      const root = document.getElementById("app");
+
+      // Header / hero
+      const header = document.createElement("header");
+      header.innerHTML = `
+        <h1>${esc(data.title)}</h1>
+        <div class="byline">${esc(data.author)}</div>
+        <p class="summary">${esc(data.summary)}</p>
+        <div class="cta-wrap">
+          <a class="cta" href="#" data-cta>${esc(data.cta)}</a>
+        </div>
+      `;
+      root.appendChild(header);
+
+      // Listicle items
+      if (Array.isArray(data.listicles)) {
+        data.listicles
+          .sort((a,b) => (a?.number ?? 0) - (b?.number ?? 0)) // sort by number
+          .forEach((it, idx) => {
+            const item = document.createElement("section");
+            item.className = "item" + (idx % 2 === 1 ? " flip" : "");
+            const number = Number(it.number ?? idx + 1);
+            item.innerHTML = `
+              <figure class="item-media">
+                <img src="${IMAGE_URL}" alt="Illustration for: ${esc(it.title)}" />
+              </figure>
+              <div class="item-copy">
+                <h2 class="item-title"><span class="num">${number}.</span>${esc(it.title)}</h2>
+                <p class="item-desc">${esc(it.description)}</p>
+              </div>
+            `;
+            root.appendChild(item);
+          });
+      }
+
+      // Conclusion + CTA
+      const footer = document.createElement("section");
+      footer.className = "footer";
+      footer.innerHTML = `
+        <p class="conclusion">${esc(data.conclusion)}</p>
+        <div class="cta-wrap"><a class="cta" href="#" data-cta>${esc(data.cta)}</a></div>
+        <div class="muted">© ${esc((data.author || "").split("—")[0].replace(/^By\s*/i,"").trim() || "")}</div>
+      `;
+      root.appendChild(footer);
+
+      // Optional: support a URL for your CTA
+      const ctaUrl = data.ctaUrl || window.LISTICLE_CTA_URL || "#";
+      document.querySelectorAll("[data-cta]").forEach(a => a.setAttribute("href", ctaUrl));
+
+      // --- helpers ---
+      function esc(str){
+        return String(str ?? "")
+          .replaceAll("&","&amp;").replaceAll("<","&lt;")
+          .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+          .replaceAll("'","&#039;");
+      }
+
+      function demoData(){
+        return {
+          title: "9 Reasons to Ditch Your Coffee and Try Something Better",
+          author: "By Taylor Ray — Oct 1, 2025",
+          summary:
+            "Coffee can be great—but the jitters and crash? Not so much. Here are bite-size reasons to consider a calmer ritual that still brings the focus.",
+          listicles: [
+            { number: 1, title: "Promotes focus and sustainable energy", description: "Functional ingredients for steady clarity—no spikes, no crash." },
+            { number: 2, title: "No jitters or anxiety spiral", description: "A smoother lift that plays nice with your nervous system." },
+            { number: 3, title: "Tastes amazing, hot or iced", description: "Rich, cozy, and easy to tailor with your favorite milk." },
+            { number: 4, title: "Organic, plant-based ingredients", description: "Thoughtfully sourced—simple label, no weird extras." },
+            { number: 5, title: "Powered by functional mushrooms", description: "Lion’s mane, reishi & friends support focus and balance." },
+            { number: 6, title: "Easy to prep, easy to love", description: "Scoop, stir, sip. A 60-second ritual you’ll actually keep." },
+            { number: 7, title: "Supports better evenings", description: "A calmer daytime lift means easier wind-down at night." },
+            { number: 8, title: "Builds sustainable habits", description: "Less dependency on caffeine, more consistent energy." },
+            { number: 9, title: "Fits any routine", description: "Morning mug, afternoon pick-me-up, or post-workout—your call." }
+          ],
+          cta: "Get your starter kit",
+          conclusion:
+            "Ready to switch up your ritual? Start small, sip mindfully, and notice how you feel after a week."
+        };
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -66,7 +66,6 @@ def handler(event, _context):
     project_name = body.get("project_name")
     swipe_file_id = body.get("swipe_file_id")
     advertorial_type = body.get("advertorial_type")
-    swipe_file_id = body.get("swipe_file_id")
 
     env_overrides = [
         {"name": "JOB_ID", "value": job_id},

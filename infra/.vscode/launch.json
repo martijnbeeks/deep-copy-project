@@ -25,7 +25,7 @@
             "cwd": "${workspaceFolder}/ai_pipeline",
             "env": {
                 "AWS_PROFILE": "personal-cdk-dev",
-                "JOB_EVENT_JSON": "{\"sales_page_url\": \"https://try.meritrelief.com/\", \"project_name\": \"meritrelief\", \"swipe_file_id\": \"L00005\", \"advertorial_type\": \"Listicle\"}"
+                "JOB_EVENT_JSON": "{\"sales_page_url\": \"https://www.sciatiease.com/sciatiease.php\", \"project_name\": \"meritrelief\", \"swipe_file_id\": \"L00005\", \"advertorial_type\": \"Listicle\", \"persona\": \"entrepreneur\", \"age_range\": \"25-34\", \"gender\": \"male\"}"
             }
         },
     ]
