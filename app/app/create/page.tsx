@@ -122,7 +122,7 @@ export default function CreatePage() {
       
       router.push("/dashboard")
     } catch (error) {
-      console.error('Form submission error:', error)
+      // Error handling is done in the catch block above
     } finally {
       setIsLoading(false)
     }

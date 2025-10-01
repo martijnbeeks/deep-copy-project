@@ -30,7 +30,6 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
       await fetchJob(params.id)
       setIsLoading(false)
     } catch (error) {
-      console.error('Failed to fetch job:', error)
       setIsLoading(false)
     } finally {
       setIsRefreshing(false)
@@ -49,17 +48,13 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
     interval: 5000, // Poll every 5 seconds
     maxAttempts: 120, // Max 10 minutes
     onStatusChange: (status, progress) => {
-      console.log(`Job ${params.id} status changed:`, { status, progress })
-      // Refetch job data when status changes
       loadJob()
     },
     onComplete: (result) => {
-      console.log(`Job ${params.id} completed!`, result)
-      // Refetch to get updated job data
       loadJob()
     },
     onError: (error) => {
-      console.error(`Job ${params.id} polling error:`, error)
+      // Silently handle polling errors
     }
   })
 
