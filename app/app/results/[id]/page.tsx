@@ -108,10 +108,10 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
         <div className="p-4 md:p-6">
           <div className="flex items-start justify-between mb-4 md:mb-6 gap-4">
             <div className="flex items-center gap-4">
-              <Link href="/results">
+              <Link href="/dashboard">
                 <Button variant="ghost" size="sm">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Back to Results</span>
+                  <span className="hidden sm:inline">Back to Dashboard</span>
                   <span className="sm:hidden">Back</span>
                 </Button>
               </Link>
@@ -195,64 +195,64 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
 
             <TabsContent value="analytics">
               <div className="space-y-6">
-                <div className="bg-white border rounded-lg p-6">
-                  <h3 className="text-lg font-semibold mb-4">Job Information</h3>
+                <div className="bg-card border rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4 text-card-foreground">Job Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <p className="text-sm text-muted-foreground">Generated At</p>
-                      <p className="font-medium">{new Date(currentJob.result.created_at).toLocaleString()}</p>
+                      <p className="font-medium text-card-foreground">{new Date(currentJob.result.created_at).toLocaleString()}</p>
                     </div>
                     <div className="space-y-2">
                       <p className="text-sm text-muted-foreground">Template Used</p>
-                      <p className="font-medium">L00005 (DeepCopy)</p>
+                      <p className="font-medium text-card-foreground">L00005 (DeepCopy)</p>
                     </div>
                     <div className="space-y-2">
                       <p className="text-sm text-muted-foreground">Status</p>
-                      <p className="font-medium capitalize">{currentJob.status}</p>
+                      <p className="font-medium capitalize text-card-foreground">{currentJob.status}</p>
                     </div>
                     <div className="space-y-2">
                       <p className="text-sm text-muted-foreground">Progress</p>
-                      <p className="font-medium">Processing</p>
+                      <p className="font-medium text-card-foreground">Processing</p>
                     </div>
                     {currentJob.result.metadata?.deepcopy_job_id && (
                       <div className="space-y-2">
                         <p className="text-sm text-muted-foreground">DeepCopy Job ID</p>
-                        <p className="font-medium font-mono text-sm">{currentJob.result.metadata.deepcopy_job_id}</p>
+                        <p className="font-medium font-mono text-sm text-card-foreground">{currentJob.result.metadata.deepcopy_job_id}</p>
                       </div>
                     )}
                     {currentJob.result.metadata?.project_name && (
                       <div className="space-y-2">
                         <p className="text-sm text-muted-foreground">Project Name</p>
-                        <p className="font-medium">{currentJob.result.metadata.project_name}</p>
+                        <p className="font-medium text-card-foreground">{currentJob.result.metadata.project_name}</p>
                       </div>
                     )}
                   </div>
                 </div>
 
                 {currentJob.result.metadata?.word_count && (
-                  <div className="bg-white border rounded-lg p-6">
-                    <h3 className="text-lg font-semibold mb-4">Content Metrics</h3>
+                  <div className="bg-card border rounded-lg p-6">
+                    <h3 className="text-lg font-semibold mb-4 text-card-foreground">Content Metrics</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <p className="text-sm text-muted-foreground">Generated At</p>
-                        <p className="text-sm">{currentJob.result.metadata.generated_at ? new Date(currentJob.result.metadata.generated_at).toLocaleString() : 'Unknown'}</p>
+                        <p className="text-sm text-card-foreground">{currentJob.result.metadata.generated_at ? new Date(currentJob.result.metadata.generated_at).toLocaleString() : 'Unknown'}</p>
                       </div>
                       <div className="space-y-2">
                         <p className="text-sm text-muted-foreground">API Timestamp</p>
-                        <p className="text-sm">{currentJob.result.metadata.timestamp_iso ? new Date(currentJob.result.metadata.timestamp_iso).toLocaleString() : 'Unknown'}</p>
+                        <p className="text-sm text-card-foreground">{currentJob.result.metadata.timestamp_iso ? new Date(currentJob.result.metadata.timestamp_iso).toLocaleString() : 'Unknown'}</p>
                       </div>
                     </div>
                   </div>
                 )}
 
                 {currentJob.result.metadata?.full_result?.results && (
-                  <div className="bg-white border rounded-lg p-6">
-                    <h3 className="text-lg font-semibold mb-4">Analysis Summary</h3>
+                  <div className="bg-card border rounded-lg p-6">
+                    <h3 className="text-lg font-semibold mb-4 text-card-foreground">Analysis Summary</h3>
                     <div className="space-y-4">
                       {currentJob.result.metadata.full_result.results.research_page_analysis && (
                         <div>
                           <p className="text-sm font-medium text-muted-foreground mb-2">Page Analysis</p>
-                          <p className="text-sm line-clamp-3">
+                          <p className="text-sm line-clamp-3 text-card-foreground">
                             {currentJob.result.metadata.full_result.results.research_page_analysis.substring(0, 200)}...
                           </p>
                         </div>
@@ -260,7 +260,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                       {currentJob.result.metadata.full_result.results.doc1_analysis && (
                         <div>
                           <p className="text-sm font-medium text-muted-foreground mb-2">Document Analysis 1</p>
-                          <p className="text-sm line-clamp-3">
+                          <p className="text-sm line-clamp-3 text-card-foreground">
                             {currentJob.result.metadata.full_result.results.doc1_analysis.substring(0, 200)}...
                           </p>
                         </div>
@@ -268,7 +268,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                       {currentJob.result.metadata.full_result.results.html_templates && (
                         <div>
                           <p className="text-sm font-medium text-muted-foreground mb-2">HTML Templates</p>
-                          <p className="text-sm">
+                          <p className="text-sm text-card-foreground">
                             {Array.isArray(currentJob.result.metadata.full_result.results.html_templates) 
                               ? `${currentJob.result.metadata.full_result.results.html_templates.length} template(s) generated`
                               : '1 template generated'

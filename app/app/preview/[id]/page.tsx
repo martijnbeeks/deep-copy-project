@@ -73,8 +73,8 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-2">Result Not Found</h2>
           <p className="text-muted-foreground mb-4">The requested result could not be found or is not yet available.</p>
-          <Button onClick={() => router.push("/results")}>
-            Return to Results
+          <Button onClick={() => router.push("/dashboard")}>
+            Return to Dashboard
           </Button>
         </div>
       </div>
@@ -88,11 +88,11 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => router.push(`/results/${params.id}`)}
+          onClick={() => router.push('/dashboard')}
           className="bg-white/90 backdrop-blur-sm shadow-lg"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Results
+          Back to Dashboard
         </Button>
         <Button
           variant="outline"

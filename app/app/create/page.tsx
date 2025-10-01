@@ -23,7 +23,7 @@ import { useSidebar } from "@/contexts/sidebar-context"
 interface PipelineFormData {
   title: string
   brand_info: string
-  sales_page_url?: string
+  sales_page_url: string
   template_id?: string
 }
 
@@ -72,10 +72,24 @@ export default function CreatePage() {
       } else if (formData.brand_info.trim().length < 10) {
         newErrors.brand_info = "Brand information must be at least 10 characters"
       }
+      if (!formData.sales_page_url.trim()) {
+        newErrors.sales_page_url = "Sales page URL is required"
+      } else if (!isValidUrl(formData.sales_page_url)) {
+        newErrors.sales_page_url = "Please enter a valid URL"
+      }
     }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
+  }
+
+  const isValidUrl = (url: string): boolean => {
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
+    }
   }
 
   const handleNext = () => {
@@ -106,7 +120,7 @@ export default function CreatePage() {
       setErrors({})
       setCurrentStep(1)
       
-      router.push("/jobs")
+      router.push("/dashboard")
     } catch (error) {
       console.error('Form submission error:', error)
     } finally {
@@ -415,14 +429,18 @@ export default function CreatePage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="sales_page_url">Current Sales Page URL (Optional)</Label>
+                        <Label htmlFor="sales_page_url">Current Sales Page URL *</Label>
                         <Input
                           id="sales_page_url"
                           placeholder="https://example.com/current-page"
                           value={formData.sales_page_url}
                           onChange={(e) => setFormData((prev) => ({ ...prev, sales_page_url: e.target.value }))}
                           disabled={isLoading}
+                          className={errors.sales_page_url ? "border-destructive" : ""}
                         />
+                        {errors.sales_page_url && (
+                          <p className="text-sm text-destructive">{errors.sales_page_url}</p>
+                        )}
                       </div>
 
                       {selectedTemplate && (
