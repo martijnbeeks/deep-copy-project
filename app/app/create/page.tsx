@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { Loader2, AlertCircle, Eye, ChevronRight, ChevronLeft, Menu } from "lucide-react"
 import { useTemplatesStore } from "@/stores/templates-store"
 import { useJobsStore } from "@/stores/jobs-store"
@@ -42,6 +43,10 @@ export default function CreatePage() {
   })
   const [errors, setErrors] = useState<Partial<Record<keyof PipelineFormData, string>>>({})
   const [isLoading, setIsLoading] = useState(false)
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const templatesPerPage = 4
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -114,6 +119,21 @@ export default function CreatePage() {
     setFormData(prev => ({ ...prev, template_id: templateId }))
     setSelectedTemplate(template || null)
     if (errors.template_id) setErrors(prev => ({ ...prev, template_id: undefined }))
+  }
+
+  // Pagination logic
+  const totalPages = Math.ceil(templates.length / templatesPerPage)
+  const startIndex = (currentPage - 1) * templatesPerPage
+  const endIndex = startIndex + templatesPerPage
+  const currentTemplates = templates.slice(startIndex, endIndex)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    // Scroll to top of template section when changing pages
+    const templateSection = document.getElementById('template-section')
+    if (templateSection) {
+      templateSection.scrollIntoView({ behavior: 'smooth' })
+    }
   }
 
   if (!user || !isAuthenticated) {
@@ -250,14 +270,26 @@ export default function CreatePage() {
               <div className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-xl">Choose Your Template</CardTitle>
-                    <CardDescription>
-                      Select a template that best fits your content needs. Click on any template to preview it.
-                    </CardDescription>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-xl">Choose Your Template</CardTitle>
+                        <CardDescription>
+                          Select a template that best fits your content needs. Click on any template to preview it.
+                        </CardDescription>
+                      </div>
+                      <Button 
+                        onClick={handleNext}
+                        disabled={!formData.template_id}
+                        className="min-w-[120px]"
+                      >
+                        Next Step
+                        <ChevronRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <div className={`grid gap-4 md:gap-6 ${isCollapsed ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2'}`}>
-                      {templates.map((template) => (
+                    <div id="template-section" className={`grid gap-4 md:gap-6 ${isCollapsed ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2'}`}>
+                      {currentTemplates.map((template) => (
                         <TemplatePreview
                           key={template.id}
                           template={template}
@@ -266,6 +298,41 @@ export default function CreatePage() {
                         />
                       ))}
                     </div>
+                    
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="mt-6">
+                        <Pagination>
+                          <PaginationContent>
+                            <PaginationItem>
+                              <PaginationPrevious 
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                              />
+                            </PaginationItem>
+                            
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                              <PaginationItem key={page}>
+                                <PaginationLink
+                                  onClick={() => handlePageChange(page)}
+                                  isActive={currentPage === page}
+                                  className="cursor-pointer"
+                                >
+                                  {page}
+                                </PaginationLink>
+                              </PaginationItem>
+                            ))}
+                            
+                            <PaginationItem>
+                              <PaginationNext 
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                              />
+                            </PaginationItem>
+                          </PaginationContent>
+                        </Pagination>
+                      </div>
+                    )}
                     
                     {errors.template_id && (
                       <div className="mt-4">
