@@ -269,7 +269,7 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-background/90 hover:bg-primary hover:text-primary-foreground"
                       onClick={() => setActiveTemplate(prev => prev === 0 ? templates.length - 1 : prev - 1)}
                     >
                       <ChevronLeft className="h-4 w-4" />
@@ -277,7 +277,7 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-background/90 hover:bg-primary hover:text-primary-foreground"
                       onClick={() => setActiveTemplate(prev => prev === templates.length - 1 ? 0 : prev + 1)}
                     >
                       <ChevronRight className="h-4 w-4" />
@@ -305,14 +305,14 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle className="flex items-center gap-2">
-                          {templates[activeTemplate]?.name}
-                          {templates[activeTemplate]?.angle && (
-                            <Badge variant="secondary" className="text-xs">
-                              {templates[activeTemplate].angle}
-                            </Badge>
-                          )}
+                        <CardTitle className="text-xl font-bold">
+                          {templates[activeTemplate]?.angle || templates[activeTemplate]?.name}
                         </CardTitle>
+                        {templates[activeTemplate]?.name && templates[activeTemplate]?.angle && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {templates[activeTemplate].name}
+                          </p>
+                        )}
                         <CardDescription>
                           {templates[activeTemplate]?.type} • {templates[activeTemplate]?.timestamp ? new Date(templates[activeTemplate].timestamp).toLocaleString() : 'Generated'}
                         </CardDescription>
@@ -344,12 +344,12 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
                           </DialogTrigger>
                           <DialogContent className="!max-w-[98vw] !max-h-[98vh] !w-[98vw] !h-[98vh] overflow-hidden p-2">
                             <DialogHeader className="pb-2">
-                              <DialogTitle className="text-xl font-bold">{templates[activeTemplate]?.name}</DialogTitle>
+                              <DialogTitle className="text-xl font-bold">{templates[activeTemplate]?.angle || templates[activeTemplate]?.name}</DialogTitle>
                               <DialogDescription>
-                                {templates[activeTemplate]?.type} • {templates[activeTemplate]?.angle && `Angle: ${templates[activeTemplate].angle}`}
+                                {templates[activeTemplate]?.name && templates[activeTemplate]?.angle && `${templates[activeTemplate].name} • `}{templates[activeTemplate]?.type}
                               </DialogDescription>
                             </DialogHeader>
-                            <div className="h-[calc(98vh-80px)] border rounded-lg bg-white overflow-hidden">
+                            <div className="h-[calc(98vh-80px)] border rounded-lg bg-background overflow-hidden">
                               <iframe
                                 srcDoc={templates[activeTemplate]?.html}
                                 className="w-full h-full min-h-[1000px]"
@@ -374,12 +374,12 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
                           </DialogTrigger>
                           <DialogContent className="!max-w-[100vw] !max-h-[100vh] !w-[100vw] !h-[100vh] overflow-hidden p-0 m-0 rounded-none">
                             <DialogHeader className="pb-2 p-4">
-                              <DialogTitle className="text-xl font-bold">{templates[activeTemplate]?.name}</DialogTitle>
+                              <DialogTitle className="text-xl font-bold">{templates[activeTemplate]?.angle || templates[activeTemplate]?.name}</DialogTitle>
                               <DialogDescription>
-                                {templates[activeTemplate]?.type} • {templates[activeTemplate]?.angle && `Angle: ${templates[activeTemplate].angle}`}
+                                {templates[activeTemplate]?.name && templates[activeTemplate]?.angle && `${templates[activeTemplate].name} • `}{templates[activeTemplate]?.type}
                               </DialogDescription>
                             </DialogHeader>
-                            <div className="h-[calc(100vh-120px)] border-0 bg-white overflow-hidden">
+                            <div className="h-[calc(100vh-120px)] border-0 bg-background overflow-hidden">
                               <iframe
                                 srcDoc={templates[activeTemplate]?.html}
                                 className="w-full h-full min-h-[1200px]"
@@ -415,8 +415,8 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
                   </CardHeader>
                   <CardContent className="h-[calc(100vh-300px)] p-0">
                     {viewMode[activeTemplate] === 'source' ? (
-                      <div className="bg-gray-50 rounded-lg p-4 h-full overflow-auto">
-                        <pre className="text-sm whitespace-pre-wrap">
+                      <div className="bg-muted rounded-lg p-4 h-full overflow-auto">
+                        <pre className="text-sm whitespace-pre-wrap text-foreground">
                           {templates[activeTemplate]?.html}
                         </pre>
                       </div>
@@ -461,8 +461,8 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
                 <CardDescription>The prompt used for deep research</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <pre className="text-sm whitespace-pre-wrap">
+                <div className="bg-muted rounded-lg p-4">
+                  <pre className="text-sm whitespace-pre-wrap text-foreground">
                     {fullResult.results.deep_research_prompt}
                   </pre>
                 </div>
@@ -491,8 +491,8 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
                 <CardDescription>Customer avatar and demographic data</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <pre className="text-sm whitespace-pre-wrap">
+                <div className="bg-muted rounded-lg p-4">
+                  <pre className="text-sm whitespace-pre-wrap text-foreground">
                     {fullResult.results.avatar_sheet}
                   </pre>
                 </div>
@@ -508,8 +508,8 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
               <CardDescription>Complete response from DeepCopy API</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="bg-gray-50 rounded-lg p-4 overflow-auto max-h-96">
-                <pre className="text-sm whitespace-pre-wrap">
+              <div className="bg-muted rounded-lg p-4 overflow-auto max-h-96">
+                <pre className="text-sm whitespace-pre-wrap text-foreground">
                   {JSON.stringify(fullResult, null, 2)}
                 </pre>
               </div>

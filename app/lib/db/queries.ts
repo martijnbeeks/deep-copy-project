@@ -200,6 +200,18 @@ export const updateJobExecutionId = async (id: string, execution_id: string): Pr
   await query('UPDATE jobs SET execution_id = $2, updated_at = NOW() WHERE id = $1', [id, execution_id])
 }
 
+export const deleteJobById = async (id: string, userId: string): Promise<void> => {
+  // First delete the associated result if it exists
+  await query('DELETE FROM results WHERE job_id = $1', [id])
+  
+  // Then delete the job
+  const result = await query('DELETE FROM jobs WHERE id = $1 AND user_id = $2', [id, userId])
+  
+  if (result.rowCount === 0) {
+    throw new Error('Job not found or does not belong to user')
+  }
+}
+
 // Result queries
 export const createResult = async (jobId: string, htmlContent: string, metadata?: Record<string, any>): Promise<Result> => {
   const result = await query(

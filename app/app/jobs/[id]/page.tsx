@@ -3,9 +3,10 @@
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { JobDetails } from "@/components/jobs/job-details"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useCallback } from "react"
-import { ArrowLeft, RefreshCw, Download, Eye, Menu, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowLeft, RefreshCw, Download, Eye, Menu, ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
@@ -14,11 +15,15 @@ import { useJob } from "@/lib/hooks/use-jobs"
 import { JobWithResult } from "@/lib/db/types"
 import { JobDetailsSkeleton } from "@/components/ui/skeleton-loaders"
 import { useJobPolling } from "@/hooks/use-job-polling"
+import { useToast } from "@/hooks/use-toast"
 
 export default function JobDetailPage({ params }: { params: { id: string } }) {
   const { user, isAuthenticated } = useAuthStore()
   const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const { toast } = useToast()
 
   // Use TanStack Query for data fetching
   const { data: currentJob, isLoading, error, refetch } = useJob(params.id)
@@ -56,6 +61,42 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     }
   }, [isAuthenticated, user, router])
 
+  const handleDeleteJob = async () => {
+    if (!currentJob) return
+
+    try {
+      setIsDeleting(true)
+      const response = await fetch(`/api/jobs/${currentJob.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete job')
+      }
+
+      toast({
+        title: "Job deleted successfully",
+        description: "The job has been permanently removed.",
+      })
+
+      // Redirect to dashboard after successful deletion
+      router.push('/dashboard')
+    } catch (error) {
+      console.error('Error deleting job:', error)
+      toast({
+        title: "Error deleting job",
+        description: error instanceof Error ? error.message : "Failed to delete job",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteDialog(false)
+    }
+  }
+
   if (!user || isLoading) {
     return (
       <div className="flex h-screen bg-background">
@@ -91,10 +132,10 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
         <div className="p-4 md:p-6">
           <div className="flex items-start justify-between mb-4 md:mb-6 gap-4">
             <div className="flex items-center gap-4">
-              <Link href="/jobs">
+              <Link href="/dashboard">
                 <Button variant="ghost" size="sm">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Back to Jobs</span>
+                  <span className="hidden sm:inline">Back to Dashboard</span>
                   <span className="sm:hidden">Back</span>
                 </Button>
               </Link>
@@ -157,6 +198,42 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
                   </Button>
                 </>
               )}
+              
+              {/* Delete Button */}
+              <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Delete Job</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to delete this job? This action cannot be undone.
+                      <br />
+                      <strong>Job: {currentJob.title}</strong>
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowDeleteDialog(false)}
+                      disabled={isDeleting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleDeleteJob}
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? "Deleting..." : "Delete Job"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
 
