@@ -48,23 +48,19 @@ export default function JobsPage() {
 
       if (processingJobs.length === 0) return
 
-      console.log(`🔄 Polling ${processingJobs.length} processing jobs...`)
-
       for (const job of processingJobs) {
         try {
           const response = await fetch(`/api/jobs/${job.id}/status`)
           if (response.ok) {
             const data = await response.json()
-            console.log(`📊 Job ${job.id} status:`, data.status)
 
             // If job completed, refresh the jobs list
             if (data.status === 'completed' || data.status === 'failed') {
-              console.log(`✅ Job ${job.id} finished, refreshing jobs list`)
               refetch()
             }
           }
         } catch (error) {
-          console.error(`❌ Error polling job ${job.id}:`, error)
+          // Silently handle polling errors
         }
       }
     }

@@ -25,7 +25,6 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
         await fetchJob(params.id)
         setIsLoading(false)
       } catch (error) {
-        console.error('Failed to fetch job:', error)
         setIsLoading(false)
       }
     }
@@ -54,7 +53,7 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
       } catch (err) {
-        console.error('Failed to copy HTML:', err)
+        // Silently handle copy errors
       }
     }
   }
