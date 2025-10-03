@@ -153,7 +153,9 @@ class DeepCopyClient {
   }
 
   async getJobStatus(jobId: string): Promise<JobStatusResponse> {
-      return this.makeRequest<JobStatusResponse>(`jobs/${jobId}`)
+      // Add timestamp to prevent caching
+      const timestamp = Date.now()
+      return this.makeRequest<JobStatusResponse>(`jobs/${jobId}?t=${timestamp}`)
   }
 
   async getJobResult(jobId: string): Promise<JobResult> {
