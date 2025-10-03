@@ -5,15 +5,21 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 
 // ============================================================================
-// CONFIGURATION - Update these with your client's database credentials
+// CONFIGURATION - Flexible database setup for local and cloud databases
 // ============================================================================
 const DB_CONFIG = {
-  host: process.env.DB_HOST || 'your-database-host.com',
+  host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'your-database-name',
-  user: process.env.DB_USER || 'your-username',
-  password: process.env.DB_PASSWORD || 'your-password',
-  ssl: { rejectUnauthorized: false },
+  database: process.env.DB_NAME || 'ai_copywriting',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'password',
+  // Enable SSL for production/cloud databases (Render, Railway, Supabase, etc.)
+  ssl: process.env.NODE_ENV === 'production' || 
+       process.env.DB_HOST?.includes('render.com') || 
+       process.env.DB_HOST?.includes('railway.app') || 
+       process.env.DB_HOST?.includes('supabase.co') || 
+       process.env.DB_HOST?.includes('amazonaws.com') ? 
+       { rejectUnauthorized: false } : false,
   max: 1,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000
@@ -282,6 +288,63 @@ async function verifySetup(client) {
 }
 
 // ============================================================================
+// MIGRATION FUNCTION - Add new fields to existing database
+// ============================================================================
+async function runMigration(client) {
+  console.log('🔄 Running database migration...');
+  
+  try {
+    // Check if columns already exist
+    const checkColumns = await client.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'jobs' 
+      AND column_name IN ('advertorial_type', 'persona', 'age_range', 'gender')
+    `);
+    
+    const existingColumns = checkColumns.rows.map(row => row.column_name);
+    const newColumns = ['advertorial_type', 'persona', 'age_range', 'gender'];
+    const columnsToAdd = newColumns.filter(col => !existingColumns.includes(col));
+    
+    if (columnsToAdd.length === 0) {
+      console.log('✅ All new columns already exist, migration not needed');
+      return;
+    }
+    
+    console.log(`📝 Adding columns: ${columnsToAdd.join(', ')}`);
+    
+    // Add new columns to jobs table
+    await client.query(`
+      ALTER TABLE jobs 
+      ADD COLUMN advertorial_type VARCHAR(50) DEFAULT 'Listicle',
+      ADD COLUMN persona TEXT,
+      ADD COLUMN age_range VARCHAR(50),
+      ADD COLUMN gender VARCHAR(20)
+    `);
+    
+    // Update existing records to have a default advertorial_type
+    await client.query(`
+      UPDATE jobs SET advertorial_type = 'Listicle' WHERE advertorial_type IS NULL
+    `);
+    
+    // Make advertorial_type NOT NULL after setting defaults
+    await client.query(`
+      ALTER TABLE jobs ALTER COLUMN advertorial_type SET NOT NULL
+    `);
+    
+    console.log('✅ Migration completed successfully!');
+    console.log('Added columns: advertorial_type, persona, age_range, gender');
+    
+  } catch (error) {
+    if (error.code === '42701') {
+      console.log('ℹ️  Columns already exist, migration not needed');
+    } else {
+      throw error;
+    }
+  }
+}
+
+// ============================================================================
 // MAIN SETUP FUNCTION
 // ============================================================================
 
@@ -354,11 +417,64 @@ async function setupDatabase() {
 }
 
 // ============================================================================
-// RUN SETUP
+// MIGRATION-ONLY FUNCTION - For existing databases
+// ============================================================================
+
+async function runMigrationOnly() {
+  let client;
+  let pool;
+  try {
+    console.log('🚀 Starting database migration...');
+    console.log('🌐 Database:', DB_CONFIG.database);
+    console.log('🌐 Host:', DB_CONFIG.host);
+    console.log('👤 User:', DB_CONFIG.user);
+    console.log('');
+    
+    pool = new Pool(DB_CONFIG);
+    client = await pool.connect();
+    console.log('✅ Connected to database');
+    
+    // Run migration
+    await runMigration(client);
+    
+    console.log('\n🎉 Migration completed successfully!');
+    console.log('\n📋 Your database now supports:');
+    console.log('   - advertorial_type (required field)');
+    console.log('   - persona (optional field)');
+    console.log('   - age_range (optional field)');
+    console.log('   - gender (optional field)');
+    
+  } catch (error) {
+    console.error('❌ Migration failed:', error.message);
+    console.error('Error code:', error.code);
+    if (error.code === 'ECONNREFUSED') {
+      console.error('\n💡 Connection refused. Check your database credentials and network access.');
+    } else if (error.code === '28P01') {
+      console.error('\n💡 Authentication failed. Check your username and password.');
+    } else if (error.code === '3D000') {
+      console.error('\n💡 Database does not exist. Create the database first.');
+    }
+  } finally {
+    if (client) client.release();
+    if (pool) await pool.end();
+  }
+}
+
+// ============================================================================
+// RUN SETUP OR MIGRATION
 // ============================================================================
 
 if (require.main === module) {
-  setupDatabase();
+  const args = process.argv.slice(2);
+  const command = args[0];
+  
+  if (command === 'migrate') {
+    runMigrationOnly();
+  } else {
+    console.log('🚀 Starting complete database setup...');
+    console.log('💡 Tip: Use "node scripts/complete-database-setup.js migrate" to run migration only');
+    setupDatabase();
+  }
 }
 
-module.exports = { setupDatabase, DB_CONFIG, DEMO_USER };
+module.exports = { setupDatabase, runMigrationOnly, DB_CONFIG, DEMO_USER };

@@ -8,27 +8,11 @@ import { Copy, Download, Eye, Maximize2, FileText, BarChart3, Code, BookOpen, Ch
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { TemplateInjector, formatContentForDisplay } from "@/lib/utils/template-injection"
+import { JobResult, SwipeResult, Listicle, Advertorial } from "@/lib/api/deepcopy-client"
 
-interface DeepCopyResult {
-  project_name: string
-  timestamp_iso: string
-  results: {
-    research_page_analysis?: string
-    doc1_analysis?: string
-    doc2_analysis?: string
-    deep_research_prompt?: string
-    deep_research_output?: string
-    avatar_sheet?: string
-    html_templates?: string | string[]
-    swipe_results?: Array<{
-      name?: string
-      type?: string
-      angle?: string
-      html?: string
-      content?: string
-      timestamp?: string
-    }>
-  }
+interface DeepCopyResult extends JobResult {
+  // This now matches the JobResult interface from the API client
 }
 
 interface DeepCopyResultsProps {
@@ -50,72 +34,67 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
   const [copied, setCopied] = useState(false)
   const [activeTemplate, setActiveTemplate] = useState(0)
   const [viewMode, setViewMode] = useState<{[key: number]: 'rendered' | 'source'}>({})
+  const [templates, setTemplates] = useState<Array<{name: string, type: string, html: string, angle?: string, timestamp?: string}>>([])
+  const [templatesLoading, setTemplatesLoading] = useState(true)
   const { toast } = useToast()
 
   const fullResult = result.metadata?.full_result
   
-  const extractHTMLTemplates = () => {
+  const extractHTMLTemplates = async () => {
     const templates: Array<{name: string, type: string, html: string, angle?: string, timestamp?: string}> = []
     
     if (fullResult?.results?.swipe_results && Array.isArray(fullResult.results.swipe_results)) {
-      fullResult.results.swipe_results.forEach((swipe: any, index: number) => {
-        const angle = swipe.angle || swipe.angle_name || swipe.angle_type || `Angle ${index + 1}`
+      for (const swipe of fullResult.results.swipe_results) {
+        const angle = swipe.angle || `Angle ${templates.length + 1}`
         
-        if (swipe.html) {
+        try {
+          // Use the template injector to generate HTML from JSON data
+          const injectionResult = await TemplateInjector.injectContent(swipe.content, angle)
+          const contentInfo = formatContentForDisplay(swipe.content)
+          
           templates.push({
-            name: swipe.name || `Swipe ${index + 1}`,
-            type: swipe.type || 'Unknown',
-            html: swipe.html,
+            name: contentInfo.title,
+            type: contentInfo.type === 'listicle' ? 'Listicle' : 'Advertorial',
+            html: injectionResult.html,
             angle: angle,
-            timestamp: swipe.timestamp
-          })
-        }
-        
-        if (swipe.content && typeof swipe.content === 'string') {
-          if (swipe.content.includes('<html') || swipe.content.includes('<div') || swipe.content.includes('<p')) {
-            templates.push({
-              name: `${swipe.name || `Swipe ${index + 1}`} - Content`,
-              type: 'Content HTML',
-              html: swipe.content,
-              angle: angle,
-              timestamp: swipe.timestamp
-            })
-          }
-        }
-        
-        const htmlFields = ['html_content', 'generated_html', 'template_html', 'output_html', 'rendered_html', 'final_html']
-        htmlFields.forEach(field => {
-          if (swipe[field] && typeof swipe[field] === 'string' && swipe[field].includes('<html')) {
-            templates.push({
-              name: `${swipe.name || `Swipe ${index + 1}`} - ${field}`,
-              type: field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-              html: swipe[field],
-              angle: angle,
-              timestamp: swipe.timestamp
-            })
-          }
-        })
-      })
-    }
-    
-    if (fullResult?.results?.html_templates) {
-      const htmlTemplates = Array.isArray(fullResult.results.html_templates) ? fullResult.results.html_templates : [fullResult.results.html_templates]
-      htmlTemplates.forEach((template, index) => {
-        if (typeof template === 'string' && template.includes('<html')) {
-          templates.push({
-            name: `Template ${index + 1}`,
-            type: 'Main Template',
-            html: template,
             timestamp: fullResult.timestamp_iso
           })
+        } catch (error) {
+          console.error('Error injecting template:', error)
+          // Fallback: try to extract any existing HTML
+          if (typeof swipe.content === 'string' && (swipe.content as string).includes('<html')) {
+            templates.push({
+              name: `Fallback ${templates.length + 1}`,
+              type: 'HTML Content',
+              html: swipe.content,
+              angle: angle,
+              timestamp: fullResult.timestamp_iso
+            })
+          }
         }
-      })
+      }
     }
     
     return templates
   }
 
-  const templates = extractHTMLTemplates()
+  useEffect(() => {
+    const loadTemplates = async () => {
+      setTemplatesLoading(true)
+      try {
+        const extractedTemplates = await extractHTMLTemplates()
+        setTemplates(extractedTemplates)
+      } catch (error) {
+        console.error('Error loading templates:', error)
+      } finally {
+        setTemplatesLoading(false)
+      }
+    }
+
+    if (fullResult) {
+      loadTemplates()
+    }
+  }, [fullResult])
 
   useEffect(() => {
     const initialViewMode: {[key: number]: 'rendered' | 'source'} = {}
@@ -254,7 +233,17 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
         </TabsContent>
 
         <TabsContent value="templates" className="space-y-6">
-          {templates.length > 0 ? (
+          {templatesLoading ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <h3 className="text-lg font-semibold mb-2">Loading Templates</h3>
+                <p className="text-muted-foreground">
+                  Generating HTML templates from JSON data...
+                </p>
+              </CardContent>
+            </Card>
+          ) : templates.length > 0 ? (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">HTML Templates ({templates.length})</h3>
@@ -349,15 +338,13 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
                                 {templates[activeTemplate]?.name && templates[activeTemplate]?.angle && `${templates[activeTemplate].name} • `}{templates[activeTemplate]?.type}
                               </DialogDescription>
                             </DialogHeader>
-                            <div className="h-[calc(98vh-80px)] border rounded-lg bg-background overflow-hidden">
+                            <div className="h-[calc(98vh-80px)] border rounded-lg bg-background overflow-auto">
                               <iframe
                                 srcDoc={templates[activeTemplate]?.html}
-                                className="w-full h-full min-h-[1000px]"
+                                className="w-full h-full"
                                 sandbox="allow-same-origin allow-scripts"
                                 style={{
                                   border: 'none',
-                                  transform: 'scale(1.0)',
-                                  transformOrigin: 'top left',
                                   width: '100%',
                                   height: '100%'
                                 }}
@@ -379,15 +366,13 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
                                 {templates[activeTemplate]?.name && templates[activeTemplate]?.angle && `${templates[activeTemplate].name} • `}{templates[activeTemplate]?.type}
                               </DialogDescription>
                             </DialogHeader>
-                            <div className="h-[calc(100vh-120px)] border-0 bg-background overflow-hidden">
+                            <div className="h-[calc(100vh-120px)] border-0 bg-background overflow-auto">
                               <iframe
                                 srcDoc={templates[activeTemplate]?.html}
-                                className="w-full h-full min-h-[1200px]"
+                                className="w-full h-full"
                                 sandbox="allow-same-origin allow-scripts"
                                 style={{
                                   border: 'none',
-                                  transform: 'scale(1.0)',
-                                  transformOrigin: 'top left',
                                   width: '100%',
                                   height: '100%'
                                 }}
@@ -421,15 +406,13 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
                         </pre>
                       </div>
                     ) : (
-                      <div className="border rounded-lg h-full overflow-hidden">
+                      <div className="border rounded-lg h-full overflow-auto">
                         <iframe
                           srcDoc={templates[activeTemplate]?.html}
-                          className="w-full h-full min-h-[800px]"
+                          className="w-full h-full"
                           sandbox="allow-same-origin allow-scripts"
                           style={{
                             border: 'none',
-                            transform: 'scale(1.0)',
-                            transformOrigin: 'top left',
                             width: '100%',
                             height: '100%'
                           }}

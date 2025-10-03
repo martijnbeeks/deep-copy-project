@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, AlertCircle, Eye, ChevronRight, ChevronLeft, Menu } from "lucide-react"
 import { useTemplatesStore } from "@/stores/templates-store"
 import { useJobsStore } from "@/stores/jobs-store"
@@ -25,6 +26,10 @@ interface PipelineFormData {
   brand_info: string
   sales_page_url: string
   template_id?: string
+  advertorial_type: string
+  persona?: string
+  age_range?: string
+  gender?: string
 }
 
 export default function CreatePage() {
@@ -40,6 +45,10 @@ export default function CreatePage() {
     brand_info: "",
     sales_page_url: "",
     template_id: "",
+    advertorial_type: "",
+    persona: "",
+    age_range: "",
+    gender: "",
   })
   const [errors, setErrors] = useState<Partial<Record<keyof PipelineFormData, string>>>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -76,6 +85,9 @@ export default function CreatePage() {
         newErrors.sales_page_url = "Sales page URL is required"
       } else if (!isValidUrl(formData.sales_page_url)) {
         newErrors.sales_page_url = "Please enter a valid URL"
+      }
+      if (!formData.advertorial_type) {
+        newErrors.advertorial_type = "Advertorial type is required"
       }
     }
 
@@ -115,6 +127,10 @@ export default function CreatePage() {
         brand_info: "",
         sales_page_url: "",
         template_id: "",
+        advertorial_type: "",
+        persona: "",
+        age_range: "",
+        gender: "",
       })
       setSelectedTemplate(null)
       setErrors({})
@@ -441,6 +457,76 @@ export default function CreatePage() {
                         {errors.sales_page_url && (
                           <p className="text-sm text-destructive">{errors.sales_page_url}</p>
                         )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="advertorial_type">
+                          Advertorial Type <span className="text-destructive">*</span>
+                        </Label>
+                        <Select
+                          value={formData.advertorial_type}
+                          onValueChange={(value) => {
+                            setFormData((prev) => ({ ...prev, advertorial_type: value }))
+                            if (errors.advertorial_type) setErrors((prev) => ({ ...prev, advertorial_type: undefined }))
+                          }}
+                          disabled={isLoading}
+                        >
+                          <SelectTrigger className={errors.advertorial_type ? "border-destructive" : ""}>
+                            <SelectValue placeholder="Select advertorial type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Listicle">Listicle</SelectItem>
+                            <SelectItem value="Advertorial">Advertorial</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {errors.advertorial_type && (
+                          <p className="text-sm text-destructive flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            {errors.advertorial_type}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="persona">Target Persona (Optional)</Label>
+                        <Input
+                          id="persona"
+                          placeholder="e.g., Health-conscious professionals, Tech-savvy millennials"
+                          value={formData.persona}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, persona: e.target.value }))}
+                          disabled={isLoading}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="age_range">Age Range (Optional)</Label>
+                          <Input
+                            id="age_range"
+                            placeholder="e.g., 25-40, 30-55"
+                            value={formData.age_range}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, age_range: e.target.value }))}
+                            disabled={isLoading}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="gender">Gender (Optional)</Label>
+                          <Select
+                            value={formData.gender}
+                            onValueChange={(value) => setFormData((prev) => ({ ...prev, gender: value }))}
+                            disabled={isLoading}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select gender" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="male">Male</SelectItem>
+                              <SelectItem value="female">Female</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                              <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
 
                       {selectedTemplate && (

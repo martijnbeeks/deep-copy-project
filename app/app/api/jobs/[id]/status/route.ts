@@ -9,7 +9,6 @@ export async function GET(
 ) {
   try {
     const jobId = params.id
-    console.log(`🔍 Checking status for job ${jobId}`)
     
     // Get job from database
     const result = await query(`
@@ -26,30 +25,51 @@ export async function GET(
     
     // Use the job ID directly as the DeepCopy job ID (since we now use DeepCopy job ID as primary key)
     const deepCopyJobId = jobId
-    console.log(`📡 Polling DeepCopy API for job ID: ${deepCopyJobId}`)
     
-    // Poll the DeepCopy API
-    const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
-    console.log(`📊 DeepCopy API response:`, statusResponse)
+    // Get current database status first
+    const currentJob = await query(`
+      SELECT status, progress, updated_at 
+      FROM jobs 
+      WHERE id = $1
+    `, [jobId])
+    
+    const dbStatus = currentJob.rows[0]
+    
+    // Always poll the DeepCopy API to get the real status
+    // Don't skip API calls even for completed jobs
+    
+    // Poll the DeepCopy API only if job is not completed
+    let statusResponse
+    try {
+      statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
+      console.log(`DeepCopy API response for job ${jobId}:`, statusResponse)
+    } catch (apiError) {
+      console.error(`Error polling DeepCopy API for job ${jobId}:`, apiError)
+      // If API call fails, return current database status instead of error
+      return NextResponse.json({
+        status: dbStatus.status,
+        progress: dbStatus.progress,
+        updated_at: dbStatus.updated_at,
+        deepcopy_status: 'API_ERROR',
+        deepcopy_response: { error: 'Failed to poll DeepCopy API' }
+      })
+    }
     
     // Update our database with the status
     if (statusResponse.status === 'SUCCEEDED') {
       await updateJobStatus(jobId, 'completed', 100)
       
       // Get results and store them
-      console.log(`✅ Job ${jobId} succeeded, fetching results...`)
       const result = await deepCopyClient.getJobResult(deepCopyJobId)
       await storeJobResults(jobId, result, deepCopyJobId)
       
     } else if (statusResponse.status === 'FAILED') {
       await updateJobStatus(jobId, 'failed')
-      console.log(`❌ Job ${jobId} failed`)
       
     } else if (['RUNNING', 'SUBMITTED', 'PENDING'].includes(statusResponse.status)) {
       const progress = statusResponse.status === 'SUBMITTED' ? 25 : 
                      statusResponse.status === 'RUNNING' ? 50 : 30
       await updateJobStatus(jobId, 'processing', progress)
-      console.log(`🔄 Job ${jobId} still processing (${statusResponse.status})`)
     }
     
     // Get updated job status from database
@@ -146,7 +166,6 @@ function extractHTMLTemplates(results: any): Array<{name: string, type: string, 
       })
     }
     
-    console.log(`📄 Extracted ${templates.length} HTML templates from results`)
     
   } catch (error) {
     console.error('Error extracting HTML templates:', error)
