@@ -46,13 +46,21 @@ export async function GET(
     } catch (apiError) {
       console.error(`Error polling DeepCopy API for job ${jobId}:`, apiError)
       // If API call fails, return current database status instead of error
-      return NextResponse.json({
+      const errorResponse = NextResponse.json({
         status: dbStatus.status,
         progress: dbStatus.progress,
         updated_at: dbStatus.updated_at,
         deepcopy_status: 'API_ERROR',
         deepcopy_response: { error: 'Failed to poll DeepCopy API' }
       })
+
+      // Add cache-busting headers
+      errorResponse.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+      errorResponse.headers.set('Pragma', 'no-cache')
+      errorResponse.headers.set('Expires', '0')
+      errorResponse.headers.set('X-Timestamp', Date.now().toString())
+
+      return errorResponse
     }
     
     // Update our database with the status
@@ -81,13 +89,21 @@ export async function GET(
     
     const currentStatus = updatedJob.rows[0]
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       status: currentStatus.status,
       progress: currentStatus.progress || 0,
       updated_at: currentStatus.updated_at,
       deepcopy_status: statusResponse.status,
       deepcopy_response: statusResponse
     })
+
+    // Add cache-busting headers to prevent Vercel/CDN caching
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    response.headers.set('X-Timestamp', Date.now().toString())
+
+    return response
     
   } catch (error) {
     console.error(`Error checking job status for ${params.id}:`, error)

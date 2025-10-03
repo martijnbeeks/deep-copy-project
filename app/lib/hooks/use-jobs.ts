@@ -21,8 +21,9 @@ export function useJobs() {
       await fetchJobs()
       return useJobsStore.getState().jobs
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Data is immediately stale - always refetch
+    gcTime: 30 * 1000, // Keep in cache for only 30 seconds
+    refetchInterval: 10000, // Refetch every 10 seconds for real-time updates
   })
 }
 
@@ -37,8 +38,9 @@ export function useJob(id: string) {
       return useJobsStore.getState().currentJob!
     },
     enabled: !!id,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Data is immediately stale - always refetch
+    gcTime: 30 * 1000, // Keep in cache for only 30 seconds
+    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
   })
 }
 
