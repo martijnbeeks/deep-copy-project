@@ -43,6 +43,10 @@ interface JobsActions {
     brand_info: string
     sales_page_url?: string
     template_id?: string
+    advertorial_type: string
+    persona?: string
+    age_range?: string
+    gender?: string
   }) => Promise<JobWithTemplate>
   pollJobStatus: (jobId: string) => void
   stopPolling: (jobId: string) => void

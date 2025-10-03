@@ -24,6 +24,10 @@ export interface Job {
   brand_info: string
   sales_page_url?: string
   template_id?: string
+  advertorial_type: string
+  persona?: string
+  age_range?: string
+  gender?: string
   status: 'pending' | 'processing' | 'completed' | 'failed'
   execution_id?: string
   progress: number

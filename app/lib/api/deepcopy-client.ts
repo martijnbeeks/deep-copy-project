@@ -15,7 +15,10 @@ interface SubmitJobRequest {
   sales_page_url?: string
   project_name?: string
   swipe_file_id?: string
-  advertorial_type?: string
+  advertorial_type: string // Required field
+  persona?: string
+  age_range?: string
+  gender?: string
 }
 
 interface SubmitJobResponse {
@@ -30,95 +33,131 @@ interface JobStatusResponse {
 }
 
 interface JobResult {
-  [key: string]: any
+  project_name: string
+  timestamp_iso: string
+  job_id: string
+  results: {
+      research_page_analysis?: string
+      doc1_analysis?: string
+      doc2_analysis?: string
+      deep_research_prompt?: string
+      deep_research_output?: string
+      avatar_sheet?: string
+      offer_brief?: string
+      marketing_philosophy_analysis?: string
+      summary?: string
+      swipe_results?: SwipeResult[]
+      marketing_angles?: string[]
+  }
+}
+
+interface SwipeResult {
+  angle: string
+  content: Listicle | Advertorial
+}
+
+interface Listicle {
+  title: string
+  author: string
+  summary: string
+  listicles: ListicleItem[]
+  cta: string
+  conclusion: string
+}
+
+interface ListicleItem {
+  number: number
+  title: string
+  description: string
+}
+
+interface Advertorial {
+  title: string
+  subtitle: string
+  body: string
+  cta: string
+  captions: string
 }
 
 class DeepCopyClient {
   private config: DeepCopyConfig
-  private accessToken: string | null = null
-  private tokenExpiry: number = 0
 
   constructor(config: DeepCopyConfig) {
-    this.config = config
+      this.config = config
   }
 
   private async getAccessToken(): Promise<string> {
-    // Check if we have a valid token
-    if (this.accessToken && Date.now() < this.tokenExpiry) {
-      return this.accessToken
-    }
+      // ALWAYS get a fresh token - no caching for serverless
+      try {
+          const response = await fetch(this.config.tokenEndpoint, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                  'Authorization': `Basic ${btoa(`${this.config.clientId}:${this.config.clientSecret}`)}`
+              },
+              body: new URLSearchParams({
+                  grant_type: 'client_credentials',
+                  scope: 'https://deep-copy.api/read https://deep-copy.api/write'
+              })
+          })
 
-    try {
-      const response = await fetch(this.config.tokenEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': `Basic ${btoa(`${this.config.clientId}:${this.config.clientSecret}`)}`
-        },
-        body: new URLSearchParams({
-          grant_type: 'client_credentials',
-          scope: 'https://deep-copy.api/read https://deep-copy.api/write'
-        })
-      })
+          if (!response.ok) {
+              const errorText = await response.text()
+              throw new Error(`Token request failed: ${response.status} ${response.statusText} - ${errorText}`)
+          }
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('Token request failed:', errorText)
-        throw new Error(`Token request failed: ${response.status} ${response.statusText} - ${errorText}`)
+          const data: AccessTokenResponse = await response.json()
+          return data.access_token
+      } catch (error) {
+          throw new Error('Authentication failed')
       }
-
-      const data: AccessTokenResponse = await response.json()
-      this.accessToken = data.access_token
-      this.tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000 // 1 minute buffer
-      
-      return this.accessToken
-    } catch (error) {
-      console.error('Failed to get access token:', error)
-      throw new Error('Authentication failed')
-    }
   }
 
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const token = await this.getAccessToken()
-    const fullUrl = `${this.config.apiUrl}${endpoint}`
-    
-    const response = await fetch(fullUrl, {
-      ...options,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        ...options.headers
+      const token = await this.getAccessToken()
+      const fullUrl = `${this.config.apiUrl}${endpoint}`
+      const headers: Record<string, string> = {
+          'Authorization': `Bearer ${token}`,
+          ...(options.headers as Record<string, string> || {})
       }
-    })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('API request failed:', errorText)
-      throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`)
-    }
+      // Only add Content-Type for requests with body (POST, PUT, PATCH)
+      if (options.body && ['POST', 'PUT', 'PATCH'].includes(options.method || 'POST')) {
+          headers['Content-Type'] = 'application/json'
+      }
 
-    // Handle different content types
-    const contentType = response.headers.get('content-type')
-    if (contentType?.includes('application/json')) {
-      return response.json()
-    } else {
-      return response.text() as T
-    }
+      const response = await fetch(fullUrl, {
+          ...options,
+          headers
+      })
+
+      if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`)
+      }
+
+      // Handle different content types
+      const contentType = response.headers.get('content-type')
+      if (contentType?.includes('application/json')) {
+          return response.json()
+      } else {
+          return response.text() as T
+      }
   }
 
   async submitJob(jobData: SubmitJobRequest): Promise<SubmitJobResponse> {
-    return this.makeRequest<SubmitJobResponse>('jobs', {
-      method: 'POST',
-      body: JSON.stringify(jobData)
-    })
+      return this.makeRequest('jobs', {
+          method: 'POST',
+          body: JSON.stringify(jobData)
+      })
   }
 
   async getJobStatus(jobId: string): Promise<JobStatusResponse> {
-    return this.makeRequest<JobStatusResponse>(`jobs/${jobId}`)
+      return this.makeRequest<JobStatusResponse>(`jobs/${jobId}`)
   }
 
   async getJobResult(jobId: string): Promise<JobResult> {
-    return this.makeRequest<JobResult>(`jobs/${jobId}/result`)
+      return this.makeRequest(`jobs/${jobId}/result`)
   }
 }
 
@@ -130,4 +169,4 @@ export const deepCopyClient = new DeepCopyClient({
   clientSecret: process.env.DEEPCOPY_CLIENT_SECRET || '1msm19oltu724113t5vujtldr4uvum7hvn6cj7n1s3tg1ar02k5'
 })
 
-export type { SubmitJobRequest, SubmitJobResponse, JobStatusResponse, JobResult }
+export type { SubmitJobRequest, SubmitJobResponse, JobStatusResponse, JobResult, SwipeResult, Listicle, ListicleItem, Advertorial }
