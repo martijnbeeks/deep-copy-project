@@ -27,6 +27,7 @@ interface PipelineFormData {
   sales_page_url: string
   template_id?: string
   advertorial_type: string
+  target_approach?: string
   persona?: string
   age_range?: string
   gender?: string
@@ -46,6 +47,7 @@ export default function CreatePage() {
     sales_page_url: "",
     template_id: "",
     advertorial_type: "",
+    target_approach: "",
     persona: "",
     age_range: "",
     gender: "",
@@ -128,6 +130,7 @@ export default function CreatePage() {
         sales_page_url: "",
         template_id: "",
         advertorial_type: "",
+        target_approach: "",
         persona: "",
         age_range: "",
         gender: "",
@@ -275,113 +278,108 @@ export default function CreatePage() {
                 </div>
               </div>
               
-              <div className="flex items-center gap-2 md:gap-4 mt-3 md:mt-4">
-                <div className={`flex items-center gap-2 ${currentStep >= 1 ? 'text-primary' : 'text-muted-foreground'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    currentStep >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted'
+              <div className="flex items-center justify-center gap-6 mt-6">
+                <div className={`flex items-center gap-3 ${currentStep >= 1 ? 'text-primary' : 'text-muted-foreground'}`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${
+                    currentStep >= 1 ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted border-2 border-muted-foreground/20'
                   }`}>
                     1
                   </div>
-                  <span className="text-sm font-medium">Choose Template</span>
+                  <span className="text-sm font-semibold">Choose Template</span>
                 </div>
-                <ChevronRight className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-                <div className={`flex items-center gap-2 ${currentStep >= 2 ? 'text-primary' : 'text-muted-foreground'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    currentStep >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                <div className={`w-8 h-px ${currentStep >= 2 ? 'bg-primary' : 'bg-muted-foreground/30'}`}></div>
+                <div className={`flex items-center gap-3 ${currentStep >= 2 ? 'text-primary' : 'text-muted-foreground'}`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${
+                    currentStep >= 2 ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted border-2 border-muted-foreground/20'
                   }`}>
                     2
                   </div>
-                  <span className="text-sm font-medium">Project Details</span>
+                  <span className="text-sm font-semibold">Project Details</span>
                 </div>
               </div>
             </div>
 
             {currentStep === 1 && (
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-xl">Choose Your Template</CardTitle>
-                        <CardDescription>
-                          Select a template that best fits your content needs. Click on any template to preview it.
-                        </CardDescription>
-                      </div>
-                      <Button 
-                        onClick={handleNext}
-                        disabled={!formData.template_id}
-                        className="min-w-[120px]"
-                      >
-                        Next Step
-                        <ChevronRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div id="template-section" className={`grid gap-4 md:gap-6 ${isCollapsed ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2'}`}>
-                      {currentTemplates.map((template) => (
-                        <TemplatePreview
-                          key={template.id}
-                          template={template}
-                          isSelected={formData.template_id === template.id}
-                          onClick={() => handleTemplateChange(template.id)}
-                        />
-                      ))}
-                    </div>
-                    
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                      <div className="mt-6">
-                        <Pagination>
-                          <PaginationContent>
-                            <PaginationItem>
-                              <PaginationPrevious 
-                                onClick={() => handlePageChange(currentPage - 1)}
-                                className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                              />
-                            </PaginationItem>
-                            
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                              <PaginationItem key={page}>
-                                <PaginationLink
-                                  onClick={() => handlePageChange(page)}
-                                  isActive={currentPage === page}
-                                  className="cursor-pointer"
-                                >
-                                  {page}
-                                </PaginationLink>
-                              </PaginationItem>
-                            ))}
-                            
-                            <PaginationItem>
-                              <PaginationNext 
-                                onClick={() => handlePageChange(currentPage + 1)}
-                                className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                              />
-                            </PaginationItem>
-                          </PaginationContent>
-                        </Pagination>
-                      </div>
-                    )}
-                    
-                    {errors.template_id && (
-                      <div className="mt-4">
-                        <Alert variant="destructive">
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription>{errors.template_id}</AlertDescription>
-                        </Alert>
-                      </div>
-                    )}
+              <div className="space-y-8">
+                {/* Header Section */}
+                <div className="text-center space-y-2">
+                  <h2 className="text-3xl font-bold text-foreground">Choose Your Template</h2>
+                  <p className="text-muted-foreground text-lg">Select a template that best fits your content needs</p>
+                </div>
 
-                    <div className="flex justify-end mt-6">
-                      <Button 
-                        onClick={handleNext}
-                        disabled={!formData.template_id}
-                        className="min-w-[120px]"
-                      >
-                        Next Step
-                        <ChevronRight className="h-4 w-4 ml-2" />
-                      </Button>
+                {/* Template Selection Card */}
+                <Card className="border-0 shadow-lg">
+                  <CardContent className="p-8">
+                    <div className="space-y-6">
+                      <div className="text-center space-y-2">
+                        <h3 className="text-xl font-semibold text-foreground">Available Templates</h3>
+                        <p className="text-sm text-muted-foreground">Click on any template to preview and select it</p>
+                      </div>
+                      
+                      <div id="template-section" className={`grid gap-6 ${isCollapsed ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2'}`}>
+                        {currentTemplates.map((template) => (
+                          <TemplatePreview
+                            key={template.id}
+                            template={template}
+                            isSelected={formData.template_id === template.id}
+                            onClick={() => handleTemplateChange(template.id)}
+                          />
+                        ))}
+                      </div>
+                      
+                      {/* Pagination */}
+                      {totalPages > 1 && (
+                        <div className="flex justify-center">
+                          <Pagination>
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious 
+                                  onClick={() => handlePageChange(currentPage - 1)}
+                                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                />
+                              </PaginationItem>
+                              
+                              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                <PaginationItem key={page}>
+                                  <PaginationLink
+                                    onClick={() => handlePageChange(page)}
+                                    isActive={currentPage === page}
+                                    className="cursor-pointer"
+                                  >
+                                    {page}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              ))}
+                              
+                              <PaginationItem>
+                                <PaginationNext 
+                                  onClick={() => handlePageChange(currentPage + 1)}
+                                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        </div>
+                      )}
+                      
+                      {errors.template_id && (
+                        <Alert variant="destructive" className="border-destructive/50">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription className="text-sm">{errors.template_id}</AlertDescription>
+                        </Alert>
+                      )}
+
+                      {/* Action Button */}
+                      <div className="flex justify-center pt-4">
+                        <Button 
+                          onClick={handleNext}
+                          disabled={!formData.template_id}
+                          className="h-12 px-8 text-base font-medium bg-primary hover:bg-primary/90"
+                        >
+                          Continue to Project Details
+                          <ChevronRight className="h-4 w-4 ml-2" />
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -389,187 +387,443 @@ export default function CreatePage() {
             )}
 
             {currentStep === 2 && (
-              <div className="max-w-2xl mx-auto">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-xl">Project Details</CardTitle>
-                    <CardDescription>Fill in your project information</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="title">
-                          Project Title <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                          id="title"
-                          placeholder="e.g., Product Launch Landing Page"
-                          value={formData.title}
-                          onChange={(e) => {
-                            setFormData((prev) => ({ ...prev, title: e.target.value }))
-                            if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }))
-                          }}
-                          disabled={isLoading}
-                          className={errors.title ? "border-destructive" : ""}
-                        />
-                        {errors.title && (
-                          <p className="text-sm text-destructive flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            {errors.title}
-                          </p>
-                        )}
-                      </div>
+              <div className="max-w-4xl mx-auto">
+                <div className="space-y-8">
+                  {/* Header Section */}
+                  <div className="text-center space-y-2">
+                    <h2 className="text-3xl font-bold text-foreground">Project Details</h2>
+                    <p className="text-muted-foreground text-lg">Fill in your project information to generate AI-powered content</p>
+                  </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="brand_info">
-                          Brand Information <span className="text-destructive">*</span>
-                        </Label>
-                        <Textarea
-                          id="brand_info"
-                          placeholder="Describe your brand, product, or service. Include key features, benefits, target audience, and any specific messaging you want to convey..."
-                          value={formData.brand_info}
-                          onChange={(e) => {
-                            setFormData((prev) => ({ ...prev, brand_info: e.target.value }))
-                            if (errors.brand_info) setErrors((prev) => ({ ...prev, brand_info: undefined }))
-                          }}
-                          rows={4}
-                          disabled={isLoading}
-                          className={errors.brand_info ? "border-destructive" : ""}
-                        />
-                        {errors.brand_info && (
-                          <p className="text-sm text-destructive flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            {errors.brand_info}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="sales_page_url">Current Sales Page URL *</Label>
-                        <Input
-                          id="sales_page_url"
-                          placeholder="https://example.com/current-page"
-                          value={formData.sales_page_url}
-                          onChange={(e) => setFormData((prev) => ({ ...prev, sales_page_url: e.target.value }))}
-                          disabled={isLoading}
-                          className={errors.sales_page_url ? "border-destructive" : ""}
-                        />
-                        {errors.sales_page_url && (
-                          <p className="text-sm text-destructive">{errors.sales_page_url}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="advertorial_type">
-                          Advertorial Type <span className="text-destructive">*</span>
-                        </Label>
-                        <Select
-                          value={formData.advertorial_type}
-                          onValueChange={(value) => {
-                            setFormData((prev) => ({ ...prev, advertorial_type: value }))
-                            if (errors.advertorial_type) setErrors((prev) => ({ ...prev, advertorial_type: undefined }))
-                          }}
-                          disabled={isLoading}
-                        >
-                          <SelectTrigger className={errors.advertorial_type ? "border-destructive" : ""}>
-                            <SelectValue placeholder="Select advertorial type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Listicle">Listicle</SelectItem>
-                            <SelectItem value="Advertorial">Advertorial</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {errors.advertorial_type && (
-                          <p className="text-sm text-destructive flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            {errors.advertorial_type}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="persona">Target Persona (Optional)</Label>
-                        <Input
-                          id="persona"
-                          placeholder="e.g., Health-conscious professionals, Tech-savvy millennials"
-                          value={formData.persona}
-                          onChange={(e) => setFormData((prev) => ({ ...prev, persona: e.target.value }))}
-                          disabled={isLoading}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="age_range">Age Range (Optional)</Label>
+                  {/* Main Form */}
+                  <Card className="border-0 shadow-lg">
+                    <CardContent className="p-8">
+                      <form onSubmit={handleSubmit} className="space-y-8">
+                        {/* Project Title Section */}
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="title" className="text-base font-semibold text-foreground">
+                              Project Title <span className="text-destructive">*</span>
+                            </Label>
+                            <p className="text-sm text-muted-foreground">Give your project a descriptive name</p>
+                          </div>
                           <Input
-                            id="age_range"
-                            placeholder="e.g., 25-40, 30-55"
-                            value={formData.age_range}
-                            onChange={(e) => setFormData((prev) => ({ ...prev, age_range: e.target.value }))}
+                            id="title"
+                            placeholder="e.g., Product Launch Landing Page"
+                            value={formData.title}
+                            onChange={(e) => {
+                              setFormData((prev) => ({ ...prev, title: e.target.value }))
+                              if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }))
+                            }}
                             disabled={isLoading}
+                            className={`h-12 text-base ${errors.title ? "border-destructive focus-visible:ring-destructive" : "border-input focus-visible:ring-primary"}`}
                           />
+                          {errors.title && (
+                            <p className="text-sm text-destructive flex items-center gap-2">
+                              <AlertCircle className="h-4 w-4" />
+                              {errors.title}
+                            </p>
+                          )}
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="gender">Gender (Optional)</Label>
+
+                        {/* Brand Information Section */}
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="brand_info" className="text-base font-semibold text-foreground">
+                              Brand Information <span className="text-destructive">*</span>
+                            </Label>
+                            <p className="text-sm text-muted-foreground">Describe your brand, product, or service in detail</p>
+                          </div>
+                          <Textarea
+                            id="brand_info"
+                            placeholder="Include key features, benefits, target audience, and any specific messaging you want to convey..."
+                            value={formData.brand_info}
+                            onChange={(e) => {
+                              setFormData((prev) => ({ ...prev, brand_info: e.target.value }))
+                              if (errors.brand_info) setErrors((prev) => ({ ...prev, brand_info: undefined }))
+                            }}
+                            rows={5}
+                            disabled={isLoading}
+                            className={`text-base resize-none ${errors.brand_info ? "border-destructive focus-visible:ring-destructive" : "border-input focus-visible:ring-primary"}`}
+                          />
+                          {errors.brand_info && (
+                            <p className="text-sm text-destructive flex items-center gap-2">
+                              <AlertCircle className="h-4 w-4" />
+                              {errors.brand_info}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Sales Page URL Section */}
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="sales_page_url" className="text-base font-semibold text-foreground">
+                              Current Sales Page URL <span className="text-destructive">*</span>
+                            </Label>
+                            <p className="text-sm text-muted-foreground">Provide the URL of your existing sales page</p>
+                          </div>
+                          <Input
+                            id="sales_page_url"
+                            placeholder="https://example.com/current-page"
+                            value={formData.sales_page_url}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, sales_page_url: e.target.value }))}
+                            disabled={isLoading}
+                            className={`h-12 text-base ${errors.sales_page_url ? "border-destructive focus-visible:ring-destructive" : "border-input focus-visible:ring-primary"}`}
+                          />
+                          {errors.sales_page_url && (
+                            <p className="text-sm text-destructive flex items-center gap-2">
+                              <AlertCircle className="h-4 w-4" />
+                              {errors.sales_page_url}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Content Type Selection */}
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="advertorial_type" className="text-base font-semibold text-foreground">
+                              Content Type <span className="text-destructive">*</span>
+                            </Label>
+                            <p className="text-sm text-muted-foreground">Choose the type of content you want to generate</p>
+                          </div>
                           <Select
-                            value={formData.gender}
-                            onValueChange={(value) => setFormData((prev) => ({ ...prev, gender: value }))}
+                            value={formData.advertorial_type}
+                            onValueChange={(value) => {
+                              setFormData((prev) => ({ ...prev, advertorial_type: value }))
+                              if (errors.advertorial_type) setErrors((prev) => ({ ...prev, advertorial_type: undefined }))
+                            }}
                             disabled={isLoading}
                           >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select gender" />
+                            <SelectTrigger className={`h-12 text-base ${errors.advertorial_type ? "border-destructive focus-visible:ring-destructive" : "border-input focus-visible:ring-primary"}`}>
+                              <SelectValue placeholder="Select content type" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="male">Male</SelectItem>
-                              <SelectItem value="female">Female</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
-                              <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                              <SelectItem value="Listicle" className="text-base py-3">Listicle - "Top 10" style articles</SelectItem>
+                              <SelectItem value="Advertorial" className="text-base py-3">Advertorial - Editorial-style ads</SelectItem>
                             </SelectContent>
                           </Select>
-                        </div>
-                      </div>
-
-                      {selectedTemplate && (
-                        <div className="p-4 bg-muted rounded-lg">
-                          <h4 className="font-medium text-sm mb-2">Selected Template</h4>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{selectedTemplate.name}</span>
-                            <Badge variant="outline" className="text-xs">{selectedTemplate.category}</Badge>
-                          </div>
-                        </div>
-                      )}
-
-                      {Object.keys(errors).length > 0 && (
-                        <Alert variant="destructive">
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription>Please fix the errors above before submitting.</AlertDescription>
-                        </Alert>
-                      )}
-
-                      <div className="flex gap-3">
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          onClick={handleBack}
-                          className="flex-1"
-                        >
-                          <ChevronLeft className="h-4 w-4 mr-2" />
-                          Back
-                        </Button>
-                        <Button type="submit" className="flex-1" disabled={isLoading}>
-                          {isLoading ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Creating Content...
-                            </>
-                          ) : (
-                            "Generate AI Content"
+                          {errors.advertorial_type && (
+                            <p className="text-sm text-destructive flex items-center gap-2">
+                              <AlertCircle className="h-4 w-4" />
+                              {errors.advertorial_type}
+                            </p>
                           )}
-                        </Button>
-                      </div>
-                    </form>
-                  </CardContent>
-                </Card>
+                          
+                          {/* Dynamic Content Options Based on Type */}
+                          {formData.advertorial_type && (
+                            <div className="p-4 bg-muted/50 rounded-lg border">
+                              <h4 className="font-medium text-sm mb-3 text-foreground">
+                                {formData.advertorial_type === 'Listicle' ? '📝 Listicle Options' : '📰 Advertorial Options'}
+                              </h4>
+                              <div className="space-y-2 text-sm text-muted-foreground">
+                                {formData.advertorial_type === 'Listicle' ? (
+                                  <>
+                                    <p>• Perfect for: Product comparisons, tips, guides</p>
+                                    <p>• Structure: Numbered list with detailed explanations</p>
+                                    <p>• Tone: Educational and engaging</p>
+                                    <p>• Length: 1,500-3,000 words typically</p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <p>• Perfect for: Product launches, brand stories</p>
+                                    <p>• Structure: Story-driven narrative with product integration</p>
+                                    <p>• Tone: Editorial and trustworthy</p>
+                                    <p>• Length: 800-2,000 words typically</p>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Target Audience Section */}
+                        <div className="space-y-6">
+                          <div className="space-y-2">
+                            <h3 className="text-lg font-semibold text-foreground">Target Audience</h3>
+                            <p className="text-sm text-muted-foreground">Choose your approach to define your target audience</p>
+                          </div>
+                          
+                          {/* Choose Your Approach */}
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label className="text-base font-semibold text-foreground">
+                                Choose Your Approach <span className="text-destructive">*</span>
+                              </Label>
+                              <p className="text-sm text-muted-foreground">Select how you want to approach your target audience</p>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div 
+                                className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                                  formData.target_approach === 'explore' 
+                                    ? 'border-primary bg-primary/5 shadow-lg' 
+                                    : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                                }`}
+                                onClick={() => setFormData(prev => ({ ...prev, target_approach: 'explore', persona: '', age_range: '', gender: '' }))}
+                              >
+                                <div className="flex items-start gap-4">
+                                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                    formData.target_approach === 'explore' ? 'border-primary bg-primary' : 'border-muted-foreground'
+                                  }`}>
+                                    {formData.target_approach === 'explore' && (
+                                      <div className="w-2 h-2 bg-primary-foreground rounded-full"></div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1">
+                                    <h4 className="font-semibold text-base text-foreground mb-2">I want to explore new avatars</h4>
+                                    <p className="text-sm text-muted-foreground mb-3">that I can do research on</p>
+                                    <div className="space-y-1 text-xs text-muted-foreground">
+                                      <p>• Discover new customer segments</p>
+                                      <p>• Research market opportunities</p>
+                                      <p>• Test different audience approaches</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div 
+                                className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                                  formData.target_approach === 'known' 
+                                    ? 'border-primary bg-primary/5 shadow-lg' 
+                                    : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                                }`}
+                                onClick={() => setFormData(prev => ({ ...prev, target_approach: 'known', persona: '', age_range: '', gender: '' }))}
+                              >
+                                <div className="flex items-start gap-4">
+                                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                    formData.target_approach === 'known' ? 'border-primary bg-primary' : 'border-muted-foreground'
+                                  }`}>
+                                    {formData.target_approach === 'known' && (
+                                      <div className="w-2 h-2 bg-primary-foreground rounded-full"></div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1">
+                                    <h4 className="font-semibold text-base text-foreground mb-2">I know exactly who my customer is</h4>
+                                    <p className="text-sm text-muted-foreground mb-3">and want to target them specifically</p>
+                                    <div className="space-y-1 text-xs text-muted-foreground">
+                                      <p>• Define specific demographics</p>
+                                      <p>• Target existing customer base</p>
+                                      <p>• Optimize for known preferences</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Conditional Content Based on Approach */}
+                          {formData.target_approach === 'explore' && (
+                            <div className="space-y-4">
+                              <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                <h4 className="font-medium text-sm mb-3 text-blue-900 dark:text-blue-100">
+                                  Explore New Personas
+                                </h4>
+                                <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">
+                                  Select from our predefined personas to research and explore new customer segments:
+                                </p>
+                                
+                                <div className="space-y-4">
+                                  <div className="space-y-2">
+                                    <Label className="text-sm font-medium text-blue-900 dark:text-blue-100">Persona to Research</Label>
+                                    <Select
+                                      value={formData.persona}
+                                      onValueChange={(value) => {
+                                        setFormData((prev) => ({ ...prev, persona: value }))
+                                        // Auto-select age range based on persona
+                                        const ageMapping: Record<string, string> = {
+                                          'exhausted_worker': '35-44',
+                                          'active_senior': '55-64',
+                                          'fitness_enthusiast': '25-34',
+                                          'silent_sufferer': '45-54',
+                                          'caregiver_gift_buyer': '35-44',
+                                        }
+                                        if (ageMapping[value]) {
+                                          setFormData((prev) => ({ ...prev, age_range: ageMapping[value] }))
+                                        }
+                                      }}
+                                      disabled={isLoading}
+                                    >
+                                      <SelectTrigger className="h-11 text-sm border-blue-200 dark:border-blue-800 focus-visible:ring-blue-500">
+                                        <SelectValue placeholder="Select persona to research" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="exhausted_worker" className="text-sm py-2">💼 The Exhausted Worker - Age 35-55 • Stands all day at work</SelectItem>
+                                        <SelectItem value="active_senior" className="text-sm py-2">🚶 The Active Senior - Age 55-75 • Circulation & arthritis issues</SelectItem>
+                                        <SelectItem value="fitness_enthusiast" className="text-sm py-2">🏃 The Fitness Enthusiast - Age 25-45 • Active lifestyle</SelectItem>
+                                        <SelectItem value="silent_sufferer" className="text-sm py-2">😔 The Silent Sufferer - Age 40-65 • Chronic foot pain</SelectItem>
+                                        <SelectItem value="caregiver_gift_buyer" className="text-sm py-2">💝 The Caregiver / Gift Buyer - Age 30-60 • Buying for loved ones</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label className="text-sm font-medium text-blue-900 dark:text-blue-100">Age Range</Label>
+                                      <Select
+                                        value={formData.age_range}
+                                        onValueChange={(value) => setFormData((prev) => ({ ...prev, age_range: value }))}
+                                        disabled={isLoading}
+                                      >
+                                        <SelectTrigger className="h-11 text-sm border-blue-200 dark:border-blue-800 focus-visible:ring-blue-500">
+                                          <SelectValue placeholder="Select age range" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="18-24" className="text-sm py-2">18-24 (Gen Z)</SelectItem>
+                                          <SelectItem value="25-34" className="text-sm py-2">25-34 (Millennials)</SelectItem>
+                                          <SelectItem value="35-44" className="text-sm py-2">35-44 (Millennials)</SelectItem>
+                                          <SelectItem value="45-54" className="text-sm py-2">45-54 (Gen X)</SelectItem>
+                                          <SelectItem value="55-64" className="text-sm py-2">55-64 (Gen X)</SelectItem>
+                                          <SelectItem value="65+" className="text-sm py-2">65+ (Boomers)</SelectItem>
+                                          <SelectItem value="all_ages" className="text-sm py-2">All ages</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-sm font-medium text-blue-900 dark:text-blue-100">Gender</Label>
+                                      <Select
+                                        value={formData.gender}
+                                        onValueChange={(value) => setFormData((prev) => ({ ...prev, gender: value }))}
+                                        disabled={isLoading}
+                                      >
+                                        <SelectTrigger className="h-11 text-sm border-blue-200 dark:border-blue-800 focus-visible:ring-blue-500">
+                                          <SelectValue placeholder="Select gender" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="male" className="text-sm py-2">Male</SelectItem>
+                                          <SelectItem value="female" className="text-sm py-2">Female</SelectItem>
+                                          <SelectItem value="non_binary" className="text-sm py-2">Non-binary</SelectItem>
+                                          <SelectItem value="all_genders" className="text-sm py-2">All genders</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {formData.target_approach === 'known' && (
+                            <div className="space-y-4">
+                              <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                                <h4 className="font-medium text-sm mb-3 text-green-900 dark:text-green-100">
+                                  Define Your Target Persona
+                                </h4>
+                                <p className="text-sm text-green-800 dark:text-green-200 mb-4">
+                                  Describe your specific target customer persona:
+                                </p>
+                                
+                                <div className="space-y-4">
+                                  <div className="space-y-2">
+                                    <Label className="text-sm font-medium text-green-900 dark:text-green-100">Target Persona Name</Label>
+                                    <Input
+                                      placeholder="e.g., Health-conscious professionals, Tech-savvy millennials, Busy parents..."
+                                      value={formData.persona}
+                                      onChange={(e) => setFormData((prev) => ({ ...prev, persona: e.target.value }))}
+                                      disabled={isLoading}
+                                      className="h-11 text-sm border-green-200 dark:border-green-800 focus-visible:ring-green-500"
+                                    />
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label className="text-sm font-medium text-green-900 dark:text-green-100">Age Range</Label>
+                                      <Select
+                                        value={formData.age_range}
+                                        onValueChange={(value) => setFormData((prev) => ({ ...prev, age_range: value }))}
+                                        disabled={isLoading}
+                                      >
+                                        <SelectTrigger className="h-11 text-sm border-green-200 dark:border-green-800 focus-visible:ring-green-500">
+                                          <SelectValue placeholder="Select age range" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="18-24" className="text-sm py-2">18-24 (Gen Z)</SelectItem>
+                                          <SelectItem value="25-34" className="text-sm py-2">25-34 (Millennials)</SelectItem>
+                                          <SelectItem value="35-44" className="text-sm py-2">35-44 (Millennials)</SelectItem>
+                                          <SelectItem value="45-54" className="text-sm py-2">45-54 (Gen X)</SelectItem>
+                                          <SelectItem value="55-64" className="text-sm py-2">55-64 (Gen X)</SelectItem>
+                                          <SelectItem value="65+" className="text-sm py-2">65+ (Boomers)</SelectItem>
+                                          <SelectItem value="all_ages" className="text-sm py-2">All ages</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-sm font-medium text-green-900 dark:text-green-100">Gender</Label>
+                                      <Select
+                                        value={formData.gender}
+                                        onValueChange={(value) => setFormData((prev) => ({ ...prev, gender: value }))}
+                                        disabled={isLoading}
+                                      >
+                                        <SelectTrigger className="h-11 text-sm border-green-200 dark:border-green-800 focus-visible:ring-green-500">
+                                          <SelectValue placeholder="Select gender" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="male" className="text-sm py-2">Male</SelectItem>
+                                          <SelectItem value="female" className="text-sm py-2">Female</SelectItem>
+                                          <SelectItem value="non_binary" className="text-sm py-2">Non-binary</SelectItem>
+                                          <SelectItem value="all_genders" className="text-sm py-2">All genders</SelectItem>
+                                          <SelectItem value="prefer_not_to_say" className="text-sm py-2">Prefer not to say</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Selected Template Display */}
+                        {selectedTemplate && (
+                          <div className="p-6 bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl border border-primary/20">
+                            <div className="flex items-center gap-3">
+                              <div className="w-2 h-2 bg-primary rounded-full"></div>
+                              <h4 className="font-semibold text-base text-foreground">Selected Template</h4>
+                            </div>
+                            <div className="flex items-center gap-3 mt-3">
+                              <span className="text-sm font-medium text-foreground">{selectedTemplate.name}</span>
+                              <Badge variant="secondary" className="text-xs">{selectedTemplate.category}</Badge>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Error Summary */}
+                        {Object.keys(errors).length > 0 && (
+                          <Alert variant="destructive" className="border-destructive/50">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription className="text-sm">Please fix the errors above before submitting.</AlertDescription>
+                          </Alert>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-4 pt-4">
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={handleBack}
+                            className="flex-1 h-12 text-base font-medium"
+                          >
+                            <ChevronLeft className="h-4 w-4 mr-2" />
+                            Back to Templates
+                          </Button>
+                          <Button 
+                            type="submit" 
+                            className="flex-1 h-12 text-base font-medium bg-primary hover:bg-primary/90" 
+                            disabled={isLoading}
+                          >
+                            {isLoading ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Creating Content...
+                              </>
+                            ) : (
+                              "Generate AI Content"
+                            )}
+                          </Button>
+                        </div>
+                      </form>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             )}
           </div>

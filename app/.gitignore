@@ -26,3 +26,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 openapi.yaml
+AI_COPY_LOVABLE/
+swipe_templates/
