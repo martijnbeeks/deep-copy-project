@@ -25,6 +25,11 @@ export const metadata: Metadata = {
   description: "Professional AI-powered content creation platform",
   generator: "v0.app",
   robots: "index, follow",
+  icons: {
+    icon: "/nib.png",
+    shortcut: "/nib.png",
+    apple: "/nib.png",
+  },
   openGraph: {
     title: "AI Copywriting Dashboard",
     description: "Professional AI-powered content creation platform",
