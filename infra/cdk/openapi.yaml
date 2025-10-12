@@ -73,9 +73,17 @@ paths:
                   project_name: "meritrelief"
                   swipe_file_id: "L00005"
                   advertorial_type: "Listicle"
-                  persona: "Health-conscious professionals"
-                  age_range: "30-45"
-                  gender: "female"
+                  customer_avatars:
+                    - persona_name: "Active Senior"
+                      description: "Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain"
+                      age_range: "60-75"
+                      gender: "both"
+                      key_buying_motivation: "Seeking non-invasive pain relief to maintain active lifestyle"
+                    - persona_name: "Desk-Bound Professional"
+                      description: "Office worker sitting 8+ hours daily experiencing lower back pain"
+                      age_range: "30-45"
+                      gender: "both"
+                      key_buying_motivation: "Quick relief from work-related pain"
       responses:
         '202':
           description: Job accepted
@@ -114,9 +122,15 @@ paths:
                 "project_name": "meritrelief",
                 "swipe_file_id": "L00005",
                 "advertorial_type": "Listicle",
-                "persona": "Health-conscious professionals",
-                "age_range": "30-45",
-                "gender": "female"
+                "customer_avatars": [
+                  {
+                    "persona_name": "Active Senior",
+                    "description": "Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain",
+                    "age_range": "60-75",
+                    "gender": "both",
+                    "key_buying_motivation": "Seeking non-invasive pain relief to maintain active lifestyle"
+                  }
+                ]
               }' \
               "${API_URL}jobs"
   /jobs/{id}:
@@ -200,6 +214,59 @@ paths:
           source: |-
             API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
             curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID/result"
+  /avatars/extract:
+    post:
+      summary: Extract customer avatars from a product page
+      operationId: extractAvatars
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: URL of the product page to analyze
+            examples:
+              sciatica:
+                summary: Sciatica product
+                value:
+                  url: "https://www.sciatiease.com/sciatiease.php"
+      responses:
+        '200':
+          description: Successfully extracted avatars
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvatarExtractionResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-codeSamples:
+        - lang: bash
+          label: curl (extract avatars)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -X POST \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "content-type: application/json" \
+              -d '{"url": "https://www.sciatiease.com/sciatiease.php"}' \
+              "${API_URL}avatars/extract"
 components:
   securitySchemes:
     cognitoOAuth2:
@@ -229,20 +296,39 @@ components:
           description: S3 key under content_library/ or other identifier
         advertorial_type:
           type: string
+        customer_avatars:
+          type: array
+          description: List of customer avatars/personas to target
+          items:
+            $ref: '#/components/schemas/CustomerAvatar'
         persona:
           type: string
+          deprecated: true
+          description: (Deprecated) Use customer_avatars instead
         age_range:
           type: string
+          deprecated: true
+          description: (Deprecated) Use customer_avatars instead
         gender:
           type: string
+          deprecated: true
+          description: (Deprecated) Use customer_avatars instead
       example:
         sales_page_url: "https://try.meritrelief.com/"
         project_name: "meritrelief"
         swipe_file_id: "L00005"
         advertorial_type: "Listicle"
-        persona: "Health-conscious professionals"
-        age_range: "30-45"
-        gender: "female"
+        customer_avatars:
+          - persona_name: "Active Senior"
+            description: "Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain"
+            age_range: "60-75"
+            gender: "both"
+            key_buying_motivation: "Seeking non-invasive pain relief to maintain active lifestyle"
+          - persona_name: "Desk-Bound Professional"
+            description: "Office worker sitting 8+ hours daily experiencing lower back pain"
+            age_range: "30-45"
+            gender: "both"
+            key_buying_motivation: "Quick relief from work-related pain"
     SubmitJobResponse:
       type: object
       required: [jobId, status]
@@ -384,3 +470,35 @@ components:
       properties:
         error:
           type: string
+    AvatarExtractionResponse:
+      type: object
+      required: [success, url, avatars]
+      properties:
+        success:
+          type: boolean
+        url:
+          type: string
+          format: uri
+        avatars:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerAvatar'
+    CustomerAvatar:
+      type: object
+      required: [persona_name, description, age_range, gender, key_buying_motivation]
+      properties:
+        persona_name:
+          type: string
+          description: A short, descriptive name that captures the essence of the customer
+        description:
+          type: string
+          description: 1 sentence summarizing their lifestyle, motivations, and key challenges
+        age_range:
+          type: string
+          description: Approximate age bracket (e.g., 25-34)
+        gender:
+          type: string
+          description: male, female, or both
+        key_buying_motivation:
+          type: string
+          description: What drives them to purchase this product

@@ -20,6 +20,7 @@ import {
   aws_events_targets as targets,
   CfnOutput,
 } from 'aws-cdk-lib';
+import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { Construct } from 'constructs';
 import * as path from 'path';
 
@@ -45,9 +46,19 @@ export class DeepCopyStack extends Stack {
     });
 
     // VPC for ECS Fargate
+    // Keep NAT Gateway provisioned but use public subnets to avoid NAT charges
     const vpc = new ec2.Vpc(this, 'Vpc', {
       maxAzs: 2,
-      natGateways: 1,
+      natGateways: 1, // Keep existing NAT Gateway to avoid VPC recreation
+    });
+
+    // Add FREE VPC Gateway Endpoints (no cost, reduce data transfer)
+    // These keep S3 and DynamoDB traffic within AWS network at zero cost
+    vpc.addGatewayEndpoint('S3Endpoint', {
+      service: ec2.GatewayVpcEndpointAwsService.S3,
+    });
+    vpc.addGatewayEndpoint('DynamoDBEndpoint', {
+      service: ec2.GatewayVpcEndpointAwsService.DYNAMODB,
     });
 
     // ECS Cluster
@@ -136,7 +147,8 @@ export class DeepCopyStack extends Stack {
       environment: {
         CLUSTER_ARN: cluster.clusterArn,
         TASK_DEF_ARN: taskDef.taskDefinitionArn,
-        SUBNET_IDS: [...vpc.privateSubnets, ...vpc.publicSubnets].map((s) => s.subnetId).join(','),
+        // Only public subnets (no NAT Gateway needed)
+        SUBNET_IDS: vpc.publicSubnets.map((s) => s.subnetId).join(','),
         SECURITY_GROUP_IDS: taskSecurityGroup.securityGroupId,
         JOBS_TABLE_NAME: jobsTable.tableName,
         RESULTS_BUCKET: resultsBucket.bucketName,
@@ -183,6 +195,32 @@ export class DeepCopyStack extends Stack {
       },
     });
     resultsBucket.grantRead(getJobResultLambda);
+
+    // Lambda for extracting avatars from product pages (Docker-based)
+    const extractAvatarsLambda = new lambda.DockerImageFunction(this, 'ExtractAvatarsLambda', {
+      code: lambda.DockerImageCode.fromImageAsset(
+        path.join(__dirname, 'lambdas', 'extract_avatars'),
+        {
+          platform: Platform.LINUX_AMD64, // Explicitly set platform for Lambda
+        }
+      ),
+      timeout: Duration.seconds(120),
+      memorySize: 3008, // 3GB for Playwright + OpenAI
+      architecture: lambda.Architecture.X86_64, // Explicitly set architecture
+      environment: {
+        OPENAI_MODEL: 'gpt-5-mini',
+        PLAYWRIGHT_BROWSERS_PATH: '/var/task/.playwright', // Fixed browser path for Lambda
+      },
+    });
+
+    // Grant access to the same secret as the ECS pipeline
+    const secretArn = `arn:aws:secretsmanager:${Stack.of(this).region}:${Stack.of(this).account}:secret:deepcopy-secret-dev*`;
+    extractAvatarsLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['secretsmanager:GetSecretValue'],
+        resources: [secretArn],
+      }),
+    );
 
     // Cognito User Pool for API auth
     const userPool = new cognito.UserPool(this, 'UserPool', {
@@ -275,10 +313,20 @@ export class DeepCopyStack extends Stack {
       authorizationScopes: ['https://deep-copy.api/read'],
     });
 
+    // Avatar extraction endpoint
+    const avatarsRes = api.root.addResource('avatars');
+    const extractRes = avatarsRes.addResource('extract');
+    extractRes.addMethod('POST', new apigw.LambdaIntegration(extractAvatarsLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/write'],
+    });
+
     // Optional: EventBridge to mark RUNNING when task starts and final status on stop
     // You can also have the container call DynamoDB directly at the end, which the Python already supports
 
     new CfnOutput(this, 'ApiUrl', { value: api.url });
+    new CfnOutput(this, 'AvatarsEndpoint', { value: `${api.url}avatars/extract` });
     new CfnOutput(this, 'ResultsBucketName', { value: resultsBucket.bucketName });
     new CfnOutput(this, 'JobsTableName', { value: jobsTable.tableName });
     new CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });

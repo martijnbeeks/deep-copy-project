@@ -219,8 +219,13 @@ class DeepCopy:
             logger.error(f"Error encoding image: {e}")
             raise
     
-    def analyze_research_page(self, sales_page_url, persona, age_range, gender):
-        """Analyze the sales page using GPT-5 Vision"""
+    def analyze_research_page(self, sales_page_url, customer_avatars):
+        """Analyze the sales page using GPT-5 Vision
+        
+        Args:
+            sales_page_url: URL of the sales page to analyze
+            customer_avatars: List of dicts with keys: persona_name, description, age_range, gender, key_buying_motivation
+        """
         try:
             base64_image = None
             logger.info(f"Capturing page: {sales_page_url}")
@@ -239,11 +244,25 @@ class DeepCopy:
                 except Exception as cleanup_exc:
                     logger.warning(f"Failed to clean up image file {image_path}: {cleanup_exc}")
             
+            # Format avatars for the prompt
+            avatars_description = "\n\n".join([
+                f"Avatar {i+1}: {avatar['persona_name']}\n"
+                f"- Description: {avatar['description']}\n"
+                f"- Age Range: {avatar['age_range']}\n"
+                f"- Gender: {avatar['gender']}\n"
+                f"- Key Buying Motivation: {avatar['key_buying_motivation']}"
+                for i, avatar in enumerate(customer_avatars)
+            ])
+            
             prompt = f"""
-            You are my expert copywriter and you specialise in writing highly persuasive direct response style copy for my companies targeting {persona} with an age range of {age_range} and a gender of {gender}. 
+            You are my expert copywriter and you specialise in writing highly persuasive direct response style copy for my companies.
+            
+            I'm targeting the following customer avatars:
+            {avatars_description}
+            
             I've attached my current sales page.    
 
-            Analyze this page and please let me know your thoughts.
+            Analyze this page and please let me know your thoughts on how it appeals to these different customer segments.
             """
             
             logger.info("Calling GPT-5 Vision API for research page analysis")
@@ -489,8 +508,33 @@ class DeepCopy:
         except Exception as e:
             logger.error(f"Error creating summary: {e}")
             raise
+        
+    def analyze_swipe_file(self, swipe_file_path, advertorial_type: Literal["Advertorial", "Listicle"]):
+        """Analyze the swipe file"""
+        try:
+            with open(swipe_file_path, "r", encoding="utf-8") as f:
+                swipe_file_html = f.read()
+                
+            prompt = f"""
+            Please analyze the following swipe file and provide a detailed analysis of the content and style used in this marketing document: {advertorial_type}:
+            
+            Swipe file HTML:
+            {swipe_file_html}
+            """
+            
+            response = self.client.responses.create(
+                model="gpt-5",
+                input=[{
+                    "role": "user", 
+                    "content": [{"type": "input_text", "text": prompt}]
+                }]
+            )            
+            return response.output_text
+        except Exception as e:
+            logger.error(f"Error analyzing swipe file: {e}")
+            raise
     
-    def rewrite_swipe_files(self, angles, avatar_sheet, summary, swipe_file_path, advertorial_type: Literal["Advertorial", "Listicle"]):
+    def rewrite_swipe_files(self, angles, avatar_sheet, summary, swipe_file_analysis, advertorial_type: Literal["Advertorial", "Listicle"]):
         """Rewrite swipe files for each marketing angle"""
         try:
 
@@ -499,13 +543,16 @@ class DeepCopy:
                 prompt = f"""
                 Great, now I want you to please rewrite this {advertorial_type} but using all of the information around products stated below. 
                 I want you to specifically focus on the first marketing angle from the avatar sheet: {angle}. 
-                Please rewrite the {advertorial_type} with the new content and output it in provided format. 
+                Please rewrite the {advertorial_type} with the new content, adhere to the style and tone used in the swipe file analysis and output it in provided format. 
                 
                 Avatar sheet:
                 {avatar_sheet}
                 
                 Content for the {advertorial_type}:
                 {summary}
+                
+                Swipe file analysis:
+                {swipe_file_analysis}
                 """
 
                 logger.info(f"Calling GPT-5 API to rewrite swipe file for angle: {angle}")
@@ -710,9 +757,11 @@ def run_pipeline(event, context):
         # TODO: 
         # Return Avertorial / Listicle and let frontend how to render it in a html template with placeholders
         
+        # Get customer avatars from event
+        customer_avatars = event.get("customer_avatars", [])
         # Step 1: Analyze research page
         logger.info("Step 1: Analyzing research page")
-        research_page_analysis = generator.analyze_research_page(sales_page_url, persona, age_range, gender)
+        research_page_analysis = generator.analyze_research_page(sales_page_url, customer_avatars)
         
         # Step 2: Analyze research documents
         logger.info("Step 2: Analyzing research documents")
@@ -755,11 +804,16 @@ def run_pipeline(event, context):
             avatar_sheet, offer_brief, deep_research_output, marketing_philosophy_analysis
         )
         
-        # Step 9: Rewrite swipe files
+        # Step 9: Analyse the swipe file
+        
+        logger.info("Step 9: Analyzing swipe file")
+        swipe_file_analysis = generator.analyze_swipe_file(swipe_file_path, advertorial_type)
+        
+        # Step 10: Rewrite swipe files
         logger.info("Step 9: Rewriting swipe files")
         
         swipe_results = generator.rewrite_swipe_files(
-            angles, avatar_sheet, summary, swipe_file_path, advertorial_type
+            angles, avatar_sheet, summary, swipe_file_analysis, advertorial_type
         )
         
         # Step 10: Save all results
@@ -819,7 +873,6 @@ def run_pipeline(event, context):
         }
         return error_response
 
-# For local testing
 if __name__ == "__main__":
     # Allow ECS task to pass inputs via env var JOB_EVENT_JSON and JOB_ID
     job_event_env = os.environ.get("JOB_EVENT_JSON")

@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html><head><base href="https://about.getbugmd.com"/><meta charset="utf-8"/>
+<meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
+<meta content="no-cache" http-equiv="Pragma"/>
+<meta content="0" http-equiv="Expires"/>
+<meta charset="utf-8" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" name="viewport"/>
+<link cc="true" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" media="print" onload="this.onload=null;this.media='all'" rel="stylesheet"/>
+<link cc="true" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" media="print" onload="this.onload=null;this.media='all'" rel="stylesheet"/>
+<link cc="true" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css" media="print" onload="this.onload=null;this.media='all'" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?version=4.8.0&amp;features=default,dom,es5,es6,es7,es2017,es2018,es2019,es2022,es2021,es2020,Blob,DOMTokenList.prototype.@@iterator,DOMTokenList.prototype.forEach,NodeList.prototype.@@iterator,NodeList.prototype.forEach,scroll,fetch,URLSearchParams,Element.prototype.scroll,Element.prototype.placeholder,Promise,Promise.prototype.finally,structuredClone" type="text/javascript"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script async="" src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+<script async="" src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+<meta content="ie=edge" http-equiv="X-UA-Compatible"/><link href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" id="Montserrat" rel="stylesheet"/><style id="styleElement">* { box-sizing: border-box; }
+body { margin: 0px; overflow-x: unset !important; }
+[data-gjs-type="text"][class*="gjs-comp-selected"] { outline: purple solid 3px !important; }
+img, video, iframe, hr, a, button { max-width: 100%; }
+img, a { max-width: 100%; }
+.wp-content { max-width: 1170px; margin: 0px auto; }
+.max-width { max-width: 1200px !important; }
+.front { z-index: 10; position: relative; }
+.fk-row { display: flex; justify-content: flex-start; align-items: stretch; flex-wrap: nowrap; padding: 10px; height: auto; max-width: 100%; }
+.fk-col { min-height: 25px; padding: 10px; flex-grow: 1; width: min-content; }
+.fk-image-defaults { width: 150px; height: 150px; max-width: 100%; }
+#ifka2 { padding-top: 5px; padding-bottom: 15px; margin: 0px; align-items: center; justify-content: center; align-self: center; }
+#iin3w { padding-left: 10px; padding-right: 10px; padding-top: 10px; }
+#igjxb { width: 100%; padding: 0px; }
+#i5a3x { flex: 1 1 75%; padding: 0px 0px 58px; }
+#ixeuq { flex: 1 1 25%; padding: 0px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; align-self: auto; }
+#imnc4 { padding: 0px; margin-top: 20px; }
+#inixg { font-size: 16px; font-family: Montserrat, sans-serif; padding: 0px 1px; text-align: left; line-height: 1em; font-weight: 500; color: rgb(183, 183, 183) !important; }
+#iwcmn { padding-top: 10px; padding-bottom: 10px; background-color: rgb(51, 51, 51) !important; }
+#i4lvf { padding-top: 0px; padding-bottom: 0px; display: flex; }
+#iyc24 { padding: 10px 1px; font-size: 16px; font-family: Montserrat, sans-serif; line-height: 1em; font-weight: 700; color: white !important; }
+#i73ejl { padding: 10px 1px; font-size: 23px; font-family: Montserrat, sans-serif; text-align: left; margin-top: 0px; line-height: 1.5em; color: rgb(47, 47, 47) !important; }
+#ipvlik { padding: 10px 1px; font-size: 17px; font-family: Montserrat, sans-serif; text-align: left; margin-top: 15px; line-height: 1.5em; color: rgb(47, 47, 47) !important; }
+a { cursor: pointer; transition: 0.15s ease-in-out; }
+#i6p1ng { padding: 10px 1px; font-size: 17px; font-family: Montserrat, sans-serif; text-align: left; margin-top: 15px; line-height: 1.5em; color: rgb(47, 47, 47) !important; }
+#fkt-link-afa-fb4-a09 { padding: 25px 40px; display: inline-block; font-family: Montserrat, sans-serif; cursor: pointer; border-radius: 4px; font-weight: 700; font-size: 24px; line-height: 40px; letter-spacing: 0.02px; width: auto; margin-left: 0px; margin-right: 0px; text-decoration: none; color: rgb(246, 249, 254) !important; background-color: rgb(20, 147, 18) !important; box-shadow: rgba(0, 0, 0, 0.19) 0px 4px 7px 1px !important; }
+#fkt-link-afa-fb4-a09:hover { background-color: rgb(1, 158, 63) !important; }
+.textbox-facebook { outline: none; border: none; background: white; font-family: Arial, Helvetica, sans-serif; font-size: 16px; padding: 20px; box-sizing: border-box; width: 100%; }
+.comment-input-holder { background: white; margin-left: 10px; margin-right: 10px; }
+.comment-holder { position: relative; box-sizing: border-box; margin-bottom: -150px; }
+.comment-input { border: 1px solid rgb(222, 222, 222); width: 100%; margin: 0px auto; }
+.profilepic { float: left; display: block; margin-right: 8px; height: 48px; width: 48px; margin-top: 5px; }
+.prflpcCmt { height: 36px; width: 36px; }
+.fbbuttons { height: 25px; }
+.fbbuttons .blue { color: rgb(98, 122, 173); font-size: 12px; margin: 0px; cursor: pointer; }
+.fbbuttons .grijs { color: rgb(127, 127, 127); font-size: 12px; margin: 0px; }
+.fbbuttons .like:hover { text-decoration: underline; }
+.fbbuttons .reply:hover { text-decoration: underline; }
+.likeduim { margin-right: 0px; position: relative; bottom: 3px; height: 15px; width: 13px; }
+.cmtdatum { cursor: pointer; }
+ul { padding: 0px 0px 0px 7px; margin-bottom: 10px; }
+li ul { border-left: 1px dotted rgb(211, 214, 219); }
+.fk-collapsible-list summary::marker { content: none; }
+#i1b7b4 { font-size: 33px; font-family: Montserrat, sans-serif; text-align: left; line-height: 1.4em; font-weight: 800; padding: 5px 1px; margin-top: 40px; color: rgb(47, 47, 47) !important; }
+#igjx1e { padding: 10px 1px; font-size: 17px; font-family: Montserrat, sans-serif; text-align: left; margin-top: 15px; line-height: 1.5em; color: rgb(47, 47, 47) !important; }
+.fk-testimonial1 { background: rgb(244, 244, 244); }
+#ik5mi { top: 50px; width: 100%; padding: 10px; border-style: none; border-width: 1px; border-radius: 1px; margin-top: 10px; background-color: rgb(242, 242, 242) !important; }
+#i0xt2-3 { padding: 12px 10px; width: 100%; flex-direction: row; display: flex; align-items: flex-start; justify-content: flex-start; align-self: auto; height: 100%; }
+.sticky-bar { position: sticky; bottom: 0px; z-index: 10; }
+#ix4a36-4 { align-items: stretch; justify-content: center; border-style: none; border-width: 0px; padding-top: 15px; padding-bottom: 15px; margin: 0px; background-color: rgb(182, 181, 181) !important; }
+#igo1za { display: flex; flex-direction: row-reverse; justify-content: center; align-items: center; padding: 0px; margin: 0px; }
+#iixg3j { padding: 12px 1px; justify-content: flex-start; align-self: center; display: flex; width: 30% !important; }
+#iaks5w { padding: 10px 1px 10px 20px; font-size: 16px; font-family: Montserrat, sans-serif; line-height: 1em; font-weight: 700; color: white !important; }
+#iollve { padding: 12px 1px; width: 100%; display: flex; justify-content: flex-end; }
+#fkt-image-ff6-2bf-b21 { height: auto; color: black !important; width: 50px !important; }
+#iw3w3l { text-align: left; }
+#it9dh7 { font-size: 22px; font-family: Montserrat, sans-serif; text-align: left; line-height: 36px; font-weight: 700; padding: 5px 1px; margin-top: 5px; margin-bottom: 5px; color: rgb(47, 47, 47) !important; }
+#fkt-link-d7f-9b4-b1c { padding: 10px 10px 10px 20px; display: block; font-family: Helvetica, serif; cursor: pointer; flex-direction: row; align-self: center; align-items: center; justify-content: center; border-radius: 5px; border-style: solid; border-width: 0px 0px 4px; color: rgb(0, 0, 238) !important; width: 95% !important; background-color: rgb(255, 191, 0) !important; border-color: rgb(230, 134, 0) !important; }
+#i7xz3k { background-repeat: no-repeat; background-position: left top; background-attachment: scroll; background-size: contain; background-image: url("../images/1711370973556_3.png"); font-size: 19px; font-family: Montserrat, sans-serif; font-weight: 700; display: flex; justify-content: center; padding-left: 10px; margin-bottom: 1px; align-self: auto; align-items: center; color: rgb(51, 51, 51) !important; }
+#i49d79 { font-size: 20px; font-family: Montserrat, sans-serif; font-weight: 700; line-height: 24px; padding: 0px; margin-top: 5px; color: rgb(74, 163, 233) !important; }
+#ilkbswo { padding: 1px; font-size: 40px; font-family: Montserrat, sans-serif; font-weight: 500; line-height: 48px; margin-top: 20px; text-align: left; }
+#i1ydn0t { background-color: rgb(255, 191, 0) !important; }
+#i710v7i { font-size: 32px; font-family: Montserrat, sans-serif; text-align: left; line-height: 1.4em; font-weight: 800; padding: 5px 1px; margin-top: 30px; color: rgb(47, 47, 47) !important; }
+#i4g45eg { font-size: 33px; font-family: Montserrat, sans-serif; text-align: left; line-height: 1.4em; font-weight: 800; padding: 5px 1px; margin-top: 30px; color: rgb(47, 47, 47) !important; }
+#i351tqk { font-size: 32px; font-family: Montserrat, sans-serif; text-align: left; line-height: 1.4em; font-weight: 800; padding: 5px 1px; margin-top: 30px; color: rgb(47, 47, 47) !important; }
+#i1f1awk { font-size: 33px; font-family: Montserrat, sans-serif; text-align: left; line-height: 1.4em; font-weight: 800; padding: 5px 1px; margin-top: 30px; color: rgb(47, 47, 47) !important; }
+#ig3ucxb { font-size: 33px; font-family: Montserrat, sans-serif; text-align: left; line-height: 1.4em; font-weight: 800; padding: 5px 1px; margin-top: 30px; color: rgb(47, 47, 47) !important; }
+#i66qw2v { font-size: 33px; font-family: Montserrat, sans-serif; text-align: left; line-height: 1.4em; font-weight: 800; padding: 5px 1px; margin-top: 30px; color: rgb(47, 47, 47) !important; }
+#is7yxzb { font-size: 33px; font-family: Montserrat, sans-serif; text-align: left; line-height: 1.4em; font-weight: 800; padding: 5px 1px; margin-top: 40px; color: rgb(47, 47, 47) !important; }
+#izoga9k { padding: 10px 1px; font-size: 17px; font-family: Montserrat, sans-serif; text-align: left; margin-top: 15px; line-height: 1.5em; color: rgb(47, 47, 47) !important; }
+#fkt-link-6ac-5a3-949 { padding: 15px 40px; display: inline-block; font-family: Montserrat, sans-serif; cursor: pointer; border-radius: 4px; font-weight: 700; font-size: 30px; line-height: 1.2em; letter-spacing: 0.02px; margin-left: 0px; margin-right: 0px; text-decoration: none; color: rgb(246, 249, 254) !important; background-color: rgb(20, 147, 18) !important; box-shadow: rgba(0, 0, 0, 0.19) 0px 4px 7px 1px !important; width: 100% !important; }
+#fkt-link-6ac-5a3-949:hover { background-color: rgb(1, 158, 63) !important; }
+#i1sseyi { width: 100%; padding: 0px; }
+#i9tm33m { width: 100%; padding: 0px; }
+#i4hf1 { padding: 54% 0px 0px; position: relative; }
+#i47ov { height: 100%; left: 0px; position: absolute; top: 0px; width: 100%; }
+#iuj1gri { width: 100%; padding: 0px; margin-top: 10px; }
+#i93bl { padding: 56.46% 0px 0px; position: relative; }
+#i1iqw { height: 100%; left: 0px; position: absolute; top: 0px; width: 100%; padding-top: 0px; }
+#i5bg8cl { padding: 12px 0px; width: 100%; }
+#iz2qg { padding: 56.46% 0px 0px; position: relative; }
+#iek0a { height: 100%; left: 0px; position: absolute; top: 0px; width: 100%; }
+#fkt-image-1bc-8b4-84f { height: auto; border-width: 1px; border-style: solid; color: black !important; width: 100% !important; border-color: rgb(186, 186, 186) !important; }
+img { max-width: 95%; }
+p, ol, ul, h1, h3 { margin: 0px; padding: 0px; counter-reset: list-1 0 list-2 0 list-3 0 list-4 0 list-5 0 list-6 0 list-7 0 list-8 0 list-9 0; }
+ol, ul { padding-left: 0px !important; }
+input { appearance: auto; }
+a, a:hover, a:focus, a:visited, a:active { text-decoration: none; }
+p { margin-block: 0px; margin-inline: 0px; }
+h1, h3 { margin: 0px; padding: 0px; }
+h1 { font-weight: 500; line-height: 1.5; margin: 0px; }
+#iex1pon { font-size: 32px; font-family: Helvetica, serif; font-weight: 700; margin-top: 15px; }
+.fk-inner-row { display: flex; justify-content: flex-start; align-items: stretch; flex-wrap: nowrap; height: auto; }
+#iqswlky { border-style: solid; border-radius: 4px; border-right-width: 1.5px; border-left-width: 1.5px; padding-left: 10px; background-color: rgb(253, 250, 217) !important; border-color: rgb(221, 221, 166) !important; }
+#inwstt7 { padding: 0px; }
+#fkt-image-85e-5bf-a3e { border-radius: 10px; margin-top: 15px; height: auto; margin-bottom: 26px; color: black !important; width: 100% !important; }
+#fkt-link-e18-589-8d2 { padding: 15px 40px; display: inline-block; font-family: Montserrat, sans-serif; cursor: pointer; border-radius: 4px; font-weight: 700; font-size: 30px; line-height: 1.2em; letter-spacing: 0.02px; margin-left: 0px; margin-right: 0px; text-decoration: none; color: rgb(246, 249, 254) !important; background-color: rgb(20, 147, 18) !important; box-shadow: rgba(0, 0, 0, 0.19) 0px 4px 7px 1px !important; width: 100% !important; }
+#fkt-link-e18-589-8d2:hover { background-color: rgb(1, 158, 63) !important; }
+#i1cxd0h { padding: 10px 1px; font-size: 17px; font-family: Montserrat, sans-serif; text-align: left; margin-top: 15px; line-height: 1.5em; color: rgb(47, 47, 47) !important; }
+#ixtrsbv { color: rgb(250, 0, 0) !important; }
+#it3f9kf { height: 100%; left: 0px; position: absolute; top: 0px; width: 100%; }
+#izdsi8i { padding: 56.46% 0px 0px; position: relative; }
+#iyfsmy2 { width: 100%; padding: 0px; }
+#icri17d { height: 70%; left: 0px; position: absolute; top: 0px; width: 100%; }
+#i2symhi { padding: 56% 0px 0px; position: relative; }
+#ionyizz { width: 100%; padding: 0px; }
+#iwimhnm { font-size: 33px; font-family: Montserrat, sans-serif; text-align: left; line-height: 1.4em; font-weight: 800; padding: 5px 1px; margin-top: 30px; color: rgb(47, 47, 47) !important; }
+#ijc8o5v { height: 100%; position: relative; width: 100%; }
+#i4yc6eg { height: 100%; left: 0px; position: absolute; top: 0px; width: 100%; }
+#i0lt5gb { padding: 56.46% 0px 0px; position: relative; }
+#iaeziq8 { width: 100%; padding: 0px; margin-top: 10px; }
+#iu8gkrn { padding: 10px 1px; font-size: 17px; font-family: Montserrat, sans-serif; text-align: left; margin-top: 15px; line-height: 1.5em; color: rgb(47, 47, 47) !important; }
+#ih3jiv7 { font-size: 33px; font-family: Montserrat, sans-serif; text-align: left; line-height: 1.4em; font-weight: 800; padding: 5px 1px; margin-top: 30px; color: rgb(47, 47, 47) !important; }
+#i5eulwb { height: 95%; left: 0px; position: absolute; top: 0px; width: 100%; }
+#i281nba { padding: 52% 0px 0px; position: relative; }
+#ijyheok { width: 100%; padding: 0px; margin-top: 10px; }
+#ixh1b0v { padding: 10px 1px; font-size: 17px; font-family: Montserrat, sans-serif; text-align: left; margin-top: 15px; line-height: 1.5em; color: rgb(47, 47, 47) !important; }
+#iq7lq26 { font-size: 33px; font-family: Montserrat, sans-serif; text-align: left; line-height: 1.4em; font-weight: 800; padding: 5px 1px; margin-top: 30px; color: rgb(47, 47, 47) !important; }
+#iln4x8s { padding: 10px 1px; font-size: 17px; font-family: Montserrat, sans-serif; text-align: left; margin-top: 15px; line-height: 1.5em; color: rgb(47, 47, 47) !important; }
+#ixsdh9s { font-size: 33px; font-family: Montserrat, sans-serif; text-align: left; line-height: 1.4em; font-weight: 800; padding: 5px 1px; margin-top: 40px; color: rgb(47, 47, 47) !important; }
+#iqp7i8a { padding: 10px 1px; font-size: 17px; font-family: Montserrat, sans-serif; text-align: left; margin-top: 15px; line-height: 1.5em; color: rgb(47, 47, 47) !important; }
+#i0xiku2 { height: 71%; left: 0px; position: absolute; top: 0px; width: 100%; }
+#ieveoj6 { padding: 40% 0px 0px; position: relative; height: 98px; }
+#iyf5l04 { width: 100%; padding: 0px; }
+#fkt-image-9e8-088-a8e { height: auto; color: black !important; width: 100% !important; }
+.fk-shopping-cart-minus:not(:hover), .fk-shopping-cart-plus:not(:hover) { background: rgb(255, 255, 255); color: rgb(0, 0, 0); border-color: rgb(255, 255, 255); }
+#ip7wvq-4-3-3-3 { padding-top: 12px; padding-bottom: 12px; justify-content: center; margin-top: 265px; border-style: solid; border-width: 1px 0px 0px; background-color: rgb(255, 255, 255) !important; border-color: rgb(127, 127, 127) !important; }
+#iw1l8n-2-2 { padding: 10px; font-size: 16px; font-family: Montserrat, sans-serif; line-height: 22px; margin-top: 15px; color: rgb(109, 109, 109) !important; }
+#imulix-4-2 { padding: 10px; flex-direction: column; justify-content: space-between; align-items: center; }
+#in2fe3-2-2 { text-decoration: none; color: rgb(0, 7, 255) !important; }
+#fkt-link-fd0-3a0-8cb-2-2 { cursor: pointer; color: rgb(0, 37, 255) !important; }
+#fkt-link-796-8aa-b1d-2-2 { cursor: pointer; color: rgb(0, 37, 255) !important; }
+#fkt-link-152-da0-ab4-2-2 { cursor: pointer; color: rgb(0, 37, 255) !important; }
+#i21n2w-2-2 { padding: 10px; font-size: 16px; font-family: Montserrat, sans-serif; line-height: 20px; margin-top: 10px; color: rgb(109, 109, 109) !important; border-color: rgb(161, 167, 178) !important; }
+#fkt-link-e5a-091-b2b-2 { cursor: pointer; color: rgb(0, 37, 255) !important; }
+#fkt-image-0a9-398-882-2 { width: 280px !important; }
+#igrwsvx-2 { padding: 0px 10px; width: 100%; color: rgb(109, 109, 109) !important; }
+#fkt-link-922-498-b65-2 { cursor: pointer; color: rgb(0, 37, 255) !important; }
+#fkt-link-aa2-780-af3-2 { cursor: pointer; color: rgb(0, 37, 255) !important; }
+#fbcommentslist-2 { padding-left: 1px; font-family: Montserrat, sans-serif; margin-bottom: 0px; }
+#iyvzy5-2 { display: flex; align-items: flex-start; margin-top: 10px; }
+#ijgxl6-2 { display: flex; align-items: stretch; flex-direction: column; padding: 10px 10px 10px 1px; border-style: none; }
+#i4gftz-2 { display: flex; align-items: flex-start; margin-top: 10px; }
+#istop5-2 { align-items: flex-start; display: flex; margin-top: 10px; }
+#ibqd0k-2 { display: flex; align-items: flex-start; margin-top: 10px; }
+#i30for-2 { align-items: flex-start; display: flex; margin-top: 10px; }
+#ipkgrh-2 { display: flex; align-items: flex-start; margin-top: 10px; background-color: rgb(255, 255, 255) !important; }
+#iq2g3h-2 { display: flex; align-items: flex-start; margin-top: 10px; }
+#iebv4q-2 { align-items: flex-start; display: flex; margin-top: 10px; }
+#i5ug7k-2 { display: flex; align-items: flex-start; margin-top: 10px; }
+#ijylv8-2 { align-items: flex-start; display: flex; margin-top: 10px; }
+#ia7yvg-2 { align-items: flex-start; display: flex; margin-top: 10px; }
+#i4qhwu-2 { display: flex; align-items: flex-start; margin-top: 10px; }
+#izr8uf-2 { display: flex; align-items: flex-start; border-style: dotted; border-width: 0px 0px 0px 1px; border-color: rgb(211, 214, 219) !important; }
+#ijwojm-2 { display: flex; align-items: flex-start; border-style: dotted; border-width: 0px 0px 0px 1px; border-color: rgb(211, 214, 219) !important; }
+#ilmhvt-2 { display: flex; align-items: flex-start; }
+#imtgys-2 { display: flex; align-items: flex-start; }
+#imezcj-2 { display: flex; align-items: flex-start; border-style: dotted; border-width: 0px 0px 0px 1px; border-color: rgb(211, 214, 219) !important; }
+#fkt-image-bf4-5ac-b75-2 { width: 50px !important; }
+#fkt-image-9f1-caa-bad-2 { width: 50px !important; }
+#fkt-image-2f0-5ae-b72-2 { width: 50px !important; }
+#fkt-image-f73-b91-a1a-2 { width: 50px !important; }
+#fkt-image-cbb-0b3-a8d-2 { width: 50px !important; }
+#fkt-image-b4f-5ae-b17-2 { width: 50px !important; }
+#fkt-image-9f0-1b0-99d-2 { width: 50px !important; }
+#fkt-image-50c-3a1-b00-2 { width: 50px !important; }
+#fkt-image-244-da8-b6e-2 { width: 50px !important; }
+#fkt-image-4e7-cb7-bc7-2 { width: 50px !important; }
+#fkt-image-de6-397-99a-2 { width: 50px !important; }
+#fkt-image-999-692-bf1-2 { width: 50px !important; }
+#fkt-image-152-988-be9-2 { width: 40px !important; }
+#fkt-image-71c-69d-ba6-2 { width: 40px !important; }
+#fkt-image-1af-4ae-b2d-2 { width: 40px !important; }
+#fkt-image-ced-1a6-a9f-2 { width: 40px !important; }
+#iv4qpf-2 { font-size: 16px; line-height: 16.8px; text-align: left; font-weight: 700; margin-bottom: 4px; color: rgb(59, 89, 152) !important; }
+#ikseti-2 { font-size: 16px; line-height: 16.8px; font-weight: 700; margin-bottom: 4px; color: rgb(59, 89, 152) !important; }
+#i26vq1-2 { font-size: 16px; line-height: 16.8px; font-weight: 700; margin-bottom: 4px; color: rgb(59, 89, 152) !important; }
+#isqxdc-2 { font-size: 16px; font-weight: 700; line-height: 16.8px; margin-bottom: 4px; color: rgb(59, 89, 152) !important; }
+#ic545k-2 { font-size: 16px; line-height: 16.8px; font-weight: 700; margin-bottom: 4px; color: rgb(59, 89, 152) !important; }
+#ifzyrg-2 { font-size: 16px; font-weight: 700; line-height: 16.8px; margin-bottom: 4px; color: rgb(59, 89, 152) !important; }
+#ic2g5c-2 { font-size: 16px; line-height: 16.8px; font-weight: 700; margin-bottom: 4px; color: rgb(59, 89, 152) !important; }
+#iprw2g-2 { font-size: 16px; line-height: 16.8px; font-weight: 700; margin-bottom: 4px; color: rgb(59, 89, 152) !important; }
+#iwtkqv-2 { margin-left: 10px; font-family: Helvetica, sans-serif; }
+#iprisz-2 { font-size: 16px; line-height: 16.8px; font-weight: 700; margin-bottom: 4px; color: rgb(59, 89, 152) !important; }
+#ic3hov-2 { font-size: 16px; line-height: 16.8px; font-weight: 700; margin-bottom: 4px; color: rgb(59, 89, 152) !important; }
+#iuhhc1-2 { font-size: 16px; font-weight: 700; line-height: 16.8px; margin-bottom: 4px; color: rgb(59, 89, 152) !important; }
+#iariov-2 { font-size: 16px; line-height: 16.8px; font-weight: 700; margin-bottom: 4px; color: rgb(59, 89, 152) !important; }
+#iw4d1y-2 { font-size: 16px; line-height: 16.8px; font-weight: 700; margin-bottom: 4px; color: rgb(59, 89, 152) !important; }
+#i35gbn-2 { font-size: 16px; font-weight: 700; line-height: 16.8px; margin-bottom: 4px; color: rgb(59, 89, 152) !important; }
+#itlkix1-2 { font-size: 16px; line-height: 16.8px; font-weight: 700; margin-bottom: 4px; color: rgb(59, 89, 152) !important; }
+#ixcwwy5-2 { font-size: 16px; line-height: 16.8px; font-weight: 700; margin-bottom: 4px; color: rgb(59, 89, 152) !important; }
+#i9am1hj-2 { font-size: 16px; line-height: 16.8px; font-weight: 700; text-align: left; margin-bottom: 4px; align-items: center; flex-direction: row; justify-content: flex-start; color: rgb(59, 89, 152) !important; }
+#iy8301-2 { font-size: 12px; }
+#imbq19-2 { font-size: 12px; }
+#ims7ui-2 { font-size: 12px; }
+#i5192l-2 { font-size: 12px; }
+#iawbdi-2 { font-size: 12px; }
+#i59u3k-2 { font-size: 12px; }
+#imqb27-2 { font-size: 12px; }
+#iu04cw-2 { font-size: 12px; }
+#i8mawl-2 { font-size: 12px; }
+#in5zlb-2 { font-size: 12px; }
+#iigjiw-2 { font-size: 12px; }
+#ik35k5-2 { font-size: 12px; }
+#id8vof-2 { font-size: 12px; }
+#iyfy3h-2 { font-size: 12px; }
+#i9jgjd-2 { font-size: 12px; }
+#i1motu-2 { font-size: 12px; }
+#iyo57m-2 { font-size: 12px; text-align: left; }
+#innqke-2 { margin-left: 10px; font-family: Helvetica, sans-serif; }
+#imjjo9-2 { margin-left: 10px; font-family: Helvetica, sans-serif; }
+#iynd15-2 { margin-left: 10px; font-family: Helvetica, sans-serif; }
+#iy1e0t-2 { margin-left: 10px; font-family: Helvetica, sans-serif; }
+#ipdev6-2 { margin-left: 10px; font-family: Helvetica, sans-serif; }
+#iacpeh-2 { margin-left: 10px; font-family: Helvetica, sans-serif; }
+#ibd3pl-2 { margin-left: 10px; font-family: Helvetica, sans-serif; }
+#i63swc-2 { margin-left: 10px; font-family: Helvetica, sans-serif; }
+#ibyqz5-2 { margin-left: 10px; font-family: Helvetica, sans-serif; justify-content: flex-start; flex-direction: row; text-align: left; }
+#i3qvbn4-2 { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; color: rgb(0, 0, 0) !important; }
+#i9rpkg-2 { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; color: rgb(0, 0, 0) !important; }
+#itlr85-2 { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; color: rgb(0, 0, 0) !important; }
+#i1ls3p-2 { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; }
+#itd8sa-2 { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; color: rgb(0, 0, 0) !important; }
+#ircgkd-2 { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; color: rgb(0, 0, 0) !important; }
+#izg56u-2 { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; color: rgb(0, 0, 0) !important; }
+#i4wk0w-2 { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; color: rgb(0, 0, 0) !important; }
+#i9id5f-2 { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; color: rgb(0, 0, 0) !important; }
+#ijofuh-2 { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; color: rgb(0, 0, 0) !important; }
+#i0jv5v-2 { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; color: rgb(0, 0, 0) !important; }
+#ib0nm6-2 { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; color: rgb(0, 0, 0) !important; }
+#ikiv0r-2 { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; color: rgb(0, 0, 0) !important; }
+#ipi2tp-2 { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; color: rgb(0, 0, 0) !important; }
+#ibd193-2 { margin-left: 10px; font-family: Helvetica, sans-serif; }
+#ihsvdw-2 { margin-left: 10px; font-family: Helvetica, sans-serif; }
+#comment-text-2 { align-items: center; display: block; padding: 20px; border-style: solid; border-width: 2px; font-family: Montserrat, sans-serif; border-color: rgb(222, 222, 222) !important; color: rgb(0, 0, 0) !important; }
+#itmozj-2 { font-size: 18px; margin-left: 0px; font-family: Montserrat, sans-serif; }
+#iawfre-2 { padding-left: 0px; }
+#iq0uk8-2 { padding-left: 0px; }
+#i8vvn6-2 { padding-left: 0px; border-style: dotted; border-width: 0px; border-color: rgb(211, 214, 219) !important; }
+#iqtkjyv-2 { padding-left: 0px; }
+#isuhxs-2 { margin-left: 10px; }
+#iyybuo-2 { margin-left: 10px; }
+#ipclmq-2 { margin-left: 10px; }
+#ir6pnf-2 { margin-left: 10px; }
+#ifp6jk-2 { margin-left: 10px; }
+#i0hnb2-2 { color: rgb(59, 89, 152) !important; }
+#ij4jeq-2 { color: rgb(59, 89, 152) !important; }
+#iny1o6-2 { color: rgb(59, 89, 152) !important; }
+#igyzoy-2 { color: rgb(59, 89, 152) !important; }
+#i5dshj-2 { color: rgb(59, 89, 152) !important; }
+#i7cl6f-2 { color: rgb(59, 89, 152) !important; }
+#ig75hg-2 { color: rgb(59, 89, 152) !important; }
+#iz9jc3-2 { color: rgb(59, 89, 152) !important; }
+#iwgocw-2 { color: rgb(59, 89, 152) !important; }
+#imetb8-2 { color: rgb(59, 89, 152) !important; }
+#iaeo8x-2 { color: rgb(59, 89, 152) !important; }
+#igf64k-2 { color: rgb(59, 89, 152) !important; }
+#ilpchf-2 { color: rgb(59, 89, 152) !important; }
+#ijq4cw-2 { color: rgb(59, 89, 152) !important; }
+#i6869v-2 { color: rgb(59, 89, 152) !important; }
+#icyou1-2 { color: rgb(59, 89, 152) !important; }
+#ic1uto-2 { color: rgb(59, 89, 152) !important; }
+#iooar6-2 { color: rgb(59, 89, 152) !important; }
+#iiyjls-2 { color: rgb(59, 89, 152) !important; }
+#imeaf6-2 { color: rgb(59, 89, 152) !important; }
+#ifq7bc-2 { color: rgb(59, 89, 152) !important; }
+#iuygb7-2 { color: rgb(59, 89, 152) !important; }
+#ikj7i6-2 { color: rgb(59, 89, 152) !important; }
+#ih52q8-2 { color: rgb(59, 89, 152) !important; }
+#iqwu3k-2 { color: rgb(59, 89, 152) !important; }
+#i9j131-2 { color: rgb(59, 89, 152) !important; }
+#i5ygiu-2 { color: rgb(59, 89, 152) !important; }
+#ipkspf-2 { color: rgb(59, 89, 152) !important; }
+#ihchvwc-2 { color: rgb(59, 89, 152) !important; }
+#i9dzrxl-2 { color: rgb(59, 89, 152) !important; }
+#iqc5dsz-2 { color: rgb(59, 89, 152) !important; }
+#isq4v4o-2 { color: rgb(59, 89, 152) !important; }
+#ibye2ee-2 { color: rgb(59, 89, 152) !important; }
+#iyl1due-2 { color: rgb(59, 89, 152) !important; }
+#iynwb9-2 { padding: 1px; font-size: 16px; font-family: Helvetica, sans-serif; color: rgb(0, 0, 0) !important; }
+#imtbwj-2 { font-family: Montserrat, sans-serif; color: rgb(0, 0, 0) !important; }
+#idz0it-2 { color: rgb(0, 0, 0) !important; }
+#i9w0ak-2 { color: rgb(0, 0, 0) !important; }
+#iqimqk-2 { color: rgb(0, 0, 0) !important; }
+#iqberc-2 { color: rgb(0, 0, 0) !important; }
+#i3bb28-2 { color: rgb(0, 0, 0) !important; }
+#ipp5rg-2 { color: rgb(0, 0, 0) !important; }
+#ikxpl2-2 { color: rgb(0, 0, 0) !important; }
+#isnyo1-2 { color: rgb(0, 0, 0) !important; }
+#i5sath-2 { color: rgb(0, 0, 0) !important; }
+#id4b5f-2 { color: rgb(0, 0, 0) !important; }
+#ip7lhk-2 { color: rgb(0, 0, 0) !important; }
+#irtuga-2 { color: rgb(0, 0, 0) !important; }
+#iz7xjj-2 { color: rgb(0, 0, 0) !important; }
+#ihgj7r-2 { color: rgb(0, 0, 0) !important; }
+#ios01n-2 { color: rgb(0, 0, 0) !important; }
+#i79ell-2 { color: rgb(0, 0, 0) !important; }
+#iggn0x-2 { color: rgb(0, 0, 0) !important; }
+#ibrnhe-2 { color: rgb(0, 0, 0) !important; }
+#ioma0f-2 { color: rgb(0, 0, 0) !important; }
+#ikmhsu-2 { color: rgb(0, 0, 0) !important; }
+#invahq-2 { color: rgb(0, 0, 0) !important; }
+#ihvxsr-2 { color: rgb(0, 0, 0) !important; }
+#ixbuaw-2 { color: rgb(0, 0, 0) !important; }
+#imfwfu-2 { color: rgb(0, 0, 0) !important; }
+#i91102-2 { color: rgb(0, 0, 0) !important; }
+#inxaat-2 { color: rgb(0, 0, 0) !important; }
+#iakooe-2 { color: rgb(0, 0, 0) !important; }
+#inokbr-2 { color: rgb(0, 0, 0) !important; }
+#i9dbts-2 { color: rgb(0, 0, 0) !important; }
+#idmimo-2 { color: rgb(0, 0, 0) !important; }
+#i3se7q-2 { color: rgb(0, 0, 0) !important; }
+#i2s0w2-2 { color: rgb(0, 0, 0) !important; }
+#i9w5gt-2 { color: rgb(0, 0, 0) !important; }
+#izycgf-5-2 { margin-left: auto; margin-right: auto; background-color: rgb(255, 255, 255) !important; }
+#ivgi7n9-2 { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; color: rgb(0, 0, 0) !important; }
+#iqgy7gu-2 { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; color: rgb(0, 0, 0) !important; }
+#ibpazqx { font-size: 16px; font-family: Helvetica, sans-serif; margin-bottom: 3px; color: rgb(0, 0, 0) !important; }
+#i82nc9-3 { min-height: 100%; }
+#fkt-image-c70-ba9-95f { width: 40px !important; }
+#fkt-image-bbd-2b5-b5d { height: auto; margin-top: 10px; margin-bottom: 15px; border-width: 1px; border-radius: 1px; flex: 0 0 0%; color: black !important; width: 200px !important; }
+#fkt-image-516-aa4-a69 { height: auto; color: black !important; width: 100% !important; }
+#icce0z { padding: 10px 1px; font-size: 17px; font-family: Montserrat, sans-serif; text-align: left; margin-top: 15px; line-height: 1.5em; color: rgb(47, 47, 47) !important; }
+[data-gjs-type="text"][class*="gjs-selected"] { outline: purple solid 3px !important; }
+img[data-gjs-type="image"][class*="gjs-selected"] { outline: orange solid 3px !important; }
+a[data-gjs-type="link"][class*="gjs-selected"] { outline: purple solid 3px !important; }
+[data-gjs-type="input"][class*="gjs-selected"] { border: none; box-shadow: none; outline: green solid 3px !important; }
+.fk-hide-on-load { visibility: hidden; }
+.fk-payment-options-hide-on-load, .fk-display-none-on-load { display: none; }
+.fk-youtube { background-color: rgb(0, 0, 0); margin-bottom: 30px; position: relative; overflow: hidden; cursor: pointer; min-height: 160px; }
+.fk-youtube .fk-rm.image { background-size: cover; background-position: center center; background-repeat: no-repeat; width: 100%; height: 100%; position: absolute; }
+.fk-youtube .play-button { width: 90px; height: 60px; background-color: rgb(51, 51, 51); box-shadow: rgba(0, 0, 0, 0.6) 0px 0px 30px; z-index: 1; opacity: 0.8; border-radius: 6px; }
+.fk-youtube .play-button::before { content: ""; border-style: solid; border-width: 15px 0px 15px 26px; border-color: transparent transparent transparent rgb(255, 255, 255); }
+.fk-youtube .fk-rm.image, .fk-youtube .play-button { cursor: pointer; }
+.fk-youtube .fk-rm.image, .fk-youtube iframe, .fk-youtube .play-button, .fk-youtube .play-button::before { position: absolute; }
+.fk-youtube .play-button, .fk-youtube .play-button::before { top: 50%; left: 50%; transform: translate3d(-50%, -50%, 0px); }
+.fk-youtube iframe { height: 100%; width: 100%; top: 0px; left: 0px; }
+#cc-id-FwLamBdW8HYt { color: black; }
+:root { --main-color: rgba(201, 142, 74, 1); }
+#cc-id-ozYWnmKGWmIH { padding: 10px 1px; font-size: 17px; font-family: Montserrat, sans-serif; text-align: left; margin-top: 15px; line-height: 1.5em; color: rgb(47, 47, 47) !important; }
+#cc-id-kP02CZkNa0Mv { padding: 10px 1px; font-size: 17px; font-family: Montserrat, sans-serif; text-align: left; margin-top: 15px; line-height: 1.5em; color: rgb(47, 47, 47) !important; }
+#cc-id-TinfXK0Ap7oJ { padding: 25px 1px 10px; font-size: 17px; font-family: Montserrat, sans-serif; text-align: left; margin-top: 15px; line-height: 1.5em; color: rgb(47, 47, 47) !important; }
+#cc-id-7q5HzNRXxrRp { color: black; }
+#cc-id-0dZcOn7ugmEP { color: black; }
+#cc-id-yWv8mY606Uat { color: black; }
+#cc-id-aSs3uZyhk0Ci { color: black; }
+#cc-id-Fn7Eq2qbqx3b { color: black; }
+#cc-id-oRzunkQYhLIP { color: black; }
+#cc-id-QvignopW9SOA { height: 343px; width: auto; max-width: 100%; }
+#cc-id-JQhR5ss7taiF { width: 100%; height: 343px; }
+#cc-id-M2VDllSiV5K1 { width: 100%; height: 343px; }
+#cc-id-KU21HhnWK028 { width: 100%; height: 343px; }
+#cc-id-tNerrTAYijqJ { height: 343px; width: auto; max-width: 100%; }
+#cc-id-mCBVT77VGzKp { height: 100%; width: 100%; max-width: 100%; }
+.fk-cc-id-49DEXXpEVf20 { height: 343px; width: 100%; max-width: 100%; }
+#cc-id-RPuHbjCXfO6X { width: 100%; height: 343px; }
+#cc-id-CoFr9TCkmoXT { width: 100%; height: 343px; }
+#cc-id-G1FEK4NstSrs { width: 100%; height: 343px; }
+#cc-id-49DEXXpEVf20 { width: 100%; height: 100%; }
+#cc-id-iFR1sziDsbxl { width: 100%; height: 343px; }
+#cc-id-iqonqar0YHuo { height: 343px; width: auto; max-width: 100%; }
+#cc-id-gtk10B5mKn5h { height: 100%; width: 100%; max-width: 100%; }
+.fk-cc-id-qnGhntmLHifC { height: 343px; width: 100%; max-width: 100%; }
+#cc-id-MZAv4EThkOZ9 { width: 100%; height: 343px; }
+#cc-id-gqEQocQAsFnP { width: 100%; height: 343px; }
+#cc-id-Ag4LLKgKcT0J { width: 100%; height: 343px; }
+#cc-id-qnGhntmLHifC { width: 100%; height: 100%; }
+#cc-id-mYEExkxE0hnC { color: black; }
+#cc-id-n22TfFyZDWYR { color: black; }
+#cc-id-oFs7z02e7ZLb { color: black; }
+#cc-id-XO6nypvjdoOS { color: black; }
+#cc-id-QFnP8Jwj47pj { height: 343px; width: auto; max-width: 100%; }
+#cc-id-wicbRYSLE0PD { height: 100%; width: 100%; max-width: 100%; }
+.fk-cc-id-GutZrJUFsdSh { height: 343px; width: 100%; max-width: 100%; }
+#cc-id-Z89b3YPOu1TZ { width: 100%; height: 343px; }
+#cc-id-Xm01zZiboN8A { width: 100%; height: 343px; }
+#cc-id-xGPCaPSVhZDY { width: 100%; height: 343px; }
+#cc-id-GutZrJUFsdSh { width: 100%; height: 100%; }
+#cc-id-qhyqQl4LQGy4 { color: black; }
+#cc-id-rZKF2U4ju1Bc { color: black; }
+@media screen and (max-width: 1020px) {
+  .clearfix { display: block; }
+  .comment-holder { top: 10px; margin-bottom: 15px; }
+}
+@media (min-width: 768px) and (max-width: 1199px) {
+  .no-tablet { display: none !important; }
+}
+@media (max-width: 992px) {
+  #ifka2 { padding-left: 15px; padding-right: 15px; }
+  #fkt-link-afa-fb4-a09 { padding-left: 40px; padding-right: 40px; width: auto; }
+  #i0xt2-3 { display: block; }
+  #ixeuq { display: none; }
+  #ip7wvq-4-3-3-3 { margin-top: 100px; }
+}
+@media (max-width: 768px) {
+  .fk-row { flex-wrap: wrap; }
+  .fk-col { flex-basis: 100%; display: block; }
+  #i5a3x { flex: 1 1 100%; }
+  #ixeuq { flex: 1 1 100%; }
+  #i1b7b4 { font-size: 32px; }
+  #it9dh7 { font-size: 22px; }
+  #i7xz3k { justify-content: center; align-self: center; }
+  #i710v7i { font-size: 32px; }
+  #i4g45eg { font-size: 32px; }
+  #i351tqk { font-size: 32px; }
+  #i1f1awk { font-size: 32px; }
+  #ig3ucxb { font-size: 32px; }
+  #i66qw2v { font-size: 32px; }
+  #is7yxzb { font-size: 32px; }
+  #fkt-link-afa-fb4-a09 { padding-left: 20px; padding-right: 20px; }
+  .fk-inner-row { flex-wrap: wrap; }
+  #iwimhnm { font-size: 32px; }
+  #ih3jiv7 { font-size: 32px; }
+  #iq7lq26 { font-size: 32px; }
+  #ixsdh9s { font-size: 32px; }
+  #fkt-image-bbd-2b5-b5d { width: 90% !important; }
+}
+@media (max-width: 600px) {
+  .no-mobile { display: none !important; }
+  #i1b7b4 { font-size: 26px; }
+  #fkt-image-ff6-2bf-b21 { height: auto; }
+  #iaks5w { padding-right: 1px; }
+  #iollve { padding-left: 1px; padding-right: 1px; }
+  #i4lvf { padding-left: 1px; padding-right: 1px; }
+  #iyc24 { padding-left: 1px; padding-right: 1px; }
+  #iixg3j { padding-left: 1px; padding-right: 1px; }
+  #it9dh7 { font-size: 20px; }
+  #ilkbswo { font-size: 30px; }
+  #i710v7i { font-size: 26px; }
+  #i4g45eg { font-size: 26px; }
+  #i351tqk { font-size: 26px; }
+  #i1f1awk { font-size: 26px; }
+  #ig3ucxb { font-size: 26px; }
+  #i66qw2v { font-size: 26px; }
+  #is7yxzb { font-size: 26px; }
+  #fkt-link-afa-fb4-a09 { font-size: 24px; padding-left: 10px; padding-right: 10px; line-height: 30px; }
+  #fkt-link-6ac-5a3-949 { font-size: 24px; }
+  #ix4a36-4 { padding: 20px; }
+  #fkt-link-e18-589-8d2 { font-size: 24px; }
+  #iwimhnm { font-size: 26px; }
+  #ih3jiv7 { font-size: 26px; }
+  #iq7lq26 { font-size: 26px; }
+  #ixsdh9s { font-size: 26px; }
+  #ifka2 { padding-left: 0px; padding-right: 0px; }
+}
+@media (max-width: 480px) {
+  #igo1za { padding-left: 0px; padding-right: 0px; }
+  #ix4a36-4 { padding: 15px 10px; }
+  #iollve { align-self: center; align-items: center; justify-content: flex-end; }
+  #iwcmn { padding-bottom: 1px; padding-top: 1px; }
+  #fkt-image-ff6-2bf-b21 { width: 40px !important; }
+  #iaks5w { padding-left: 10px; font-size: 13px; }
+  #it9dh7 { font-size: 18px; line-height: 28px; margin-bottom: 1px; padding-bottom: 1px; }
+  #ik5mi { padding-left: 10px; padding-right: 10px; }
+  #i0xt2-3 { padding-left: 1px; padding-right: 1px; }
+  #ilkbswo { font-size: 26px; line-height: 36px; margin-top: 1px; }
+  #i1b7b4 { line-height: 32px; font-size: 26px; height: 108px; margin-top: 0px; }
+  #i710v7i { line-height: 32px; font-size: 26px; }
+  #i4g45eg { line-height: 32px; font-size: 26px; }
+  #i351tqk { line-height: 32px; font-size: 26px; }
+  #i1f1awk { line-height: 32px; font-size: 26px; }
+  #ig3ucxb { line-height: 32px; font-size: 23px; }
+  #i66qw2v { line-height: 32px; font-size: 26px; }
+  #is7yxzb { line-height: 32px; font-size: 26px; }
+  #fkt-link-afa-fb4-a09 { font-size: 22px; padding: 10px; line-height: 30px; }
+  #fkt-link-6ac-5a3-949 { font-size: 20px; padding-left: 10px; padding-right: 10px; }
+  #iqswlky { padding-top: 0px; padding-left: 10px; padding-right: 10px; }
+  #imnc4 { margin-top: 6px; }
+  #iin3w { padding-top: 0px; }
+  #fkt-image-85e-5bf-a3e { height: auto; width: auto; margin-bottom: 16px; }
+  #fkt-link-e18-589-8d2 { font-size: 20px; padding-left: 10px; padding-right: 10px; color: rgb(255, 255, 255) !important; }
+  #i73ejl { font-size: 17px; }
+  #ih3jiv7 { line-height: 32px; font-size: 26px; }
+  #iq7lq26 { line-height: 32px; font-size: 26px; }
+  #ixsdh9s { line-height: 32px; font-size: 26px; }
+  #ip7wvq-4-3-3-3 { margin-left: 0px; margin-right: 0px; }
+  #iw1l8n-2-2 { font-size: 12px; padding-right: 1px; padding-left: 1px; }
+  #imulix-4-2 { margin-left: 0px; margin-right: 0px; padding-left: 7px; padding-right: 7px; }
+  #i21n2w-2-2 { text-align: center; margin-top: 10px; color: rgb(109, 109, 109) !important; }
+  #izycgf-5-2 { padding-left: 0px; padding-right: 0px; }
+  #ijgxl6-2 { padding-left: 0px; }
+  #cc-id-oRzunkQYhLIP { width: auto; }
+  #cc-id-0dZcOn7ugmEP { height: 139px; width: 341px; }
+  #i0xiku2 { width: 100%; height: 99%; }
+  #i5eulwb { margin-bottom: 0px; padding-bottom: 0px; }
+  #i5a3x { padding-bottom: 12px; }
+  #i281nba { height: 147px; margin-top: 11px; }
+  #iwimhnm { margin-top: 0px; }
+}
+#cc-id-Irv3RNEOPFPk { width: 100%; height: 343px; }
+#cc-id-WtbN1t1QelWW { width: 100%; height: 343px; }
+#cc-id-ZH6tFg6cZkky { width: 100%; height: 343px; }
+#cc-id-uSrAZgBDbY5w { height: 343px; width: auto; max-width: 100%; }
+#cc-id-z9eAEsZ6Bg7w { height: 100%; width: 100%; max-width: 100%; }
+.fk-cc-id-kOAtf8Ze1aT2 { height: 343px; width: 100%; max-width: 100%; }
+#cc-id-5NKlpTyaPsYz { width: 100%; height: 343px; }
+#cc-id-fWBZmQeIKBlT { width: 100%; height: 343px; }
+#cc-id-kOAtf8Ze1aT2 { width: 100%; height: 100%; }
+#cc-id-ipS3hr5K3XJ9 { width: 100%; height: 343px; }
+#cc-id-Ol5AqeUT20vL { width: 100%; height: 343px; }
+#cc-id-pmvRI7to7Ebx { width: 100%; height: 343px; }
+#cc-id-YcIhYt0bdm27 { width: 100%; height: 343px; }
+#cc-id-Ys3ZyWTZoYM7 { width: 100%; height: 343px; }
+#cc-id-1NPovjsyruAn { width: 100%; height: 343px; }
+#cc-id-2iVSaRNzXSG2 { width: 100%; height: 343px; }
+.embed-responsive-9by16::before { padding-top: 177.77%; }
+#cc-id-nFINlvlMJPp8 { width: 100%; height: 343px; }
+#cc-id-ACLEm5x7bFcz { width: 100%; height: 343px; }
+#cc-id-VIHNBO8JhXia { width: 100%; height: 343px; }
+#cc-id-7GAcYz43SInT { width: 100%; height: 343px; }
+#cc-id-5gKNqFPECr4g { width: 100%; height: 343px; }
+#cc-id-uFWtp99cnvOP { width: 100%; height: 343px; }
+#cc-id-ewztQSe3R1Lh { width: 100%; height: 343px; }
+#cc-id-pk5rqGgf1HkW { width: 100%; height: 343px; }
+#cc-id-UOhcQyWroc6I { width: 100%; height: 343px; }
+
+
+
+
+</style><script id="pageDataScript">var pageData = {"pageViewReferenceId":"7e768bc6-f537-4d9d-8e5d-e2dbdcce5b99","funnelReferenceId":"245c2143-e930-4dd2-b162-6ea87c439358"};</script><title>Spartan - Red Light Growth Cap</title></head><body class="dom-pending"><div id="cc-id-pZubhMXF7Pam"><div class="fk-row fk-mt-disable-lazy" data-secondsdelay="" id="iwcmn"><div align="center" class="fk-col col wp-content" data-secondsdelay="" id="i4lvf"><div data-box="true" data-secondsdelay="" id="iixg3j"><div data-secondsdelay="" data-text="text" id="iyc24"><div data-secondsdelay="" data-text="text" id="iw3w3l"></div></div></div><div data-box="true" data-secondsdelay="" id="iollve"><img align="center" alt="" class="fk-image-defaults fk-disable-lazy" height="" href="" id="fkt-image-ff6-2bf-b21" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750411783812_1711366759829_bitmap.png" target="_self" title="" width=""/><div data-secondsdelay="" data-text="text" id="iaks5w">{{content.topbar.label}}</div></div></div></div><div class="fk-row" data-secondsdelay="" id="ifka2"><div align="center" class="fk-col col max-width" data-secondsdelay="" id="iin3w"><div data-box="true" data-secondsdelay="" id="igjxb"><div data-secondsdelay="" data-text="text" id="iex1pon"></div><div class="fk-row" data-secondsdelay="" id="inwstt7"><div align="center" class="fk-col col" data-secondsdelay="" id="iqswlky"><div class="fk-inner-row" data-secondsdelay="" id="ij3ct"></div><div data-secondsdelay="" data-text="text" id="i73ejl">{{content.alert.banner}}</div></div></div><div class="fk-row" data-secondsdelay="" id="imnc4"><div align="center" class="fk-col col" data-secondsdelay="" id="i5a3x"><div class="no-mobile" data-secondsdelay="" data-text="text" id="inixg">{{content.breadcrumbs}}</div><div data-secondsdelay="" data-text="text" id="ilkbswo">{{content.hero.headline}}</div><div data-secondsdelay="" data-text="text" id="it9dh7">{{content.hero.subheadline}}</div><div class="video-1" data-box="true" data-secondsdelay="" id="i1sseyi"></div><div class="embed-responsive embed-responsive-16by9" id="cc-id-TTdDCYOeDXEP"><video aspectratio="embed-responsive-16by9" autoplay="" id="cc-id-mCBVT77VGzKp" loop="" muted="" parentid="cc-id-49DEXXpEVf20" playsinline="" provider="so" rel="true" src="https://cdn.shopify.com/videos/c/o/v/c216b52cb0674c058cb03916ccfdcfcf.mp4" wrapper-classes="embed-responsive-item"></video></div><div data-secondsdelay="" data-text="text" id="i1cxd0h">{{content.story.intro}}</div><div data-secondsdelay="" data-text="text" id="i710v7i">{{content.section1.title}}</div><div class="video-2" data-box="true" data-secondsdelay="" id="i9tm33m"><div class="wistia_responsive_padding" data-secondsdelay="" id="i4hf1"><div class="wistia_responsive_wrapper" data-element-absolute="" data-secondsdelay="" id="i47ov"><img align="left" alt="" height="" href="" id="cc-id-oRzunkQYhLIP" onclick="" src="https://assets.checkoutchamp.com/6e2c7720-809e-11ee-8969-8567594f2fe9/1728027126996_U_berschrift_hinzufu_gen_28_.webp" target="_self" title="" width=""/></div></div></div><div data-secondsdelay="" data-text="text" id="igjx1e">{{content.section1.body}}</div><div data-secondsdelay="" data-text="text" id="i4g45eg">{{content.section2.title}}</div><div class="video-2" data-box="true" data-secondsdelay="" id="iyf5l04"><div class="wistia_responsive_padding" data-secondsdelay="" id="ieveoj6"><div class="wistia_responsive_wrapper" data-secondsdelay="" id="i0xiku2"><img align="left" alt="" height="" href="" id="cc-id-0dZcOn7ugmEP" onclick="" src="https://assets.checkoutchamp.com/6e2c7720-809e-11ee-8969-8567594f2fe9/1727940703131_about_hair_loss_follicles.webp" target="_self" title="" width=""/></div></div></div><div data-secondsdelay="" data-text="text" id="cc-id-ozYWnmKGWmIH">{{content.section2.body}}</div><div data-secondsdelay="" data-text="text" id="i351tqk">{{content.section3.title}}</div><div class="video-2" data-box="true" data-secondsdelay="" id="iyfsmy2"><div class="wistia_responsive_padding" data-secondsdelay="" id="izdsi8i"><div class="wistia_responsive_wrapper" data-secondsdelay="" id="it3f9kf"><div id="cc-id-DH9RqjvkFCXP"><div class="embed-responsive embed-responsive-16by9" id="cc-id-aTqkUFm7kzgJ"><video aspectratio="embed-responsive-16by9" autoplay="" id="cc-id-z9eAEsZ6Bg7w" loop="" muted="" parentid="cc-id-kOAtf8Ze1aT2" playsinline="" provider="so" rel="true" src="https://cdn.shopify.com/videos/c/o/v/af0ec6898358405ca79cf6c9cf4b04cc.mp4" wrapper-classes="embed-responsive-item"></video></div></div></div></div></div><div data-secondsdelay="" data-text="text" id="cc-id-kP02CZkNa0Mv">{{content.section3.body}}</div><div data-secondsdelay="" data-text="text" id="i1f1awk">{{content.section4.title}}</div><div class="video-2" data-box="true" data-secondsdelay="" id="ionyizz"><div class="wistia_responsive_padding" data-secondsdelay="" id="i2symhi"><div class="wistia_responsive_wrapper" data-secondsdelay="" id="icri17d"><div class="embed-responsive embed-responsive-16by9" id="cc-id-YRPrqDRguIBG"><video aspectratio="embed-responsive-16by9" autoplay="" id="cc-id-gtk10B5mKn5h" loop="" muted="" parentid="cc-id-qnGhntmLHifC" playsinline="" provider="so" rel="true" src="https://cdn.shopify.com/videos/c/o/v/0625959e653446638e3f47acadeec5ff.mp4" wrapper-classes="embed-responsive-item"></video></div></div></div></div><div data-secondsdelay="" data-text="text" id="ipvlik">{{content.section4.body}}</div><div data-secondsdelay="" data-text="text" id="ig3ucxb">{{content.section5.title}}</div><div class="video-3" data-box="true" data-secondsdelay="" id="iuj1gri"><div class="wistia_responsive_padding" data-secondsdelay="" id="i93bl"><div class="wistia_responsive_wrapper" data-secondsdelay="" id="i1iqw"><img align="left" alt="" height="" href="" id="cc-id-n22TfFyZDWYR" onclick="" src="https://assets.checkoutchamp.com/6e2c7720-809e-11ee-8969-8567594f2fe9/1714746372776_Design_ohne_Titel_2024_05_03T162537.442.webp" target="_self" title="" width=""/></div></div></div><div data-secondsdelay="" data-text="text" id="cc-id-TinfXK0Ap7oJ">{{content.section5.body}}</div><div data-secondsdelay="" data-text="text" id="iwimhnm">{{content.section6.title}}</div><div class="video-3" data-box="true" data-secondsdelay="" id="ijyheok"><div class="wistia_responsive_padding" data-secondsdelay="" id="i281nba"><div class="wistia_responsive_wrapper" data-secondsdelay="" id="i5eulwb"><img align="left" alt="" height="" href="" id="cc-id-rZKF2U4ju1Bc" onclick="" src="https://assets.checkoutchamp.com/6e2c7720-809e-11ee-8969-8567594f2fe9/1752158983611_httpsassets.checkoutchamp.comFunnelassetsimages0c550aa8_bfd8_436e_b88c_baf46dcfb762afe720dc_08f0_4a93_aabf_3687735392cb1698069323_1688312587252_1_1_.pngversionId_ubVohYQiIA2ybDm4Ogln0lZDDEHxRNEC_4_.png" target="_self" title="" width=""/></div></div></div><div data-secondsdelay="" data-text="text" id="ixh1b0v">{{content.section6.body}}</div><div data-secondsdelay="" data-text="text" id="ih3jiv7">{{content.section7.title}}</div><img align="center" alt="" class="fk-image-defaults disable-fk-lazy" height="" href="" id="fkt-image-1bc-8b4-84f" onclick="" src="https://assets.checkoutchamp.com/6e2c7720-809e-11ee-8969-8567594f2fe9/1752158863747_7.png" target="_self" title="" width=""/><div data-secondsdelay="" data-text="text" id="iu8gkrn">{{content.section7.body}}</div><div data-secondsdelay="" data-text="text" id="iq7lq26">{{content.section8.title}}</div><div class="video-3" data-box="true" data-secondsdelay="" id="iaeziq8"><div class="wistia_responsive_padding" data-secondsdelay="" id="i0lt5gb"><div align="left" class="wistia_responsive_wrapper" data-secondsdelay="" id="i4yc6eg"><img align="center" alt="" height="" href="" id="cc-id-XO6nypvjdoOS" onclick="" src="https://assets.checkoutchamp.com/6e2c7720-809e-11ee-8969-8567594f2fe9/1752157053335_spartacap.png" target="_self" title="" width=""/><div class="wistia_embed wistia_async_got2uytzgt seo-true videoFoam-true" data-secondsdelay="" data-text="text" id="ijc8o5v"></div></div></div></div><div data-secondsdelay="" data-text="text" id="iln4x8s">{{content.section8.body}}</div><div data-secondsdelay="" data-text="text" id="i66qw2v">{{content.section9.title}}</div><div class="video-4" data-box="true" data-secondsdelay="" id="i5bg8cl"><div class="wistia_responsive_padding" data-secondsdelay="" id="iz2qg"><div class="wistia_responsive_wrapper" data-secondsdelay="" id="iek0a"><div class="embed-responsive embed-responsive-16by9" id="cc-id-M4dVE1m3cxSN"><video aspectratio="embed-responsive-16by9" autoplay="" id="cc-id-wicbRYSLE0PD" loop="" muted="" parentid="cc-id-GutZrJUFsdSh" playsinline="" provider="so" rel="true" src="https://cdn.shopify.com/videos/c/o/v/13afd6f790c14ec2beaf2b117b390acb.mp4" wrapper-classes="embed-responsive-item"></video></div></div></div></div><div data-secondsdelay="" data-text="text" id="iqp7i8a">{{content.section9.body}}</div><div data-secondsdelay="" data-text="text" id="is7yxzb">{{content.section10.title}}</div><img align="center" alt="" class="fk-image-defaults disable-fk-lazy" height="" href="" id="fkt-image-9e8-088-a8e" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750417169457_1725110900577_Image_11_v3.webp" target="_self" title="" width=""/><div data-secondsdelay="" data-text="text" id="i6p1ng">{{content.section10.body}}</div><div data-secondsdelay="" data-text="text" id="ixsdh9s">{{content.section11.title}}</div><img align="center" alt="" class="fk-image-defaults disable-fk-lazy" height="" href="" id="fkt-image-516-aa4-a69" onclick="" src="https://assets.checkoutchamp.com/6e2c7720-809e-11ee-8969-8567594f2fe9/1752157812986_httpsassets.checkoutchamp.comFunnelassetsimages0c550aa8_bfd8_436e_b88c_baf46dcfb762afe720dc_08f0_4a93_aabf_3687735392cb1698069323_1688312587252_1_1_.pngversionId_ubVohYQiIA2ybDm4Ogln0lZDDEHxRNEC_2_.png" target="_self" title="" width=""/><div data-secondsdelay="" data-text="text" id="icce0z">{{content.section11.body}}</div><div data-secondsdelay="" data-text="text" id="i1b7b4">{{content.section12.title}}</div><a action="route" align="center" animate="none" billnow="false" data-id="fkt-link-6ac-5a3-949" data-minutesdelay="" data-secondsdelay="" delay="" id="fkt-link-6ac-5a3-949" loop="none" offer="" onclick="linkMethod(event)" price="" quantity="" replaceproductid="" speed="none" target="_self" title="Get Nebroo 1" upsell="" variantvalue="">{{content.cta.primary}}</a><div data-secondsdelay="" data-text="text" id="izoga9k">{{content.assurances.blurb}}</div><img align="middle" alt="" class="fk-image-defaults fk-disable-lazy disable-fk-lazy" height="" href="" id="fkt-image-85e-5bf-a3e" onclick="" src="https://assets.checkoutchamp.com/6e2c7720-809e-11ee-8969-8567594f2fe9/1752158781308_httpsassets.checkoutchamp.comFunnelassetsimages0c550aa8_bfd8_436e_b88c_baf46dcfb762afe720dc_08f0_4a93_aabf_3687735392cb1698069323_1688312587252_1_1_.pngversionId_ubVohYQiIA2ybDm4Ogln0lZDDEHxRNEC_3_.png" target="_self" title="" width=""/><a action="route" align="center" animate="none" billnow="false" data-id="fkt-link-e18-589-8d2" data-minutesdelay="" data-secondsdelay="" delay="none" id="fkt-link-e18-589-8d2" loop="none" offer="" onclick="linkMethod(event)" price="" quantity="" replaceproductid="" speed="none" target="_self" title="Get Nebroo 2" upsell="" variantvalue="">{{content.cta.secondary}}</a><section class="fk-testimonial1 fk-form-section" id="cc-id-XNzxhPGfIuyt"></section></div><div align="center" class="fk-col col" data-secondsdelay="" id="ixeuq"><div data-box="true" data-secondsdelay="" id="i0xt2-3"><div align="center" data-box="true" data-secondsdelay="" id="ik5mi"><div class="no-tablet no-mobile" data-secondsdelay="" data-text="text" id="i49d79"><div data-secondsdelay="" data-text="text" id="cc-id-oIgR2mrZAkpX">
+                        Finally Reduce
+                      </div><div data-secondsdelay="" data-text="text" id="cc-id-omNglEWBdDpO">
+                        Hair Loss
+                      </div></div><img align="center" alt="" class="fk-image-defaults fk-disable-lazy no-tablet no-mobile disable-fk-lazy" height="" href="" id="fkt-image-bbd-2b5-b5d" onclick="" src="https://assets.checkoutchamp.com/6e2c7720-809e-11ee-8969-8567594f2fe9/1745496388503_spartan_root_activator_shampoo_800_x_800_px_7_.webp" target="_self" title="" width=""/><a action="route" align="center" animate="" billnow="false" class="no-tablet no-mobile" data-id="fkt-link-90e-2a1-adb" data-minutesdelay="" data-secondsdelay="" delay="none" id="fkt-link-d7f-9b4-b1c" loop="none" offer="" onclick="linkMethod(event)" price="" quantity="" replaceproductid="" speed="" target="_self" title="Get Nebroo - Sidebar" upsell="" variantvalue="">{{content.sidebar.ctaButton}}</a></div></div></div></div></div></div></div><div class="fk-row" data-secondsdelay="" id="i82nc9-3"><div align="center" class="fk-col col max-width" data-secondsdelay="" id="izycgf-5-2"><div align="left" data-secondsdelay="" data-text="text" id="ing1s1-2"><div data-secondsdelay="" id="imtbwj-2"><span id="i8ow6l-2"><b data-secondsdelay="" data-text="text" id="itmozj-2">{{content.reactions.title}}
+                </b></span></div></div><div class="comment-input-holder" data-secondsdelay="" id="comment-input-holder-2"><div class="comment-user" data-secondsdelay="" id="comment-user-2"><div data-secondsdelay="" data-text="text" id="fb-root-2"></div></div><div class="comment-input" data-secondsdelay="" id="ijgxl6-2"><input class="textbox textbox-facebook" customval="" id="comment-text-2" name="" placeholder="Add a comment ..." type="text"/></div></div><div class="comment-holder clearfix" data-secondsdelay="" id="fbcomments-2"><ul id="fbcommentslist-2"><li id="i4gftz-2"><img align="center" alt="" class="profilepic fk-disable-lazy disable-fk-lazy" height="" href="" id="fkt-image-bf4-5ac-b75-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412380307_1733617084175_Marcella_Hastings.webp" target="_self" title="" width=""/><div align="left" data-secondsdelay="" id="ihsvdw-2"><h3 data-secondsdelay="" data-text="text" id="iv4qpf-2">
+                    {{content.reactions.r1.name}}
+                  </h3><p data-secondsdelay="" data-text="text" id="ipi2tp-2">
+                    {{content.reactions.r1.text}}
+                  </p><div class="fbbuttons" data-secondsdelay="" datum="51 min" id="cc-id-i28gVvsMTw5Y" likes="4"><p id="iy8301-2"><span class="like blue" data-secondsdelay="" data-text="text" id="ij4jeq-2">Like</span>
+                      · 
+                      <span class="reply blue" data-secondsdelay="" data-text="text" id="iny1o6-2">Reply</span>
+                      · 
+                      <img align="center" alt="" class="likeduim fk-disable-lazy disable-fk-lazy" height="" href="" id="fkt-image-2a7-ea4-9c7-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750416781287_download_3_.png" target="_self" title="" width=""/><span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="i9w0ak-2">{{content.reactions.r1.likes}}</span>
+                      · 
+                      <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="idz0it-2">{{content.reactions.r1.time}}</span></p></div></div></li><li id="istop5-2"><img align="center" alt="" class="profilepic fk-disable-lazy disable-fk-lazy" height="" href="" id="fkt-image-9f1-caa-bad-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412394878_1733617237015_Richard_Wilson.webp" target="_self" title="" width=""/><div align="left" data-secondsdelay="" id="ibd193-2"><h3 data-secondsdelay="" data-text="text" id="ikseti-2">
+                    {{content.reactions.r2.name}}
+                  </h3><div data-secondsdelay="" data-text="text" id="iynwb9-2">
+                    {{content.reactions.r2.text}}
+                  </div><div class="fbbuttons" data-secondsdelay="" datum="1 h" id="itv0kf-2" likes="6"><p id="imbq19-2"><span class="like blue" data-secondsdelay="" data-text="text" id="igyzoy-2">Like</span>
+                      · 
+                      <span class="reply blue" data-secondsdelay="" data-text="text" id="i5dshj-2">Reply</span>
+                      · 
+                      <img align="center" alt="" class="likeduim fk-disable-lazy disable-fk-lazy" height="" href="" id="fkt-image-d31-383-8cb-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750416781287_download_3_.png" target="_self" title="" width=""/><span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="iqimqk-2">{{content.reactions.r2.likes}}</span>
+                      · 
+                      <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="iqberc-2">{{content.reactions.r2.time}}</span></p></div></div></li><li id="ibqd0k-2"><img align="center" alt="" class="profilepic fk-disable-lazy disable-fk-lazy" height="" href="" id="fkt-image-2f0-5ae-b72-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412432968_1733617234876_Doug_Johnson.webp" target="_self" title="" width=""/><div align="left" data-secondsdelay="" id="innqke-2"><h3 data-secondsdelay="" data-text="text" id="i26vq1-2">
+                    {{content.reactions.r3.name}}
+                  </h3><p data-secondsdelay="" data-text="text" id="ib0nm6-2">
+                    {{content.reactions.r3.text}}
+                  </p><div class="fbbuttons" data-secondsdelay="" datum="2 h" id="cc-id-LRWoAeSeC4rb" likes="2"><p id="ims7ui-2"><span class="like blue" data-secondsdelay="" data-text="text" id="ig75hg-2">Like</span>
+                      · 
+                      <span class="reply blue" data-secondsdelay="" data-text="text" id="iz9jc3-2">Reply</span>
+                      · 
+                      <img align="center" alt="" class="likeduim fk-disable-lazy disable-fk-lazy" height="" href="" id="fkt-image-9d4-982-97f-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750416781287_download_3_.png" target="_self" title="" width=""/><span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="ipp5rg-2">{{content.reactions.r3.likes}}</span>
+                      · 
+                      <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="i3bb28-2">{{content.reactions.r3.time}}</span></p></div><ul id="iawfre-2"><li id="izr8uf-2"><img align="center" alt="" class="profilepic prflpcCmt fk-disable-lazy disable-fk-lazy" height="" href="" id="fkt-image-ced-1a6-a9f-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412457193_1733617232938_Franklin_Monroe.webp" target="_self" title="" width=""/><div data-secondsdelay="" id="isuhxs-2"><h3 data-secondsdelay="" data-text="text" id="isqxdc-2">
+                          {{content.reactions.r3.reply1.name}}
+                        </h3><p data-secondsdelay="" data-text="text" id="ikiv0r-2"></p><p class="rte-styled-text" data-end="671" data-start="429" id="cc-id-TWFfECrXrlSt">
+                          {{content.reactions.r3.reply1.text}}
+                        </p><p class="rte-styled-text" data-end="804" data-start="673" id="cc-id-MjhHoWNk031H"></p><p id="cc-id-8jaLLCkXj0Rg"></p><div class="fbbuttons" data-secondsdelay="" datum="1 h" id="cc-id-nq8vyUBlEKAA" likes="3"><p id="i5192l-2"><span class="like blue" data-secondsdelay="" data-text="text" id="i0hnb2-2">Like</span>
+                            · 
+                            <span class="reply blue" data-secondsdelay="" data-text="text" id="i7cl6f-2">Reply</span>
+                            · 
+                            <img align="center" alt="" class="likeduim fk-disable-lazy disable-fk-lazy" height="" href="" id="fkt-image-f41-d8e-987-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750416781287_download_3_.png" target="_self" title="" width=""/><span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="ikxpl2-2">{{content.reactions.r3.reply1.likes}}</span>
+                            · 
+                            <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="isnyo1-2">{{content.reactions.r3.reply1.time}}</span></p></div></div></li></ul></div></li><li id="i30for-2"><img align="center" alt="" class="profilepic disable-fk-lazy" height="" href="" id="fkt-image-f73-b91-a1a-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412479053_1712227680885_Screenshot_2024_04_04_at_6.47.28_PM.webp" target="_self" title="" width=""/><div align="left" data-secondsdelay="" id="imjjo9-2"><h3 data-secondsdelay="" data-text="text" id="ic545k-2">
+                    {{content.reactions.r4.name}}
+                  </h3><p data-secondsdelay="" data-text="text" id="i0jv5v-2"></p><p class="rte-styled-text" data-end="804" data-start="673" id="cc-id-pIh1jSzFsZhX">
+                    {{content.reactions.r4.text}}
+                  </p><p class="rte-styled-text" data-end="861" data-start="806" id="cc-id-AyZ6PHdqnSep"></p><p id="cc-id-g2oRYHMmGTdM"></p><div class="fbbuttons" data-secondsdelay="" datum="3 h" id="cc-id-Ks7LKj5C5Quh" likes="1"><p data-secondsdelay="" data-text="text" id="iawbdi-2"><span class="like blue" data-secondsdelay="" data-text="text" id="imetb8-2">Like</span>
+                      · 
+                      <span class="reply blue" data-secondsdelay="" data-text="text" id="iwgocw-2">Reply</span>
+                      · 
+                      <span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="id4b5f-2">{{content.reactions.r4.likes}}</span>
+                      · 
+                      <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="i5sath-2">{{content.reactions.r4.time}}</span></p></div></div></li><li id="ipkgrh-2"><img align="center" alt="" class="profilepic disable-fk-lazy" height="" href="" id="fkt-image-cbb-0b3-a8d-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412504031_1733617143932_Winston_Harper.webp" target="_self" title="" width=""/><div align="left" data-secondsdelay="" id="iynd15-2"><h3 data-secondsdelay="" data-text="text" id="ifzyrg-2">
+                    {{content.reactions.r5.name}}
+                  </h3><p data-secondsdelay="" data-text="text" id="ijofuh-2">
+                    {{content.reactions.r5.text}}
+                  </p><div class="fbbuttons" data-secondsdelay="" datum="3 h" id="cc-id-bbfZFmNRZSlv" likes="1"><p data-secondsdelay="" data-text="text" id="i59u3k-2"><span class="like blue" data-secondsdelay="" data-text="text" id="iaeo8x-2">Like</span>
+                      · 
+                      <span class="reply blue" data-secondsdelay="" data-text="text" id="igf64k-2">Reply</span>
+                      · 
+                      <span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="irtuga-2">{{content.reactions.r5.likes}}</span>
+                      · 
+                      <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="ip7lhk-2">{{content.reactions.r5.time}}</span></p></div><ul id="iq0uk8-2"><li id="ijwojm-2"><img align="center" alt="" class="profilepic prflpcCmt disable-fk-lazy" height="" href="" id="fkt-image-c70-ba9-95f" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412523799_1733616910188_Zelda_Montgomery.webp" target="_self" title="" width=""/><div data-secondsdelay="" id="iyybuo-2"><h3 data-secondsdelay="" data-text="text" id="ic2g5c-2">
+                          {{content.reactions.r5.reply1.name}}
+                        </h3><p data-secondsdelay="" data-text="text" id="i9id5f-2">
+                          {{content.reactions.r5.reply1.text}}
+                        </p><div class="fbbuttons" data-secondsdelay="" datum="2 h" id="cc-id-RmHsL4CbvzUs" likes="3"><p data-secondsdelay="" data-text="text" id="imqb27-2"><span class="like blue" data-secondsdelay="" data-text="text" id="ilpchf-2">Like</span>
+                            · 
+                            <span class="reply blue" data-secondsdelay="" data-text="text" id="ijq4cw-2">Reply</span>
+                            · 
+                            <span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="ihgj7r-2">{{content.reactions.r5.reply1.likes}}</span>
+                            · 
+                            <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="iz7xjj-2">{{content.reactions.r5.reply1.time}}</span></p></div></div></li></ul></div></li><li id="iq2g3h-2"><img align="center" alt="" class="profilepic disable-fk-lazy" height="" href="" id="fkt-image-b4f-5ae-b17-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412555020_1733617318212_Cecillia_Pruitt.webp" target="_self" title="" width=""/><div align="left" data-secondsdelay="" id="iy1e0t-2"><h3 data-secondsdelay="" data-text="text" id="iprw2g-2">
+                    {{content.reactions.r6.name}}
+                  </h3><p data-secondsdelay="" data-text="text" id="i4wk0w-2"></p><p class="rte-styled-text" data-end="357" data-start="119" id="cc-id-wakUrsgID7lk">
+                    {{content.reactions.r6.text}}
+                  </p><p class="rte-styled-text" data-end="483" data-start="359" id="cc-id-eoWd7bp5gdmv"></p><p id="cc-id-VRIvwJczmM8I"></p><p data-secondsdelay="" data-text="text" id="cc-id-uObw41eizonQ"></p><div class="fbbuttons" data-secondsdelay="" datum="3 h" id="cc-id-EMGElKZz9uG6" likes="8"><p data-secondsdelay="" data-text="text" id="iu04cw-2"><span class="like blue" data-secondsdelay="" data-text="text" id="icyou1-2">Like</span>
+                      · 
+                      <span class="reply blue" data-secondsdelay="" data-text="text" id="i6869v-2">Reply</span>
+                      · 
+                      <span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="i79ell-2">{{content.reactions.r6.likes}}</span>
+                      · 
+                      <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="ios01n-2">{{content.reactions.r6.time}}</span></p></div></div></li><li id="iebv4q-2"><img align="center" alt="" class="profilepic disable-fk-lazy" height="" href="" id="fkt-image-9f0-1b0-99d-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412678573_1733617055645_Rowena_Baron.webp" target="_self" title="" width=""/><div align="left" data-secondsdelay="" id="iwtkqv-2"><h3 data-secondsdelay="" data-text="text" id="iprisz-2">
+                    {{content.reactions.r7.name}}
+                  </h3><p data-secondsdelay="" data-text="text" id="izg56u-2"></p><p class="rte-styled-text" data-end="483" data-start="359" id="cc-id-EMn5aGxNls4m">
+                    {{content.reactions.r7.text}}
+                  </p><p class="rte-styled-text" data-end="616" data-start="485" id="cc-id-JyJRmYv8txWI"></p><p id="cc-id-LEG8bGmJtRi1"></p><div class="fbbuttons" data-secondsdelay="" datum="4 h" id="iqb5so-2" likes="1"><p data-secondsdelay="" data-text="text" id="i8mawl-2"><span class="like blue" data-secondsdelay="" data-text="text" id="ic1uto-2">Like</span>
+                      · 
+                      <span class="reply blue" data-secondsdelay="" data-text="text" id="iooar6-2">Reply</span>
+                      · 
+                      <span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="ibrnhe-2">{{content.reactions.r7.likes}}</span>
+                      · 
+                      <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="iggn0x-2">{{content.reactions.r7.time}}</span></p></div><ul id="i8vvn6-2"><li id="ilmhvt-2"><img align="center" alt="" class="profilepic prflpcCmt disable-fk-lazy" height="" href="" id="fkt-image-71c-69d-ba6-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412699835_1733617058554_Sharon_Harper.webp" target="_self" title="" width=""/><div data-secondsdelay="" id="ipclmq-2"><h3 data-secondsdelay="" data-text="text" id="ic3hov-2">
+                          {{content.reactions.r7.reply1.name}}
+                        </h3><p data-secondsdelay="" data-text="text" id="ircgkd-2"></p><p class="rte-styled-text" data-end="616" data-start="485" id="cc-id-p3UX0wcCCUxW">
+                          {{content.reactions.r7.reply1.text}}
+                        </p><p class="rte-styled-text" data-end="698" data-start="618" id="cc-id-VZRBy3Rx0fS3"></p><p id="cc-id-aCxY21YqThOz"></p><div class="fbbuttons" data-secondsdelay="" datum="2 h" id="cc-id-4MTDf1sFTlUj" likes="2"><p data-secondsdelay="" data-text="text" id="in5zlb-2"><span class="like blue" data-secondsdelay="" data-text="text" id="ifq7bc-2">Like</span>
+                            · 
+                            <span class="reply blue" data-secondsdelay="" data-text="text" id="iiyjls-2">Reply</span>
+                            · 
+                            <span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="ikmhsu-2">{{content.reactions.r7.reply1.likes}}</span>
+                            · 
+                            <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="ioma0f-2">{{content.reactions.r7.reply1.time}}</span></p></div></div></li><li id="imtgys-2"><img align="center" alt="" class="profilepic prflpcCmt disable-fk-lazy" height="" href="" id="fkt-image-152-988-be9-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412721421_1733617019729_Barbara_Miller.webp" target="_self" title="" width=""/><div data-secondsdelay="" id="ir6pnf-2"><h3 data-secondsdelay="" data-text="text" id="iuhhc1-2">
+                          {{content.reactions.r7.reply2.name}}
+                        </h3><p data-secondsdelay="" data-text="text" id="itd8sa-2">
+                          {{content.reactions.r7.reply2.text}}
+                        </p><div class="fbbuttons" data-secondsdelay="" datum="1 h" id="cc-id-kX8Sm8jEOrh2" likes="2"><p data-secondsdelay="" data-text="text" id="iigjiw-2"><span class="like blue" data-secondsdelay="" data-text="text" id="imeaf6-2">Like</span>
+                            · 
+                            <span class="reply blue" data-secondsdelay="" data-text="text" id="iuygb7-2">Reply</span>
+                            · 
+                            <span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="ihvxsr-2">{{content.reactions.r7.reply2.likes}}</span>
+                            · 
+                            <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="invahq-2">{{content.reactions.r7.reply2.time}}</span></p></div></div></li></ul></div></li><li id="i5ug7k-2"><img align="center" alt="" class="profilepic disable-fk-lazy" height="" href="" id="fkt-image-50c-3a1-b00-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412744174_1733617003166_Curtis_Reynolds.webp" target="_self" title="" width=""/><div align="left" data-secondsdelay="" id="ipdev6-2"><h3 data-secondsdelay="" data-text="text" id="iariov-2">
+                    {{content.reactions.r8.name}}
+                  </h3><p data-secondsdelay="" data-text="text" id="itlr85-2"></p><p class="rte-styled-text" data-end="868" data-start="700" id="cc-id-zI36ZHiTThEZ">
+                    {{content.reactions.r8.text}}
+                  </p><p class="rte-styled-text" data-end="1106" data-start="870" id="cc-id-SM7FJDKy4SQR"></p><p id="cc-id-3Zk796FwXhVY"></p><div class="fbbuttons" data-secondsdelay="" datum="4 h" id="cc-id-UnOZ6PCb38Ak" likes="3"><p data-secondsdelay="" data-text="text" id="ik35k5-2"><span class="like blue" data-secondsdelay="" data-text="text" id="ih52q8-2">Like</span>
+                      · 
+                      <span class="reply blue" data-secondsdelay="" data-text="text" id="ikj7i6-2">Reply</span>
+                      · 
+                      <span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="imfwfu-2">{{content.reactions.r8.likes}}</span>
+                      · 
+                      <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="ixbuaw-2">{{content.reactions.r8.time}}</span></p></div></div></li><li id="ijylv8-2"><img align="center" alt="" class="profilepic disable-fk-lazy" height="" href="" id="fkt-image-244-da8-b6e-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412763183_1733616985161_Desmond_Vaughn.webp" target="_self" title="" width=""/><div align="left" data-secondsdelay="" id="iacpeh-2"><h3 data-secondsdelay="" data-text="text" id="iw4d1y-2">
+                    {{content.reactions.r9.name}}
+                  </h3><p data-secondsdelay="" data-text="text" id="i1ls3p-2"></p><p data-secondsdelay="" data-text="text" id="i9rpkg-2"></p><p class="rte-styled-text" data-end="1106" data-start="870" id="cc-id-Fub1UQURtrQP">
+                    {{content.reactions.r9.text}}
+                  </p><p id="cc-id-Vg5SCfuvXwd2"></p><p data-secondsdelay="" data-text="text" id="cc-id-2P4SelNjAMqT"></p><div class="fbbuttons" data-secondsdelay="" datum="4 h" id="cc-id-B05zWLBeKffd" likes="3"><p data-secondsdelay="" data-text="text" id="id8vof-2"><span class="like blue" data-secondsdelay="" data-text="text" id="i9j131-2">Like</span>
+                      · 
+                      <span class="reply blue" data-secondsdelay="" data-text="text" id="iqwu3k-2">Reply</span>
+                      · 
+                      <span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="inxaat-2">{{content.reactions.r9.likes}}</span>
+                      · 
+                      <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="i91102-2">{{content.reactions.r9.time}}</span></p></div></div></li><li id="ia7yvg-2"><img align="center" alt="" class="profilepic disable-fk-lazy" height="" href="" id="fkt-image-4e7-cb7-bc7-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412786476_1733616961643_Mark_Owens.webp" target="_self" title="" width=""/><div align="left" data-secondsdelay="" id="ibd3pl-2"><h3 data-secondsdelay="" data-text="text" id="i35gbn-2">
+                    {{content.reactions.r10.name}}
+                  </h3><p data-secondsdelay="" data-text="text" id="iqgy7gu-2"></p><p class="rte-styled-text" data-end="265" data-start="93" id="cc-id-tfInuYAgojai">
+                    {{content.reactions.r10.text}}
+                  </p><p class="rte-styled-text" data-end="537" data-start="267" id="cc-id-Xzvav08zebnD"></p><p id="cc-id-haLcUvq7E5QO"></p><div class="fbbuttons" data-secondsdelay="" datum="5 h" id="cc-id-zEInGe6021lu" likes="3"><p data-secondsdelay="" data-text="text" id="iyfy3h-2"><span class="like blue" data-secondsdelay="" data-text="text" id="i5ygiu-2">Like</span>
+                      · 
+                      <span class="reply blue" data-secondsdelay="" data-text="text" id="ipkspf-2">Reply</span>
+                      · 
+                      <span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="ixcs34-2-2">{{content.reactions.r10.likes}}</span>
+                      · 
+                      <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="iakooe-2">{{content.reactions.r10.time}}</span></p></div></div></li><li id="i4qhwu-2"><img align="center" alt="" class="profilepic disable-fk-lazy" height="" href="" id="fkt-image-de6-397-99a-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412803043_1733616940914_Betty_Martinez.webp" target="_self" title="" width=""/><div align="left" data-secondsdelay="" id="i63swc-2"><h3 data-secondsdelay="" data-text="text" id="itlkix1-2">
+                    {{content.reactions.r11.name}}
+                  </h3><p data-secondsdelay="" data-text="text" id="i3qvbn4-2"></p><p class="rte-styled-text" data-end="537" data-start="267" id="cc-id-oQeWIYfRlPR0">
+                    {{content.reactions.r11.text}}
+                  </p><p class="rte-styled-text" data-end="616" data-start="539" id="cc-id-6oFvjfRvSCHD"></p><p id="cc-id-94u1njgUNqUo"></p><p data-secondsdelay="" data-text="text" id="cc-id-N3n0S04gkWJg"></p><div class="fbbuttons" data-secondsdelay="" datum="5 h" id="cc-id-vCp1pnugJQDI" likes="2"><p data-secondsdelay="" data-text="text" id="i9jgjd-2"><span class="like blue" data-secondsdelay="" data-text="text" id="i9dzrxl-2">Like</span>
+                      · 
+                      <span class="reply blue" data-secondsdelay="" data-text="text" id="ihchvwc-2">Reply</span>
+                      · 
+                      <span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="i3se7q-2">{{content.reactions.r11.likes}}</span>
+                      · 
+                      <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="inokbr-2">{{content.reactions.r11.time}}</span></p></div><ul id="iqtkjyv-2"><li id="imezcj-2"><img align="center" alt="" class="profilepic prflpcCmt disable-fk-lazy" height="" href="" id="fkt-image-1af-4ae-b2d-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412819884_1733617139898_Lucille_Langley.webp" target="_self" title="" width=""/><div data-secondsdelay="" id="ifp6jk-2"><h3 data-secondsdelay="" data-text="text" id="ixcwwy5-2">
+                          {{content.reactions.r11.reply1.name}}
+                        </h3><p data-secondsdelay="" data-text="text" id="ibpazqx">
+                          {{content.reactions.r11.reply1.text}}
+                        </p><div class="fbbuttons" data-secondsdelay="" datum="2 h" id="cc-id-yAVpouyYCBGq" likes="5"><p data-secondsdelay="" data-text="text" id="i1motu-2"><span class="like blue" data-secondsdelay="" data-text="text" id="isq4v4o-2">Like</span>
+                            · 
+                            <span class="reply blue" data-secondsdelay="" data-text="text" id="iqc5dsz-2">Reply</span>· 
+                            <span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="idmimo-2">{{content.reactions.r11.reply1.likes}}</span>
+                            · 
+                            <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="i9dbts-2">{{content.reactions.r11.reply1.time}}</span></p></div></div></li></ul></div></li><li id="iyvzy5-2"><img align="center" alt="" class="profilepic disable-fk-lazy" height="" href="" id="fkt-image-999-692-bf1-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412838535_1733616887966_Lionel_Beckett.webp" target="_self" title="" width=""/><div data-secondsdelay="" id="ibyqz5-2"><h3 data-secondsdelay="" data-text="text" id="i9am1hj-2">
+                    {{content.reactions.r12.name}}
+                  </h3><p data-secondsdelay="" data-text="text" id="ivgi7n9-2"></p><p class="rte-styled-text" data-end="912" data-start="618" id="cc-id-tM7SUX1PLuxp">
+                    {{content.reactions.r12.text}}
+                  </p><p id="cc-id-qBuoi5VHOtkK"></p><div class="fbbuttons" data-secondsdelay="" datum="5 h" id="itjj7j-2" likes="3"><p data-secondsdelay="" data-text="text" id="iyo57m-2"><span class="like blue" data-secondsdelay="" data-text="text" id="iyl1due-2">Like</span>
+                      · 
+                      <span class="reply blue" data-secondsdelay="" data-text="text" id="ibye2ee-2">Reply</span>
+                      · 
+                      <span class="aantallikes grijs" data-secondsdelay="" data-text="text" id="i9w5gt-2">{{content.reactions.r12.likes}}</span>
+                      · 
+                      <span class="cmtdatum grijs" data-secondsdelay="" data-text="text" id="i2s0w2-2">{{content.reactions.r12.time}}</span></p></div></div></li></ul></div></div></div><div class="fk-row" data-secondsdelay="" id="ip7wvq-4-3-3-3"><div align="center" class="fk-col col max-width" data-secondsdelay="" id="imulix-4-2"><div data-secondsdelay="" data-text="text" id="i21n2w-2-2">{{content.footer.disclaimer}}</div><div data-secondsdelay="" data-text="text" id="iw1l8n-2-2">{{content.footer.copyright}}</div><div data-box="true" data-secondsdelay="" id="igrwsvx-2"><img align="center" alt="Payment Methods" class="disable-fk-lazy" height="" href="" id="fkt-image-0a9-398-882-2" onclick="" src="https://assets.checkoutchamp.com/c7d1a9b0-3fbd-11ef-841c-27774b7314cb/1750412901220_1719483630013_1718789453182_f1e052fc3f19b3c0bf6479b1c7f772a2.webp" target="_self" title="" width=""/></div></div></div><div class="fk-row sticky-bar front" data-secondsdelay="" id="ix4a36-4"><div align="center" class="fk-col col max-width" data-secondsdelay="" id="igo1za"><a action="route" align="center" animate="none" billnow="false" data-id="fkt-link-afa-fb4-a09" data-minutesdelay="" data-secondsdelay="" delay="none" id="fkt-link-afa-fb4-a09" loop="none" offer="" onclick="linkMethod(event)" price="" quantity="" replaceproductid="" speed="none" target="_self" title="Get Nebroo Sticky" upsell="" variantvalue="">{{content.sticky.cta}}</a></div></div></div><script>
+      $(document).ready(function () {
+        let totalSeconds = 24 * 60 * 60; // 24 hours in seconds
+
+        function formatTime(seconds) {
+          let hrs = Math.floor(seconds / 3600);
+          let mins = Math.floor((seconds % 3600) / 60);
+          let secs = seconds % 60;
+
+          return (
+            (hrs < 10 ? "0" + hrs : hrs) + " hours, " +
+            (mins < 10 ? "0" + mins : mins) + " minutes, " +
+            (secs < 10 ? "0" + secs : secs) + " seconds"
+          );
+        }
+
+        $('#countdownTimer').text(formatTime(totalSeconds)); // initial value
+
+        let countdown = setInterval(function () {
+          totalSeconds--;
+
+          $('#countdownTimer').text(formatTime(totalSeconds));
+
+          if (totalSeconds <= 0) {
+            clearInterval(countdown);
+            $('#countdownTimer').text("Time's up!");
+            // Optionally trigger popup or action
+          }
+        }, 1000); // Update every second
+      });
+    </script>
+<script id="scriptData">
+            window.addEventListener('load', (function(){
+                $("#loading").hide();
+                $("body").removeClass("dom-pending");
+
+                var lazyLoadThrottleTimeout;
+                function recursiveOffsetParentTop(img) {
+                    if (img.offsetParent) {
+                        return img.offsetParent.offsetTop + recursiveOffsetParentTop(img.offsetParent);
+                    } else {
+                        return 0;
+                    }
+                }
+                function lazyLoad() {
+                    if (lazyLoadThrottleTimeout) {
+                        clearTimeout(lazyLoadThrottleTimeout);
+                    }
+                    lazyLoadThrottleTimeout = setTimeout(function () {
+                        const scrollTop = window.pageYOffset;
+                        const buffer = 500;
+                        var loaded = true;
+                        //Lazy loading the images
+                        var lazyLoad = [].slice.call(document.querySelectorAll(".fk-lazy"));
+                        lazyLoad.forEach(function (element) {
+                            if ($(element).is(':visible') && element.offsetTop + recursiveOffsetParentTop(element) < ((window.innerHeight + scrollTop) + buffer)) {
+								if(element.dataset.src) {
+                                    element.src = element.dataset.src;
+                                }
+								element.classList.remove("fk-lazy");
+                            } else {
+                                loaded = false;
+                            }
+                        });
+                        if (loaded) {
+                            document.removeEventListener("scroll", lazyLoad);
+                            window.removeEventListener("resize", lazyLoad);
+                            window.removeEventListener("orientationChange", lazyLoad);
+                        }
+                    }, 20);
+                }
+
+                document.addEventListener("scroll", lazyLoad);
+                window.addEventListener("resize", lazyLoad);
+                window.addEventListener("orientationChange", lazyLoad);
+                lazyLoad();
+            }), false);
+        </script>
+<div data-cc-link-attribution="true"><a href="https://checkoutchamp.com" title="Powered by CheckoutChamp"></a></div>
+<script>
+            document.cookie = "X-Source=" + pageData.funnelReferenceId;
+            var key = pageData.funnelReferenceId + "ccQuery";
+            var queryParam = sessionStorage.getItem(key);
+            if(!queryParam) {
+                queryParam = (Math.random() + 1).toString(36).substring(7);
+                sessionStorage.setItem(key, queryParam);
+            }
+
+            var dynamicCartRow = document.querySelector("tr[id='fk-dynamic-cart-row']");
+            if (dynamicCartRow) {
+                dynamicCartRow.style.display = "none";
+            }
+            function getAbsolutePath(url) {
+                const parts = url.split('/');
+                var size = 3;
+                if (parts[2].indexOf("thisisatestsiteonly") !== -1) {
+                    size = 4;
+                }
+                return parts.slice(0, size).join("/");
+            }
+            var fkDynamicScript = document.createElement("script");
+            fkDynamicScript.type = "text/javascript";
+            fkDynamicScript.src = getAbsolutePath(window.location.href)+"/index.js?f="+queryParam;
+            document.head.appendChild(fkDynamicScript);
+        </script>
+<style cc="true">
+         .fk-hide-on-load {
+             visibility: hidden;
+         }
+         .fk-payment-options-hide-on-load, .fk-display-none-on-load {
+             display: none;
+         }
+         .fk-youtube {
+            background-color: #000;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            min-height: 160px;
+        }
+        .fk-youtube .fk-rm.image {
+            -webkit-background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+        }
+        .fk-youtube .play-button {
+            width: 90px;
+            height: 60px;
+            background-color: #333;
+            box-shadow: 0 0 30px rgba( 0,0,0,0.6 );
+            z-index: 1;
+            opacity: 0.8;
+            border-radius: 6px;
+        }
+        .fk-youtube .play-button:before {
+            content: "";
+            border-style: solid;
+            border-width: 15px 0 15px 26.0px;
+            border-color: transparent transparent transparent #fff;
+        }
+        .fk-youtube .fk-rm.image,
+        .fk-youtube .play-button {
+            cursor: pointer;
+        }
+        .fk-youtube .fk-rm.image,
+        .fk-youtube iframe,
+        .fk-youtube .play-button,
+        .fk-youtube .play-button:before {
+            position: absolute;
+        }
+        .fk-youtube .play-button,
+        .fk-youtube .play-button:before {
+            top: 50%;
+            left: 50%;
+            transform: translate3d( -50%, -50%, 0 );
+        }
+        .fk-youtube iframe {
+            height: 100%;
+            width: 100%;
+            top: 0;
+            left: 0;
+        }
+        </style>
+</body></html>

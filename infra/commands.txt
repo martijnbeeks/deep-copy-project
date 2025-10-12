@@ -23,17 +23,18 @@ ACCESS_TOKEN=$(curl -s -u "$CLIENT_ID:$CLIENT_SECRET" \
   -d "grant_type=client_credentials&scope=https://deep-copy.api/read https://deep-copy.api/write" \
   "$TOKEN_ENDPOINT" | jq -r .access_token)
 
-# POST /jobs (uses write)
-curl -sS -X POST \
+# POST /jobs (uses write) - Updated with customer_avatars
+curl -sS -X POST "${API_URL}jobs" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "content-type: application/json" \
-  -d '{
-    "sales_page_url": "https://try.meritrelief.com/",
-    "project_name": "meritrelief",
-    "swipe_file_id": "L00005",
-    "advertorial_type": "Listicle"
-  }' \
-  "${API_URL}jobs"
+  -H "Content-Type: application/json" \
+  -d '{"sales_page_url":"https://try.meritrelief.com/","project_name":"meritrelief","swipe_file_id":"L00005","advertorial_type":"Listicle","customer_avatars":[{"persona_name":"Active Senior","description":"Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain","age_range":"60-75","gender":"both","key_buying_motivation":"Seeking non-invasive pain relief to maintain active lifestyle"},{"persona_name":"Desk-Bound Professional","description":"Office worker sitting 8+ hours daily experiencing lower back pain","age_range":"30-45","gender":"both","key_buying_motivation":"Quick relief from work-related pain"}]}'
+
+
+
+  curl -X POST "https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/extract" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://www.sciatiease.com/sciatiease.php"}' | jq '.'
 
 # GET /jobs/{id} (uses read)
 curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID"

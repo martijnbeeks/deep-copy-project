@@ -35,6 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DeepCopyStack = void 0;
 const aws_cdk_lib_1 = require("aws-cdk-lib");
+const aws_ecr_assets_1 = require("aws-cdk-lib/aws-ecr-assets");
 const path = __importStar(require("path"));
 class DeepCopyStack extends aws_cdk_lib_1.Stack {
     constructor(scope, id, props) {
@@ -55,9 +56,18 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
             tableClass: aws_cdk_lib_1.aws_dynamodb.TableClass.STANDARD,
         });
         // VPC for ECS Fargate
+        // Keep NAT Gateway provisioned but use public subnets to avoid NAT charges
         const vpc = new aws_cdk_lib_1.aws_ec2.Vpc(this, 'Vpc', {
             maxAzs: 2,
-            natGateways: 1,
+            natGateways: 1, // Keep existing NAT Gateway to avoid VPC recreation
+        });
+        // Add FREE VPC Gateway Endpoints (no cost, reduce data transfer)
+        // These keep S3 and DynamoDB traffic within AWS network at zero cost
+        vpc.addGatewayEndpoint('S3Endpoint', {
+            service: aws_cdk_lib_1.aws_ec2.GatewayVpcEndpointAwsService.S3,
+        });
+        vpc.addGatewayEndpoint('DynamoDBEndpoint', {
+            service: aws_cdk_lib_1.aws_ec2.GatewayVpcEndpointAwsService.DYNAMODB,
         });
         // ECS Cluster
         const cluster = new aws_cdk_lib_1.aws_ecs.Cluster(this, 'Cluster', { vpc });
@@ -71,6 +81,8 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
         });
         resultsBucket.grantPut(taskRole);
         resultsBucket.grantPutAcl(taskRole);
+        // Allow task to read swipe files stored under content_library/
+        resultsBucket.grantRead(taskRole, 'content_library/*');
         jobsTable.grantReadWriteData(taskRole);
         // Also allow SecretsManager read if your code pulls secrets
         taskRole.addToPolicy(new aws_cdk_lib_1.aws_iam.PolicyStatement({
@@ -102,7 +114,8 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
                 BUCKET_NAME: resultsBucket.bucketName,
                 JOBS_TABLE_NAME: jobsTable.tableName,
                 ENVIRONMENT: 'prod',
-                DISABLE_SCREENSHOT: '1',
+                DISABLE_SCREENSHOT: '0',
+                CONTENT_LIBRARY_BUCKET: resultsBucket.bucketName,
             },
         });
         container.addUlimits({
@@ -127,7 +140,8 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
             environment: {
                 CLUSTER_ARN: cluster.clusterArn,
                 TASK_DEF_ARN: taskDef.taskDefinitionArn,
-                SUBNET_IDS: [...vpc.privateSubnets, ...vpc.publicSubnets].map((s) => s.subnetId).join(','),
+                // Only public subnets (no NAT Gateway needed)
+                SUBNET_IDS: vpc.publicSubnets.map((s) => s.subnetId).join(','),
                 SECURITY_GROUP_IDS: taskSecurityGroup.securityGroupId,
                 JOBS_TABLE_NAME: jobsTable.tableName,
                 RESULTS_BUCKET: resultsBucket.bucketName,
@@ -167,6 +181,25 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
             },
         });
         resultsBucket.grantRead(getJobResultLambda);
+        // Lambda for extracting avatars from product pages (Docker-based)
+        const extractAvatarsLambda = new aws_cdk_lib_1.aws_lambda.DockerImageFunction(this, 'ExtractAvatarsLambda', {
+            code: aws_cdk_lib_1.aws_lambda.DockerImageCode.fromImageAsset(path.join(__dirname, 'lambdas', 'extract_avatars'), {
+                platform: aws_ecr_assets_1.Platform.LINUX_AMD64, // Explicitly set platform for Lambda
+            }),
+            timeout: aws_cdk_lib_1.Duration.seconds(120),
+            memorySize: 3008, // 3GB for Playwright + OpenAI
+            architecture: aws_cdk_lib_1.aws_lambda.Architecture.X86_64, // Explicitly set architecture
+            environment: {
+                OPENAI_MODEL: 'gpt-5-mini',
+                PLAYWRIGHT_BROWSERS_PATH: '/var/task/.playwright', // Fixed browser path for Lambda
+            },
+        });
+        // Grant access to the same secret as the ECS pipeline
+        const secretArn = `arn:aws:secretsmanager:${aws_cdk_lib_1.Stack.of(this).region}:${aws_cdk_lib_1.Stack.of(this).account}:secret:deepcopy-secret-dev*`;
+        extractAvatarsLambda.addToRolePolicy(new aws_cdk_lib_1.aws_iam.PolicyStatement({
+            actions: ['secretsmanager:GetSecretValue'],
+            resources: [secretArn],
+        }));
         // Cognito User Pool for API auth
         const userPool = new aws_cdk_lib_1.aws_cognito.UserPool(this, 'UserPool', {
             signInAliases: { email: true },
@@ -247,9 +280,18 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
             authorizationType: aws_cdk_lib_1.aws_apigateway.AuthorizationType.COGNITO,
             authorizationScopes: ['https://deep-copy.api/read'],
         });
+        // Avatar extraction endpoint
+        const avatarsRes = api.root.addResource('avatars');
+        const extractRes = avatarsRes.addResource('extract');
+        extractRes.addMethod('POST', new aws_cdk_lib_1.aws_apigateway.LambdaIntegration(extractAvatarsLambda), {
+            authorizer: cognitoAuthorizer,
+            authorizationType: aws_cdk_lib_1.aws_apigateway.AuthorizationType.COGNITO,
+            authorizationScopes: ['https://deep-copy.api/write'],
+        });
         // Optional: EventBridge to mark RUNNING when task starts and final status on stop
         // You can also have the container call DynamoDB directly at the end, which the Python already supports
         new aws_cdk_lib_1.CfnOutput(this, 'ApiUrl', { value: api.url });
+        new aws_cdk_lib_1.CfnOutput(this, 'AvatarsEndpoint', { value: `${api.url}avatars/extract` });
         new aws_cdk_lib_1.CfnOutput(this, 'ResultsBucketName', { value: resultsBucket.bucketName });
         new aws_cdk_lib_1.CfnOutput(this, 'JobsTableName', { value: jobsTable.tableName });
         new aws_cdk_lib_1.CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
