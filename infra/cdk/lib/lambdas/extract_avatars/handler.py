@@ -159,3 +159,8 @@ def lambda_handler(event, context):
                 'details': str(e)
             })
         }
+
+
+if __name__ == "__main__":
+    
+    lambda_handler({"url": "https://www.sciatiease.com/sciatiease.php"}, {})

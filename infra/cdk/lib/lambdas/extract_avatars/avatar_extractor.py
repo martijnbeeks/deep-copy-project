@@ -82,7 +82,7 @@ def encode_image_bytes(image_bytes: bytes) -> str:
     return base64.b64encode(image_bytes).decode("utf-8")
 
 
-def extract_avatars_from_url(url: str, openai_api_key: str, model: str = "gpt-4o-mini") -> AvatarCollection:
+def extract_avatars_from_url(url: str, openai_api_key: str, model: str = "gpt-5-mini") -> AvatarCollection:
     """
     Extract customer avatars from a product page URL using OpenAI.
     Optimized for AWS Lambda - no file storage required.
