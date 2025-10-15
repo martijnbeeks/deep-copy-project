@@ -27,7 +27,7 @@ ACCESS_TOKEN=$(curl -s -u "$CLIENT_ID:$CLIENT_SECRET" \
 curl -sS -X POST "${API_URL}jobs" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"sales_page_url":"https://try.meritrelief.com/","project_name":"meritrelief","swipe_file_id":"L00005","advertorial_type":"Listicle","customer_avatars":[{"persona_name":"Active Senior","description":"Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain","age_range":"60-75","gender":"both","key_buying_motivation":"Seeking non-invasive pain relief to maintain active lifestyle"},{"persona_name":"Desk-Bound Professional","description":"Office worker sitting 8+ hours daily experiencing lower back pain","age_range":"30-45","gender":"both","key_buying_motivation":"Quick relief from work-related pain"}]}'
+  -d '{"sales_page_url":"https://try.meritrelief.com/","project_name":"meritrelief","swipe_file_id":"A00002","advertorial_type":"Advertorial","customer_avatars":[{"persona_name":"Active Senior","description":"Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain","age_range":"60-75","gender":"both","key_buying_motivation":"Seeking non-invasive pain relief to maintain active lifestyle"},{"persona_name":"Desk-Bound Professional","description":"Office worker sitting 8+ hours daily experiencing lower back pain","age_range":"30-45","gender":"both","key_buying_motivation":"Quick relief from work-related pain"}]}'
 
 
 

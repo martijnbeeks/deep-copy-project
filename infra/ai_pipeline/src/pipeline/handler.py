@@ -11,9 +11,8 @@ from datetime import datetime, timezone
 import uuid
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Optional, Literal
-from pydantic import BaseModel, Field, ConfigDict
-
+from typing import List, Optional, Literal, Any, Dict, Union
+from pydantic import BaseModel, Field, ConfigDict, create_model
 
 
 from playwright.sync_api import sync_playwright
@@ -40,28 +39,6 @@ else:
             _h.setLevel(_log_level)
         except Exception:
             pass
-
-class Avertorial(BaseModel):
-    """Avertorial template"""
-    title: str = Field(..., description="Title of the advertorial.")
-    subtitle: str = Field(..., description="Subtitle of the advertorial.")
-    body: str = Field(..., description="Content of the advertorial.")
-    cta: str = Field(..., description="Call-to-action of the advertorial.")
-    captions: str = Field(..., description="Captions of the advertorial.")
-
-class ListicleItem(BaseModel):
-    """Listicle item template"""
-    number: int = Field(..., description="Number of the listicle item.")
-    title: str = Field(..., description="Title of the listicle item.")
-    description: str = Field(..., description="Description of the listicle item.")
-class Listicle(BaseModel):
-    """Listicle template"""
-    title: str = Field(..., description="Title of the listicle.")
-    author: str = Field(..., description="Author and date of the listicle.")
-    summary: str = Field(..., description="Summary / intro paragraph of the listicle.")
-    listicles: List[ListicleItem] = Field(..., description="List of listicles.")
-    cta: str = Field(..., description="Call-to-action of the listicle.")
-    conclusion: str = Field(..., description="Conclusion of the listicle.")
 
 class Demographics(BaseModel):
     """Demographic & general information about the avatar."""
@@ -182,6 +159,170 @@ def save_fullpage_png(url: str, out_file: str = "page.png"):
         page.close()
         context.close()
         return out_file
+    
+    
+def json_type_to_python(
+    schema: Dict[str, Any],
+    definitions: Dict[str, Any] = None
+) -> type:
+    """
+    Convert JSON schema type to Python type.
+    
+    Args:
+        schema: JSON schema for a field
+        definitions: Schema definitions ($defs) for nested types
+        
+    Returns:
+        Python type for the field
+    """
+    definitions = definitions or {}
+    
+    # Handle $ref (references to definitions)
+    if "$ref" in schema:
+        ref_path = schema["$ref"]
+        if ref_path.startswith("#/$defs/"):
+            def_name = ref_path.replace("#/$defs/", "")
+            if def_name in definitions:
+                return create_model_from_schema(
+                    def_name,
+                    definitions[def_name],
+                    definitions
+                )
+        return Any
+    
+    # Handle allOf (used by Pydantic for nested models)
+    if "allOf" in schema:
+        for sub_schema in schema["allOf"]:
+            if "$ref" in sub_schema:
+                return json_type_to_python(sub_schema, definitions)
+        return Any
+    
+    # Handle anyOf (union types)
+    if "anyOf" in schema:
+        types = []
+        for sub_schema in schema["anyOf"]:
+            sub_type = json_type_to_python(sub_schema, definitions)
+            if sub_type is not type(None):  # Skip None for now, we'll handle it below
+                types.append(sub_type)
+        
+        # Check if None is one of the options
+        has_null = any(sub.get("type") == "null" for sub in schema["anyOf"])
+        
+        if len(types) == 0:
+            return type(None)
+        elif len(types) == 1:
+            return Optional[types[0]] if has_null else types[0]
+        else:
+            # Multiple non-null types
+            union_type = Union[tuple(types)]
+            return Optional[union_type] if has_null else union_type
+    
+    json_type = schema.get("type")
+    
+    if json_type == "string":
+        return str
+    elif json_type == "integer":
+        return int
+    elif json_type == "number":
+        return float
+    elif json_type == "boolean":
+        return bool
+    elif json_type == "array":
+        items_schema = schema.get("items", {})
+        item_type = json_type_to_python(items_schema, definitions)
+        return List[item_type]
+    elif json_type == "object":
+        # Create a nested model for object types
+        return create_model_from_schema(
+            schema.get("title", "NestedModel"),
+            schema,
+            definitions
+        )
+    elif json_type == "null":
+        return type(None)
+    
+    return Any
+
+
+def create_model_from_schema(
+    model_name: str,
+    schema: Dict[str, Any],
+    definitions: Dict[str, Any] = None
+) -> type[BaseModel]:
+    """
+    Create a Pydantic model from a JSON schema.
+    
+    Args:
+        model_name: Name for the model
+        schema: JSON schema object
+        definitions: Schema definitions ($defs) for nested types
+        
+    Returns:
+        Pydantic BaseModel class
+    """
+    definitions = definitions or {}
+    
+    properties = schema.get("properties", {})
+    required_fields = schema.get("required", [])
+    
+    # Build field definitions
+    field_definitions = {}
+    
+    for field_name, field_schema in properties.items():
+        field_type = json_type_to_python(field_schema, definitions)
+        
+        # Determine if field is required
+        is_required = field_name in required_fields
+        
+        # Get description
+        description = field_schema.get("description", "")
+        
+        # Create Field with metadata
+        if is_required:
+            field_definitions[field_name] = (
+                field_type,
+                Field(..., description=description)
+            )
+        else:
+            field_definitions[field_name] = (
+                Optional[field_type],
+                Field(None, description=description)
+            )
+    
+    # Create the model
+    model = create_model(
+        model_name,
+        **field_definitions,
+        __base__=BaseModel
+    )
+    
+    # Add docstring
+    if "description" in schema:
+        model.__doc__ = schema["description"]
+    
+    return model
+
+
+def load_schema_as_model(schema: str) -> type[BaseModel]:
+    """
+    Load a JSON schema file and create a Pydantic BaseModel.
+    
+    Args:
+        schema_path: Path to JSON schema file
+        
+    Returns:
+        Pydantic BaseModel class
+    """
+    schema = json.loads(schema)
+    
+    # Get definitions
+    definitions = schema.get("$defs", {})
+    
+    # Get model name from schema or use default
+    model_name = schema.get("title", "GeneratedModel")
+    
+    # Create the main model
+    return create_model_from_schema(model_name, schema, definitions)
 
 
 class DeepCopy:
@@ -252,13 +393,13 @@ class DeepCopy:
                 f"- Gender: {avatar['gender']}\n"
                 f"- Key Buying Motivation: {avatar['key_buying_motivation']}"
                 for i, avatar in enumerate(customer_avatars)
-            ])
+            ]) if customer_avatars else "No customer avatars provided"
             
             prompt = f"""
             You are my expert copywriter and you specialise in writing highly persuasive direct response style copy for my companies.
             
-            I'm targeting the following customer avatars:
-            {avatars_description}
+            I'm targeting the following customer avatars (if any):
+            {avatars_description if customer_avatars else "No customer avatars provided"}
             
             I've attached my current sales page.    
 
@@ -509,12 +650,9 @@ class DeepCopy:
             logger.error(f"Error creating summary: {e}")
             raise
         
-    def analyze_swipe_file(self, swipe_file_path, advertorial_type: Literal["Advertorial", "Listicle"]):
+    def analyze_swipe_file(self, swipe_file_html, advertorial_type: Literal["Advertorial", "Listicle"]):
         """Analyze the swipe file"""
         try:
-            with open(swipe_file_path, "r", encoding="utf-8") as f:
-                swipe_file_html = f.read()
-                
             prompt = f"""
             Please analyze the following swipe file and provide a detailed analysis of the content and style used in this marketing document: {advertorial_type}:
             
@@ -534,7 +672,7 @@ class DeepCopy:
             logger.error(f"Error analyzing swipe file: {e}")
             raise
     
-    def rewrite_swipe_files(self, angles, avatar_sheet, summary, swipe_file_analysis, advertorial_type: Literal["Advertorial", "Listicle"]):
+    def rewrite_swipe_files(self, angles, avatar_sheet, summary, swipe_file_analysis, advertorial_type: Literal["Advertorial", "Listicle"], model: BaseModel):
         """Rewrite swipe files for each marketing angle"""
         try:
 
@@ -556,23 +694,28 @@ class DeepCopy:
                 """
 
                 logger.info(f"Calling GPT-5 API to rewrite swipe file for angle: {angle}")
-                response = self.client.responses.parse(
-                    model="gpt-5-mini",
-                    input=[{
-                        "role": "user", 
-                        "content": [{"type": "input_text", "text": prompt}]
-                    }],
-                    text_format=Listicle if advertorial_type == "Listicle" else Avertorial,
-                )
-                logger.info(f"GPT-5 API call completed for swipe file rewrite (angle: {angle})")
-                return {"angle": angle, "content": response.output_text}
+                
+                try:
+                    response = self.client.responses.parse(
+                        model="gpt-5-mini",
+                        input=[{
+                            "role": "user", 
+                            "content": [{"type": "input_text", "text": prompt}]
+                        }],
+                        text_format=model,
+                    )
+                    logger.info(f"GPT-5 API call completed for swipe file rewrite (angle: {angle})")
+                    return {"angle": angle, "content": response.output_text}
+                except Exception as e:
+                    logger.error(f"Error in GPT-5 API call for swipe file rewrite (angle: {angle}): {e}")
+                    return {}
 
             # Run API calls in parallel while preserving the original order
             results_by_index = [None] * len(angles)
             if not angles:
                 return results_by_index
 
-            max_workers = min(3, len(angles))
+            max_workers = min(1, len(angles))
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 future_to_index = {}
                 for idx, angle in enumerate(angles):
@@ -582,6 +725,10 @@ class DeepCopy:
                     idx = future_to_index[future]
                     # Propagate exceptions if any to maintain previous failure semantics
                     results_by_index[idx] = future.result()
+                    
+            # If all results are empty dictionaries, raise an error
+            if all(result == {} for result in results_by_index):
+                raise Exception("All swipe file rewrites failed")
 
             return results_by_index
             
@@ -705,58 +852,32 @@ def run_pipeline(event, context):
                 "body": {"error": error_msg}
             }
 
-        # If a swipe_file_id is provided, retrieve the HTML from S3
-        if swipe_file_id:
+        try:
+            # load both the html as the json file
+            s3_key_html = f"content_library/{swipe_file_id}_original.html"
+            # s3_key_html_analysis = f"content_library/{swipe_file_id}_analysis.txt"
+            s3_key_json = f"content_library/{swipe_file_id}.json"
+            
+            obj_html = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_html)
+            html_bytes = obj_html["Body"].read()
+            swipe_file_html = html_bytes.decode("utf-8")
+            
+            obj_json = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_json)
+            json_bytes = obj_json["Body"].read()
+            json_text = json_bytes.decode("utf-8")
+            swipe_file_model = load_schema_as_model(json_text)
+            
+        except Exception as e:
+            error_msg = f"Unexpected error fetching swipe file from S3: {str(e)}"
+            logger.error(error_msg)
             try:
-                s3_key = f"content_library/{swipe_file_id}.html"
-                logger.info(f"Fetching swipe file from S3: s3://{s3_bucket}/{s3_key}")
-                obj = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key)
-                html_bytes = obj["Body"].read()
-                html_text = html_bytes.decode("utf-8")
-                tmp_path = f"/tmp/swipe_{swipe_file_id}.html"
-                with open(tmp_path, "w", encoding="utf-8") as f:
-                    f.write(html_text)
-                swipe_file_path = tmp_path
-                logger.info(f"Swipe file saved to {swipe_file_path} and will be used in the workflow")
-            except ClientError as e:
-                code = (e.response or {}).get("Error", {}).get("Code")
-                http_status = (e.response or {}).get("ResponseMetadata", {}).get("HTTPStatusCode")
-                if code in ("NoSuchKey", "404", "NotFound") or http_status == 404:
-                    error_msg = f"Swipe file not found on S3: s3://{s3_bucket}/{s3_key}"
-                    logger.error(error_msg)
-                    try:
-                        generator.update_job_status(job_id, "FAILED", {"error": error_msg})
-                    except Exception:
-                        pass
-                    return {
-                        "statusCode": 404,
-                        "body": {"error": error_msg}
-                    }
-                else:
-                    error_msg = f"Failed to fetch swipe file from S3: {str(e)}"
-                    logger.error(error_msg)
-                    try:
-                        generator.update_job_status(job_id, "FAILED", {"error": error_msg})
-                    except Exception:
-                        pass
-                    return {
-                        "statusCode": 500,
-                        "body": {"error": error_msg}
-                    }
-            except Exception as e:
-                error_msg = f"Unexpected error fetching swipe file from S3: {str(e)}"
-                logger.error(error_msg)
-                try:
-                    generator.update_job_status(job_id, "FAILED", {"error": error_msg})
-                except Exception:
-                    pass
-                return {
-                    "statusCode": 500,
-                    "body": {"error": error_msg}
-                }
-        # TODO: 
-        # Return Avertorial / Listicle and let frontend how to render it in a html template with placeholders
-        
+                generator.update_job_status(job_id, "FAILED", {"error": error_msg})
+            except Exception:
+                pass
+            return {
+                "statusCode": 500,
+                "body": {"error": error_msg}
+            }
         # Get customer avatars from event
         customer_avatars = event.get("customer_avatars", [])
         # Step 1: Analyze research page
@@ -781,7 +902,6 @@ def run_pipeline(event, context):
         # Step 4: Execute deep research
         logger.info("Step 4: Executing deep research")
         deep_research_output = generator.execute_deep_research(deep_research_prompt)
-        # deep_research_output = open("src/pipeline/content/deep_research_output.txt", "r", encoding="utf-8").read()
         
         # Step 5: Complete avatar sheet
         logger.info("Step 5: Completing avatar sheet")
@@ -805,15 +925,14 @@ def run_pipeline(event, context):
         )
         
         # Step 9: Analyse the swipe file
-        
         logger.info("Step 9: Analyzing swipe file")
-        swipe_file_analysis = generator.analyze_swipe_file(swipe_file_path, advertorial_type)
+        swipe_file_analysis = generator.analyze_swipe_file(swipe_file_html, advertorial_type)
         
         # Step 10: Rewrite swipe files
         logger.info("Step 9: Rewriting swipe files")
         
         swipe_results = generator.rewrite_swipe_files(
-            angles, avatar_sheet, summary, swipe_file_analysis, advertorial_type
+            angles, avatar_sheet, summary, swipe_file_analysis, advertorial_type, swipe_file_model
         )
         
         # Step 10: Save all results
