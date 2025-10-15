@@ -42,9 +42,7 @@ export async function GET(
     let statusResponse
     try {
       statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
-      console.log(`DeepCopy API response for job ${jobId}:`, statusResponse)
     } catch (apiError) {
-      console.error(`Error polling DeepCopy API for job ${jobId}:`, apiError)
       // If API call fails, return current database status instead of error
       const errorResponse = NextResponse.json({
         status: dbStatus.status,
@@ -106,7 +104,6 @@ export async function GET(
     return response
     
   } catch (error) {
-    console.error(`Error checking job status for ${params.id}:`, error)
     return NextResponse.json(
       { error: 'Failed to check job status' },
       { status: 500 }
@@ -184,7 +181,7 @@ function extractHTMLTemplates(results: any): Array<{name: string, type: string, 
     
     
   } catch (error) {
-    console.error('Error extracting HTML templates:', error)
+    // Error extracting templates
   }
   
   return templates
@@ -300,12 +297,6 @@ function getSectionContent(results: any, section: string): string {
 // Store job results in database
 async function storeJobResults(localJobId: string, result: any, deepCopyJobId: string) {
   try {
-    console.log(`📊 Storing results for job ${localJobId}:`, {
-      hasResults: !!result.results,
-      hasSwipeResults: !!(result.results && result.results.swipe_results),
-      swipeResultsCount: result.results?.swipe_results?.length || 0,
-      projectName: result.project_name
-    })
     
     // Create HTML content for display
     let htmlContent = ''
@@ -335,8 +326,6 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
     const htmlTemplates = extractHTMLTemplates(result)
     const templateCount = htmlTemplates.length
     
-    console.log(`📄 Found ${templateCount} HTML templates in job results`)
-    
     // Store the result with full metadata
     await createResult(localJobId, htmlContent, {
       deepcopy_job_id: deepCopyJobId,
@@ -348,9 +337,7 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
       html_templates_count: templateCount
     })
     
-    console.log(`✅ Successfully stored results for job ${localJobId} with ${templateCount} HTML templates`)
-    
   } catch (error) {
-    console.error('Error storing job results:', error)
+    // Error storing results
   }
 }

@@ -25,6 +25,9 @@ export interface Job {
   sales_page_url?: string
   template_id?: string
   advertorial_type: string
+  target_approach?: string
+  customer_avatars?: any[]
+  // Deprecated fields for backward compatibility
   persona?: string
   age_range?: string
   gender?: string

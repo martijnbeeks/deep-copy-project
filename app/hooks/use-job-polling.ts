@@ -41,7 +41,7 @@ export function useJobPolling({
     }
 
     try {
-      console.log(`🔍 Polling job ${jobId} (attempt ${attempts + 1}/${maxAttempts})`)
+      `)
       
       const response = await fetch(`/api/jobs/${jobId}/status`, {
         method: 'GET',
@@ -52,7 +52,7 @@ export function useJobPolling({
 
       if (!response.ok) {
         if (response.status === 400) {
-          console.log(`Job ${jobId} returned 400 - likely completed or invalid, stopping polling`)
+          
           setIsPolling(false)
           if (intervalRef.current) {
             clearInterval(intervalRef.current)
@@ -64,7 +64,7 @@ export function useJobPolling({
       }
 
       const data = await response.json()
-      console.log(`📊 Job ${jobId} status response:`, data)
+      
 
       const newStatus = {
         status: data.status || 'processing',
@@ -83,7 +83,7 @@ export function useJobPolling({
 
       // Check if job is complete
       if (newStatus.status === 'completed') {
-        console.log(`✅ Job ${jobId} completed!`)
+        
         setIsPolling(false)
         if (intervalRef.current) {
           clearInterval(intervalRef.current)
@@ -93,7 +93,7 @@ export function useJobPolling({
           onComplete(newStatus.result)
         }
       } else if (newStatus.status === 'failed') {
-        console.log(`❌ Job ${jobId} failed!`)
+        
         setIsPolling(false)
         if (intervalRef.current) {
           clearInterval(intervalRef.current)
@@ -128,7 +128,7 @@ export function useJobPolling({
       return
     }
 
-    console.log(`🚀 Starting polling for job ${jobId}`)
+    
     setIsPolling(true)
     setAttempts(0)
 
@@ -144,7 +144,7 @@ export function useJobPolling({
   }, [jobId, enabled, isPolling, interval, checkJobStatus])
 
   const stopPolling = useCallback(() => {
-    console.log(`🛑 Stopping polling for job ${jobId}`)
+    
     setIsPolling(false)
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
@@ -176,7 +176,7 @@ export function useJobPolling({
   // Stop polling if max attempts reached
   useEffect(() => {
     if (attempts >= maxAttempts && isPolling) {
-      console.log(`⏰ Max polling attempts reached for job ${jobId}`)
+      
       stopPolling()
     }
   }, [attempts, maxAttempts, isPolling, jobId, stopPolling])

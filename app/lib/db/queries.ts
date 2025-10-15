@@ -60,6 +60,9 @@ export const createJob = async (jobData: {
   sales_page_url?: string
   template_id?: string
   advertorial_type: string
+  target_approach?: string
+  customer_avatars?: any[]
+  // Deprecated fields for backward compatibility
   persona?: string
   age_range?: string
   gender?: string
@@ -69,15 +72,15 @@ export const createJob = async (jobData: {
   if (jobData.custom_id) {
     // Use custom ID (DeepCopy job ID) as the primary key
     const result = await query(
-      'INSERT INTO jobs (id, user_id, title, brand_info, sales_page_url, template_id, advertorial_type, persona, age_range, gender, execution_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
-      [jobData.custom_id, jobData.user_id, jobData.title, jobData.brand_info, jobData.sales_page_url, jobData.template_id, jobData.advertorial_type, jobData.persona, jobData.age_range, jobData.gender, jobData.execution_id]
+      'INSERT INTO jobs (id, user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, customer_avatars, persona, age_range, gender, execution_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *',
+      [jobData.custom_id, jobData.user_id, jobData.title, jobData.brand_info, jobData.sales_page_url, jobData.template_id, jobData.advertorial_type, jobData.target_approach, JSON.stringify(jobData.customer_avatars || []), jobData.persona, jobData.age_range, jobData.gender, jobData.execution_id]
     )
     return result.rows[0]
   } else {
     // Use default UUID generation
     const result = await query(
-      'INSERT INTO jobs (user_id, title, brand_info, sales_page_url, template_id, advertorial_type, persona, age_range, gender, execution_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
-      [jobData.user_id, jobData.title, jobData.brand_info, jobData.sales_page_url, jobData.template_id, jobData.advertorial_type, jobData.persona, jobData.age_range, jobData.gender, jobData.execution_id]
+      'INSERT INTO jobs (user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, customer_avatars, persona, age_range, gender, execution_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
+      [jobData.user_id, jobData.title, jobData.brand_info, jobData.sales_page_url, jobData.template_id, jobData.advertorial_type, jobData.target_approach, JSON.stringify(jobData.customer_avatars || []), jobData.persona, jobData.age_range, jobData.gender, jobData.execution_id]
     )
     return result.rows[0]
   }
@@ -193,7 +196,7 @@ export const updateJobStatus = async (id: string, status: string, progress?: num
         updates.push('completed_at = NOW()')
       }
     } catch (error) {
-      console.log('completed_at column not found, skipping...')
+      // completed_at column not found, skipping
     }
   }
 

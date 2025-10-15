@@ -21,6 +21,14 @@ import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { TemplatePreview } from "@/components/template-preview"
 import { useSidebar } from "@/contexts/sidebar-context"
 
+interface CustomerAvatar {
+  persona_name: string
+  description: string
+  age_range: string
+  gender: string
+  key_buying_motivation: string
+}
+
 interface PipelineFormData {
   title: string
   brand_info: string
@@ -28,6 +36,8 @@ interface PipelineFormData {
   template_id?: string
   advertorial_type: string
   target_approach?: string
+  customer_avatars?: CustomerAvatar[]
+  // Deprecated fields for backward compatibility
   persona?: string
   age_range?: string
   gender?: string
@@ -48,6 +58,8 @@ export default function CreatePage() {
     template_id: "",
     advertorial_type: "",
     target_approach: "",
+    customer_avatars: [],
+    // Deprecated fields for backward compatibility
     persona: "",
     age_range: "",
     gender: "",
@@ -91,6 +103,29 @@ export default function CreatePage() {
       if (!formData.advertorial_type) {
         newErrors.advertorial_type = "Advertorial type is required"
       }
+      if (!formData.target_approach) {
+        newErrors.target_approach = "Target approach is required"
+      }
+      
+      // Validate customer avatars for "known" approach
+      if (formData.target_approach === 'known') {
+        if (!formData.customer_avatars || formData.customer_avatars.length === 0) {
+          newErrors.customer_avatars = "Customer avatar information is required"
+        } else {
+          const avatar = formData.customer_avatars[0]
+          if (!avatar.persona_name?.trim()) {
+            newErrors.customer_avatars = "Persona name is required"
+          } else if (!avatar.description?.trim()) {
+            newErrors.customer_avatars = "Persona description is required"
+          } else if (!avatar.age_range) {
+            newErrors.customer_avatars = "Age range is required"
+          } else if (!avatar.gender) {
+            newErrors.customer_avatars = "Gender is required"
+          } else if (!avatar.key_buying_motivation?.trim()) {
+            newErrors.customer_avatars = "Key buying motivation is required"
+          }
+        }
+      }
     }
 
     setErrors(newErrors)
@@ -131,6 +166,8 @@ export default function CreatePage() {
         template_id: "",
         advertorial_type: "",
         target_approach: "",
+        customer_avatars: [],
+        // Deprecated fields for backward compatibility
         persona: "",
         age_range: "",
         gender: "",
@@ -709,27 +746,87 @@ export default function CreatePage() {
                                   Define Your Target Persona
                                 </h4>
                                 <p className="text-sm text-green-800 dark:text-green-200 mb-4">
-                                  Describe your specific target customer persona:
+                                  Describe your specific target customer persona with all required details:
                                 </p>
                                 
                                 <div className="space-y-4">
                                   <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-green-900 dark:text-green-100">Target Persona Name</Label>
+                                    <Label className="text-sm font-medium text-green-900 dark:text-green-100">
+                                      Persona Name <span className="text-red-500">*</span>
+                                    </Label>
                                     <Input
                                       placeholder="e.g., Health-conscious professionals, Tech-savvy millennials, Busy parents..."
-                                      value={formData.persona}
-                                      onChange={(e) => setFormData((prev) => ({ ...prev, persona: e.target.value }))}
+                                      value={formData.customer_avatars?.[0]?.persona_name || ''}
+                                      onChange={(e) => {
+                                        const newAvatars = [...(formData.customer_avatars || [])]
+                                        if (newAvatars.length === 0) {
+                                          newAvatars.push({
+                                            persona_name: e.target.value,
+                                            description: '',
+                                            age_range: '',
+                                            gender: '',
+                                            key_buying_motivation: ''
+                                          })
+                                        } else {
+                                          newAvatars[0].persona_name = e.target.value
+                                        }
+                                        setFormData((prev) => ({ ...prev, customer_avatars: newAvatars }))
+                                      }}
                                       disabled={isLoading}
                                       className="h-11 text-sm border-green-200 dark:border-green-800 focus-visible:ring-green-500"
                                     />
                                   </div>
 
+                                  <div className="space-y-2">
+                                    <Label className="text-sm font-medium text-green-900 dark:text-green-100">
+                                      Description <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Textarea
+                                      placeholder="Describe their lifestyle, motivations, and key challenges in 1-2 sentences..."
+                                      value={formData.customer_avatars?.[0]?.description || ''}
+                                      onChange={(e) => {
+                                        const newAvatars = [...(formData.customer_avatars || [])]
+                                        if (newAvatars.length === 0) {
+                                          newAvatars.push({
+                                            persona_name: '',
+                                            description: e.target.value,
+                                            age_range: '',
+                                            gender: '',
+                                            key_buying_motivation: ''
+                                          })
+                                        } else {
+                                          newAvatars[0].description = e.target.value
+                                        }
+                                        setFormData((prev) => ({ ...prev, customer_avatars: newAvatars }))
+                                      }}
+                                      rows={3}
+                                      disabled={isLoading}
+                                      className="text-sm border-green-200 dark:border-green-800 focus-visible:ring-green-500"
+                                    />
+                                  </div>
+
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                      <Label className="text-sm font-medium text-green-900 dark:text-green-100">Age Range</Label>
+                                      <Label className="text-sm font-medium text-green-900 dark:text-green-100">
+                                        Age Range <span className="text-red-500">*</span>
+                                      </Label>
                                       <Select
-                                        value={formData.age_range}
-                                        onValueChange={(value) => setFormData((prev) => ({ ...prev, age_range: value }))}
+                                        value={formData.customer_avatars?.[0]?.age_range || ''}
+                                        onValueChange={(value) => {
+                                          const newAvatars = [...(formData.customer_avatars || [])]
+                                          if (newAvatars.length === 0) {
+                                            newAvatars.push({
+                                              persona_name: '',
+                                              description: '',
+                                              age_range: value,
+                                              gender: '',
+                                              key_buying_motivation: ''
+                                            })
+                                          } else {
+                                            newAvatars[0].age_range = value
+                                          }
+                                          setFormData((prev) => ({ ...prev, customer_avatars: newAvatars }))
+                                        }}
                                         disabled={isLoading}
                                       >
                                         <SelectTrigger className="h-11 text-sm border-green-200 dark:border-green-800 focus-visible:ring-green-500">
@@ -742,15 +839,30 @@ export default function CreatePage() {
                                           <SelectItem value="45-54" className="text-sm py-2">45-54 (Gen X)</SelectItem>
                                           <SelectItem value="55-64" className="text-sm py-2">55-64 (Gen X)</SelectItem>
                                           <SelectItem value="65+" className="text-sm py-2">65+ (Boomers)</SelectItem>
-                                          <SelectItem value="all_ages" className="text-sm py-2">All ages</SelectItem>
                                         </SelectContent>
                                       </Select>
                                     </div>
                                     <div className="space-y-2">
-                                      <Label className="text-sm font-medium text-green-900 dark:text-green-100">Gender</Label>
+                                      <Label className="text-sm font-medium text-green-900 dark:text-green-100">
+                                        Gender <span className="text-red-500">*</span>
+                                      </Label>
                                       <Select
-                                        value={formData.gender}
-                                        onValueChange={(value) => setFormData((prev) => ({ ...prev, gender: value }))}
+                                        value={formData.customer_avatars?.[0]?.gender || ''}
+                                        onValueChange={(value) => {
+                                          const newAvatars = [...(formData.customer_avatars || [])]
+                                          if (newAvatars.length === 0) {
+                                            newAvatars.push({
+                                              persona_name: '',
+                                              description: '',
+                                              age_range: '',
+                                              gender: value,
+                                              key_buying_motivation: ''
+                                            })
+                                          } else {
+                                            newAvatars[0].gender = value
+                                          }
+                                          setFormData((prev) => ({ ...prev, customer_avatars: newAvatars }))
+                                        }}
                                         disabled={isLoading}
                                       >
                                         <SelectTrigger className="h-11 text-sm border-green-200 dark:border-green-800 focus-visible:ring-green-500">
@@ -759,16 +871,50 @@ export default function CreatePage() {
                                         <SelectContent>
                                           <SelectItem value="male" className="text-sm py-2">Male</SelectItem>
                                           <SelectItem value="female" className="text-sm py-2">Female</SelectItem>
-                                          <SelectItem value="non_binary" className="text-sm py-2">Non-binary</SelectItem>
-                                          <SelectItem value="all_genders" className="text-sm py-2">All genders</SelectItem>
-                                          <SelectItem value="prefer_not_to_say" className="text-sm py-2">Prefer not to say</SelectItem>
+                                          <SelectItem value="both" className="text-sm py-2">Both</SelectItem>
                                         </SelectContent>
                                       </Select>
                                     </div>
                                   </div>
+
+                                  <div className="space-y-2">
+                                    <Label className="text-sm font-medium text-green-900 dark:text-green-100">
+                                      Key Buying Motivation <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Textarea
+                                      placeholder="What drives them to purchase this product? What problem does it solve for them?"
+                                      value={formData.customer_avatars?.[0]?.key_buying_motivation || ''}
+                                      onChange={(e) => {
+                                        const newAvatars = [...(formData.customer_avatars || [])]
+                                        if (newAvatars.length === 0) {
+                                          newAvatars.push({
+                                            persona_name: '',
+                                            description: '',
+                                            age_range: '',
+                                            gender: '',
+                                            key_buying_motivation: e.target.value
+                                          })
+                                        } else {
+                                          newAvatars[0].key_buying_motivation = e.target.value
+                                        }
+                                        setFormData((prev) => ({ ...prev, customer_avatars: newAvatars }))
+                                      }}
+                                      rows={2}
+                                      disabled={isLoading}
+                                      className="text-sm border-green-200 dark:border-green-800 focus-visible:ring-green-500"
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             </div>
+                          )}
+
+                          {/* Error display for customer avatars */}
+                          {errors.customer_avatars && (
+                            <p className="text-sm text-destructive flex items-center gap-2">
+                              <AlertCircle className="h-4 w-4" />
+                              {errors.customer_avatars}
+                            </p>
                           )}
                         </div>
 

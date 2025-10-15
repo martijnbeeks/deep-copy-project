@@ -60,7 +60,9 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       logout: () => {
         set({ user: null, isAuthenticated: false, error: null })
         // Clear from server
-        fetch('/api/auth/logout', { method: 'POST' }).catch(console.error)
+        fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+        // Clear persisted storage
+        localStorage.removeItem('auth-storage')
       },
     }),
     {

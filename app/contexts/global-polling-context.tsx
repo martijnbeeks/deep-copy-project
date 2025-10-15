@@ -27,7 +27,7 @@ export function GlobalPollingProvider({ children }: { children: React.ReactNode 
     } = useGlobalJobPolling({
       interval: 10000, // Poll every 10 seconds
       onJobUpdate: (jobId, status, progress) => {
-        console.log(`🔄 Global polling updated job ${jobId}: ${status} (${progress}%)`)
+        `)
         // Refresh jobs list to show updated status
         try {
           fetchJobs()
@@ -36,7 +36,7 @@ export function GlobalPollingProvider({ children }: { children: React.ReactNode 
         }
       },
       onJobComplete: (jobId, result) => {
-        console.log(`✅ Global polling completed job ${jobId}`)
+        
         // Refresh jobs list to show completed status
         try {
           fetchJobs()

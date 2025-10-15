@@ -31,7 +31,14 @@ export async function POST(request: NextRequest) {
     // Remove password hash from response
     const { password_hash, ...userWithoutPassword } = user
 
-    return NextResponse.json({ user: userWithoutPassword })
+    const response = NextResponse.json({ user: userWithoutPassword })
+    
+    // Add cache-busting headers
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json(

@@ -17,7 +17,6 @@ async function getProcessingJobs() {
     
     return result.rows
   } catch (error) {
-    console.error('Error fetching processing jobs:', error)
     return []
   }
 }
@@ -34,25 +33,20 @@ async function checkJobStatus(job: { id: string; execution_id: string; updated_a
       const result = await deepCopyClient.getJobResult(deepCopyJobId)
       await storeJobResults(job.id, result, deepCopyJobId)
       await updateJobStatus(job.id, 'completed', 100)
-      console.log(`✓ Recovered completed job: ${job.id}`)
       
     } else if (statusResponse.status === 'FAILED') {
       // Job failed
       await updateJobStatus(job.id, 'failed')
-      console.log(`✗ Recovered failed job: ${job.id}`)
       
     } else if (['RUNNING', 'SUBMITTED', 'PENDING'].includes(statusResponse.status)) {
       // Job still processing - let background service handle polling
-      console.log(`🔄 Job ${job.id} still processing - background service will handle polling`)
       
     } else {
       // Unknown status - mark as failed
       await updateJobStatus(job.id, 'failed')
-      console.log(`❓ Unknown status for job ${job.id}: ${statusResponse.status}`)
     }
     
   } catch (error) {
-    console.error(`Error checking job ${job.id}:`, error)
     // If we can't check the status, mark as failed
     await updateJobStatus(job.id, 'failed')
   }
@@ -61,12 +55,6 @@ async function checkJobStatus(job: { id: string; execution_id: string; updated_a
 // Store job results in database
 async function storeJobResults(localJobId: string, result: any, deepCopyJobId: string) {
   try {
-    console.log(`📊 Storing results for job ${localJobId}:`, {
-      hasResults: !!result.results,
-      hasSwipeResults: !!(result.results && result.results.swipe_results),
-      swipeResultsCount: result.results?.swipe_results?.length || 0,
-      projectName: result.project_name
-    })
     
     // Create HTML content for display
     let htmlContent = ''
@@ -96,8 +84,6 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
     const htmlTemplates = extractHTMLTemplates(result)
     const templateCount = htmlTemplates.length
     
-    console.log(`📄 Found ${templateCount} HTML templates in job results`)
-    
     // Store in database
     await createResult(localJobId, htmlContent, {
       generated_at: new Date().toISOString(),
@@ -110,10 +96,8 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
       html_templates_count: templateCount
     })
     
-    console.log(`✅ Successfully stored results for job ${localJobId} with ${templateCount} HTML templates`)
-    
   } catch (error) {
-    console.error('Error storing job results:', error)
+    // Error storing results
   }
 }
 
@@ -284,10 +268,8 @@ function extractHTMLTemplates(results: any): Array<{name: string, type: string, 
       })
     }
     
-    console.log(`📄 Extracted ${templates.length} HTML templates from results`)
-    
   } catch (error) {
-    console.error('Error extracting HTML templates:', error)
+    // Error extracting templates
   }
   
   return templates
@@ -315,14 +297,10 @@ function getSectionContent(results: any, section: string): string {
 
 // Main recovery function
 export async function recoverProcessingJobs() {
-  console.log('🔄 Starting job recovery process...')
-  
   try {
     const processingJobs = await getProcessingJobs()
-    console.log(`Found ${processingJobs.length} jobs in processing status`)
     
     if (processingJobs.length === 0) {
-      console.log('✓ No jobs need recovery')
       return
     }
     
@@ -338,9 +316,7 @@ export async function recoverProcessingJobs() {
       }
     }
     
-    console.log('✓ Job recovery completed')
-    
   } catch (error) {
-    console.error('Error during job recovery:', error)
+    // Error during recovery
   }
 }

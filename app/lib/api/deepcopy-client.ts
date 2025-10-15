@@ -11,11 +11,21 @@ interface AccessTokenResponse {
   expires_in: number
 }
 
+interface CustomerAvatar {
+  persona_name: string
+  description: string
+  age_range: string
+  gender: string
+  key_buying_motivation: string
+}
+
 interface SubmitJobRequest {
   sales_page_url?: string
   project_name?: string
   swipe_file_id?: string
   advertorial_type: string // Required field
+  customer_avatars?: CustomerAvatar[]
+  // Deprecated fields for backward compatibility
   persona?: string
   age_range?: string
   gender?: string
@@ -77,6 +87,16 @@ interface Advertorial {
   body: string
   cta: string
   captions: string
+}
+
+interface AvatarExtractionRequest {
+  url: string
+}
+
+interface AvatarExtractionResponse {
+  success: boolean
+  url: string
+  avatars: CustomerAvatar[]
 }
 
 class DeepCopyClient {
@@ -161,6 +181,15 @@ class DeepCopyClient {
   async getJobResult(jobId: string): Promise<JobResult> {
       return this.makeRequest(`jobs/${jobId}/result`)
   }
+
+  async extractAvatars(request: AvatarExtractionRequest): Promise<AvatarExtractionResponse> {
+      return this.makeRequest('avatars/extract', {
+          method: 'POST',
+          body: JSON.stringify(request),
+          // Add timeout for avatar extraction
+          signal: AbortSignal.timeout(30000) // 30 second timeout
+      })
+  }
 }
 
 // Create a singleton instance with production configuration
@@ -171,4 +200,4 @@ export const deepCopyClient = new DeepCopyClient({
   clientSecret: process.env.DEEPCOPY_CLIENT_SECRET || '1msm19oltu724113t5vujtldr4uvum7hvn6cj7n1s3tg1ar02k5'
 })
 
-export type { SubmitJobRequest, SubmitJobResponse, JobStatusResponse, JobResult, SwipeResult, Listicle, ListicleItem, Advertorial }
+export type { SubmitJobRequest, SubmitJobResponse, JobStatusResponse, JobResult, SwipeResult, Listicle, ListicleItem, Advertorial, CustomerAvatar, AvatarExtractionRequest, AvatarExtractionResponse }

@@ -21,13 +21,13 @@ export function useSimplePolling({ enabled, interval = 10000 }: UseSimplePolling
       return
     }
 
-    console.log('🔄 Starting simple global polling...')
+    
     
     intervalRef.current = setInterval(async () => {
       try {
         // Invalidate all job-related queries to trigger refetch
         await queryClient.invalidateQueries({ queryKey: ['jobs'] })
-        console.log('🔄 Global polling: Refreshed jobs data')
+        
       } catch (error) {
         console.error('❌ Global polling error:', error)
       }
@@ -37,7 +37,7 @@ export function useSimplePolling({ enabled, interval = 10000 }: UseSimplePolling
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
         intervalRef.current = null
-        console.log('🛑 Stopped simple global polling')
+        
       }
     }
   }, [enabled, interval, queryClient])

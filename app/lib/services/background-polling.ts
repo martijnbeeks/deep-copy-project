@@ -19,12 +19,10 @@ export class BackgroundPollingService {
 
   start() {
     if (this.isRunning) {
-      console.log('🔄 Background polling already running')
       return
     }
 
     this.isRunning = true
-    console.log('🚀 Starting background polling service...')
     
     // Check for jobs every 30 seconds
     this.pollInterval = setInterval(() => {
@@ -41,7 +39,6 @@ export class BackgroundPollingService {
     }
 
     this.isRunning = false
-    console.log('🛑 Stopping background polling service...')
     
     if (this.pollInterval) {
       clearInterval(this.pollInterval)
@@ -51,15 +48,12 @@ export class BackgroundPollingService {
     // Stop all individual job polling
     backgroundPollingManager.forEach((timeoutId, jobId) => {
       clearTimeout(timeoutId)
-      console.log(`🛑 Stopped background polling for job ${jobId}`)
     })
     backgroundPollingManager.clear()
   }
 
   private async checkAllJobs() {
     try {
-      console.log('🔍 Background check: Looking for jobs that need polling...')
-      
       // Get all jobs that are not completed/failed
       const result = await query(`
         SELECT id, execution_id, status, updated_at 
@@ -69,7 +63,6 @@ export class BackgroundPollingService {
       `)
       
       const jobsToPoll = result.rows
-      console.log(`🔍 Found ${jobsToPoll.length} jobs that need background polling`)
       
       for (const job of jobsToPoll) {
         // Only start polling if not already polling
@@ -80,12 +73,11 @@ export class BackgroundPollingService {
       }
       
     } catch (error) {
-      console.error('❌ Error in background polling check:', error)
+      // Error in background polling check
     }
   }
 
   private startJobPolling(jobId: string, deepCopyJobId: string) {
-    console.log(`🔄 Starting background polling for job ${jobId}`)
     
     let pollCount = 0
     const maxPolls = 60 // Maximum 15 minutes of polling (60 * 15 seconds)
@@ -93,20 +85,20 @@ export class BackgroundPollingService {
     const poll = async () => {
       try {
         pollCount++
-        console.log(`🔄 Background polling job ${jobId} (attempt ${pollCount}/${maxPolls})`)
+        `)
         
-        console.log(`📡 Polling DeepCopy API: https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/jobs/${deepCopyJobId}`)
+        
         
         const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
-        console.log(`📊 DeepCopy API response for job ${jobId}:`, statusResponse)
+        
         
         if (statusResponse.status === 'SUCCEEDED') {
           // Job completed - get results and store them
-          console.log(`✅ Job ${jobId} succeeded, fetching results...`)
+          
           const result = await deepCopyClient.getJobResult(deepCopyJobId)
           await this.storeJobResults(jobId, result, deepCopyJobId)
           await updateJobStatus(jobId, 'completed', 100)
-          console.log(`✅ Background polling completed job: ${jobId}`)
+          
           
           // Stop polling
           backgroundPollingManager.delete(jobId)
@@ -115,7 +107,7 @@ export class BackgroundPollingService {
         } else if (statusResponse.status === 'FAILED') {
           // Job failed
           await updateJobStatus(jobId, 'failed')
-          console.log(`❌ Background polling failed job: ${jobId}`)
+          
           
           // Stop polling
           backgroundPollingManager.delete(jobId)
@@ -126,26 +118,26 @@ export class BackgroundPollingService {
           const progress = statusResponse.status === 'SUBMITTED' ? 25 : 
                          statusResponse.status === 'RUNNING' ? 50 : 30
           await updateJobStatus(jobId, 'processing', progress)
-          console.log(`🔄 Job ${jobId} still processing (${statusResponse.status}) - continuing background polling`)
+           - continuing background polling`)
           
           // Continue polling if we haven't reached max polls
           if (pollCount < maxPolls) {
             const timeoutId = setTimeout(poll, 15000) // Poll every 15 seconds
             backgroundPollingManager.set(jobId, timeoutId)
           } else {
-            console.log(`⏰ Job ${jobId} reached max polling attempts, stopping`)
+            
             backgroundPollingManager.delete(jobId)
           }
           
         } else {
           // Unknown status - mark as failed
           await updateJobStatus(jobId, 'failed')
-          console.log(`❓ Unknown status for job ${jobId}: ${statusResponse.status}`)
+          
           backgroundPollingManager.delete(jobId)
         }
         
       } catch (error) {
-        console.error(`❌ Background polling error for job ${jobId}:`, error)
+        
         backgroundPollingManager.delete(jobId)
       }
     }
@@ -192,7 +184,7 @@ export class BackgroundPollingService {
       const htmlTemplates = this.extractHTMLTemplates(result)
       const templateCount = htmlTemplates.length
       
-      console.log(`📄 Background polling found ${templateCount} HTML templates in job results`)
+      
       
       // Store the result with full metadata
       await createResult(localJobId, htmlContent, {
@@ -205,10 +197,10 @@ export class BackgroundPollingService {
         html_templates_count: templateCount
       })
       
-      console.log(`✅ Background polling successfully stored results for job ${localJobId} with ${templateCount} HTML templates`)
+      
       
     } catch (error) {
-      console.error('❌ Error storing job results in background polling:', error)
+      
     }
   }
 
@@ -289,10 +281,10 @@ export class BackgroundPollingService {
         })
       }
       
-      console.log(`📄 Background polling extracted ${templates.length} HTML templates from results`)
+      
       
     } catch (error) {
-      console.error('Error extracting HTML templates in background polling:', error)
+      
     }
     
     return templates

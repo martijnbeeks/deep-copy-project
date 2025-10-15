@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log('🔄 Starting cron job status check...')
+    
     
     // Get all processing jobs
     const result = await query(`
@@ -22,10 +22,10 @@ export async function GET(request: NextRequest) {
     `)
     
     const processingJobs = result.rows
-    console.log(`Found ${processingJobs.length} processing jobs to check`)
+    
     
     if (processingJobs.length === 0) {
-      console.log('✓ No processing jobs found')
+      
       return NextResponse.json({ 
         success: true, 
         message: 'No processing jobs found',
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    console.log(`✓ Cron job completed - Completed: ${completed}, Failed: ${failed}, Still Processing: ${stillProcessing}`)
+    
     
     return NextResponse.json({
       success: true,
@@ -94,24 +94,24 @@ export async function GET(request: NextRequest) {
 async function checkJobStatus(job: { id: string; execution_id: string; status: string; updated_at: string }): Promise<string> {
   try {
     const deepCopyJobId = job.id
-    console.log(`🔍 Checking job ${job.id} (current status: ${job.status})`)
+    `)
     
     const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
-    console.log(`📊 DeepCopy API response for job ${job.id}:`, statusResponse)
+    
     
     if (statusResponse.status === 'SUCCEEDED') {
       // Job completed - get results and store them
-      console.log(`✅ Job ${job.id} succeeded, fetching results...`)
+      
       const result = await deepCopyClient.getJobResult(deepCopyJobId)
       await storeJobResults(job.id, result, deepCopyJobId)
       await updateJobStatus(job.id, 'completed', 100)
-      console.log(`✓ Job ${job.id} marked as completed`)
+      
       return 'completed'
       
     } else if (statusResponse.status === 'FAILED') {
       // Job failed
       await updateJobStatus(job.id, 'failed')
-      console.log(`❌ Job ${job.id} failed`)
+      
       return 'failed'
       
     } else if (['RUNNING', 'SUBMITTED', 'PENDING'].includes(statusResponse.status)) {
@@ -119,13 +119,13 @@ async function checkJobStatus(job: { id: string; execution_id: string; status: s
       const progress = statusResponse.status === 'SUBMITTED' ? 25 : 
                      statusResponse.status === 'RUNNING' ? 50 : 30
       await updateJobStatus(job.id, 'processing', progress)
-      console.log(`🔄 Job ${job.id} still processing (${statusResponse.status})`)
+      `)
       return 'processing'
       
     } else {
       // Unknown status - mark as failed
       await updateJobStatus(job.id, 'failed')
-      console.log(`❓ Unknown status for job ${job.id}: ${statusResponse.status}`)
+      
       return 'failed'
     }
     
@@ -140,13 +140,13 @@ async function checkJobStatus(job: { id: string; execution_id: string; status: s
 // Store job results in database
 async function storeJobResults(localJobId: string, result: any, deepCopyJobId: string) {
   try {
-    console.log(`💾 Storing results for job ${localJobId}`)
+    
     
     // Extract HTML templates from the result
     const templates = extractHTMLTemplates(result)
     
     if (templates.length === 0) {
-      console.log(`⚠️ No templates found in result for job ${localJobId}`)
+      
       return
     }
     
@@ -160,7 +160,7 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
       })
     }
     
-    console.log(`✅ Stored ${templates.length} templates for job ${localJobId}`)
+    
     
   } catch (error) {
     console.error(`Error storing results for job ${localJobId}:`, error)
