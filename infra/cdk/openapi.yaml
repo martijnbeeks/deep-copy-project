@@ -216,8 +216,8 @@ paths:
             curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID/result"
   /avatars/extract:
     post:
-      summary: Extract customer avatars from a product page
-      operationId: extractAvatars
+      summary: Submit an avatar extraction job
+      operationId: submitAvatarExtraction
       security:
         - cognitoOAuth2:
             - https://deep-copy.api/write
@@ -239,12 +239,17 @@ paths:
                 value:
                   url: "https://www.sciatiease.com/sciatiease.php"
       responses:
-        '200':
-          description: Successfully extracted avatars
+        '202':
+          description: Avatar extraction job accepted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AvatarExtractionResponse'
+                $ref: '#/components/schemas/SubmitAvatarExtractionResponse'
+              examples:
+                accepted:
+                  value:
+                    jobId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    status: "SUBMITTED"
         '400':
           description: Invalid request
           content:
@@ -259,7 +264,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
       x-codeSamples:
         - lang: bash
-          label: curl (extract avatars)
+          label: curl (submit extraction)
           source: |-
             API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
             curl -sS -X POST \
@@ -267,6 +272,86 @@ paths:
               -H "content-type: application/json" \
               -d '{"url": "https://www.sciatiease.com/sciatiease.php"}' \
               "${API_URL}avatars/extract"
+  /avatars/{id}:
+    get:
+      summary: Get avatar extraction job status
+      operationId: getAvatarExtractionStatus
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Avatar extraction job ID
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatusResponse'
+        '404':
+          description: Job not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Not found"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (get status)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}avatars/YOUR_JOB_ID"
+  /avatars/{id}/result:
+    get:
+      summary: Get avatar extraction results
+      operationId: getAvatarExtractionResult
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Avatar extraction job ID
+      responses:
+        '200':
+          description: Avatar extraction results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvatarExtractionResponse'
+        '404':
+          description: Result not available
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Result not available"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (get result)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}avatars/YOUR_JOB_ID/result"
 components:
   securitySchemes:
     cognitoOAuth2:
@@ -470,17 +555,39 @@ components:
       properties:
         error:
           type: string
+    SubmitAvatarExtractionResponse:
+      type: object
+      required: [jobId, status]
+      properties:
+        jobId:
+          type: string
+          format: uuid
+          description: Avatar extraction job ID
+        status:
+          type: string
+          enum: [SUBMITTED]
+          description: Job status
     AvatarExtractionResponse:
       type: object
-      required: [success, url, avatars]
+      required: [success, url, job_id, timestamp_iso, avatars]
       properties:
         success:
           type: boolean
+          description: Whether the extraction was successful
         url:
           type: string
           format: uri
+          description: The URL that was analyzed
+        job_id:
+          type: string
+          description: The job ID for this extraction
+        timestamp_iso:
+          type: string
+          format: date-time
+          description: When the extraction was completed
         avatars:
           type: array
+          description: List of extracted customer avatars
           items:
             $ref: '#/components/schemas/CustomerAvatar'
     CustomerAvatar:

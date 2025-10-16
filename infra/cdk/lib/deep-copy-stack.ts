@@ -196,30 +196,62 @@ export class DeepCopyStack extends Stack {
     });
     resultsBucket.grantRead(getJobResultLambda);
 
-    // Lambda for extracting avatars from product pages (Docker-based)
-    const extractAvatarsLambda = new lambda.DockerImageFunction(this, 'ExtractAvatarsLambda', {
+    // Avatar extraction - Processing Lambda (Docker-based)
+    const processAvatarExtractionLambda = new lambda.DockerImageFunction(this, 'ProcessAvatarExtractionLambda', {
       code: lambda.DockerImageCode.fromImageAsset(
         path.join(__dirname, 'lambdas', 'extract_avatars'),
         {
-          platform: Platform.LINUX_AMD64, // Explicitly set platform for Lambda
+          platform: Platform.LINUX_AMD64,
         }
       ),
       timeout: Duration.seconds(120),
       memorySize: 3008, // 3GB for Playwright + OpenAI
-      architecture: lambda.Architecture.X86_64, // Explicitly set architecture
+      architecture: lambda.Architecture.X86_64,
       environment: {
-        PLAYWRIGHT_BROWSERS_PATH: '/var/task/.playwright', // Fixed browser path for Lambda
+        PLAYWRIGHT_BROWSERS_PATH: '/var/task/.playwright',
+        JOBS_TABLE_NAME: jobsTable.tableName,
+        RESULTS_BUCKET: resultsBucket.bucketName,
       },
     });
 
     // Grant access to the same secret as the ECS pipeline
     const secretArn = `arn:aws:secretsmanager:${Stack.of(this).region}:${Stack.of(this).account}:secret:deepcopy-secret-dev*`;
-    extractAvatarsLambda.addToRolePolicy(
+    processAvatarExtractionLambda.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['secretsmanager:GetSecretValue'],
         resources: [secretArn],
       }),
     );
+    jobsTable.grantReadWriteData(processAvatarExtractionLambda);
+    resultsBucket.grantPut(processAvatarExtractionLambda);
+
+    // Avatar extraction - Submit Lambda (Python)
+    const submitAvatarExtractionLambda = new lambda.Function(this, 'SubmitAvatarExtractionLambda', {
+      runtime: lambda.Runtime.PYTHON_3_11,
+      timeout: Duration.seconds(10),
+      memorySize: 256,
+      handler: 'submit_avatar_extraction.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
+      environment: {
+        JOBS_TABLE_NAME: jobsTable.tableName,
+        PROCESS_LAMBDA_NAME: processAvatarExtractionLambda.functionName,
+      },
+    });
+    jobsTable.grantReadWriteData(submitAvatarExtractionLambda);
+    processAvatarExtractionLambda.grantInvoke(submitAvatarExtractionLambda);
+
+    // Avatar extraction - Get Result Lambda (Python)
+    const getAvatarResultLambda = new lambda.Function(this, 'GetAvatarResultLambda', {
+      runtime: lambda.Runtime.PYTHON_3_11,
+      timeout: Duration.seconds(10),
+      memorySize: 256,
+      handler: 'get_avatar_result.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
+      environment: {
+        RESULTS_BUCKET: resultsBucket.bucketName,
+      },
+    });
+    resultsBucket.grantRead(getAvatarResultLambda);
 
     // Cognito User Pool for API auth
     const userPool = new cognito.UserPool(this, 'UserPool', {
@@ -312,20 +344,34 @@ export class DeepCopyStack extends Stack {
       authorizationScopes: ['https://deep-copy.api/read'],
     });
 
-    // Avatar extraction endpoint
+    // Avatar extraction endpoints
     const avatarsRes = api.root.addResource('avatars');
     const extractRes = avatarsRes.addResource('extract');
-    extractRes.addMethod('POST', new apigw.LambdaIntegration(extractAvatarsLambda), {
+    extractRes.addMethod('POST', new apigw.LambdaIntegration(submitAvatarExtractionLambda), {
       authorizer: cognitoAuthorizer,
       authorizationType: apigw.AuthorizationType.COGNITO,
       authorizationScopes: ['https://deep-copy.api/write'],
+    });
+
+    const avatarIdRes = avatarsRes.addResource('{id}');
+    avatarIdRes.addMethod('GET', new apigw.LambdaIntegration(getJobLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/read'],
+    });
+
+    const avatarResultRes = avatarIdRes.addResource('result');
+    avatarResultRes.addMethod('GET', new apigw.LambdaIntegration(getAvatarResultLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/read'],
     });
 
     // Optional: EventBridge to mark RUNNING when task starts and final status on stop
     // You can also have the container call DynamoDB directly at the end, which the Python already supports
 
     new CfnOutput(this, 'ApiUrl', { value: api.url });
-    new CfnOutput(this, 'AvatarsEndpoint', { value: `${api.url}avatars/extract` });
+    new CfnOutput(this, 'AvatarsSubmitEndpoint', { value: `${api.url}avatars/extract` });
     new CfnOutput(this, 'ResultsBucketName', { value: resultsBucket.bucketName });
     new CfnOutput(this, 'JobsTableName', { value: jobsTable.tableName });
     new CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });

@@ -1,13 +1,13 @@
 """
 Avatar extraction module for AWS Lambda.
-Extracts customer avatars from product pages using Grok vision from x.ai.
+Extracts customer avatars from product pages using OpenAI vision.
 """
 import base64
 import logging
 import time
 from typing import List
 from pydantic import BaseModel, Field
-from openai import OpenAI  # x.ai API is OpenAI-compatible
+from openai import OpenAI
 from playwright.sync_api import sync_playwright
 
 logger = logging.getLogger(__name__)
@@ -94,26 +94,23 @@ def encode_image_bytes(image_bytes: bytes) -> str:
     return base64.b64encode(image_bytes).decode("utf-8")
 
 
-def extract_avatars_from_url(url: str, grok_api_key: str, model: str = "grok-4-fast-non-reasoning") -> AvatarCollection:
+def extract_avatars_from_url(url: str, openai_api_key: str, model: str = "gpt-4o") -> AvatarCollection:
     """
-    Extract customer avatars from a product page URL using Grok from x.ai.
+    Extract customer avatars from a product page URL using OpenAI vision.
     Optimized for AWS Lambda - no file storage required.
     
     Args:
         url: The product page URL to analyze
-        grok_api_key: Grok API key from x.ai
-        model: Grok model to use (default: grok-4-fast-non-reasoning)
+        openai_api_key: OpenAI API key
+        model: OpenAI model to use (default: gpt-4o)
         
     Returns:
         AvatarCollection containing the extracted avatars
     """
     start_time = time.time()
     
-    # Initialize x.ai client (OpenAI-compatible API)
-    client = OpenAI(
-        api_key=grok_api_key,
-        base_url="https://api.x.ai/v1"
-    )
+    # Initialize OpenAI client
+    client = OpenAI(api_key=openai_api_key)
     
     try:
         # Capture the page as image bytes (no file storage)
@@ -142,8 +139,8 @@ For each avatar, include:
 
 Provide at least 3 avatars that represent distinct customer segments."""
 
-        # Call Grok API with structured output
-        logger.info(f"Calling Grok API ({model}) to extract avatars")
+        # Call OpenAI API with structured output
+        logger.info(f"Calling OpenAI API ({model}) to extract avatars")
         api_start = time.time()
         response = client.beta.chat.completions.parse(
             model=model,
@@ -161,10 +158,10 @@ Provide at least 3 avatars that represent distinct customer segments."""
             }],
             response_format=AvatarCollection,
         )
-        print(f"Grok API call completed in {time.time() - api_start:.2f}s")
+        print(f"OpenAI API call completed in {time.time() - api_start:.2f}s")
         
         total_time = time.time() - start_time
-        print(f"Successfully extracted avatars from Grok - Total time: {total_time:.2f}s")
+        print(f"Successfully extracted avatars from OpenAI - Total time: {total_time:.2f}s")
         
         return response.choices[0].message.parsed
         

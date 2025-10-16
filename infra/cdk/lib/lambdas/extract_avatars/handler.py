@@ -1,27 +1,28 @@
 """
-AWS Lambda handler for extracting customer avatars from product pages using Grok from x.ai.
+AWS Lambda handler for processing avatar extraction jobs asynchronously.
 
 Expected event format:
 {
+    "job_id": "uuid",
     "url": "https://example.com/product"
 }
 
-Returns:
-{
-    "success": true,
-    "url": "...",
-    "avatars": [...]
-}
+Saves results to S3 and updates DynamoDB job status.
 """
 import os
 import json
 import logging
 import boto3
+from datetime import datetime, timezone
 from avatar_extractor import extract_avatars_from_url
 
 # Configure logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+# Initialize AWS clients
+s3_client = boto3.client('s3')
+ddb_client = boto3.client('dynamodb')
 
 
 def get_secrets(secret_id: str = "deepcopy-secret-dev"):
@@ -39,128 +40,126 @@ def get_secrets(secret_id: str = "deepcopy-secret-dev"):
         raise
 
 
+def update_job_status(job_id: str, status: str, extra_attrs: dict = None):
+    """Update job status in DynamoDB."""
+    jobs_table_name = os.environ.get('JOBS_TABLE_NAME')
+    if not jobs_table_name or not job_id:
+        return
+    
+    try:
+        item = {
+            'jobId': {'S': job_id},
+            'status': {'S': status},
+            'updatedAt': {'S': datetime.now(timezone.utc).isoformat()},
+        }
+        if extra_attrs:
+            for key, value in extra_attrs.items():
+                if isinstance(value, (str, int, float)):
+                    item[key] = {'S': str(value)}
+                else:
+                    item[key] = {'S': json.dumps(value, ensure_ascii=False)}
+        ddb_client.put_item(TableName=jobs_table_name, Item=item)
+    except Exception as e:
+        logger.error(f"Failed to update job status for {job_id}: {e}")
+
+
+def save_results_to_s3(job_id: str, results: dict):
+    """Save avatar extraction results to S3."""
+    results_bucket = os.environ.get('RESULTS_BUCKET')
+    if not results_bucket:
+        raise RuntimeError("RESULTS_BUCKET environment variable not set")
+    
+    s3_key = f'results/{job_id}/avatar_extraction_results.json'
+    
+    s3_client.put_object(
+        Bucket=results_bucket,
+        Key=s3_key,
+        Body=json.dumps(results, ensure_ascii=False, indent=2),
+        ContentType='application/json'
+    )
+    
+    logger.info(f"Saved results to S3: s3://{results_bucket}/{s3_key}")
+    return s3_key
+
+
 def lambda_handler(event, context):
     """
-    Lambda handler for avatar extraction.
+    Lambda handler for processing avatar extraction jobs.
     
     Args:
-        event: API Gateway event or direct invocation with 'url' parameter
+        event: Direct invocation with 'job_id' and 'url' parameters
         context: Lambda context
         
     Returns:
-        API Gateway response format
+        Success/failure status
     """
+    job_id = event.get('job_id')
+    url = event.get('url')
+    
+    if not job_id or not url:
+        error_msg = f"Missing required parameters: job_id={job_id}, url={url}"
+        logger.error(error_msg)
+        return {'statusCode': 400, 'error': error_msg}
+    
     try:
-        # Parse input - handle both API Gateway and direct invocation
-        if isinstance(event, str):
-            body = json.loads(event)
-        elif 'body' in event:
-            # API Gateway format
-            body = json.loads(event['body']) if isinstance(event['body'], str) else event['body']
-        else:
-            # Direct invocation
-            body = event
+        # Update status to RUNNING
+        update_job_status(job_id, "RUNNING", {"message": "Processing avatar extraction"})
         
-        # Extract URL from request
-        url = body.get('url')
-        if not url:
-            return {
-                'statusCode': 400,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
-                },
-                'body': json.dumps({
-                    'error': 'Missing required parameter: url',
-                    'example': {'url': 'https://example.com/product'}
-                })
-            }
+        # Get OpenAI API key (check env first for local testing, then Secrets Manager)
+        openai_api_key = os.environ.get('OPENAI_API_KEY')
         
-        # Validate URL format
-        if not url.startswith(('http://', 'https://')):
-            return {
-                'statusCode': 400,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
-                },
-                'body': json.dumps({
-                    'error': 'Invalid URL format. URL must start with http:// or https://'
-                })
-            }
-        
-        # Get Grok API key (check env first for local testing, then Secrets Manager)
-        grok_api_key = os.environ.get('GROK_API_KEY')
-        
-        if not grok_api_key:
+        if not openai_api_key:
             # Fall back to Secrets Manager (production)
             try:
                 secrets = get_secrets("deepcopy-secret-dev")
-                grok_api_key = secrets.get('GROK_API_KEY')
+                openai_api_key = secrets.get('OPENAI_API_KEY')
             except Exception as e:
                 logger.error(f'Failed to retrieve secrets: {e}')
-                return {
-                    'statusCode': 500,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*',
-                    },
-                    'body': json.dumps({
-                        'error': 'Server configuration error: Failed to retrieve API key from Secrets Manager'
-                    })
-                }
+                update_job_status(job_id, "FAILED", {"error": "Failed to retrieve API key from Secrets Manager"})
+                raise
         
-        if not grok_api_key:
-            logger.error('GROK_API_KEY not found in environment or secrets')
-            return {
-                'statusCode': 500,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
-                },
-                'body': json.dumps({
-                    'error': 'Server configuration error: GROK_API_KEY not found'
-                })
-            }
+        if not openai_api_key:
+            error_msg = 'OPENAI_API_KEY not found in environment or secrets'
+            logger.error(error_msg)
+            update_job_status(job_id, "FAILED", {"error": error_msg})
+            raise RuntimeError(error_msg)
         
-        # Optional: Get model from environment or use default
-        model = os.environ.get('GROK_MODEL', 'grok-4-fast-non-reasoning')
+        # Get model from environment or use default
+        model = os.environ.get('OPENAI_MODEL', 'gpt-4o')
         
-        # Extract avatars using Grok
-        logger.info(f'Processing request for URL: {url}')
-        avatars = extract_avatars_from_url(url, grok_api_key, model)
+        # Extract avatars using OpenAI
+        logger.info(f'Processing avatar extraction for job {job_id}, URL: {url}')
+        avatars = extract_avatars_from_url(url, openai_api_key, model)
         
-        # Convert to dict for JSON serialization
-        response_data = {
+        # Prepare results
+        results = {
             'success': True,
             'url': url,
+            'job_id': job_id,
+            'timestamp_iso': datetime.now(timezone.utc).isoformat(),
             'avatars': [avatar.model_dump() for avatar in avatars.avatars]
         }
         
-        return {
-            'statusCode': 200,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-            },
-            'body': json.dumps(response_data, indent=2)
-        }
+        # Save to S3
+        s3_key = save_results_to_s3(job_id, results)
+        
+        # Update status to SUCCEEDED
+        update_job_status(job_id, "SUCCEEDED", {"resultKey": s3_key})
+        
+        logger.info(f'Successfully completed avatar extraction for job {job_id}')
+        return {'statusCode': 200, 'message': 'Avatar extraction completed successfully'}
         
     except Exception as e:
-        logger.error(f'Error processing request: {str(e)}', exc_info=True)
-        return {
-            'statusCode': 500,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-            },
-            'body': json.dumps({
-                'error': 'Failed to extract avatars',
-                'details': str(e)
-            })
-        }
+        error_msg = f'Error processing avatar extraction: {str(e)}'
+        logger.error(error_msg, exc_info=True)
+        update_job_status(job_id, "FAILED", {"error": str(e)})
+        return {'statusCode': 500, 'error': error_msg}
 
 
 if __name__ == "__main__":
-    
-    print(lambda_handler({"url": "https://hypowered.nl/en"}, {}))
+    # Local testing
+    test_event = {
+        "job_id": "test-job-123",
+        "url": "https://hypowered.nl/en"
+    }
+    print(lambda_handler(test_event, {}))
