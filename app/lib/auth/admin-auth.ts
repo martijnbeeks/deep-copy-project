@@ -23,13 +23,13 @@ export async function verifyAdminAuth(request: NextRequest) {
         return { error: 'Session expired' }
       }
 
-      // Verify user still exists
-      const user = await query('SELECT * FROM users WHERE email = $1', [email])
-      if (user.rows.length === 0) {
-        return { error: 'User not found' }
+      // Verify admin user still exists
+      const adminUser = await query('SELECT * FROM admin_users WHERE username = $1', [email])
+      if (adminUser.rows.length === 0) {
+        return { error: 'Admin user not found' }
       }
 
-      return { user: user.rows[0] }
+      return { user: adminUser.rows[0] }
     } catch (error) {
       return { error: 'Invalid session token' }
     }

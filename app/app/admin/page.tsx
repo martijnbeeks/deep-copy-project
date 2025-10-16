@@ -521,7 +521,11 @@ export default function AdminPage() {
   }
 
   if (!isAuthenticated) {
-    return <AdminAuth onAuthSuccess={() => setIsAuthenticated(true)} />
+    return <AdminAuth onAuthSuccess={() => {
+      setIsAuthenticated(true)
+      // Load data after successful authentication
+      setTimeout(() => loadData(), 100)
+    }} />
   }
 
   return (
