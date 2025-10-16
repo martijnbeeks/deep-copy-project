@@ -25,6 +25,9 @@ export interface Job {
   sales_page_url?: string
   template_id?: string
   advertorial_type: string
+  target_approach?: string
+  customer_avatars?: any[]
+  // Deprecated fields for backward compatibility
   persona?: string
   age_range?: string
   gender?: string
@@ -51,4 +54,15 @@ export interface JobWithTemplate extends Job {
 export interface JobWithResult extends Job {
   result?: Result
   template?: Template
+}
+
+export interface InjectableTemplate {
+  id: string
+  name: string
+  type: 'listicle' | 'advertorial'
+  html_content: string
+  description?: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
 }

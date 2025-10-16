@@ -44,6 +44,9 @@ interface JobsActions {
     sales_page_url?: string
     template_id?: string
     advertorial_type: string
+    target_approach?: string
+    customer_avatars?: any[]
+    // Deprecated fields for backward compatibility
     persona?: string
     age_range?: string
     gender?: string
@@ -108,24 +111,22 @@ export const useJobsStore = create<JobsState & JobsActions>()(
   },
 
   fetchJob: async (id: string) => {
-    console.log(`🔍 Frontend: Fetching job ${id}`)
     set({ isLoading: true, error: null })
     try {
       const { user } = useAuthStore.getState()
       const userEmail = user?.email || 'demo@example.com'
       
-      const response = await fetch(`/api/jobs/${id}`, {
+      const response = await fetch(`/api/jobs/${id}?t=${Date.now()}`, {
         headers: {
-          'Authorization': `Bearer ${userEmail}`
+          'Authorization': `Bearer ${userEmail}`,
+          'Cache-Control': 'no-cache'
         }
       })
       if (!response.ok) throw new Error('Failed to fetch job')
       
       const job = await response.json()
-      console.log(`✅ Frontend: Job ${id} fetched successfully`)
       set({ currentJob: job, isLoading: false })
     } catch (error) {
-      console.error(`❌ Frontend: Failed to fetch job ${id}:`, error)
       set({ 
         error: error instanceof Error ? error.message : 'Failed to fetch job',
         isLoading: false 

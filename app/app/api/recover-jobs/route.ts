@@ -5,7 +5,7 @@ import { updateJobStatus, createResult } from '@/lib/db/queries'
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 Starting manual job recovery process...')
+    
     
     // Optional: Add authentication for admin access
     const authHeader = request.headers.get('authorization')
@@ -21,10 +21,10 @@ export async function POST(request: NextRequest) {
     `)
     
     const jobsToCheck = result.rows
-    console.log(`Found ${jobsToCheck.length} processing jobs to check`)
+    
     
     if (jobsToCheck.length === 0) {
-      console.log('✓ No jobs need recovery')
+      
       return NextResponse.json({ 
         success: true, 
         message: 'No jobs need recovery',
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    console.log(`✓ Manual job recovery completed - Completed: ${completed}, Failed: ${failed}, Still Processing: ${stillProcessing}`)
+    
     
     return NextResponse.json({
       success: true,
@@ -92,25 +92,25 @@ async function checkJobStatus(job: { id: string; execution_id: string; status: s
   try {
     // Use the job ID directly as the DeepCopy job ID (since we now use DeepCopy job ID as primary key)
     const deepCopyJobId = job.id
-    console.log(`🔍 Checking job ${job.id} (current status: ${job.status}) with DeepCopy ID: ${deepCopyJobId}`)
-    console.log(`📡 Polling DeepCopy API: https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/jobs/${deepCopyJobId}`)
+     with DeepCopy ID: ${deepCopyJobId}`)
+    
     
     const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
-    console.log(`📊 DeepCopy API response for job ${job.id}:`, statusResponse)
+    
     
     if (statusResponse.status === 'SUCCEEDED') {
       // Job completed - get results and store them
-      console.log(`✅ Job ${job.id} succeeded, fetching results...`)
+      
       const result = await deepCopyClient.getJobResult(deepCopyJobId)
       await storeJobResults(job.id, result, deepCopyJobId)
       await updateJobStatus(job.id, 'completed', 100)
-      console.log(`✓ Recovered completed job: ${job.id}`)
+      
       return 'completed'
       
     } else if (statusResponse.status === 'FAILED') {
       // Job failed
       await updateJobStatus(job.id, 'failed')
-      console.log(`❌ Job ${job.id} failed on DeepCopy API`)
+      
       return 'failed'
       
     } else if (['RUNNING', 'SUBMITTED', 'PENDING'].includes(statusResponse.status)) {
@@ -119,13 +119,13 @@ async function checkJobStatus(job: { id: string; execution_id: string; status: s
                      statusResponse.status === 'RUNNING' ? 50 : 30
       await updateJobStatus(job.id, 'processing', progress)
       
-      console.log(`🔄 Job ${job.id} still processing (${statusResponse.status}) - will continue polling`)
+       - will continue polling`)
       return 'processing'
       
     } else {
       // Unknown status - mark as failed
       await updateJobStatus(job.id, 'failed')
-      console.log(`❓ Unknown status for job ${job.id}: ${statusResponse.status}`)
+      
       return 'failed'
     }
     
@@ -214,7 +214,7 @@ function extractHTMLTemplates(results: any): Array<{name: string, type: string, 
       })
     }
     
-    console.log(`📄 Extracted ${templates.length} HTML templates from results`)
+    
     
   } catch (error) {
     console.error('Error extracting HTML templates:', error)
@@ -369,7 +369,7 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
     const htmlTemplates = extractHTMLTemplates(result)
     const templateCount = htmlTemplates.length
     
-    console.log(`📄 Found ${templateCount} HTML templates in job results`)
+    
     
     // Store the result with full metadata
     await createResult(localJobId, htmlContent, {
@@ -382,7 +382,7 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
       html_templates_count: templateCount
     })
     
-    console.log(`✅ Successfully stored results for job ${localJobId} with ${templateCount} HTML templates`)
+    
     
   } catch (error) {
     console.error('Error storing job results:', error)

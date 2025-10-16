@@ -47,7 +47,7 @@ export function useGlobalJobPolling({
   // Check a single job status
   const checkJobStatus = useCallback(async (job: PollingJob) => {
     try {
-      console.log(`🔍 Global polling job ${job.id}`)
+      
       
       const response = await fetch(`/api/jobs/${job.id}/status`, {
         method: 'GET',
@@ -58,7 +58,7 @@ export function useGlobalJobPolling({
 
       if (!response.ok) {
         if (response.status === 400) {
-          console.log(`Job ${job.id} returned 400 - removing from polling`)
+          
           removeJobFromPolling(job.id)
           return
         }
@@ -66,7 +66,7 @@ export function useGlobalJobPolling({
       }
 
       const data = await response.json()
-      console.log(`📊 Global polling response for job ${job.id}:`, data)
+      
 
       // Update job in polling list
       setPollingJobs(prev => {
@@ -90,13 +90,13 @@ export function useGlobalJobPolling({
 
       // If job completed, remove from polling and call completion callback
       if (data.status === 'completed') {
-        console.log(`✅ Job ${job.id} completed via global polling!`)
+        
         removeJobFromPolling(job.id)
         if (onJobComplete) {
           onJobComplete(job.id, data)
         }
       } else if (data.status === 'failed') {
-        console.log(`❌ Job ${job.id} failed via global polling!`)
+        
         removeJobFromPolling(job.id)
       }
 
@@ -109,12 +109,12 @@ export function useGlobalJobPolling({
   const startPolling = useCallback(() => {
     if (isPolling) return
 
-    console.log('🚀 Starting global job polling...')
+    
     setIsPolling(true)
 
     intervalRef.current = setInterval(() => {
       if (isMountedRef.current && pollingJobs.size > 0) {
-        console.log(`🔄 Global polling ${pollingJobs.size} jobs`)
+        
         
         // Check all jobs in parallel (but limit concurrency)
         const jobs = Array.from(pollingJobs.values())
@@ -136,7 +136,7 @@ export function useGlobalJobPolling({
 
   // Stop global polling
   const stopPolling = useCallback(() => {
-    console.log('🛑 Stopping global job polling...')
+    
     setIsPolling(false)
     if (intervalRef.current) {
       clearInterval(intervalRef.current)

@@ -1,5 +1,6 @@
 import { deepCopyClient } from '@/lib/api/deepcopy-client'
-import { updateJobStatus, createResult } from '@/lib/db/queries'
+import { updateJobStatus, createResult, getRandomInjectableTemplate } from '@/lib/db/queries'
+import { processJobResults } from '@/lib/utils/template-injection'
 
 // Get all jobs that are currently in processing status
 async function getProcessingJobs() {
@@ -17,7 +18,6 @@ async function getProcessingJobs() {
     
     return result.rows
   } catch (error) {
-    console.error('Error fetching processing jobs:', error)
     return []
   }
 }
@@ -34,25 +34,20 @@ async function checkJobStatus(job: { id: string; execution_id: string; updated_a
       const result = await deepCopyClient.getJobResult(deepCopyJobId)
       await storeJobResults(job.id, result, deepCopyJobId)
       await updateJobStatus(job.id, 'completed', 100)
-      console.log(`✓ Recovered completed job: ${job.id}`)
       
     } else if (statusResponse.status === 'FAILED') {
       // Job failed
       await updateJobStatus(job.id, 'failed')
-      console.log(`✗ Recovered failed job: ${job.id}`)
       
     } else if (['RUNNING', 'SUBMITTED', 'PENDING'].includes(statusResponse.status)) {
       // Job still processing - let background service handle polling
-      console.log(`🔄 Job ${job.id} still processing - background service will handle polling`)
       
     } else {
       // Unknown status - mark as failed
       await updateJobStatus(job.id, 'failed')
-      console.log(`❓ Unknown status for job ${job.id}: ${statusResponse.status}`)
     }
     
   } catch (error) {
-    console.error(`Error checking job ${job.id}:`, error)
     // If we can't check the status, mark as failed
     await updateJobStatus(job.id, 'failed')
   }
@@ -61,48 +56,29 @@ async function checkJobStatus(job: { id: string; execution_id: string; updated_a
 // Store job results in database
 async function storeJobResults(localJobId: string, result: any, deepCopyJobId: string) {
   try {
-    console.log(`📊 Storing results for job ${localJobId}:`, {
-      hasResults: !!result.results,
-      hasSwipeResults: !!(result.results && result.results.swipe_results),
-      swipeResultsCount: result.results?.swipe_results?.length || 0,
-      projectName: result.project_name
-    })
+    // Get job details to determine advertorial type
+    const { query } = await import('@/lib/db/connection')
+    const jobResult = await query('SELECT advertorial_type FROM jobs WHERE id = $1', [localJobId])
     
-    // Create HTML content for display
-    let htmlContent = ''
-    let sections: string[] = []
-    
-    if (result.results) {
-      // Handle nested results structure
-      if (result.results.research_page_analysis) sections.push('Research Analysis')
-      if (result.results.doc1_analysis) sections.push('Market Research')
-      if (result.results.doc2_analysis) sections.push('Customer Research')
-      if (result.results.deep_research_output) sections.push('Research Report')
-      if (result.results.avatar_sheet) sections.push('Customer Avatars')
-      if (result.results.html_content) sections.push('Generated HTML')
-      
-      // Check for swipe_results
-      if (result.results.swipe_results && Array.isArray(result.results.swipe_results)) {
-        sections.push(`Swipe Results (${result.results.swipe_results.length} templates)`)
-      }
-      
-      htmlContent = createResultsHTML(result.results, sections)
-    } else {
-      // Handle direct content
-      htmlContent = typeof result === 'string' ? result : JSON.stringify(result, null, 2)
+    if (jobResult.rows.length === 0) {
+      throw new Error('Job not found')
     }
+    
+    const advertorialType = jobResult.rows[0].advertorial_type as 'listicle' | 'advertorial'
+    
+          // Process results using template injection system
+          const { combinedHtml } = await processJobResults(result, advertorialType, getRandomInjectableTemplate)
+          const htmlContent = combinedHtml
     
     // Extract HTML templates count for metadata
     const htmlTemplates = extractHTMLTemplates(result)
     const templateCount = htmlTemplates.length
     
-    console.log(`📄 Found ${templateCount} HTML templates in job results`)
-    
     // Store in database
     await createResult(localJobId, htmlContent, {
       generated_at: new Date().toISOString(),
       word_count: htmlContent.split(' ').length,
-      template_used: 'L00005',
+      template_used: advertorialType,
       deepcopy_job_id: deepCopyJobId,
       raw_data: result,
       project_name: result.project_name || null,
@@ -110,10 +86,14 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
       html_templates_count: templateCount
     })
     
-    console.log(`✅ Successfully stored results for job ${localJobId} with ${templateCount} HTML templates`)
-    
   } catch (error) {
     console.error('Error storing job results:', error)
+    // Mark job as failed if we can't store results
+    try {
+      await updateJobStatus(localJobId, 'failed')
+    } catch (updateError) {
+      console.error('Error updating job status to failed:', updateError)
+    }
   }
 }
 
@@ -284,10 +264,8 @@ function extractHTMLTemplates(results: any): Array<{name: string, type: string, 
       })
     }
     
-    console.log(`📄 Extracted ${templates.length} HTML templates from results`)
-    
   } catch (error) {
-    console.error('Error extracting HTML templates:', error)
+    // Error extracting templates
   }
   
   return templates
@@ -315,14 +293,10 @@ function getSectionContent(results: any, section: string): string {
 
 // Main recovery function
 export async function recoverProcessingJobs() {
-  console.log('🔄 Starting job recovery process...')
-  
   try {
     const processingJobs = await getProcessingJobs()
-    console.log(`Found ${processingJobs.length} jobs in processing status`)
     
     if (processingJobs.length === 0) {
-      console.log('✓ No jobs need recovery')
       return
     }
     
@@ -338,9 +312,7 @@ export async function recoverProcessingJobs() {
       }
     }
     
-    console.log('✓ Job recovery completed')
-    
   } catch (error) {
-    console.error('Error during job recovery:', error)
+    // Error during recovery
   }
 }

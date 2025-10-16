@@ -8,7 +8,7 @@ import { Copy, Download, Eye, Maximize2, FileText, BarChart3, Code, BookOpen, Ch
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { TemplateInjector, formatContentForDisplay } from "@/lib/utils/template-injection"
+import { extractContentFromResults, injectContentIntoTemplate } from "@/lib/utils/template-injection"
 import { JobResult, SwipeResult, Listicle, Advertorial } from "@/lib/api/deepcopy-client"
 
 interface DeepCopyResult extends JobResult {
@@ -25,12 +25,14 @@ interface DeepCopyResultsProps {
       full_result?: DeepCopyResult
       generated_at?: string
       word_count?: number
+      template_used?: string
     }
   }
   jobTitle: string
+  advertorialType?: string
 }
 
-export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
+export function DeepCopyResults({ result, jobTitle, advertorialType }: DeepCopyResultsProps) {
   const [copied, setCopied] = useState(false)
   const [activeTemplate, setActiveTemplate] = useState(0)
   const [viewMode, setViewMode] = useState<{[key: number]: 'rendered' | 'source'}>({})
@@ -40,42 +42,88 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
 
   const fullResult = result.metadata?.full_result
   
+  // Temporary debug logging
+  console.log('🔍 DeepCopyResults - result object:', JSON.stringify(result, null, 2));
+  console.log('🔍 DeepCopyResults - result.html_content exists:', !!result.html_content);
+  console.log('🔍 DeepCopyResults - result.html_content length:', result.html_content?.length || 0);
+  console.log('🔍 DeepCopyResults - has carousel:', result.html_content?.includes('carousel-container') || false);
+  console.log('🔍 DeepCopyResults - advertorialType:', advertorialType);
+  
   const extractHTMLTemplates = async () => {
     const templates: Array<{name: string, type: string, html: string, angle?: string, timestamp?: string}> = []
     
-    if (fullResult?.results?.swipe_results && Array.isArray(fullResult.results.swipe_results)) {
-      for (const swipe of fullResult.results.swipe_results) {
-        const angle = swipe.angle || `Angle ${templates.length + 1}`
+    try {
+      // Check if we have processed HTML content (carousel) from the new system
+      if (result.html_content && result.html_content.includes('carousel-container')) {
+        console.log('✅ Found carousel HTML, extracting templates...')
         
-        try {
-          // Use the template injector to generate HTML from JSON data
-          const injectionResult = await TemplateInjector.injectContent(swipe.content, angle)
-          const contentInfo = formatContentForDisplay(swipe.content)
-          
-          templates.push({
-            name: contentInfo.title,
-            type: contentInfo.type === 'listicle' ? 'Listicle' : 'Advertorial',
-            html: injectionResult.html,
-            angle: angle,
-            timestamp: fullResult.timestamp_iso
+        // Extract individual angles and their HTML from the carousel
+        const angleMatches = result.html_content.match(/<button class="nav-button[^>]*>([^<]+)<\/button>/g)
+        const angles = angleMatches ? angleMatches.map(match => 
+          match.replace(/<[^>]*>/g, '').trim()
+        ) : ['Marketing Angle 1']
+        
+        console.log('🔍 Found angles:', angles)
+        
+        // Extract iframes directly from the carousel HTML
+        const iframeMatches = result.html_content.match(/<iframe srcdoc="([^"]*)"[^>]*><\/iframe>/g)
+        
+        console.log('🔍 Found iframes:', iframeMatches ? iframeMatches.length : 0)
+        
+        if (iframeMatches && iframeMatches.length === angles.length) {
+          console.log('✅ Processing iframes directly...')
+          // Extract template HTML from each iframe
+          angles.forEach((angle, index) => {
+            const iframeHtml = iframeMatches[index]
+            const contentMatch = iframeHtml.match(/srcdoc="([^"]*)"/)
+            
+            if (contentMatch) {
+              // Decode the HTML content from the iframe
+              const templateHtml = contentMatch[1]
+                .replace(/&quot;/g, '"')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&amp;/g, '&')
+              
+              console.log(`✅ Extracted template ${index + 1}:`, templateHtml.substring(0, 100) + '...')
+              
+              templates.push({
+                name: `Angle ${index + 1}`,
+                type: 'Marketing Angle',
+                html: templateHtml,
+                angle: angle,
+                timestamp: result.metadata?.generated_at || new Date().toISOString()
+              })
+            } else {
+              console.log(`⚠️ Could not extract content from iframe ${index + 1}`)
+            }
           })
-        } catch (error) {
-          console.error('Error injecting template:', error)
-          // Fallback: try to extract any existing HTML
-          if (typeof swipe.content === 'string' && (swipe.content as string).includes('<html')) {
+        } else {
+          console.log('⚠️ Fallback: using full carousel HTML for each angle')
+          // Fallback: create individual templates with the full carousel HTML
+          angles.forEach((angle, index) => {
             templates.push({
-              name: `Fallback ${templates.length + 1}`,
-              type: 'HTML Content',
-              html: swipe.content,
+              name: `Angle ${index + 1}`,
+              type: 'Marketing Angle',
+              html: result.html_content,
               angle: angle,
-              timestamp: fullResult.timestamp_iso
+              timestamp: result.metadata?.generated_at || new Date().toISOString()
             })
-          }
+          })
         }
+        
+        console.log('🔍 Final templates count:', templates.length)
+        return templates
       }
+      
+      // If no carousel HTML, show a message that no templates are available
+      console.log('⚠️ No carousel HTML found, showing empty state')
+      return templates
+      
+    } catch (error) {
+      console.error('Error in template extraction:', error)
+      return templates
     }
-    
-    return templates
   }
 
   useEffect(() => {
@@ -91,10 +139,9 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
       }
     }
 
-    if (fullResult) {
-      loadTemplates()
-    }
-  }, [fullResult])
+    // Always try to load templates, whether we have processed content or raw results
+    loadTemplates()
+  }, [result, jobTitle])
 
   useEffect(() => {
     const initialViewMode: {[key: number]: 'rendered' | 'source'} = {}
@@ -275,16 +322,17 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
                 )}
 
                 {templates.length > 1 && (
-                  <div className="flex justify-center gap-2 mb-4">
-                    {templates.map((_, index) => (
+                  <div className="flex flex-wrap justify-center gap-2 mb-4">
+                    {templates.map((template, index) => (
                       <Button
                         key={index}
                         variant={activeTemplate === index ? "default" : "outline"}
                         size="sm"
                         onClick={() => setActiveTemplate(index)}
-                        className="h-8 w-8 p-0"
+                        className="flex items-center gap-2"
                       >
-                        {index + 1}
+                        <FileText className="h-4 w-4" />
+                        {template.angle || `Angle ${index + 1}`}
                       </Button>
                     ))}
                   </div>
@@ -297,11 +345,6 @@ export function DeepCopyResults({ result, jobTitle }: DeepCopyResultsProps) {
                         <CardTitle className="text-xl font-bold">
                           {templates[activeTemplate]?.angle || templates[activeTemplate]?.name}
                         </CardTitle>
-                        {templates[activeTemplate]?.name && templates[activeTemplate]?.angle && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {templates[activeTemplate].name}
-                          </p>
-                        )}
                         <CardDescription>
                           {templates[activeTemplate]?.type} • {templates[activeTemplate]?.timestamp ? new Date(templates[activeTemplate].timestamp).toLocaleString() : 'Generated'}
                         </CardDescription>

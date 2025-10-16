@@ -34,11 +34,30 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, brand_info, sales_page_url, template_id, advertorial_type, persona, age_range, gender } = await request.json()
+    const { 
+      title, 
+      brand_info, 
+      sales_page_url, 
+      template_id, 
+      advertorial_type, 
+      target_approach,
+      customer_avatars,
+      // Deprecated fields for backward compatibility
+      persona, 
+      age_range, 
+      gender 
+    } = await request.json()
 
     if (!title || !brand_info || !advertorial_type) {
       return NextResponse.json(
         { error: 'Title, brand info, and advertorial type are required' },
+        { status: 400 }
+      )
+    }
+
+    if (!target_approach) {
+      return NextResponse.json(
+        { error: 'Target approach is required' },
         { status: 400 }
       )
     }
@@ -56,28 +75,34 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // Use provided customer avatars (extracted from frontend dialog)
+    const finalCustomerAvatars = customer_avatars || []
+
     // Submit job to DeepCopy API first to get the job ID
     let deepCopyJobId: string
     try {
-
-      const deepCopyResponse = await deepCopyClient.submitJob({
+      const jobPayload: any = {
         sales_page_url: sales_page_url || '',
         project_name: title,
         swipe_file_id: 'L00005', // Hardcoded as requested
-        advertorial_type,
-        persona,
-        age_range,
-        gender
-      })
+        advertorial_type
+      }
+
+      // Use new customer_avatars format if available, otherwise fall back to deprecated fields
+      if (finalCustomerAvatars.length > 0) {
+        jobPayload.customer_avatars = finalCustomerAvatars
+      } else if (persona || age_range || gender) {
+        // Fallback to deprecated fields for backward compatibility
+        jobPayload.persona = persona
+        jobPayload.age_range = age_range
+        jobPayload.gender = gender
+      }
+
+      const deepCopyResponse = await deepCopyClient.submitJob(jobPayload)
 
       deepCopyJobId = deepCopyResponse.jobId
 
     } catch (apiError) {
-      console.error('DeepCopy API error:', apiError)
-      console.error('API error details:', {
-        message: apiError instanceof Error ? apiError.message : 'Unknown error',
-        stack: apiError instanceof Error ? apiError.stack : undefined
-      })
       return NextResponse.json(
         { error: 'Failed to submit job to DeepCopy API' },
         { status: 500 }
@@ -92,6 +117,9 @@ export async function POST(request: NextRequest) {
       sales_page_url,
       template_id,
       advertorial_type,
+      target_approach,
+      customer_avatars: finalCustomerAvatars,
+      // Deprecated fields for backward compatibility
       persona,
       age_range,
       gender,
@@ -123,14 +151,12 @@ export async function POST(request: NextRequest) {
         await updateJobStatus(job.id, 'processing', progress)
       }
     } catch (statusError) {
-      console.error(`Error checking initial status for job ${job.id}:`, statusError)
       // Continue with job creation even if status check fails
     }
 
 
     return NextResponse.json(job)
   } catch (error) {
-    console.error('Job creation error:', error)
     return NextResponse.json(
       { error: 'Failed to create job' },
       { status: 500 }
@@ -154,7 +180,6 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
     
     
   } catch (error) {
-    console.error(`Error storing results for job ${localJobId}:`, error)
     throw error
   }
 }

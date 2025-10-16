@@ -185,6 +185,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
               <DeepCopyResults 
                 result={currentJob.result} 
                 jobTitle={currentJob.title}
+                advertorialType={currentJob.advertorial_type}
               />
             </TabsContent>
 
