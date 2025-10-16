@@ -797,6 +797,39 @@ class DeepCopy:
             self.ddb_client.put_item(TableName=self.jobs_table_name, Item=item)
         except Exception as e:
             logger.error(f"Failed to update job status for {job_id}: {e}")
+    
+    def get_available_swipe_files(self, s3_bucket: str) -> List[str]:
+        """Get list of available swipe files from S3 content_library folder.
+        
+        Args:
+            s3_bucket: The S3 bucket name
+            
+        Returns:
+            Sorted list of unique swipe file base names (without extensions)
+        """
+        try:
+            available_files = set()
+            paginator = self.s3_client.get_paginator('list_objects_v2')
+            pages = paginator.paginate(Bucket=s3_bucket, Prefix='content_library/')
+            
+            for page in pages:
+                if 'Contents' in page:
+                    for obj in page['Contents']:
+                        key = obj['Key']
+                        # Extract filename from key (e.g., "content_library/file_name.json")
+                        filename = key.split('/')[-1]
+                        # Remove file extensions to get unique base names
+                        if filename.endswith('_original.html'):
+                            base_name = filename.replace('_original.html', '')
+                            available_files.add(base_name)
+                        elif filename.endswith('.json') and not filename.endswith('_analysis.json'):
+                            base_name = filename.replace('.json', '')
+                            available_files.add(base_name)
+            
+            return sorted(list(available_files))
+        except Exception as e:
+            logger.error(f"Error listing available swipe files from S3: {e}")
+            return []
 
 def run_pipeline(event, context):
     """
@@ -868,15 +901,32 @@ def run_pipeline(event, context):
             swipe_file_model = load_schema_as_model(json_text)
             
         except Exception as e:
-            error_msg = f"Unexpected error fetching swipe file from S3: {str(e)}"
+            # Get list of available swipe files from S3
+            available_files_list = generator.get_available_swipe_files(s3_bucket)
+            
+            if available_files_list:
+                error_msg = (
+                    f"Error: The swipe file '{swipe_file_id}' is not available in the library. "
+                    f"Available swipe files: {', '.join(available_files_list)}. "
+                    f"Please select one of the available files."
+                )
+            else:
+                error_msg = (
+                    f"Error: The swipe file '{swipe_file_id}' is not available in the library. "
+                    f"No swipe files found in content_library folder."
+                )
+            
             logger.error(error_msg)
             try:
                 generator.update_job_status(job_id, "FAILED", {"error": error_msg})
             except Exception:
                 pass
             return {
-                "statusCode": 500,
-                "body": {"error": error_msg}
+                "statusCode": 404,
+                "body": {
+                    "error": error_msg,
+                    "available_files": available_files_list
+                }
             }
         # Get customer avatars from event
         customer_avatars = event.get("customer_avatars", [])

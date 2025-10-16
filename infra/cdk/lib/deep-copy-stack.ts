@@ -208,7 +208,6 @@ export class DeepCopyStack extends Stack {
       memorySize: 3008, // 3GB for Playwright + OpenAI
       architecture: lambda.Architecture.X86_64, // Explicitly set architecture
       environment: {
-        OPENAI_MODEL: 'gpt-5-mini',
         PLAYWRIGHT_BROWSERS_PATH: '/var/task/.playwright', // Fixed browser path for Lambda
       },
     });

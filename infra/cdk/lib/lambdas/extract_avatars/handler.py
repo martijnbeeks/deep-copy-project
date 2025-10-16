@@ -1,5 +1,5 @@
 """
-AWS Lambda handler for extracting customer avatars from product pages.
+AWS Lambda handler for extracting customer avatars from product pages using Grok from x.ai.
 
 Expected event format:
 {
@@ -89,14 +89,14 @@ def lambda_handler(event, context):
                 })
             }
         
-        # Get OpenAI API key (check env first for local testing, then Secrets Manager)
-        openai_api_key = os.environ.get('OPENAI_API_KEY')
+        # Get Grok API key (check env first for local testing, then Secrets Manager)
+        grok_api_key = os.environ.get('GROK_API_KEY')
         
-        if not openai_api_key:
+        if not grok_api_key:
             # Fall back to Secrets Manager (production)
             try:
                 secrets = get_secrets("deepcopy-secret-dev")
-                openai_api_key = secrets.get('OPENAI_API_KEY')
+                grok_api_key = secrets.get('GROK_API_KEY')
             except Exception as e:
                 logger.error(f'Failed to retrieve secrets: {e}')
                 return {
@@ -110,8 +110,8 @@ def lambda_handler(event, context):
                     })
                 }
         
-        if not openai_api_key:
-            logger.error('OPENAI_API_KEY not found in environment or secrets')
+        if not grok_api_key:
+            logger.error('GROK_API_KEY not found in environment or secrets')
             return {
                 'statusCode': 500,
                 'headers': {
@@ -119,16 +119,16 @@ def lambda_handler(event, context):
                     'Access-Control-Allow-Origin': '*',
                 },
                 'body': json.dumps({
-                    'error': 'Server configuration error: OPENAI_API_KEY not found'
+                    'error': 'Server configuration error: GROK_API_KEY not found'
                 })
             }
         
         # Optional: Get model from environment or use default
-        model = os.environ.get('OPENAI_MODEL', 'gpt-5-mini')
+        model = os.environ.get('GROK_MODEL', 'grok-4-fast-non-reasoning')
         
-        # Extract avatars
+        # Extract avatars using Grok
         logger.info(f'Processing request for URL: {url}')
-        avatars = extract_avatars_from_url(url, openai_api_key, model)
+        avatars = extract_avatars_from_url(url, grok_api_key, model)
         
         # Convert to dict for JSON serialization
         response_data = {
@@ -163,4 +163,4 @@ def lambda_handler(event, context):
 
 if __name__ == "__main__":
     
-    lambda_handler({"url": "https://www.sciatiease.com/sciatiease.php"}, {})
+    print(lambda_handler({"url": "https://hypowered.nl/en"}, {}))
