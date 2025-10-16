@@ -12,15 +12,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
     }
 
-    // Check if admin user exists (using username instead of email)
-    const adminUser = await query('SELECT * FROM admin_users WHERE username = $1', [email])
-    if (adminUser.rows.length === 0) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
-    }
-
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, adminUser.rows[0].password_hash)
-    if (!isValidPassword) {
+    // Hardcoded admin credentials for production
+    const ADMIN_USERNAME = 'admin'
+    const ADMIN_PASSWORD = 'admin123'
+    
+    // Simple credential check
+    if (email !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
 
@@ -30,9 +27,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true,
       user: {
-        id: adminUser.rows[0].id,
-        username: adminUser.rows[0].username,
-        email: email // Use the provided email for consistency
+        id: 'admin-user',
+        username: ADMIN_USERNAME,
+        email: email
       },
       sessionToken
     })
