@@ -69,7 +69,7 @@ def save_results_to_s3(job_id: str, results: dict):
     if not results_bucket:
         raise RuntimeError("RESULTS_BUCKET environment variable not set")
     
-    s3_key = f'results/{job_id}/avatar_extraction_results.json'
+    s3_key = f'results/avatars/{job_id}/avatar_extraction_results.json'
     
     s3_client.put_object(
         Bucket=results_bucket,

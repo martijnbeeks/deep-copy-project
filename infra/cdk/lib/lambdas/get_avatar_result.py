@@ -32,7 +32,7 @@ def handler(event, _context):
     if not _RESULTS_BUCKET:
         return _response(500, "Server misconfiguration: RESULTS_BUCKET not set")
 
-    key = f"results/{job_id}/avatar_extraction_results.json"
+    key = f"results/avatars/{job_id}/avatar_extraction_results.json"
 
     try:
         obj = _s3.get_object(Bucket=_RESULTS_BUCKET, Key=key)

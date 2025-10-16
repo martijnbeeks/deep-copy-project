@@ -65,7 +65,7 @@ def handler(event, _context):
         }
 
     job_id = str(uuid.uuid4())
-    result_key = f"results/{job_id}/avatar_extraction_results.json"
+    result_key = f"results/avatars/{job_id}/avatar_extraction_results.json"
 
     # Persist initial job record in DynamoDB
     try:
