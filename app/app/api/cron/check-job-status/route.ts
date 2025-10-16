@@ -94,7 +94,6 @@ export async function GET(request: NextRequest) {
 async function checkJobStatus(job: { id: string; execution_id: string; status: string; updated_at: string }): Promise<string> {
   try {
     const deepCopyJobId = job.id
-    `)
     
     const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
     
@@ -119,7 +118,6 @@ async function checkJobStatus(job: { id: string; execution_id: string; status: s
       const progress = statusResponse.status === 'SUBMITTED' ? 25 : 
                      statusResponse.status === 'RUNNING' ? 50 : 30
       await updateJobStatus(job.id, 'processing', progress)
-      `)
       return 'processing'
       
     } else {
