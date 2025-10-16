@@ -86,9 +86,6 @@ export class BackgroundPollingService {
     const poll = async () => {
       try {
         pollCount++
-        `)
-        
-        
         
         const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
         
@@ -119,7 +116,6 @@ export class BackgroundPollingService {
           const progress = statusResponse.status === 'SUBMITTED' ? 25 : 
                          statusResponse.status === 'RUNNING' ? 50 : 30
           await updateJobStatus(jobId, 'processing', progress)
-           - continuing background polling`)
           
           // Continue polling if we haven't reached max polls
           if (pollCount < maxPolls) {
