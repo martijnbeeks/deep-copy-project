@@ -265,11 +265,12 @@ export const createInjectableTemplate = async (
   name: string,
   type: 'listicle' | 'advertorial',
   htmlContent: string,
-  description?: string
+  description?: string,
+  customId?: string
 ): Promise<InjectableTemplate> => {
   const result = await query(
-    'INSERT INTO injectable_templates (name, advertorial_type, html_content, description) VALUES ($1, $2, $3, $4) RETURNING *',
-    [name, type, htmlContent, description]
+    'INSERT INTO injectable_templates (id, name, advertorial_type, html_content, description) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    [customId || undefined, name, type, htmlContent, description]
   )
   return result.rows[0]
 }

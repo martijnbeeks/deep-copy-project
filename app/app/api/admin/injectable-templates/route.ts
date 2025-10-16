@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { name, type, htmlContent, description } = body
+    const { id, name, type, htmlContent, description } = body
 
     if (!name || !type || !htmlContent) {
       return NextResponse.json({ error: 'Name, type, and HTML content are required' }, { status: 400 })
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Type must be either "listicle" or "advertorial"' }, { status: 400 })
     }
 
-    const template = await createInjectableTemplate(name, type, htmlContent, description)
+    const template = await createInjectableTemplate(name, type, htmlContent, description, id)
     return NextResponse.json({ template })
   } catch (error) {
     console.error('Error creating injectable template:', error)

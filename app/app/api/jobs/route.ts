@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
       const jobPayload: any = {
         sales_page_url: sales_page_url || '',
         project_name: title,
-        swipe_file_id: 'L00005', // Hardcoded as requested
+        swipe_file_id: 'L00005', 
         advertorial_type
       }
 

@@ -78,8 +78,8 @@ export default function AdminPage() {
   
   // Form states
   const [newUser, setNewUser] = useState({ email: '', password: '', name: '' })
-  const [newTemplate, setNewTemplate] = useState({ name: '', description: '', category: '', htmlContent: '' })
-  const [newInjectableTemplate, setNewInjectableTemplate] = useState({ name: '', type: 'listicle' as 'listicle' | 'advertorial', description: '', htmlContent: '' })
+  const [newTemplate, setNewTemplate] = useState({ id: '', name: '', description: '', category: '', htmlContent: '' })
+  const [newInjectableTemplate, setNewInjectableTemplate] = useState({ id: '', name: '', type: 'listicle' as 'listicle' | 'advertorial', description: '', htmlContent: '' })
   const [templateFile, setTemplateFile] = useState<File | null>(null)
   
   // Dialog states
@@ -267,7 +267,7 @@ export default function AdminPage() {
           title: "Success",
           description: "Template uploaded successfully"
         })
-        setNewTemplate({ name: '', description: '', category: '', htmlContent: '' })
+        setNewTemplate({ id: '', name: '', description: '', category: '', htmlContent: '' })
         setTemplateFile(null)
         setTemplateDialogOpen(false)
         loadData()
@@ -378,7 +378,7 @@ export default function AdminPage() {
           title: "Success",
           description: "Injectable template created successfully"
         })
-        setNewInjectableTemplate({ name: '', type: 'listicle', description: '', htmlContent: '' })
+        setNewInjectableTemplate({ id: '', name: '', type: 'listicle', description: '', htmlContent: '' })
         setInjectableTemplateDialogOpen(false)
         loadData()
       } else {
@@ -765,6 +765,18 @@ export default function AdminPage() {
                             onChange={(e) => setNewTemplate(prev => ({ ...prev, name: e.target.value }))}
                             placeholder="My Template"
                           />
+                        </div>
+                        <div>
+                          <Label htmlFor="templateId">Template ID (Optional)</Label>
+                          <Input
+                            id="templateId"
+                            value={newTemplate.id}
+                            onChange={(e) => setNewTemplate(prev => ({ ...prev, id: e.target.value }))}
+                            placeholder="custom-template-id (leave empty for auto-generated)"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Enter a custom ID or leave empty to auto-generate one
+                          </p>
                         </div>
                         <div>
                           <Label htmlFor="templateDescription">Description</Label>
