@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { 
   getInjectableTemplates, 
+  getInjectableTemplateById,
   createInjectableTemplate, 
   updateInjectableTemplate,
   deleteInjectableTemplate 
@@ -8,17 +9,21 @@ import {
 import { verifyAdminAuth, createAuthResponse } from '@/lib/auth/admin-auth'
 
 export async function GET(request: NextRequest) {
-  const authResult = await verifyAdminAuth(request)
-  if (authResult.error) {
-    return createAuthResponse(authResult.error)
-  }
-
   try {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type') as 'listicle' | 'advertorial' | null
+    const id = searchParams.get('id')
 
-    const templates = await getInjectableTemplates(type)
-    return NextResponse.json({ templates })
+    let templates
+    if (id) {
+      // Fetch specific template by ID
+      templates = await getInjectableTemplateById(id)
+    } else {
+      // Fetch templates by type
+      templates = await getInjectableTemplates(type)
+    }
+    
+    return NextResponse.json(templates)
   } catch (error) {
     console.error('Error fetching injectable templates:', error)
     return NextResponse.json({ error: 'Failed to fetch injectable templates' }, { status: 500 })

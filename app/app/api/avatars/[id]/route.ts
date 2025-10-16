@@ -37,44 +37,41 @@ async function getAccessToken(): Promise<string> {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { url } = await request.json()
+    const { id } = params
 
-    if (!url) {
-      return NextResponse.json({ error: 'URL is required' }, { status: 400 })
+    if (!id) {
+      return NextResponse.json({ error: 'Avatar extraction job ID is required' }, { status: 400 })
     }
 
     // Get access token using client credentials
     const accessToken = await getAccessToken()
 
-    // Submit avatar extraction job
-    const response = await fetch('https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/extract', {
-      method: 'POST',
+    // Get avatar extraction job status
+    const response = await fetch(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/${id}`, {
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ url })
+      }
     })
 
     if (!response.ok) {
+      if (response.status === 404) {
+        return NextResponse.json({ error: 'Avatar extraction job not found' }, { status: 404 })
+      }
       const errorText = await response.text()
-      throw new Error(`Avatar extraction API responded with status: ${response.status} - ${errorText}`)
+      throw new Error(`Avatar extraction status API responded with status: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()
     
-    // Return the job ID for polling
-    return NextResponse.json({
-      jobId: data.jobId,
-      status: data.status,
-      message: 'Avatar extraction job submitted successfully. Please poll the status endpoint to check progress.'
-    })
+    return NextResponse.json(data)
 
   } catch (error) {
-    console.error('Avatar extraction error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to submit avatar extraction job'
+    console.error('Avatar extraction status error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to get avatar extraction status'
     return NextResponse.json(
       { error: errorMessage },
       { status: 500 }

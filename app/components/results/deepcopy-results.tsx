@@ -8,7 +8,7 @@ import { Copy, Download, Eye, Maximize2, FileText, BarChart3, Code, BookOpen, Ch
 import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { extractContentFromResults, injectContentIntoTemplate } from "@/lib/utils/template-injection"
+import { extractContentFromSwipeResult, injectContentIntoTemplate } from "@/lib/utils/template-injection"
 import { JobResult, SwipeResult, Listicle, Advertorial } from "@/lib/api/deepcopy-client"
 
 interface DeepCopyResult extends JobResult {
@@ -30,9 +30,10 @@ interface DeepCopyResultsProps {
   }
   jobTitle: string
   advertorialType?: string
+  templateId?: string
 }
 
-export function DeepCopyResults({ result, jobTitle, advertorialType }: DeepCopyResultsProps) {
+export function DeepCopyResults({ result, jobTitle, advertorialType, templateId }: DeepCopyResultsProps) {
   const [copied, setCopied] = useState(false)
   const [activeTemplate, setActiveTemplate] = useState(0)
   const [viewMode, setViewMode] = useState<{[key: number]: 'rendered' | 'source'}>({})
@@ -42,10 +43,7 @@ export function DeepCopyResults({ result, jobTitle, advertorialType }: DeepCopyR
 
   const fullResult = result.metadata?.full_result
   
-  // Temporary debug logging
-  console.log('🔍 DeepCopyResults - result object:', JSON.stringify(result, null, 2));
-  console.log('🔍 DeepCopyResults - result.html_content exists:', !!result.html_content);
-  console.log('🔍 DeepCopyResults - result.html_content length:', result.html_content?.length || 0);
+  // Debug logging
   console.log('🔍 DeepCopyResults - has carousel:', result.html_content?.includes('carousel-container') || false);
   console.log('🔍 DeepCopyResults - advertorialType:', advertorialType);
   
@@ -53,75 +51,194 @@ export function DeepCopyResults({ result, jobTitle, advertorialType }: DeepCopyR
     const templates: Array<{name: string, type: string, html: string, angle?: string, timestamp?: string}> = []
     
     try {
-      // Check if we have processed HTML content (carousel) from the new system
-      if (result.html_content && result.html_content.includes('carousel-container')) {
-        console.log('✅ Found carousel HTML, extracting templates...')
+      // Check if we have full result data with swipe_results
+      if (fullResult && fullResult.results?.swipe_results) {
+        console.log('✅ Found swipe_results, processing with injectable templates...')
         
-        // Extract individual angles and their HTML from the carousel
-        const angleMatches = result.html_content.match(/<button class="nav-button[^>]*>([^<]+)<\/button>/g)
-        const angles = angleMatches ? angleMatches.map(match => 
-          match.replace(/<[^>]*>/g, '').trim()
-        ) : ['Marketing Angle 1']
+        const swipeResults = fullResult.results.swipe_results
+        console.log('🔍 Found swipe results:', swipeResults.length)
         
-        console.log('🔍 Found angles:', angles)
+        // Get injectable template for this specific template ID
+        const templateType = advertorialType === 'listicle' ? 'listicle' : 'advertorial'
         
-        // Extract iframes directly from the carousel HTML
-        const iframeMatches = result.html_content.match(/<iframe srcdoc="([^"]*)"[^>]*><\/iframe>/g)
-        
-        console.log('🔍 Found iframes:', iframeMatches ? iframeMatches.length : 0)
-        
-        if (iframeMatches && iframeMatches.length === angles.length) {
-          console.log('✅ Processing iframes directly...')
-          // Extract template HTML from each iframe
-          angles.forEach((angle, index) => {
-            const iframeHtml = iframeMatches[index]
-            const contentMatch = iframeHtml.match(/srcdoc="([^"]*)"/)
+        try {
+          let injectableTemplate = null
+          
+          if (templateId) {
+            // Try to fetch the specific injectable template with the same ID
+            console.log(`🔍 Looking for injectable template with ID: ${templateId}`)
+            const specificResponse = await fetch(`/api/admin/injectable-templates?id=${templateId}`)
+            const specificTemplates = await specificResponse.json()
             
-            if (contentMatch) {
-              // Decode the HTML content from the iframe
-              const templateHtml = contentMatch[1]
-                .replace(/&quot;/g, '"')
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&amp;/g, '&')
-              
-              console.log(`✅ Extracted template ${index + 1}:`, templateHtml.substring(0, 100) + '...')
-              
-              templates.push({
-                name: `Angle ${index + 1}`,
-                type: 'Marketing Angle',
-                html: templateHtml,
-                angle: angle,
-                timestamp: result.metadata?.generated_at || new Date().toISOString()
-              })
-            } else {
-              console.log(`⚠️ Could not extract content from iframe ${index + 1}`)
+            if (specificTemplates.length > 0) {
+              injectableTemplate = specificTemplates[0]
+              console.log(`✅ Found specific injectable template: ${injectableTemplate.name} (ID: ${templateId})`)
             }
-          })
-        } else {
-          console.log('⚠️ Fallback: using full carousel HTML for each angle')
-          // Fallback: create individual templates with the full carousel HTML
-          angles.forEach((angle, index) => {
-            templates.push({
-              name: `Angle ${index + 1}`,
-              type: 'Marketing Angle',
-              html: result.html_content,
-              angle: angle,
-              timestamp: result.metadata?.generated_at || new Date().toISOString()
+          }
+          
+          // Fallback: fetch by type if specific template not found
+          if (!injectableTemplate) {
+            console.log(`⚠️ Specific template not found, fetching by type: ${templateType}`)
+            const response = await fetch(`/api/admin/injectable-templates?type=${templateType}`)
+            const injectableTemplates = await response.json()
+            
+            if (injectableTemplates.length > 0) {
+              injectableTemplate = injectableTemplates[0]
+              console.log(`✅ Using fallback injectable template: ${injectableTemplate.name}`)
+            }
+          }
+          
+          if (injectableTemplate) {
+            // Process each swipe result
+            swipeResults.forEach((swipeResult, index) => {
+              try {
+                // Extract content from the individual swipe result
+                const contentData = extractContentFromSwipeResult(swipeResult, templateType)
+                
+                // Inject content into the injectable template
+                const renderedHtml = injectContentIntoTemplate(injectableTemplate, contentData)
+                
+                templates.push({
+                  name: `Angle ${index + 1}`,
+                  type: 'Marketing Angle',
+                  html: renderedHtml,
+                  angle: swipeResult.angle,
+                  timestamp: result.metadata?.generated_at || new Date().toISOString()
+                })
+                
+                console.log(`✅ Processed angle ${index + 1}: ${swipeResult.angle}`)
+              } catch (error) {
+                console.error(`❌ Error processing angle ${index + 1}:`, error)
+              }
             })
-          })
+          } else {
+            console.log('⚠️ No injectable templates found, falling back to carousel HTML')
+            // Fallback to old carousel method
+            return await extractFromCarousel()
+          }
+        } catch (error) {
+          console.error('❌ Error fetching injectable templates:', error)
+          // Fallback to old carousel method
+          return await extractFromCarousel()
         }
         
         console.log('🔍 Final templates count:', templates.length)
         return templates
       }
       
-      // If no carousel HTML, show a message that no templates are available
-      console.log('⚠️ No carousel HTML found, showing empty state')
+      // Fallback: Check if we have processed HTML content (carousel) from the old system
+      if (result.html_content && result.html_content.includes('carousel-container')) {
+        console.log('⚠️ No swipe_results found, falling back to carousel HTML extraction')
+        return await extractFromCarousel()
+      }
+      
+      // If no data available, show empty state
+      console.log('⚠️ No data found, showing empty state')
       return templates
       
     } catch (error) {
       console.error('Error in template extraction:', error)
+      return templates
+    }
+  }
+
+  const extractFromCarousel = async () => {
+    const templates: Array<{name: string, type: string, html: string, angle?: string, timestamp?: string}> = []
+    
+    try {
+      // Extract individual angles and their HTML from the carousel
+      const angleMatches = result.html_content.match(/<button class="nav-button[^>]*>([^<]+)<\/button>/g)
+      const angles = angleMatches ? angleMatches.map(match => 
+        match.replace(/<[^>]*>/g, '').trim()
+      ) : ['Marketing Angle 1']
+      
+      console.log('🔍 Found angles:', angles)
+      
+      // Try multiple approaches to extract template content
+      let templateContent: string[] = []
+      
+      // Approach 1: Look for iframes with srcdoc
+      const iframeMatches = result.html_content.match(/<iframe[^>]*srcdoc="([^"]*)"[^>]*><\/iframe>/g)
+      console.log('🔍 Found iframes:', iframeMatches ? iframeMatches.length : 0)
+      
+      if (iframeMatches && iframeMatches.length > 0) {
+        console.log('✅ Processing iframes directly...')
+        templateContent = iframeMatches.map(iframeHtml => {
+          const contentMatch = iframeHtml.match(/srcdoc="([^"]*)"/)
+          if (contentMatch) {
+            return contentMatch[1]
+              .replace(/&quot;/g, '"')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&amp;/g, '&')
+          }
+          return ''
+        }).filter(content => content.length > 0)
+      }
+      
+      // Approach 2: Look for template-slide divs with content
+      if (templateContent.length === 0) {
+        console.log('⚠️ No iframes found, trying template-slide extraction...')
+        const slideMatches = result.html_content.match(/<div class="template-slide[^>]*>([\s\S]*?)<\/div>\s*<\/div>/g)
+        console.log('🔍 Found slides:', slideMatches ? slideMatches.length : 0)
+        
+        if (slideMatches && slideMatches.length > 0) {
+          templateContent = slideMatches.map(slideHtml => {
+            // Extract content from within the slide
+            const contentMatch = slideHtml.match(/<div class="template-slide[^>]*>([\s\S]*?)<\/div>\s*<\/div>/)
+            return contentMatch ? contentMatch[1] : slideHtml
+          })
+        }
+      }
+      
+      // Approach 3: Look for any div with template content
+      if (templateContent.length === 0) {
+        console.log('⚠️ No slides found, trying generic div extraction...')
+        const divMatches = result.html_content.match(/<div[^>]*class="[^"]*template[^"]*"[^>]*>([\s\S]*?)<\/div>/g)
+        console.log('🔍 Found template divs:', divMatches ? divMatches.length : 0)
+        
+        if (divMatches && divMatches.length > 0) {
+          templateContent = divMatches.map(divHtml => {
+            const contentMatch = divHtml.match(/<div[^>]*class="[^"]*template[^"]*"[^>]*>([\s\S]*?)<\/div>/)
+            return contentMatch ? contentMatch[1] : divHtml
+          })
+        }
+      }
+      
+      // Create templates from extracted content
+      if (templateContent.length > 0) {
+        console.log(`✅ Found ${templateContent.length} template contents`)
+        angles.forEach((angle, index) => {
+          const content = templateContent[index] || templateContent[0] || result.html_content
+          
+          templates.push({
+            name: `Angle ${index + 1}`,
+            type: 'Marketing Angle',
+            html: content,
+            angle: angle,
+            timestamp: result.metadata?.generated_at || new Date().toISOString()
+          })
+          
+          console.log(`✅ Created template ${index + 1}: ${angle.substring(0, 50)}...`)
+        })
+      } else {
+        console.log('⚠️ No template content found, using full carousel HTML')
+        // Fallback: create individual templates with the full carousel HTML
+        angles.forEach((angle, index) => {
+          templates.push({
+            name: `Angle ${index + 1}`,
+            type: 'Marketing Angle',
+            html: result.html_content,
+            angle: angle,
+            timestamp: result.metadata?.generated_at || new Date().toISOString()
+          })
+        })
+      }
+      
+      console.log('🔍 Final templates count:', templates.length)
+      return templates
+    } catch (error) {
+      console.error('Error in carousel extraction:', error)
       return templates
     }
   }

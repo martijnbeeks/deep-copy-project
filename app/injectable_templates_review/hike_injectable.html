@@ -1,0 +1,481 @@
+<!-- Injectable Template: hike (listicle) -->
+<!-- This template uses placeholders that will be replaced with actual content -->
+<!-- Generated from original template with all content replaced by placeholders -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{content.hero.headline}}</title>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+    }
+    
+    .leading-relaxed {
+      line-height: 1.75;
+    }
+    
+    .leading-tight {
+      line-height: 1.25;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#f5f5f5]">
+  <!-- Countdown Banner -->
+  <div class="bg-[#1b5ca8] text-white py-3 flex justify-center items-center">
+    <div class="flex items-center gap-2 text-center">
+      <div class="flex flex-col">
+        <span class="text-2xl font-bold">00</span>
+        <span class="text-xs uppercase">Days</span>
+      </div>
+      <span class="text-2xl font-bold leading-none">:</span>
+      <div class="flex flex-col">
+        <span class="text-2xl font-bold">13</span>
+        <span class="text-xs uppercase">Hrs</span>
+      </div>
+      <span class="text-2xl font-bold leading-none">:</span>
+      <div class="flex flex-col">
+        <span class="text-2xl font-bold">22</span>
+        <span class="text-xs uppercase">Min</span>
+      </div>
+      <span class="text-2xl font-bold leading-none">:</span>
+      <div class="flex flex-col">
+        <span class="text-2xl font-bold">09</span>
+        <span class="text-xs uppercase">Sec</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Header -->
+  <header class="bg-white border-b border-[#e5e5e5]">
+    <div class="container mx-auto px-5 md:px-10 py-5 flex justify-between items-center max-w-[1240px]">
+      <span class="text-2xl font-bold uppercase">{{content.topbar.label}}</span>
+      <a 
+        href="{{content.cta.primaryUrl}}"
+        class="bg-[#4caf50] text-white px-6 py-3 rounded-md font-bold uppercase hover:bg-[#45a049] transition-all hover:scale-105"
+      >
+        {{content.cta.primary}}
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container mx-auto px-5 md:px-10 py-8 max-w-[1240px]">
+    <div class="flex flex-col lg:flex-row gap-8 items-start">
+      <!-- Article Column -->
+      <article class="bg-white rounded-lg p-8 flex-1 min-w-0 lg:max-w-[800px] lg:order-1">
+        <img 
+          src="{{content.brands.brand1.logo}}"
+          alt="{{content.brands.brand1.name}}"
+          width="250"
+          height="100"
+          class="mx-auto mb-6"
+        />
+
+        <h1 class="text-2xl md:text-3xl lg:text-[2.5rem] font-bold mb-6 leading-tight text-[#2c3e50]">
+          {{content.hero.headline}}
+        </h1>
+
+        <!-- Author Byline -->
+        <section class="flex flex-col md:flex-row items-center md:items-start gap-4 mb-8 text-center md:text-left">
+          <img 
+            src="{{content.author.image}}"
+            alt="{{content.author.name}}"
+            width="80"
+            height="80"
+            class="rounded-full object-cover"
+          />
+          <div class="flex flex-col">
+            <div class="font-bold text-[#2c3e50] flex items-center justify-center md:justify-start gap-2">
+              By {{content.author.name}}
+              <img 
+                src="{{content.author.verifiedIcon}}"
+                alt="Verified Badge"
+                width="16"
+                height="16"
+              />
+            </div>
+            <div class="text-[#666] italic">{{content.author.name}}</div>
+            <div class="text-sm text-[#666]">{{content.author.date}}</div>
+          </div>
+        </section>
+
+        <!-- Article Content -->
+        <div class="space-y-8">
+          <img 
+            src="{{content.hero.image}}"
+            alt="{{content.hero.imageAlt}}"
+            width="800"
+            height="400"
+            class="w-full rounded-lg mb-8"
+          />
+
+          <p class="mb-5 leading-relaxed">
+            {{content.story.intro}}
+          </p>
+
+          <p class="mb-5 leading-relaxed">
+            {{content.hero.subheadline}}
+          </p>
+
+          <!-- Testimonial Card -->
+          <div class="bg-[#fafafa] rounded-lg p-6 my-8 text-center">
+            <div class="flex justify-center items-center gap-3 mb-4">
+              <img 
+                src="{{content.reactions.r1.image}}"
+                alt="{{content.reactions.r1.name}}"
+                width="60"
+                height="60"
+                class="rounded-full"
+              />
+              <div class="font-bold flex items-center gap-2">
+                {{content.reactions.r1.name}}
+                <img 
+                  src="{{content.author.verifiedIcon}}"
+                  alt="Verified Badge"
+                  width="16"
+                  height="16"
+                />
+              </div>
+            </div>
+            <p class="italic mb-6">"{{content.reactions.r1.text}}"</p>
+            <a 
+              href="{{content.cta.primaryUrl}}"
+              class="inline-block bg-[#4caf50] text-white px-6 py-3 rounded-md font-bold uppercase hover:bg-[#45a049] transition-all hover:scale-105"
+            >
+              {{content.cta.primary}}
+            </a>
+          </div>
+
+          <!-- Reason #1 -->
+          <section class="flex flex-col lg:flex-row gap-8 mb-8">
+            <div class="lg:w-[40%] flex-shrink-0">
+              <img 
+                src="{{content.section1.image}}"
+                alt="{{content.section1.imageAlt}}"
+                width="400"
+                height="300"
+                class="w-full rounded-lg"
+              />
+            </div>
+            <div class="lg:w-[60%]">
+              <h2 class="text-2xl md:text-3xl font-bold mb-4 leading-tight">{{content.section1.title}}</h2>
+              <p class="leading-relaxed">{{content.section1.body}}</p>
+            </div>
+          </section>
+
+          <!-- Reason #2 -->
+          <section class="flex flex-col lg:flex-row-reverse gap-8 mb-8">
+            <div class="lg:w-[40%] flex-shrink-0">
+              <img 
+                src="{{content.section2.image}}"
+                alt="{{content.section2.imageAlt}}"
+                width="400"
+                height="300"
+                class="w-full rounded-lg"
+              />
+            </div>
+            <div class="lg:w-[60%]">
+              <h2 class="text-2xl md:text-3xl font-bold mb-4 leading-tight">{{content.section2.title}}</h2>
+              <p class="leading-relaxed">{{content.section2.body}}</p>
+            </div>
+          </section>
+
+          <!-- Reason #3 -->
+          <section class="flex flex-col lg:flex-row gap-8 mb-8">
+            <div class="lg:w-[40%] flex-shrink-0">
+              <img 
+                src="{{content.section3.image}}"
+                alt="{{content.section3.imageAlt}}"
+                width="400"
+                height="300"
+                class="w-full rounded-lg"
+              />
+            </div>
+            <div class="lg:w-[60%]">
+              <h2 class="text-2xl md:text-3xl font-bold mb-4 leading-tight">{{content.section3.title}}</h2>
+              <p class="leading-relaxed">{{content.section3.body}}</p>
+            </div>
+          </section>
+
+          <!-- Reason #4 -->
+          <section class="flex flex-col lg:flex-row-reverse gap-8 mb-8">
+            <div class="lg:w-[40%] flex-shrink-0">
+              <img 
+                src="{{content.section4.image}}"
+                alt="{{content.section4.imageAlt}}"
+                width="400"
+                height="300"
+                class="w-full rounded-lg"
+              />
+            </div>
+            <div class="lg:w-[60%]">
+              <h2 class="text-2xl md:text-3xl font-bold mb-4 leading-tight">{{content.section4.title}}</h2>
+              <p class="leading-relaxed">{{content.section4.body}}</p>
+            </div>
+          </section>
+
+          <!-- Reason #5 -->
+          <section class="flex flex-col lg:flex-row gap-8 mb-8">
+            <div class="lg:w-[40%] flex-shrink-0">
+              <img 
+                src="{{content.section5.image}}"
+                alt="{{content.section5.imageAlt}}"
+                width="400"
+                height="300"
+                class="w-full rounded-lg"
+              />
+            </div>
+            <div class="lg:w-[60%]">
+              <h2 class="text-2xl md:text-3xl font-bold mb-4 leading-tight">{{content.section5.title}}</h2>
+              <p class="leading-relaxed">{{content.section5.body}}</p>
+            </div>
+          </section>
+
+          <!-- Reason #6 -->
+          <section class="flex flex-col lg:flex-row-reverse gap-8 mb-8">
+            <div class="lg:w-[40%] flex-shrink-0">
+              <img 
+                src="{{content.section6.image}}"
+                alt="{{content.section6.imageAlt}}"
+                width="400"
+                height="300"
+                class="w-full rounded-lg"
+              />
+            </div>
+            <div class="lg:w-[60%]">
+              <h2 class="text-2xl md:text-3xl font-bold mb-4 leading-tight">{{content.section6.title}}</h2>
+              <p class="leading-relaxed">{{content.section6.body}}</p>
+            </div>
+          </section>
+
+          <!-- Reason #7 -->
+          <section class="flex flex-col lg:flex-row gap-8 mb-8">
+            <div class="lg:w-[40%] flex-shrink-0">
+              <img 
+                src="{{content.section7.image}}"
+                alt="{{content.section7.imageAlt}}"
+                width="400"
+                height="300"
+                class="w-full rounded-lg"
+              />
+            </div>
+            <div class="lg:w-[60%]">
+              <h2 class="text-2xl md:text-3xl font-bold mb-4 leading-tight">{{content.section7.title}}</h2>
+              <p class="leading-relaxed">{{content.section7.body}}</p>
+            </div>
+          </section>
+
+          <!-- Reason #8 -->
+          <section class="flex flex-col lg:flex-row-reverse gap-8 mb-8">
+            <div class="lg:w-[40%] flex-shrink-0">
+              <img 
+                src="{{content.section8.image}}"
+                alt="{{content.section8.imageAlt}}"
+                width="400"
+                height="300"
+                class="w-full rounded-lg"
+              />
+            </div>
+            <div class="lg:w-[60%]">
+              <h2 class="text-2xl md:text-3xl font-bold mb-4 leading-tight">{{content.section8.title}}</h2>
+              <p class="leading-relaxed">{{content.section8.body}}</p>
+            </div>
+          </section>
+
+          <!-- Reason #9 -->
+          <section class="flex flex-col lg:flex-row gap-8 mb-8">
+            <div class="lg:w-[40%] flex-shrink-0">
+              <img 
+                src="{{content.section9.image}}"
+                alt="{{content.section9.imageAlt}}"
+                width="400"
+                height="300"
+                class="w-full rounded-lg"
+              />
+            </div>
+            <div class="lg:w-[60%]">
+              <h2 class="text-2xl md:text-3xl font-bold mb-4 leading-tight">{{content.section9.title}}</h2>
+              <p class="leading-relaxed">{{content.section9.body}}</p>
+            </div>
+          </section>
+
+          <!-- Reason #10 -->
+          <section class="flex flex-col lg:flex-row-reverse gap-8 mb-8">
+            <div class="lg:w-[40%] flex-shrink-0">
+              <img 
+                src="{{content.section10.image}}"
+                alt="{{content.section10.imageAlt}}"
+                width="400"
+                height="300"
+                class="w-full rounded-lg"
+              />
+            </div>
+            <div class="lg:w-[60%]">
+              <h2 class="text-2xl md:text-3xl font-bold mb-4 leading-tight">{{content.section10.title}}</h2>
+              <p class="leading-relaxed">{{content.section10.body}}</p>
+            </div>
+          </section>
+
+          <!-- Reason #11 -->
+          <section class="flex flex-col lg:flex-row gap-8 mb-8">
+            <div class="lg:w-[40%] flex-shrink-0">
+              <img 
+                src="{{content.section11.image}}"
+                alt="{{content.section11.imageAlt}}"
+                width="400"
+                height="300"
+                class="w-full rounded-lg"
+              />
+            </div>
+            <div class="lg:w-[60%]">
+              <h2 class="text-2xl md:text-3xl font-bold mb-4 leading-tight">{{content.section11.title}}</h2>
+              <p class="leading-relaxed">{{content.section11.body}}</p>
+            </div>
+          </section>
+
+          <!-- Reason #12 -->
+          <section class="flex flex-col lg:flex-row-reverse gap-8 mb-8">
+            <div class="lg:w-[40%] flex-shrink-0">
+              <img 
+                src="{{content.section12.image}}"
+                alt="{{content.section12.imageAlt}}"
+                width="400"
+                height="300"
+                class="w-full rounded-lg"
+              />
+            </div>
+            <div class="lg:w-[60%]">
+              <h2 class="text-2xl md:text-3xl font-bold mb-4 leading-tight">{{content.section12.title}}</h2>
+              <p class="leading-relaxed">{{content.section12.body}}</p>
+            </div>
+          </section>
+
+          <!-- Doctor's Recommendation -->
+          <section class="text-center p-8 rounded-lg mt-8 bg-white border border-[#e5e5e5]">
+            <h3 class="text-3xl font-bold mb-6">{{content.author.name}}'s Personal Recommendation:</h3>
+            
+            <div class="bg-[#1b5ca8] text-white py-3 flex justify-center items-center mb-6 rounded-lg">
+              <div class="flex items-center gap-2 text-center">
+                <div class="flex flex-col">
+                  <span class="text-2xl font-bold">00</span>
+                  <span class="text-xs uppercase">Days</span>
+                </div>
+                <span class="text-2xl font-bold leading-none">:</span>
+                <div class="flex flex-col">
+                  <span class="text-2xl font-bold">13</span>
+                  <span class="text-xs uppercase">Hrs</span>
+                </div>
+                <span class="text-2xl font-bold leading-none">:</span>
+                <div class="flex flex-col">
+                  <span class="text-2xl font-bold">22</span>
+                  <span class="text-xs uppercase">Min</span>
+                </div>
+                <span class="text-2xl font-bold leading-none">:</span>
+                <div class="flex flex-col">
+                  <span class="text-2xl font-bold">09</span>
+                  <span class="text-xs uppercase">Sec</span>
+                </div>
+              </div>
+            </div>
+
+            <img 
+              src="{{content.author.image}}"
+              alt="{{content.author.name}}"
+              width="300"
+              height="400"
+              class="mx-auto mb-6 rounded-lg"
+            />
+
+            <div class="bg-[#fefbf3] border-2 border-dashed border-[#d4a574] rounded-lg p-8">
+              <p class="italic leading-relaxed">{{content.reactions.r2.text}}</p>
+            </div>
+          </section>
+        </div>
+      </article>
+
+      <!-- Sidebar with Product Card -->
+      <aside class="w-full lg:w-[380px] lg:flex-shrink-0 lg:order-2">
+        <div class="bg-white rounded-lg p-8 shadow-lg border border-[#eee] lg:sticky lg:top-5">
+          <h3 class="font-bold mb-4 text-center">{{content.sidebar.ctaHeadline}}</h3>
+          
+          <div class="flex items-center justify-center gap-2 mb-4 text-[#666]">
+            <img 
+              src="{{content.sidebar.ratingImage}}"
+              alt="Star rating"
+              width="80"
+              height="16"
+            />
+            <span>{{content.reactions.title}}</span>
+          </div>
+
+          <img 
+            src="{{content.sidebar.productImage}}"
+            alt="{{content.section1.imageAlt}}"
+            width="400"
+            height="400"
+            class="w-full mx-auto mb-6"
+          />
+
+          <ul class="space-y-3 mb-6 text-left">
+            <li class="flex items-center gap-3">
+              <img 
+                src="{{content.section1.image}}"
+                alt="{{content.section1.imageAlt}}"
+                width="20"
+                height="20"
+              />
+              <span>{{content.section1.title}}</span>
+            </li>
+            <li class="flex items-center gap-3">
+              <img 
+                src="{{content.section2.image}}"
+                alt="{{content.section2.imageAlt}}"
+                width="20"
+                height="20"
+              />
+              <span>{{content.section2.title}}</span>
+            </li>
+            <li class="flex items-center gap-3">
+              <img 
+                src="{{content.section3.image}}"
+                alt="{{content.section3.imageAlt}}"
+                width="20"
+                height="20"
+              />
+              <span>{{content.section3.title}}</span>
+            </li>
+            <li class="flex items-center gap-3">
+              <img 
+                src="{{content.section4.image}}"
+                alt="{{content.section4.imageAlt}}"
+                width="20"
+                height="20"
+              />
+              <span>{{content.section4.title}}</span>
+            </li>
+          </ul>
+
+          <p class="text-[#d32f2f] font-bold mb-6 text-center">{{content.alert.banner}}</p>
+
+          <a 
+            href="{{content.cta.primaryUrl}}"
+            class="block w-full bg-[#4caf50] text-white py-4 rounded-md font-bold uppercase hover:bg-[#45a049] transition-all hover:scale-105 text-center"
+          >
+            {{content.cta.primary}}
+          </a>
+        </div>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

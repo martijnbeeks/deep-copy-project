@@ -1,0 +1,359 @@
+<!-- Injectable Template: footpad (advertorial) -->
+<!-- This template uses placeholders that will be replaced with actual content -->
+<!-- Generated from original template with all content replaced by placeholders -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{content.hero.headline}}</title>
+  <meta name="description" content="{{content.hero.subheadline}}">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #fff;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    .header {
+      background: #f8f9fa;
+      padding: 20px 0;
+      text-align: center;
+    }
+    
+    .hero {
+      padding: 60px 0;
+      text-align: center;
+    }
+    
+    .hero h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #1a1a1a;
+      margin-bottom: 20px;
+      line-height: 1.2;
+    }
+    
+    .hero p {
+      font-size: 1.2rem;
+      color: #666;
+      margin-bottom: 30px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .hero-image {
+      max-width: 600px;
+      margin: 0 auto 40px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .section {
+      padding: 60px 0;
+    }
+    
+    .section h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    .section p {
+      font-size: 1.1rem;
+      color: #555;
+      margin-bottom: 20px;
+      line-height: 1.7;
+    }
+    
+    .two-column {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: center;
+      margin: 40px 0;
+    }
+    
+    .two-column img {
+      width: 100%;
+      border-radius: 8px;
+    }
+    
+    .cta-button {
+      display: inline-block;
+      background: #28a745;
+      color: white;
+      padding: 15px 30px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.1rem;
+      transition: background 0.3s;
+    }
+    
+    .cta-button:hover {
+      background: #218838;
+    }
+    
+    .testimonial {
+      background: #f8f9fa;
+      padding: 30px;
+      border-radius: 12px;
+      margin: 30px 0;
+    }
+    
+    .testimonial p {
+      font-style: italic;
+      font-size: 1.1rem;
+      margin-bottom: 15px;
+    }
+    
+    .testimonial-author {
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    
+    .stars {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 15px;
+    }
+    
+    .stars img {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .offer-box {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      margin: 40px 0;
+    }
+    
+    .offer-box h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 15px;
+    }
+    
+    .offer-box p {
+      font-size: 1.1rem;
+      color: #555;
+      margin-bottom: 20px;
+    }
+    
+    .footer {
+      background: #2c3e50;
+      color: white;
+      padding: 40px 0;
+      text-align: center;
+    }
+    
+    .footer p {
+      margin-bottom: 10px;
+    }
+    
+    .footer a {
+      color: #ecf0f1;
+      text-decoration: none;
+    }
+    
+    .footer a:hover {
+      text-decoration: underline;
+    }
+    
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 2rem;
+      }
+      
+      .two-column {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+      
+      .section h2 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <img src="{{content.brands.brand1.logo}}" alt="{{content.brands.brand1.name}}" style="height: 40px;">
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <h1>{{content.hero.headline}}</h1>
+      <p>{{content.hero.subheadline}}</p>
+      <img src="{{content.hero.image}}" alt="{{content.hero.imageAlt}}" class="hero-image">
+      <div>
+        <a href="{{content.cta.primaryUrl}}" class="cta-button">{{content.cta.primary}}</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem Section -->
+  <section class="section">
+    <div class="container">
+      <h2>{{content.section1.title}}</h2>
+      <p>{{content.section1.body}}</p>
+      <p>{{content.section2.body}}</p>
+      
+      <div class="two-column">
+        <div>
+          <img src="{{content.section1.image}}" alt="{{content.section1.imageAlt}}">
+        </div>
+        <div>
+          <h3>{{content.section2.title}}</h3>
+          <p>{{content.section2.body}}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Solution Section -->
+  <section class="section" style="background: #f8f9fa;">
+    <div class="container">
+      <h2>{{content.section3.title}}</h2>
+      <p>{{content.section3.body}}</p>
+      
+      <div class="two-column">
+        <div>
+          <h3>{{content.section4.title}}</h3>
+          <p>{{content.section4.body}}</p>
+          <ul style="margin: 20px 0; padding-left: 20px;">
+            <li>{{content.section1.title}}</li>
+            <li>{{content.section2.title}}</li>
+            <li>{{content.section3.title}}</li>
+            <li>{{content.section4.title}}</li>
+          </ul>
+        </div>
+        <div>
+          <img src="{{content.product.image}}" alt="{{content.product.name}}">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="section">
+    <div class="container">
+      <h2>{{content.section5.title}}</h2>
+      <p>{{content.section5.body}}</p>
+      
+      <div class="two-column">
+        <div>
+          <img src="{{content.section5.image}}" alt="{{content.section5.imageAlt}}">
+        </div>
+        <div>
+          <h3>{{content.section6.title}}</h3>
+          <p>{{content.section6.body}}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="section" style="background: #f8f9fa;">
+    <div class="container">
+      <h2>{{content.reactions.title}}</h2>
+      <p>{{content.story.intro}}</p>
+      
+      <div class="testimonial">
+        <div class="stars">
+          <img src="{{content.sidebar.ratingImage}}" alt="Star">
+          <img src="{{content.sidebar.ratingImage}}" alt="Star">
+          <img src="{{content.sidebar.ratingImage}}" alt="Star">
+          <img src="{{content.sidebar.ratingImage}}" alt="Star">
+          <img src="{{content.sidebar.ratingImage}}" alt="Star">
+        </div>
+        <p>"{{content.reactions.r1.text}}"</p>
+        <div class="testimonial-author">{{content.reactions.r1.name}}</div>
+      </div>
+      
+      <div class="testimonial">
+        <div class="stars">
+          <img src="{{content.sidebar.ratingImage}}" alt="Star">
+          <img src="{{content.sidebar.ratingImage}}" alt="Star">
+          <img src="{{content.sidebar.ratingImage}}" alt="Star">
+          <img src="{{content.sidebar.ratingImage}}" alt="Star">
+          <img src="{{content.sidebar.ratingImage}}" alt="Star">
+        </div>
+        <p>"{{content.reactions.r2.text}}"</p>
+        <div class="testimonial-author">{{content.reactions.r2.name}}</div>
+      </div>
+      
+      <div class="testimonial">
+        <div class="stars">
+          <img src="{{content.sidebar.ratingImage}}" alt="Star">
+          <img src="{{content.sidebar.ratingImage}}" alt="Star">
+          <img src="{{content.sidebar.ratingImage}}" alt="Star">
+          <img src="{{content.sidebar.ratingImage}}" alt="Star">
+          <img src="{{content.sidebar.ratingImage}}" alt="Star">
+        </div>
+        <p>"{{content.reactions.r3.text}}"</p>
+        <div class="testimonial-author">{{content.reactions.r3.name}}</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="section">
+    <div class="container">
+      <div class="offer-box">
+        <h3>{{content.alert.banner}}</h3>
+        <p>{{content.assurances.blurb}}</p>
+        <img src="{{content.sidebar.productImage}}" alt="{{content.product.name}}" style="max-width: 300px; margin: 20px auto;">
+        <p>{{content.sidebar.ctaHeadline}}</p>
+        <a href="{{content.cta.primaryUrl}}" class="cta-button">{{content.cta.primary}}</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <img src="{{content.brands.brand1.logo}}" alt="{{content.brands.brand1.name}}" style="height: 40px; margin-bottom: 20px;">
+      <p>{{content.footer.copyright}}</p>
+      <div style="margin-top: 20px;">
+        <a href="{{content.footer.privacyUrl}}">{{content.footer.disclaimer}}</a>
+        <span style="margin: 0 10px;">|</span>
+        <a href="{{content.footer.termsUrl}}">{{content.footer.disclaimer}}</a>
+        <span style="margin: 0 10px;">|</span>
+        <a href="{{content.footer.contactUrl}}">{{content.footer.disclaimer}}</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

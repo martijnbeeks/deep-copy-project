@@ -76,7 +76,17 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
     }
     
-    // Delete user (cascade will handle related records)
+    // Check if user has any jobs
+    const jobsResult = await query('SELECT COUNT(*) as count FROM jobs WHERE user_id = $1', [userId])
+    const jobCount = parseInt(jobsResult.rows[0].count)
+    
+    if (jobCount > 0) {
+      return NextResponse.json({ 
+        error: `Cannot delete user: User has ${jobCount} job(s) associated with them. Please delete the jobs first or contact support.` 
+      }, { status: 400 })
+    }
+    
+    // Delete user (no related records to worry about)
     await query('DELETE FROM users WHERE id = $1', [userId])
     
     return NextResponse.json({ success: true })

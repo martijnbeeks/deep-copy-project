@@ -1,0 +1,1151 @@
+<!-- Injectable Template: BugMD (advertorial) -->
+<!-- This template uses placeholders that will be replaced with actual content -->
+<!-- Generated from original template with all content replaced by placeholders -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{content.hero.headline}}</title>
+  <meta name="description" content="{{content.hero.subheadline}}" />
+  <link rel="icon" href="{{content.brands.brand1.logo}}" />
+  <link rel="apple-touch-icon" href="{{content.brands.brand1.logo}}" />
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Global CSS Variables */
+    :root {
+      --color-background: #ffffff;
+      --color-foreground: #1a1a1a;
+      --color-primary-text: #1a1a1a;
+      --color-secondary-text: #6b6b6b;
+      --color-link-blue: #0066cc;
+      --color-border: #e5e5e5;
+      --font-body: "Inter", sans-serif;
+    }
+
+    /* Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-body);
+      line-height: 1.6;
+      color: var(--color-foreground);
+      background: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* Header */
+    header {
+      background: white;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 15px 16px;
+      display: flex;
+      align-items: center;
+    }
+
+    @media (min-width: 640px) {
+      .header-container {
+        padding: 15px 20px;
+      }
+    }
+
+    .header-logo {
+      width: 140px;
+    }
+
+    @media (min-width: 1024px) {
+      .header-logo {
+        width: 180px;
+      }
+    }
+
+    /* Main Layout */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    @media (min-width: 640px) {
+      main {
+        padding: 0 20px;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      main {
+        flex-direction: row;
+        gap: 32px;
+      }
+    }
+
+    .content-area {
+      flex: 1;
+    }
+
+    .content-inner {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* Sections */
+    section {
+      padding: 40px 0;
+    }
+
+    @media (min-width: 640px) {
+      section {
+        padding: 50px 0;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      section {
+        padding: 60px 0;
+      }
+    }
+
+    .bg-light {
+      background-color: #f8f9fa;
+    }
+
+    .bg-very-light {
+      background-color: #f9f9f9;
+    }
+
+    /* Typography */
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1.2;
+      color: #1a1a1a;
+      margin-bottom: 24px;
+    }
+
+    @media (min-width: 640px) {
+      h1 {
+        font-size: 2rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      h1 {
+        font-size: 2.5rem;
+      }
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 24px;
+    }
+
+    @media (min-width: 640px) {
+      h2 {
+        font-size: 1.75rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      h2 {
+        font-size: 2rem;
+      }
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    @media (min-width: 1024px) {
+      h3 {
+        font-size: 1.5rem;
+      }
+    }
+
+    p {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: #333333;
+      margin-bottom: 24px;
+    }
+
+    @media (min-width: 640px) {
+      p {
+        font-size: 1.05rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      p {
+        font-size: 1.125rem;
+      }
+    }
+
+    .text-small {
+      font-size: 0.95rem;
+      color: #666666;
+    }
+
+    .text-italic {
+      font-style: italic;
+      font-size: 1.125rem;
+      color: #333333;
+      padding: 16px;
+    }
+
+    strong {
+      font-weight: 700;
+    }
+
+    em {
+      font-style: italic;
+    }
+
+    /* Links */
+    a.link-green {
+      color: #28a745;
+      text-decoration: underline;
+    }
+
+    a.link-green:hover {
+      text-decoration: none;
+    }
+
+    /* Guarantee Box */
+    .guarantee-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 32px;
+    }
+
+    @media (min-width: 640px) {
+      .guarantee-box {
+        flex-direction: row;
+        align-items: flex-start;
+        text-align: left;
+        padding: 30px;
+      }
+    }
+
+    .guarantee-icon {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 16px;
+    }
+
+    @media (min-width: 640px) {
+      .guarantee-icon {
+        margin-bottom: 0;
+        margin-right: 20px;
+      }
+    }
+
+    /* Images */
+    .section-image {
+      border-radius: 8px;
+      width: 100%;
+      margin-bottom: 24px;
+    }
+
+    /* Two Column Layout */
+    .two-column {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      align-items: center;
+    }
+
+    @media (min-width: 640px) {
+      .two-column {
+        flex-direction: row;
+      }
+    }
+
+    .two-column > div {
+      width: 100%;
+    }
+
+    @media (min-width: 640px) {
+      .two-column > div {
+        width: 50%;
+      }
+    }
+
+    /* Lists */
+    ol {
+      list-style: decimal;
+      padding-left: 20px;
+      margin-bottom: 24px;
+    }
+
+    ol li {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: #333333;
+      margin-bottom: 16px;
+    }
+
+    @media (min-width: 640px) {
+      ol li {
+        font-size: 1.05rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      ol li {
+        font-size: 1.125rem;
+      }
+    }
+
+    /* Testimonials */
+    .testimonial-grid {
+      display: grid;
+      gap: 24px;
+    }
+
+    .testimonial-card {
+      background: #f8f9fa;
+      padding: 24px;
+      border-radius: 8px;
+    }
+
+    .quote-icon {
+      width: 30px;
+      margin-bottom: 16px;
+    }
+
+    .testimonial-text {
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .testimonial-author {
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .star-rating {
+      display: flex;
+      gap: 2px;
+    }
+
+    .star-rating img {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Comparison Table */
+    .comparison-table {
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 32px;
+      display: none;
+    }
+
+    @media (min-width: 640px) {
+      .comparison-table {
+        display: block;
+      }
+    }
+
+    .table-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      font-weight: 700;
+      text-align: center;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .table-header > div {
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .table-header > div:first-child {
+      border-right: 1px solid #dee2e6;
+    }
+
+    .table-header img {
+      max-width: 100px;
+    }
+
+    .table-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .table-row:last-child {
+      border-bottom: none;
+    }
+
+    .table-cell {
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .table-cell:first-child {
+      border-right: 1px solid #dee2e6;
+    }
+
+    .table-cell img {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    /* Mobile Comparison Stack */
+    .comparison-mobile {
+      display: grid;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    @media (min-width: 640px) {
+      .comparison-mobile {
+        display: none;
+      }
+    }
+
+    .comparison-card {
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .comparison-card h4 {
+      padding: 16px;
+      text-align: center;
+      font-weight: 700;
+      border-bottom: 1px solid #dee2e6;
+      display: flex;
+      justify-content: center;
+    }
+
+    .comparison-card h4 img {
+      max-width: 100px;
+    }
+
+    .comparison-card ul {
+      padding: 16px;
+      list-style: none;
+    }
+
+    .comparison-card li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .comparison-card li:last-child {
+      margin-bottom: 0;
+    }
+
+    .comparison-card li img {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      text-align: center;
+    }
+
+    .offer-badge {
+      background: #ffd700;
+      color: #1a1a1a;
+      font-weight: 700;
+      padding: 16px 15px;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+
+    .product-showcase {
+      display: block;
+      max-width: 400px;
+      margin: 0 auto 32px;
+      position: relative;
+    }
+
+    .badge-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 120px;
+    }
+
+    .cta-button {
+      display: block;
+      width: 100%;
+      background: #008B00;
+      color: white;
+      padding: 18px 40px;
+      border-radius: 8px;
+      font-size: 1.25rem;
+      font-weight: 600;
+      transition: all 0.3s;
+      text-decoration: none;
+    }
+
+    @media (min-width: 1024px) {
+      .cta-button {
+        display: inline-block;
+        width: auto;
+      }
+    }
+
+    .cta-button:hover {
+      background: #218838;
+      transform: scale(1.02);
+    }
+
+    .offer-box {
+      border: 3px solid #1a1a1a;
+      padding: 30px;
+      margin: 32px 0;
+      text-align: center;
+    }
+
+    .offer-box .highlight {
+      color: #28a745;
+      font-weight: 700;
+    }
+
+    .citations {
+      margin-top: 32px;
+    }
+
+    .citations h3 {
+      font-style: italic;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .citations p {
+      font-size: 0.8rem;
+      margin-bottom: 0;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      display: none;
+    }
+
+    @media (min-width: 1024px) {
+      .sidebar {
+        display: block;
+        width: 320px;
+        position: sticky;
+        top: 100px;
+        align-self: flex-start;
+        background: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 20px;
+        border-radius: 8px;
+      }
+    }
+
+    .sidebar-content {
+      text-align: center;
+    }
+
+    .sidebar h3 {
+      font-size: 1.5rem;
+      margin-bottom: 16px;
+    }
+
+    .sidebar-image {
+      margin-bottom: 24px;
+    }
+
+    /* Footer */
+    footer {
+      background: #2B4035;
+      color: white;
+      padding: 40px 0;
+      text-align: center;
+      margin-top: auto;
+    }
+
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    @media (min-width: 640px) {
+      .footer-container {
+        padding: 0 20px;
+      }
+    }
+
+    .footer-content {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    @media (min-width: 1024px) {
+      .footer-content {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        text-align: left;
+      }
+    }
+
+    .footer-logo {
+      max-width: 150px;
+      filter: brightness(0) invert(1);
+      margin: 0 auto;
+    }
+
+    @media (min-width: 1024px) {
+      .footer-logo {
+        margin: 0;
+      }
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    @media (min-width: 1024px) {
+      .footer-links {
+        justify-content: flex-start;
+      }
+    }
+
+    .footer-links a {
+      color: white;
+    }
+
+    .footer-links a:hover {
+      color: #a8d5ba;
+    }
+
+    .footer-copyright {
+      color: #cccccc;
+      font-size: 0.875rem;
+      margin: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <header>
+    <div class="header-container">
+      <a href="{{content.cta.primaryUrl}}">
+        <img 
+          src="{{content.brands.brand1.logo}}" 
+          alt="{{content.brands.brand1.name}}" 
+          class="header-logo"
+        />
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <main>
+    <!-- Content Area -->
+    <div class="content-area">
+      <div class="content-inner">
+        
+        <!-- Hero Section -->
+        <section class="bg-light">
+          <h1>
+            <strong>{{content.hero.headline}}</strong>
+          </h1>
+          <p class="text-small">{{content.author.date}}</p>
+          <p class="text-italic">
+            "{{content.reactions.r1.text}}" - {{content.reactions.r1.name}}
+          </p>
+          <div class="guarantee-box">
+            <img 
+              src="{{content.section1.image}}" 
+              alt="{{content.section1.imageAlt}}" 
+              class="guarantee-icon"
+            />
+            <div>
+              <h3>{{content.section1.title}}</h3>
+              <p style="margin-bottom: 0;">{{content.section1.body}}</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Problem Section 1 -->
+        <section class="bg-very-light">
+          <a href="{{content.cta.primaryUrl}}">
+            <img 
+              src="{{content.section2.image}}" 
+              alt="{{content.section2.imageAlt}}"
+              class="section-image"
+            />
+          </a>
+          <h2>{{content.section2.title}}</h2>
+          <p>{{content.section2.body}}</p>
+          <p>{{content.section3.body}}</p>
+          <p>{{content.section4.body}}</p>
+          <p>{{content.section5.body}}</p>
+          <p>{{content.section6.body}}</p>
+          <p style="margin-bottom: 0;">{{content.section7.body}}</p>
+        </section>
+
+        <!-- Problem Section 2 -->
+        <section style="background: white;">
+          <a href="{{content.cta.primaryUrl}}">
+            <img 
+              src="{{content.section8.image}}" 
+              alt="{{content.section8.imageAlt}}"
+              class="section-image"
+            />
+          </a>
+          <h2><strong>{{content.section8.title}}</strong></h2>
+          <p>{{content.section8.body}}</p>
+          <p>{{content.section9.body}}</p>
+          <p>{{content.section10.body}}</p>
+          <p>{{content.section11.body}}</p>
+          <p>{{content.section12.body}}</p>
+          <p style="margin-bottom: 0;">{{content.story.intro}}</p>
+        </section>
+
+        <!-- Solution Introduction -->
+        <section class="bg-very-light">
+          <div class="two-column">
+            <div>
+              <a href="{{content.cta.primaryUrl}}">
+                <img 
+                  src="{{content.product.image}}" 
+                  alt="{{content.product.name}}"
+                  class="section-image"
+                />
+              </a>
+            </div>
+            <div>
+              <h2><strong>{{content.hero.subheadline}}</strong></h2>
+              <p>{{content.story.intro}}</p>
+              <p style="margin-bottom: 0;">{{content.section1.body}}</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Product Benefits -->
+        <section style="background: white;">
+          <a href="{{content.cta.primaryUrl}}">
+            <img 
+              src="{{content.section2.image}}" 
+              alt="{{content.section2.imageAlt}}"
+              class="section-image"
+            />
+          </a>
+          <h2><strong>{{content.section2.title}}</strong></h2>
+          <p>{{content.section2.body}}</p>
+          <p>{{content.section3.body}}</p>
+          <p>{{content.section4.body}}</p>
+          <p>{{content.section5.body}}</p>
+          <p>{{content.section6.body}}</p>
+          <p style="margin-bottom: 0;">{{content.section7.body}}</p>
+        </section>
+
+        <!-- How It Works -->
+        <section class="bg-very-light">
+          <a href="{{content.cta.primaryUrl}}">
+            <img 
+              src="{{content.section8.image}}" 
+              alt="{{content.section8.imageAlt}}"
+              class="section-image"
+            />
+          </a>
+          <h2>{{content.section8.title}}</h2>
+          <p>{{content.section8.body}}</p>
+          <p>{{content.section9.body}}</p>
+          <p>{{content.section10.body}}</p>
+          <p>{{content.section11.body}}</p>
+          <p style="margin-bottom: 0;">{{content.section12.body}}</p>
+        </section>
+
+        <!-- Usage Instructions -->
+        <section style="background: white;">
+          <a href="{{content.cta.primaryUrl}}">
+            <img 
+              src="{{content.section1.image}}" 
+              alt="{{content.section1.imageAlt}}"
+              class="section-image"
+            />
+          </a>
+          <h2>{{content.section1.title}}</h2>
+          <p>{{content.section1.body}}</p>
+          <ol>
+            <li>{{content.section2.body}}</li>
+            <li>{{content.section3.body}}</li>
+            <li>{{content.section4.body}}</li>
+            <li>{{content.section5.body}}</li>
+          </ol>
+          <p>{{content.section6.body}}</p>
+          <p style="margin-bottom: 0;">{{content.section7.body}}</p>
+        </section>
+
+        <!-- Testimonials -->
+        <section class="bg-very-light">
+          <a href="{{content.cta.primaryUrl}}">
+            <img 
+              src="{{content.section8.image}}" 
+              alt="{{content.section8.imageAlt}}"
+              class="section-image"
+            />
+          </a>
+          <h2>{{content.section8.title}}</h2>
+          <p>{{content.section8.body}}</p>
+          <div class="testimonial-grid">
+            <div class="testimonial-card">
+              <img 
+                src="{{content.reactions.r1.image}}" 
+                alt="{{content.reactions.r1.name}}" 
+                class="quote-icon"
+              />
+              <p class="testimonial-text">"{{content.reactions.r1.text}}"</p>
+              <p class="testimonial-author">{{content.reactions.r1.name}}</p>
+              <div class="star-rating">
+                <img src="{{content.sidebar.ratingImage}}" alt="Star" />
+                <img src="{{content.sidebar.ratingImage}}" alt="Star" />
+                <img src="{{content.sidebar.ratingImage}}" alt="Star" />
+                <img src="{{content.sidebar.ratingImage}}" alt="Star" />
+                <img src="{{content.sidebar.ratingImage}}" alt="Star" />
+              </div>
+            </div>
+            <div class="testimonial-card">
+              <img 
+                src="{{content.reactions.r2.image}}" 
+                alt="{{content.reactions.r2.name}}" 
+                class="quote-icon"
+              />
+              <p class="testimonial-text">"{{content.reactions.r2.text}}"</p>
+              <p class="testimonial-author">{{content.reactions.r2.name}}</p>
+              <div class="star-rating">
+                <img src="{{content.sidebar.ratingImage}}" alt="Star" />
+                <img src="{{content.sidebar.ratingImage}}" alt="Star" />
+                <img src="{{content.sidebar.ratingImage}}" alt="Star" />
+                <img src="{{content.sidebar.ratingImage}}" alt="Star" />
+                <img src="{{content.sidebar.ratingImage}}" alt="Star" />
+              </div>
+            </div>
+            <div class="testimonial-card">
+              <img 
+                src="{{content.reactions.r3.image}}" 
+                alt="{{content.reactions.r3.name}}" 
+                class="quote-icon"
+              />
+              <p class="testimonial-text">"{{content.reactions.r3.text}}"</p>
+              <p class="testimonial-author">{{content.reactions.r3.name}}</p>
+              <div class="star-rating">
+                <img src="{{content.sidebar.ratingImage}}" alt="Star" />
+                <img src="{{content.sidebar.ratingImage}}" alt="Star" />
+                <img src="{{content.sidebar.ratingImage}}" alt="Star" />
+                <img src="{{content.sidebar.ratingImage}}" alt="Star" />
+                <img src="{{content.sidebar.ratingImage}}" alt="Star" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Comparison Table -->
+        <section style="background: white;">
+          <h2><strong>{{content.section9.title}}</strong></h2>
+          
+          <!-- Desktop Table -->
+          <div class="comparison-table">
+            <div class="table-header">
+              <div>
+                <img 
+                  src="{{content.brands.brand1.logo}}" 
+                  alt="{{content.brands.brand1.name}}"
+                />
+              </div>
+              <div>{{content.section9.body}}</div>
+            </div>
+            <div class="table-row">
+              <div class="table-cell">
+                <img 
+                  src="{{content.section1.image}}" 
+                  alt="{{content.section1.imageAlt}}"
+                />
+                <span>{{content.section1.title}}</span>
+              </div>
+              <div class="table-cell">
+                <img 
+                  src="{{content.section2.image}}" 
+                  alt="{{content.section2.imageAlt}}"
+                />
+                <span>{{content.section2.title}}</span>
+              </div>
+            </div>
+            <div class="table-row">
+              <div class="table-cell">
+                <img 
+                  src="{{content.section3.image}}" 
+                  alt="{{content.section3.imageAlt}}"
+                />
+                <span>{{content.section3.title}}</span>
+              </div>
+              <div class="table-cell">
+                <img 
+                  src="{{content.section4.image}}" 
+                  alt="{{content.section4.imageAlt}}"
+                />
+                <span>{{content.section4.title}}</span>
+              </div>
+            </div>
+            <div class="table-row">
+              <div class="table-cell">
+                <img 
+                  src="{{content.section5.image}}" 
+                  alt="{{content.section5.imageAlt}}"
+                />
+                <span>{{content.section5.title}}</span>
+              </div>
+              <div class="table-cell">
+                <img 
+                  src="{{content.section6.image}}" 
+                  alt="{{content.section6.imageAlt}}"
+                />
+                <span>{{content.section6.title}}</span>
+              </div>
+            </div>
+            <div class="table-row">
+              <div class="table-cell">
+                <img 
+                  src="{{content.section7.image}}" 
+                  alt="{{content.section7.imageAlt}}"
+                />
+                <span>{{content.section7.title}}</span>
+              </div>
+              <div class="table-cell">
+                <img 
+                  src="{{content.section8.image}}" 
+                  alt="{{content.section8.imageAlt}}"
+                />
+                <span>{{content.section8.title}}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mobile Stack -->
+          <div class="comparison-mobile">
+            <div class="comparison-card">
+              <h4>
+                <img 
+                  src="{{content.brands.brand1.logo}}" 
+                  alt="{{content.brands.brand1.name}}"
+                />
+              </h4>
+              <ul>
+                <li>
+                  <img 
+                    src="{{content.section1.image}}" 
+                    alt="{{content.section1.imageAlt}}"
+                  />
+                  <span>{{content.section1.title}}</span>
+                </li>
+                <li>
+                  <img 
+                    src="{{content.section2.image}}" 
+                    alt="{{content.section2.imageAlt}}"
+                  />
+                  <span>{{content.section2.title}}</span>
+                </li>
+                <li>
+                  <img 
+                    src="{{content.section3.image}}" 
+                    alt="{{content.section3.imageAlt}}"
+                  />
+                  <span>{{content.section3.title}}</span>
+                </li>
+                <li>
+                  <img 
+                    src="{{content.section4.image}}" 
+                    alt="{{content.section4.imageAlt}}"
+                  />
+                  <span>{{content.section4.title}}</span>
+                </li>
+              </ul>
+            </div>
+            <div class="comparison-card">
+              <h4>{{content.section9.body}}</h4>
+              <ul>
+                <li>
+                  <img 
+                    src="{{content.section5.image}}" 
+                    alt="{{content.section5.imageAlt}}"
+                  />
+                  <span>{{content.section5.title}}</span>
+                </li>
+                <li>
+                  <img 
+                    src="{{content.section6.image}}" 
+                    alt="{{content.section6.imageAlt}}"
+                  />
+                  <span>{{content.section6.title}}</span>
+                </li>
+                <li>
+                  <img 
+                    src="{{content.section7.image}}" 
+                    alt="{{content.section7.imageAlt}}"
+                  />
+                  <span>{{content.section7.title}}</span>
+                </li>
+                <li>
+                  <img 
+                    src="{{content.section8.image}}" 
+                    alt="{{content.section8.imageAlt}}"
+                  />
+                  <span>{{content.section8.title}}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <p><strong>{{content.section10.title}}:</strong> {{content.section10.body}}</p>
+          <p style="margin-bottom: 0;"><strong>{{content.section11.title}}:</strong> {{content.section11.body}}</p>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="bg-very-light cta-section">
+          <div class="offer-badge">{{content.alert.banner}}</div>
+          <a href="{{content.cta.primaryUrl}}" class="product-showcase">
+            <img 
+              src="{{content.section1.image}}" 
+              alt="{{content.alert.banner}}" 
+              class="badge-overlay"
+            />
+            <img 
+              src="{{content.product.image}}" 
+              alt="{{content.product.name}}"
+              style="width: 100%;"
+            />
+          </a>
+
+          <h2><strong>{{content.section12.title}}</strong></h2>
+          <p>{{content.section12.body}}</p>
+          <p>{{content.story.intro}}</p>
+          <ol style="max-width: 720px; margin: 0 auto 24px;">
+            <li>{{content.section1.body}}</li>
+            <li>{{content.section2.body}}</li>
+          </ol>
+
+          <div class="offer-box">
+            <p style="margin-bottom: 0;"><span style="color: #1a1a1a;">{{content.assurances.blurb}}</span> <a href="{{content.cta.primaryUrl}}"><span class="highlight">{{content.cta.secondary}}</span></a></p>
+          </div>
+
+          <a 
+            href="{{content.cta.primaryUrl}}" 
+            class="cta-button"
+          >
+            {{content.cta.primary}}
+          </a>
+
+          <div class="citations">
+            <h3><em>{{content.footer.disclaimer}}</em></h3>
+            <p>{{content.footer.copyright}}</p>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-content">
+        <h3>{{content.brands.brand1.name}}</h3>
+        <a href="{{content.cta.primaryUrl}}" class="sidebar-image">
+          <img 
+            src="{{content.product.image}}" 
+            alt="{{content.product.name}}"
+          />
+        </a>
+        <a 
+          href="{{content.cta.primaryUrl}}" 
+          class="cta-button"
+        >
+          {{content.cta.primary}}
+        </a>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-container">
+      <div class="footer-content">
+        <img 
+          src="{{content.brands.brand1.logo}}" 
+          alt="{{content.brands.brand1.name}}" 
+          class="footer-logo"
+        />
+        <div class="footer-links">
+          <a href="{{content.footer.privacyUrl}}">{{content.footer.disclaimer}}</a>
+          <span>|</span>
+          <a href="{{content.footer.termsUrl}}">{{content.footer.disclaimer}}</a>
+          <span>|</span>
+          <a href="{{content.footer.contactUrl}}">{{content.footer.disclaimer}}</a>
+        </div>
+        <p class="footer-copyright">{{content.footer.copyright}}</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

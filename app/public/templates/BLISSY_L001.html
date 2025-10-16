@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{content.title}}</title>
+  <link rel="preconnect" href="{{content.cta_primaryUrl}}" />
+  <link rel="preconnect" href="{{content.cta_primaryUrl}}" crossorigin />
+  <style>
+    /* Import Inter font */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    
+    /* Global CSS Variables from your theme */
+    :root {
+      --color-background: #ffffff;
+      --color-foreground: #1a1a1a;
+      --color-card: #ffffff;
+      --color-card-foreground: #1a1a1a;
+      --color-primary: #000000;
+      --color-primary-foreground: #ffffff;
+      --color-secondary: #f5f5f5;
+      --color-secondary-foreground: #1a1a1a;
+      --color-muted: #f5f5f5;
+      --color-muted-foreground: #6b6b6b;
+      --color-accent: #f5f5f5;
+      --color-accent-foreground: #1a1a1a;
+      --color-destructive: #dc143c;
+      --color-destructive-foreground: #ffffff;
+      --color-border: #e5e5e5;
+      --color-input: #e5e5e5;
+      --color-ring: #000000;
+      
+      /* Custom Design System Colors */
+      --color-primary-black: #000000;
+      --color-accent-yellow: #ffd700;
+      --color-soft-pink: #ffe8f0;
+      --color-soft-beige: #fff8f0;
+      --color-light-cyan: #e0f7fa;
+      --color-primary-text: #1a1a1a;
+      --color-secondary-text: #6b6b6b;
+      --color-white: #ffffff;
+      --color-accent-red: #dc143c;
+      --color-medium-gray: #e5e5e5;
+      --color-link-blue: #0066cc;
+      
+      /* Custom Design System Radii */
+      --radius-button: 4px;
+      --radius-card: 8px;
+      
+      /* Custom Design System Fonts */
+      --font-sans: "Inter", sans-serif;
+      --font-display: "Inter", sans-serif;
+      --font-body: "Inter", sans-serif;
+    }
+
+    /* Base styles matching your global CSS */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      border-color: var(--color-border);
+    }
+
+    body {
+      background-color: var(--color-background);
+      color: var(--color-foreground);
+      font-family: var(--font-body);
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    /* Typography from your global CSS */
+    h1 {
+      font-size: 36px;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.5px;
+      color: var(--color-primary-text);
+    }
+
+    h2 {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.25;
+      letter-spacing: -0.3px;
+      color: var(--color-primary-text);
+    }
+
+    p {
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.7;
+      color: var(--color-primary-text);
+    }
+
+    a {
+      color: var(--color-link-blue);
+      text-decoration: underline;
+    }
+
+    a:hover {
+      text-decoration: none;
+    }
+
+    /* Container from your global CSS */
+    .container {
+      max-width: 1440px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 60px;
+      padding-right: 60px;
+    }
+
+    @media (max-width: 1024px) {
+      .container {
+        padding-left: 40px;
+        padding-right: 40px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding-left: 32px;
+        padding-right: 32px;
+      }
+    }
+
+    @media (max-width: 320px) {
+      .container {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+    }
+
+    /* Component styles converted from Tailwind */
+    .promo-banner {
+      background-color: var(--color-primary-black);
+      color: var(--color-white);
+      padding: 10px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .countdown-timer {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+    }
+
+    .announcement-bar {
+      background-color: #D4EEF7;
+      color: #333333;
+      padding: 12px 20px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .hero-section {
+      text-align: center;
+      padding: 64px 20px;
+    }
+
+    @media (min-width: 1024px) {
+      .hero-section {
+        padding: 80px 20px;
+      }
+    }
+
+    .hero-title {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.1;
+      max-width: 800px;
+      margin: 0 auto 20px;
+    }
+
+    @media (min-width: 768px) {
+      .hero-title {
+        font-size: 36px;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .hero-title {
+        font-size: 48px;
+      }
+    }
+
+    .hero-text {
+      font-size: 16px;
+      color: #666666;
+      max-width: 700px;
+      margin: 0 auto 24px;
+      line-height: 1.6;
+    }
+
+    @media (min-width: 768px) {
+      .hero-text {
+        font-size: 18px;
+      }
+    }
+
+    .star-rating {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+
+    .star-rating img {
+      width: 20px;
+      height: 20px;
+    }
+
+    .reviews-text {
+      font-size: 16px;
+      font-weight: 500;
+      color: #666666;
+      margin-bottom: 32px;
+    }
+
+    .learn-more-link {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333333;
+      text-decoration: none;
+    }
+
+    .learn-more-link:hover {
+      text-decoration: underline;
+    }
+
+    .press-section {
+      background-color: #FAF7F2;
+      padding: 40px 0;
+    }
+
+    @media (min-width: 768px) {
+      .press-section {
+        padding: 80px 0;
+      }
+    }
+
+    .press-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    @media (min-width: 768px) {
+      .press-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .press-card {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .press-quote {
+      font-style: italic;
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+
+    .press-logo {
+      height: 35px;
+      max-width: 150px;
+      object-fit: contain;
+      margin: 0 auto;
+      filter: grayscale(100%);
+      opacity: 0.8;
+    }
+
+    .reasons-section {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .reason-item {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    @media (min-width: 768px) {
+      .reason-item {
+        flex-direction: row;
+      }
+      .reason-item.reverse {
+        flex-direction: row-reverse;
+      }
+    }
+
+    .reason-image {
+      flex: 1;
+    }
+
+    .reason-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .reason-content {
+      flex: 1;
+      padding: 40px;
+    }
+
+    .reason-content.bg-beige {
+      background-color: #FAF7F2;
+    }
+
+    .reason-content.bg-pink {
+      background-color: #FFE6F0;
+    }
+
+    @media (min-width: 768px) {
+      .reason-content {
+        padding: 64px;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .reason-content {
+        padding: 80px;
+      }
+    }
+
+    .reason-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    @media (min-width: 768px) {
+      .reason-title {
+        font-size: 28px;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .reason-title {
+        font-size: 32px;
+      }
+    }
+
+    .reason-text {
+      font-size: 16px;
+      color: #666666;
+      line-height: 1.6;
+    }
+
+    .quote-highlight {
+      font-style: italic;
+      font-weight: 600;
+      color: #555555;
+      margin: 16px 0;
+      padding-left: 16px;
+      border-left: 4px solid #cccccc;
+    }
+
+    .product-showcase {
+      padding: 64px 0;
+      text-align: center;
+    }
+
+    .showcase-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    @media (min-width: 768px) {
+      .showcase-title {
+        font-size: 32px;
+      }
+    }
+
+    .showcase-subtitle {
+      font-size: 20px;
+      color: #666666;
+      margin-bottom: 40px;
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    @media (min-width: 768px) {
+      .product-grid {
+        grid-template-columns: repeat(5, 1fr);
+        max-width: none;
+      }
+    }
+
+    .product-grid img {
+      width: 100%;
+      border-radius: 8px;
+      transition: transform 0.2s;
+    }
+
+    .product-grid img:hover {
+      transform: scale(1.05);
+    }
+
+    .colors-text {
+      font-size: 16px;
+      color: #666666;
+      margin-bottom: 32px;
+    }
+
+    .cta-button {
+      display: inline-block;
+      background-color: var(--color-accent-yellow);
+      color: var(--color-primary-black);
+      font-weight: 700;
+      padding: 20px 32px;
+      border-radius: 8px;
+      font-size: 18px;
+      line-height: 1.2;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .cta-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+
+    .cta-small {
+      display: block;
+      font-size: 14px;
+    }
+
+    .features-section {
+      padding: 48px 0;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 32px;
+      text-align: center;
+    }
+
+    @media (min-width: 768px) {
+      .features-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .features-grid {
+        grid-template-columns: repeat(5, 1fr);
+      }
+    }
+
+    .feature-item img {
+      height: 32px;
+      margin: 0 auto 10px;
+    }
+
+    .feature-item p {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .offer-section {
+      background-color: #E6F7FF;
+      padding: 40px 0;
+    }
+
+    .offer-box {
+      border: 2px solid #B0E0E6;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .offer-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .offer-text {
+      font-size: 15px;
+      color: #666666;
+      margin-bottom: 20px;
+    }
+
+    .offer-button {
+      display: inline-block;
+      width: 100%;
+      background-color: var(--color-accent-yellow);
+      color: var(--color-primary-black);
+      font-weight: 700;
+      padding: 16px 32px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .offer-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+
+    .testimonials-section {
+      background-color: #F5F5F5;
+      padding: 64px 0;
+    }
+
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    @media (min-width: 768px) {
+      .testimonials-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .testimonial-card {
+      background: white;
+      border: 1px solid #E0E0E0;
+      border-radius: 8px;
+      padding: 24px;
+    }
+
+    .testimonial-stars {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 16px;
+    }
+
+    .testimonial-stars img {
+      width: 20px;
+      height: 20px;
+    }
+
+    .testimonial-text {
+      font-style: italic;
+      margin-bottom: 16px;
+    }
+
+    .testimonial-author {
+      font-weight: 700;
+    }
+
+    .verified-text {
+      font-size: 13px;
+      font-weight: 400;
+      color: #666666;
+      display: block;
+    }
+
+    .trust-section {
+      background-color: #F5F5F5;
+      padding: 64px 0;
+      text-align: center;
+    }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 40px;
+    }
+
+    @media (min-width: 768px) {
+      .trust-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .trust-item img {
+      height: 50px;
+      margin-bottom: 16px;
+    }
+
+    .trust-item h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .trust-item p {
+      font-size: 14px;
+      color: #666666;
+      max-width: 250px;
+      margin: 0 auto;
+    }
+
+    .footer-section {
+      background-color: #1A1A1A;
+      color: #999999;
+      padding: 40px 0;
+      text-align: center;
+    }
+
+    .footer-logo {
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+
+    .footer-logo img {
+      width: 100px;
+    }
+
+    .footer-text {
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .footer-links {
+      font-size: 14px;
+    }
+
+    .footer-links a {
+      color: #999999;
+      margin: 0 10px;
+      text-decoration: none;
+    }
+
+    .footer-links a:hover {
+      color: white;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-white">
+  <!-- Top Promotional Banner -->
+  <div class="promo-banner">
+    <span>⚡️ VIP FALL SALE ⚡️</span>
+    <div class="countdown-timer">
+      <span>ENDING IN:</span>
+      <span>00:08:38</span>
+    </div>
+  </div>
+
+  <!-- Announcement Bar -->
+  <div class="announcement-bar">
+    SAVE 55% AND GET A FREE GIFT
+  </div>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="container">
+      <h1 class="hero-title">
+        WHAT MAKES BLISSY THE MOST POPULAR PILLOWCASE IN THE WORLD?
+      </h1>
+      <p class="hero-text">
+        In just a year the Blissy Silk Pillowcase has skyrocketed to international fame. Selling out on way more than one occasion, and accumulating a massive following of loyal Blissy users, saying they'll "never sleep on anything else". With over 232,000 5-star reviews, those who have tried Blissy swear that it does what it says it does.
+      </p>
+      <div class="star-rating">
+        <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+        <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+        <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+        <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+        <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+      </div>
+      <p class="reviews-text">
+        232,000+ Reviews
+      </p>
+      <a href="{{content.cta_primaryUrl}}" class="learn-more-link">
+        Learn More →
+      </a>
+    </div>
+  </section>
+
+  <!-- Press Quotes Section -->
+  <section class="press-section">
+    <div class="container">
+      <div class="press-grid">
+        <div class="press-card">
+          <p class="press-quote">
+            "Blissy pillowcases have eliminated bedhead and frizz, softened skin, and even improved sleep quality."
+          </p>
+          <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="The Oprah Magazine" class="press-logo" />
+        </div>
+        <div class="press-card">
+          <p class="press-quote">
+            "Several of our editors now swear by resting their heads on the sleek fabric after seeing a difference firsthand."
+          </p>
+          <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Good Housekeeping" class="press-logo" />
+        </div>
+        <div class="press-card">
+          <p class="press-quote">
+            "While these pillowcases may represent something of an investment up front, the benefits for your skin and hair are totally worth it."
+          </p>
+          <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Allure" class="press-logo" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Reasons Section -->
+  <section id="reason-section" class="reasons-section">
+    <!-- Reason 1 -->
+    <div class="reason-item">
+      <div class="reason-image">
+        <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Woman sleeping on Blissy pillowcase" />
+      </div>
+      <div class="reason-content bg-beige">
+        <h2 class="reason-title">
+          1. It's Anti-aging and Skin-saving
+        </h2>
+        <p class="reason-text">
+          Your face is in direct contact with your pillowcase all night. Other fabrics create friction and absorb your skin's moisture and lotions, causing blemishes, dryness, and sleep wrinkles. Blissy's silk surface is gentle, helping your skin repair itself overnight.
+        </p>
+      </div>
+    </div>
+
+    <!-- Reason 2 -->
+    <div class="reason-item reverse">
+      <div class="reason-image">
+        <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Woman with healthy hair" />
+      </div>
+      <div class="reason-content bg-pink">
+        <h2 class="reason-title">
+          2. It'll improve the look, feel, and health of your hair
+        </h2>
+        <p class="reason-text">
+          The 22-Momme 100% Mulberry Silk reduces friction, so your hair won't tangle or break. Wake up with healthier, shinier hair without the frizz.
+        </p>
+      </div>
+    </div>
+
+    <!-- Reason 3 -->
+    <div class="reason-item">
+      <div class="reason-image" style="background-color: #f3f4f6;"></div>
+      <div class="reason-content bg-beige">
+        <h2 class="reason-title">
+          3. Every morning show is raving about it!
+        </h2>
+        <p class="reason-text">
+          Probably hard to believe a pillowcase can make so much noise right? Blissy is currently the hottest product on Live with Kelly & Mark, Good Morning America, The View and Tamron Hall... just to name a few!
+        </p>
+        <p class="quote-highlight">
+          "If you don't have a silk pillowcase... what are you doing???" - Kelly Ripa
+        </p>
+      </div>
+    </div>
+
+    <!-- Reason 4 -->
+    <div class="reason-item reverse">
+      <div class="reason-image">
+        <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Blissy silk vs satin comparison" />
+      </div>
+      <div class="reason-content bg-pink">
+        <h2 class="reason-title">
+          4. Don't confuse it with cheap satin alternatives
+        </h2>
+        <p class="reason-text">
+          Silk is a 100% natural fiber, while satin is man-made. Silk is soft, smooth, and hypoallergenic, and it doesn't cause static. It also helps your skin retain moisture, unlike satin.
+        </p>
+      </div>
+    </div>
+
+    <!-- Reason 5 -->
+    <div class="reason-item">
+      <div class="reason-image">
+        <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Woman sleeping comfortably" />
+      </div>
+      <div class="reason-content bg-beige">
+        <h2 class="reason-title">
+          5. It keeps you cool and comfy all night—every night
+        </h2>
+        <p class="reason-text">
+          Blissy self-regulates its temperature, meaning it's always cool and comfortable. No more flipping the pillow to find the cool spot. The silk surface helps you fall—and stay—asleep fast.
+        </p>
+      </div>
+    </div>
+
+    <!-- Reason 6 -->
+    <div class="reason-item reverse">
+      <div class="reason-image">
+        <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Close up of woman on Blissy pillowcase" />
+      </div>
+      <div class="reason-content bg-pink">
+        <h2 class="reason-title">
+          6. It's naturally hypoallergenic
+        </h2>
+        <p class="reason-text">
+          Blissy's silk material is naturally hypoallergenic and anti-bacterial. It's resistant to mold, fungi, and dust-mites, making it perfect for those with allergies.
+        </p>
+      </div>
+    </div>
+
+    <!-- Reason 7 -->
+    <div class="reason-item">
+      <div class="reason-image">
+        <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Blissy gift boxes" />
+      </div>
+      <div class="reason-content bg-beige">
+        <h2 class="reason-title">
+          7. It's the must-have gift of 2025
+        </h2>
+        <p class="reason-text">
+          It's a gift that people will use every single night. Giving someone the gift of better sleep, glowing skin, and beautiful hair is unique and luxurious. It comes in a beautiful package, ready for gifting.
+        </p>
+      </div>
+    </div>
+
+    <!-- Reason 8 -->
+    <div class="reason-item reverse">
+      <div class="reason-image">
+        <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Woman with Blissy mug and review badges" />
+      </div>
+      <div class="reason-content bg-pink">
+        <h2 class="reason-title">
+          8. It has over 232,000 5-Star reviews!
+        </h2>
+        <p class="reason-text">
+          Blissy is the highest and most rated silk pillowcase company with over 232,000 5-star reviews! A good product leads to happy customers.
+        </p>
+      </div>
+    </div>
+
+    <!-- Reason 9 -->
+    <div class="reason-item">
+      <div class="reason-image">
+        <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Hand on a white Blissy pillowcase" />
+      </div>
+      <div class="reason-content bg-beige">
+        <h2 class="reason-title">
+          9. Its super easy to clean and will last a lifetime!
+        </h2>
+        <p class="reason-text">
+          You can machine-wash your Blissy repeatedly without ruining it. Due to its anti-bacterial properties, it can be washed less often than cotton and stay fresh.
+        </p>
+      </div>
+    </div>
+
+    <!-- Reason 10 -->
+    <div class="reason-item reverse">
+      <div class="reason-image">
+        <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Blissy pillowcase in a travel suitcase" />
+      </div>
+      <div class="reason-content bg-pink">
+        <h2 class="reason-title">
+          10. It's the perfect travel companion!
+        </h2>
+        <p class="reason-text">
+          Bring your Blissy pillowcase with you to enjoy the same benefits in a hotel or on a plane. Traveling doesn't have to be an inconvenience anymore.
+        </p>
+      </div>
+    </div>
+
+    <!-- Reason 11 -->
+    <div class="reason-item">
+      <div class="reason-image">
+        <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Woman relaxing on bed with pink Blissy pillowcase" />
+      </div>
+      <div class="reason-content bg-beige">
+        <h2 class="reason-title">
+          11. It Will Transform Your Bedroom into a Magical Place!
+        </h2>
+        <p class="reason-text">
+          Blissy's luxurious sheen and incredible softness will instantly transform your bed. It looks and feels lightyears better than any other pillowcase.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Product Showcase -->
+  <section class="product-showcase">
+    <div class="container">
+      <h2 class="showcase-title">
+        It's pretty clear why Blissy has become an international sensation...
+      </h2>
+      <p class="showcase-subtitle">
+        When can I get Blissy?
+      </p>
+      <div class="product-grid">
+        <a href="{{content.cta_primaryUrl}}">
+          <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Blissy Pillowcase 1" />
+        </a>
+        <a href="{{content.cta_primaryUrl}}">
+          <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Blissy Pillowcase 2" />
+        </a>
+        <a href="{{content.cta_primaryUrl}}">
+          <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Blissy Pillowcase 3" />
+        </a>
+        <a href="{{content.cta_primaryUrl}}">
+          <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Blissy Pillowcase 4" />
+        </a>
+        <a href="{{content.cta_primaryUrl}}">
+          <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Blissy Pillowcase 5" />
+        </a>
+      </div>
+      <p class="colors-text">+40 More Colors</p>
+      <a href="{{content.cta_primaryUrl}}" class="cta-button">
+        Check Availability
+        <small class="cta-small">55% Discount + Free Shipping + Free $20 Gift Card</small>
+      </a>
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section class="features-section">
+    <div class="container">
+      <div class="features-grid">
+        <div class="feature-item">
+          <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="" />
+          <p>Moisture-Wicking</p>
+        </div>
+        <div class="feature-item">
+          <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="" />
+          <p>Temperature Regulating</p>
+        </div>
+        <div class="feature-item">
+          <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="" />
+          <p>Nontoxic Dyes</p>
+        </div>
+        <div class="feature-item">
+          <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="" />
+          <p>Hypoallergenic</p>
+        </div>
+        <div class="feature-item">
+          <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="" />
+          <p>Anti-Aging</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Special Offer -->
+  <section class="offer-section">
+    <div class="container">
+      <div class="offer-box">
+        <h3 class="offer-title">
+          <strong>PLEASE NOTE:</strong>
+        </h3>
+        <p class="offer-text">
+          As a special introductory online exclusive sale, the company is now offering <strong style="color:#333333">55% Off + Free Shipping to all new customers</strong>. This deal can be removed at any time. Plus, if you aren't totally happy with your Blissy, return them for a full refund within <strong style="color:#333333">60 days</strong>. Supplies are limited!
+        </p>
+        <a href="{{content.cta_primaryUrl}}" class="offer-button">
+          Check Availability
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="testimonials-section">
+    <div class="container">
+      <div class="testimonials-grid">
+        <div class="testimonial-card">
+          <div class="testimonial-stars">
+            <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+            <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+            <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+            <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+            <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+          </div>
+          <p class="testimonial-text">Since purchasing Bliss pillows, we have both slept very much better. We have found them a blessing.</p>
+          <p class="testimonial-author">
+            Anthony L.
+            <span class="verified-text">Verified Customer</span>
+          </p>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-stars">
+            <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+            <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+            <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+            <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+            <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+          </div>
+          <p class="testimonial-text">My skin and hair have never looked better! The silk keeps me cool and sleeping comfortably. Highly recommended!</p>
+          <p class="testimonial-author">
+            Tracy W.
+            <span class="verified-text">Verified Customer</span>
+          </p>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-stars">
+            <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+            <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+            <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+            <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+            <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Star" />
+          </div>
+          <p class="testimonial-text">Oh boy!!! I love it! Best decision to purchase these pillowcases. Woke up with great hair and my skin felt so good.</p>
+          <p class="testimonial-author">
+            Angela L.
+            <span class="verified-text">Verified Customer</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust Badges -->
+  <section class="trust-section">
+    <div class="container">
+      <div class="trust-grid">
+        <div class="trust-item">
+          <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Money-back guarantee icon" />
+          <h3>60 Day Money-Back</h3>
+          <p>
+            If you are unsatisfied for any reason within 60 days, simple contact our customer care center for a full refund.
+          </p>
+        </div>
+        <div class="trust-item">
+          <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="American flag icon" />
+          <h3>American-Owned</h3>
+          <p>
+            Blissy is proud to be an American-owned company. Our products are designed with care in California, USA.
+          </p>
+        </div>
+        <div class="trust-item">
+          <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Free shipping icon" />
+          <h3>Free Shipping</h3>
+          <p>
+            Get your Blissy goods delivered for free in as fast as 3-5 days for domestic orders.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer-section">
+    <div class="container">
+      <a href="{{content.cta_primaryUrl}}" class="footer-logo">
+        <img src="https://placehold.co/600x400?text=Your+Image+Here" alt="Blissy Logo" />
+      </a>
+      <p class="footer-text">2025 Blissy. All Rights Reserved.</p>
+      <div class="footer-links">
+        <a href="{{content.cta_primaryUrl}}">Privacy Policy</a>
+        <span>|</span>
+        <a href="{{content.cta_primaryUrl}}">Terms & Conditions</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

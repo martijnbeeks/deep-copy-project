@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{content.title}}</title>
+  
+  <!-- Google Fonts -->
+  <link href="{{content.cta.primaryUrl}}" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://placehold.co/600x400?text=Your+Image+Here"></script>
+  
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+    }
+    
+    .font-montserrat {
+      font-family: 'Montserrat', sans-serif;
+    }
+    
+    .tracking-tight {
+      letter-spacing: -0.025em;
+    }
+    
+    .leading-tight {
+      line-height: 1.25;
+    }
+    
+    .leading-relaxed {
+      line-height: 1.75;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-white">
+  <!-- Top Banner - Fixed -->
+  <header class="fixed top-0 left-0 w-full h-[60px] bg-gradient-to-r from-[#4A3F7B] to-[#5D4E8F] text-white flex items-center justify-center px-5 z-[1000] text-center">
+    <div class="flex items-center gap-5 flex-wrap justify-center">
+      <div class="font-bold text-sm">✨ BLACK FRIDAY VIP ACCESS</div>
+      <div class="flex items-baseline gap-1.5 font-bold">
+        <div class="text-center">
+          <div class="text-xl">02</div>
+          <div class="text-xs uppercase hidden md:block">Hrs</div>
+        </div>
+        <div class="text-base">:</div>
+        <div class="text-center">
+          <div class="text-xl">00</div>
+          <div class="text-xs uppercase hidden md:block">min</div>
+        </div>
+        <div class="text-base">:</div>
+        <div class="text-center">
+          <div class="text-xl">00</div>
+          <div class="text-xs uppercase hidden md:block">sec</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="pt-[60px] md:pt-[60px]">
+    <!-- Hero Section -->
+<!-- {{content.hero.headline}} -->
+<!-- {{content.hero.subheadline}} -->
+    <section class="py-20 px-5 text-center md:py-[80px]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <h1 class="font-montserrat font-extrabold text-4xl md:text-5xl lg:text-6xl leading-tight tracking-tight text-[#1a1a1a] max-w-[900px] mx-auto">
+          12 Reasons Why Javvy Could be the Best Upgrade to Your Morning Routine
+        </h1>
+        
+        <div class="flex items-center justify-center gap-4 mt-8">
+          <img
+            src="https://placehold.co/600x400?text=Your+Image+Here"
+            alt="Author Jade M."
+            width="60"
+            height="60"
+            class="rounded-full object-cover"
+          />
+          <div class="text-left">
+            <p>{{content.section12.body}}</p>
+            <p>{{content.section12.body}}</p>
+          </div>
+        </div>
+
+        <div class="bg-[#F5F5F5] rounded-xl p-6 max-w-[800px] mx-auto mt-8 text-left">
+          <strong class="text-[#1a1a1a]">Summary:</strong> Enjoy iced coffee at home without sugar or junk. Javvy is convenient, tasty, and the easiest way to get barista-style coffee anytime!
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 1 -->
+    <section class="py-[60px]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <video
+              class="w-full rounded-2xl"
+              poster="https://via.placeholder.com/500x281.png/000000/FFFFFF?text=Loading+Video..."
+              autoplay
+              muted
+              loop
+              playsinline
+            >
+              <source src="https://placehold.co/600x400?text=Your+Image+Here" type="video/mp4" />
+            </video>
+            <div class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              ⚡ All-Day Energy
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              1. Smooth energy that lasts - no crash, no hassle
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444]">
+              Zero sugar, low calories. Crash-free energy to start your mornings strong, stay focused all afternoon - or switch to decaf to relax at night.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 2 -->
+    <section class="py-[60px] bg-[#FFF8E7]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative md:order-1">
+            <video
+              class="w-full rounded-2xl"
+              poster="https://via.placeholder.com/500x281.png/000000/FFFFFF?text=Loading+Video..."
+              autoplay
+              muted
+              loop
+              playsinline
+            >
+              <source src="https://placehold.co/600x400?text=Your+Image+Here" type="video/mp4" />
+            </video>
+            <div class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              🎒 Always With You
+            </div>
+          </div>
+          <div class="md:order-2">
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              2. Your morning ritual, finally stress-free
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444]">
+              Mornings are fragile, and if you hit snooze too many times everything spirals. Javvy makes coffee unbelievably easy: just pour, mix with water or milk, and it's ready. No machines, no fuss. And if you're running late, Javvy travels with you so your ritual never skips a beat.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 3 -->
+    <section class="py-[60px]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <video
+              class="w-full rounded-2xl"
+              poster="https://via.placeholder.com/500x281.png/000000/FFFFFF?text=Loading+Video..."
+              autoplay
+              muted
+              loop
+              playsinline
+            >
+              <source src="https://placehold.co/600x400?text=Your+Image+Here" type="video/mp4" />
+            </video>
+            <div class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              🌱 Clean Label
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              3. Just 2 ingredients, pure coffee taste
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              Clean label at its core: no fillers, no additives, no artificial flavors - just water and 100% Real Coffee taste. That's why every sip tastes naturally smooth.
+            </p>
+            <a href="{{content.cta.primaryUrl}}" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              👉 <span>Taste Pure Coffee Today</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 4 -->
+    <section class="py-[60px] bg-[#FFF8E7]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <video
+              class="w-full rounded-2xl"
+              poster="https://via.placeholder.com/500x281.png/000000/FFFFFF?text=Loading+Video..."
+              autoplay
+              muted
+              loop
+              playsinline
+            >
+              <source src="https://placehold.co/600x400?text=Your+Image+Here" type="video/mp4" />
+            </video>
+            <div class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              ✨ Fresh Drops Monthly
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              4. 15+ Dessert-inspired flavors (and fresh new ones every month)
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              Indulgent favorites like Vanilla, Caramel, and Mocha - plus new limited flavors released monthly. Your coffee routine will never feel the same.
+            </p>
+            <a href="{{content.cta.primaryUrl}}" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              👉 <span>Discover Your Next Flavor</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 5 -->
+    <section class="py-[60px]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <video
+              class="w-full rounded-2xl"
+              poster="https://via.placeholder.com/500x281.png/000000/FFFFFF?text=Loading+Video..."
+              autoplay
+              muted
+              loop
+              playsinline
+            >
+              <source src="https://placehold.co/600x400?text=Your+Image+Here" type="video/mp4" />
+            </video>
+            <div class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              🚫 No Extra Waste
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              5. Ditch the pods, ditch the waste
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              Forget plastic pods, filters, and messy grounds. Javvy cuts the clutter and the trash. You get smooth coffee without leaving a trail of waste. Better for you, better for the planet.
+            </p>
+            <a href="{{content.cta.primaryUrl}}" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              👉 <span>Make the Switch to Cleaner Coffee</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 6 -->
+    <section class="py-[60px] bg-[#FFF8E7]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <video
+              class="w-full rounded-2xl"
+              poster="https://via.placeholder.com/500x281.png/000000/FFFFFF?text=Loading+Video..."
+              autoplay
+              muted
+              loop
+              playsinline
+            >
+              <source src="https://placehold.co/600x400?text=Your+Image+Here" type="video/mp4" />
+            </video>
+            <div class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              🎯 Effortless Perfection
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              6. Consistent perfection, in every cup
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              Ever had your favorite drink ruined by a distracted barista? With Javvy, that's over. It's Hustle-Free Coffee with the same consistent taste every time, because you're in control.
+            </p>
+            <a href="{{content.cta.primaryUrl}}" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              👉 <span>Enjoy Perfect Coffee Every Time</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 7 -->
+    <section class="py-[60px]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <video
+              class="w-full rounded-2xl"
+              poster="https://via.placeholder.com/500x281.png/000000/FFFFFF?text=Loading+Video..."
+              autoplay
+              muted
+              loop
+              playsinline
+            >
+              <source src="https://placehold.co/600x400?text=Your+Image+Here" type="video/mp4" />
+            </video>
+            <div class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              ☕ Barista Made Easy
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              7. Be your own barista, 1,000+ recipes to try
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              Macchiato, flat white, cold brew, or your own wild invention - Javvy makes it simple to recreate them all. Hot or iced, creamy or bold, the choice is always yours. With thousands of recipes and endless flavor twists, every kitchen becomes a coffee shop and every cup a new discovery.
+            </p>
+            <a href="{{content.cta.primaryUrl}}" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              👉 <span>Discover Endless Coffee Creations</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 8 -->
+    <section class="py-[60px] bg-[#FFF8E7]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <video
+              class="w-full rounded-2xl"
+              poster="https://via.placeholder.com/500x281.png/000000/FFFFFF?text=Loading+Video..."
+              autoplay
+              muted
+              loop
+              playsinline
+            >
+              <source src="https://placehold.co/600x400?text=Your+Image+Here" type="video/mp4" />
+            </video>
+            <div class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              ⏱️ Coffee in Seconds
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              8. Coffee in seconds, time back in your day
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              Skip the 20-minute line at the café. Skip the late-night coffee runs. Javvy means coffee in seconds, anytime you want it. Time is the ultimate luxury - Javvy gives it back.
+            </p>
+            <a href="{{content.cta.primaryUrl}}" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              👉 <span>Get Your Time Back with Javvy</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 9 -->
+    <section class="py-[60px]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <video
+              class="w-full rounded-2xl"
+              poster="https://via.placeholder.com/500x281.png/000000/FFFFFF?text=Loading+Video..."
+              autoplay
+              muted
+              loop
+              playsinline
+            >
+              <source src="https://placehold.co/600x400?text=Your+Image+Here" type="video/mp4" />
+            </video>
+            <div class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              🤑 Spend Less, Sip More
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              9. Save more than just minutes, cut the cost
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              Café coffee adds up fast. With Javvy, each cup can cost under 50¢ - saving your wallet while keeping your ritual indulgent. More savings, more freedom, more coffee you love.
+            </p>
+            <a href="{{content.cta.primaryUrl}}" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              👉 <span>Start Saving With Every Cup</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 10 -->
+    <section class="py-[60px] bg-[#FFF8E7]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <video
+              class="w-full rounded-2xl"
+              poster="https://via.placeholder.com/500x281.png/000000/FFFFFF?text=Loading+Video..."
+              autoplay
+              muted
+              loop
+              playsinline
+            >
+              <source src="https://placehold.co/600x400?text=Your+Image+Here" type="video/mp4" />
+            </video>
+            <div class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              🥤 1 Bottle = 35 Coffees
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              10. One bottle, a month of coffee
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              Every bottle makes up to 35 cups. Enough for a month of mornings - or to share with friends, coworkers, or at a party. (Espresso martinis, anyone?)
+            </p>
+            <a href="{{content.cta.primaryUrl}}" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              👉 <span>Get 35 Coffees in One Bottle</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 11 -->
+    <section class="py-[60px]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <video
+              class="w-full rounded-2xl"
+              poster="https://via.placeholder.com/500x281.png/000000/FFFFFF?text=Loading+Video..."
+              autoplay
+              muted
+              loop
+              playsinline
+            >
+              <source src="https://placehold.co/600x400?text=Your+Image+Here" type="video/mp4" />
+            </video>
+            <div class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              👍 Zero Risk - All Reward
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              11. Switch to better coffee, 30 days risk-free & free gifts included
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              A coffee upgrade should feel exciting, not risky. That's why Javvy comes with 30 days risk-free and free gifts included. That's how confident we are that it will upgrade your mornings.
+            </p>
+            <a href="{{content.cta.primaryUrl}}" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              👉 <span>Make the Switch Without Risk</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final CTA Section - Reason 12 -->
+    <section id="cta-section" class="py-20 bg-[#FFF8E7] text-center">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <h2 class="font-montserrat font-bold text-3xl md:text-4xl lg:text-5xl max-w-[800px] mx-auto mb-4 text-[#1a1a1a] tracking-tight">
+          Reaching #12 means one thing: you're truly serious about a better morning coffee routine.
+        </h2>
+        <p class="text-xl text-[#444] max-w-[700px] mx-auto mb-10">
+          ✨ We don't hand these out every day… consider this your exclusive Javvy hookup, just for you.
+        </p>
+
+        <div class="relative max-w-[1000px] mx-auto mt-16">
+          <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#4A3F7B] text-white font-bold py-3 px-6 rounded-lg z-10">
+            ✨ BLACK FRIDAY VIP ACCESS
+          </div>
+          
+          <div class="bg-white border-[3px] border-dashed border-[#999] rounded-2xl p-8 md:p-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-center text-center">
+            <img
+              src="https://placehold.co/600x400?text=Your+Image+Here"
+              alt="Javvy Coffee Bottles Offer"
+              width="400"
+              height="400"
+              class="w-full max-w-[400px] mx-auto"
+            />
+            
+            <div>
+              <p>{{content.section12.body}}</p>
+              <p class="text-5xl md:text-6xl font-extrabold text-[#D32F2F] leading-tight mb-2">
+                UP TO 60% OFF
+              </p>
+              <span class="font-bold block mb-6">FOR A LIMITED TIME ONLY!</span>
+              
+              <a
+                href="{{content.cta.primaryUrl}}"
+                class="block w-full bg-[#4A3F7B] text-white rounded-xl py-5 px-12 text-xl font-bold uppercase hover:bg-[#5D4E8F] transition-all hover:scale-[1.02] mb-4"
+              >
+                GET 60% OFF →
+              </a>
+              
+              <div class="font-bold text-[#D32F2F] mb-4">
+                DEAL ENDING IN: <span>02:00:00</span>
+              </div>
+              
+              <div class="flex justify-center items-center gap-3 text-[#D32F2F] font-semibold mb-4">
+                <div>Sell-Out Risk: High</div>
+                <div class="text-[#999]">|</div>
+                <div class="text-[#1a1a1a]">FREE shipping</div>
+              </div>
+              
+              <p class="text-sm text-[#666] mt-6">
+                Try it today with a 30-Day Money Back Guarantee!
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-[#2D2845] text-white py-10 px-5 text-center text-sm leading-relaxed">
+    <div class="max-w-[1200px] mx-auto">
+      <p class="max-w-[800px] mx-auto mb-6 opacity-70">
+        *Special sale discount is valid only on the first delivery of a new Javvy Coffee subscription created on https://try.javvycoffee.com/as by 10/16/2025 at 11:59pm PST and includes the price of free gifts. Javvy Coffee subscription renews every 30 days at a discounted rate of the price listed at checkout. Max one offer per customer; cannot be combined with any other offers or sales.
+      </p>
+      <div class="mb-4">
+        © 2025 Javy Coffee Company. All right reserved.
+        <a href="{{content.cta.primaryUrl}}" class="underline">Terms of Service</a>
+        <span class="mx-2">|</span>
+        <a href="{{content.cta.primaryUrl}}" class="underline">Privacy Policy</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
