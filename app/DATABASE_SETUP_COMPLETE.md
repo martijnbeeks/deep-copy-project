@@ -29,15 +29,17 @@ This script sets up the entire database with all tables, data, and injectable te
 Create `.env.local` with your Render database credentials:
 
 ```env
-DB_HOST=your-render-db-host
+DB_HOST=dpg-d3o918hr0fns73c0jngg-a.oregon-postgres.render.com
 DB_PORT=5432
-DB_NAME=your-db-name
-DB_USER=your-db-user
-DB_PASSWORD=your-db-password
+DB_NAME=ai_copy_writing
+DB_USER=ai_copy_writing_user
+DB_PASSWORD=LTjtMvcmwM8adLvDvzNbOaeGQ1wrtNAw
 
-DEEPCOPY_CLIENT_ID=your-client-id
-DEEPCOPY_CLIENT_SECRET=your-client-secret
+DEEPCOPY_CLIENT_ID=5mbatc7uv35hr23qip437s2ai5
+DEEPCOPY_CLIENT_SECRET=1msm19oltu7241134t5vujtldr4uvum7hvn6cj7n1s3tg1ar02k5
 ```
+
+**Note**: The setup script now includes these credentials as defaults, so you can run it immediately without creating `.env.local`.
 
 ### 2. Run Setup Script
 

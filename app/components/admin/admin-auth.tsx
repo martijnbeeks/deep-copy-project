@@ -13,7 +13,7 @@ interface AdminAuthProps {
 }
 
 export function AdminAuth({ onAuthSuccess }: AdminAuthProps) {
-  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -30,7 +30,7 @@ export function AdminAuth({ onAuthSuccess }: AdminAuthProps) {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email: username, password })
       })
 
       const data = await response.json()
@@ -65,13 +65,13 @@ export function AdminAuth({ onAuthSuccess }: AdminAuthProps) {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username">Username</Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@example.com"
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="admin"
                 required
                 disabled={loading}
               />

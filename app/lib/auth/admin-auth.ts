@@ -4,15 +4,13 @@ import { query } from '@/lib/db/connection'
 // Simple admin authentication middleware
 export async function verifyAdminAuth(request: NextRequest) {
   try {
-    // Check for session token in headers instead of Basic Auth
+    // Check for session token in headers
     const sessionToken = request.headers.get('x-admin-session')
     
     if (!sessionToken) {
       return { error: 'No session token provided' }
     }
 
-    // In a real app, you'd validate the session token against a sessions table
-    // For now, we'll use a simple approach with the token containing user info
     try {
       const decodedToken = JSON.parse(Buffer.from(sessionToken, 'base64').toString())
       const { email, timestamp } = decodedToken
@@ -23,13 +21,12 @@ export async function verifyAdminAuth(request: NextRequest) {
         return { error: 'Session expired' }
       }
 
-      // Verify user still exists
-      const user = await query('SELECT * FROM users WHERE email = $1', [email])
-      if (user.rows.length === 0) {
-        return { error: 'User not found' }
+      // Simple hardcoded admin check
+      if (email !== 'admin') {
+        return { error: 'Invalid admin user' }
       }
 
-      return { user: user.rows[0] }
+      return { user: { id: 'admin-user', username: 'admin', email: 'admin' } }
     } catch (error) {
       return { error: 'Invalid session token' }
     }
