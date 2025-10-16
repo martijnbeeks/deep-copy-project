@@ -55,3 +55,14 @@ export interface JobWithResult extends Job {
   result?: Result
   template?: Template
 }
+
+export interface InjectableTemplate {
+  id: string
+  name: string
+  type: 'listicle' | 'advertorial'
+  html_content: string
+  description?: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}

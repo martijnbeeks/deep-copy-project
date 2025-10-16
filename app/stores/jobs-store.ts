@@ -116,9 +116,10 @@ export const useJobsStore = create<JobsState & JobsActions>()(
       const { user } = useAuthStore.getState()
       const userEmail = user?.email || 'demo@example.com'
       
-      const response = await fetch(`/api/jobs/${id}`, {
+      const response = await fetch(`/api/jobs/${id}?t=${Date.now()}`, {
         headers: {
-          'Authorization': `Bearer ${userEmail}`
+          'Authorization': `Bearer ${userEmail}`,
+          'Cache-Control': 'no-cache'
         }
       })
       if (!response.ok) throw new Error('Failed to fetch job')

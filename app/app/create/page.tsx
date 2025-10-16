@@ -20,6 +20,7 @@ import { Sidebar } from "@/components/dashboard/sidebar"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { TemplatePreview } from "@/components/template-preview"
 import { useSidebar } from "@/contexts/sidebar-context"
+import { AvatarExtractionDialog } from "@/components/avatar-extraction-dialog"
 
 interface CustomerAvatar {
   persona_name: string
@@ -70,6 +71,9 @@ export default function CreatePage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const templatesPerPage = 4
+
+  // Avatar extraction dialog state
+  const [showAvatarDialog, setShowAvatarDialog] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -155,6 +159,13 @@ export default function CreatePage() {
     e.preventDefault()
     if (!validateStep(2)) return
 
+    // If user selected "explore new avatars", show the extraction dialog
+    if (formData.target_approach === 'explore') {
+      setShowAvatarDialog(true)
+      return
+    }
+
+    // For "known" approach, proceed with normal submission
     try {
       setIsLoading(true)
       await createJob(formData)
@@ -179,6 +190,44 @@ export default function CreatePage() {
       router.push("/dashboard")
     } catch (error) {
       // Error handling is done in the catch block above
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleAvatarsSelected = async (selectedAvatars: any[]) => {
+    try {
+      setIsLoading(true)
+      
+      // Update form data with selected avatars
+      const updatedFormData = {
+        ...formData,
+        customer_avatars: selectedAvatars
+      }
+      
+      await createJob(updatedFormData)
+      
+      setFormData({
+        title: "",
+        brand_info: "",
+        sales_page_url: "",
+        template_id: "",
+        advertorial_type: "",
+        target_approach: "",
+        customer_avatars: [],
+        // Deprecated fields for backward compatibility
+        persona: "",
+        age_range: "",
+        gender: "",
+      })
+      setSelectedTemplate(null)
+      setErrors({})
+      setCurrentStep(1)
+      setShowAvatarDialog(false)
+      
+      router.push("/dashboard")
+    } catch (error) {
+      console.error('Error creating job with avatars:', error)
     } finally {
       setIsLoading(false)
     }
@@ -535,8 +584,8 @@ export default function CreatePage() {
                               <SelectValue placeholder="Select content type" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Listicle" className="text-base py-3">Listicle - "Top 10" style articles</SelectItem>
-                              <SelectItem value="Advertorial" className="text-base py-3">Advertorial - Editorial-style ads</SelectItem>
+                              <SelectItem value="listicle" className="text-base py-3">Listicle - "Top 10" style articles</SelectItem>
+                              <SelectItem value="advertorial" className="text-base py-3">Advertorial - Editorial-style ads</SelectItem>
                             </SelectContent>
                           </Select>
                           {errors.advertorial_type && (
@@ -550,10 +599,10 @@ export default function CreatePage() {
                           {formData.advertorial_type && (
                             <div className="p-4 bg-muted/50 rounded-lg border">
                               <h4 className="font-medium text-sm mb-3 text-foreground">
-                                {formData.advertorial_type === 'Listicle' ? '📝 Listicle Options' : '📰 Advertorial Options'}
+                                {formData.advertorial_type === 'listicle' ? '📝 Listicle Options' : '📰 Advertorial Options'}
                               </h4>
                               <div className="space-y-2 text-sm text-muted-foreground">
-                                {formData.advertorial_type === 'Listicle' ? (
+                                {formData.advertorial_type === 'listicle' ? (
                                   <>
                                     <p>• Perfect for: Product comparisons, tips, guides</p>
                                     <p>• Structure: Numbered list with detailed explanations</p>
@@ -653,87 +702,15 @@ export default function CreatePage() {
                             <div className="space-y-4">
                               <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                                 <h4 className="font-medium text-sm mb-3 text-blue-900 dark:text-blue-100">
-                                  Explore New Personas
+                                  AI Avatar Discovery
                                 </h4>
                                 <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">
-                                  Select from our predefined personas to research and explore new customer segments:
+                                  Our AI will analyze your sales page to discover and extract customer personas automatically. 
+                                  No manual selection needed - just provide your sales page URL and we'll do the research for you.
                                 </p>
-                                
-                                <div className="space-y-4">
-                                  <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-blue-900 dark:text-blue-100">Persona to Research</Label>
-                                    <Select
-                                      value={formData.persona}
-                                      onValueChange={(value) => {
-                                        setFormData((prev) => ({ ...prev, persona: value }))
-                                        // Auto-select age range based on persona
-                                        const ageMapping: Record<string, string> = {
-                                          'exhausted_worker': '35-44',
-                                          'active_senior': '55-64',
-                                          'fitness_enthusiast': '25-34',
-                                          'silent_sufferer': '45-54',
-                                          'caregiver_gift_buyer': '35-44',
-                                        }
-                                        if (ageMapping[value]) {
-                                          setFormData((prev) => ({ ...prev, age_range: ageMapping[value] }))
-                                        }
-                                      }}
-                                      disabled={isLoading}
-                                    >
-                                      <SelectTrigger className="h-11 text-sm border-blue-200 dark:border-blue-800 focus-visible:ring-blue-500">
-                                        <SelectValue placeholder="Select persona to research" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="exhausted_worker" className="text-sm py-2">💼 The Exhausted Worker - Age 35-55 • Stands all day at work</SelectItem>
-                                        <SelectItem value="active_senior" className="text-sm py-2">🚶 The Active Senior - Age 55-75 • Circulation & arthritis issues</SelectItem>
-                                        <SelectItem value="fitness_enthusiast" className="text-sm py-2">🏃 The Fitness Enthusiast - Age 25-45 • Active lifestyle</SelectItem>
-                                        <SelectItem value="silent_sufferer" className="text-sm py-2">😔 The Silent Sufferer - Age 40-65 • Chronic foot pain</SelectItem>
-                                        <SelectItem value="caregiver_gift_buyer" className="text-sm py-2">💝 The Caregiver / Gift Buyer - Age 30-60 • Buying for loved ones</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                      <Label className="text-sm font-medium text-blue-900 dark:text-blue-100">Age Range</Label>
-                                      <Select
-                                        value={formData.age_range}
-                                        onValueChange={(value) => setFormData((prev) => ({ ...prev, age_range: value }))}
-                                        disabled={isLoading}
-                                      >
-                                        <SelectTrigger className="h-11 text-sm border-blue-200 dark:border-blue-800 focus-visible:ring-blue-500">
-                                          <SelectValue placeholder="Select age range" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="18-24" className="text-sm py-2">18-24 (Gen Z)</SelectItem>
-                                          <SelectItem value="25-34" className="text-sm py-2">25-34 (Millennials)</SelectItem>
-                                          <SelectItem value="35-44" className="text-sm py-2">35-44 (Millennials)</SelectItem>
-                                          <SelectItem value="45-54" className="text-sm py-2">45-54 (Gen X)</SelectItem>
-                                          <SelectItem value="55-64" className="text-sm py-2">55-64 (Gen X)</SelectItem>
-                                          <SelectItem value="65+" className="text-sm py-2">65+ (Boomers)</SelectItem>
-                                          <SelectItem value="all_ages" className="text-sm py-2">All ages</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label className="text-sm font-medium text-blue-900 dark:text-blue-100">Gender</Label>
-                                      <Select
-                                        value={formData.gender}
-                                        onValueChange={(value) => setFormData((prev) => ({ ...prev, gender: value }))}
-                                        disabled={isLoading}
-                                      >
-                                        <SelectTrigger className="h-11 text-sm border-blue-200 dark:border-blue-800 focus-visible:ring-blue-500">
-                                          <SelectValue placeholder="Select gender" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="male" className="text-sm py-2">Male</SelectItem>
-                                          <SelectItem value="female" className="text-sm py-2">Female</SelectItem>
-                                          <SelectItem value="non_binary" className="text-sm py-2">Non-binary</SelectItem>
-                                          <SelectItem value="all_genders" className="text-sm py-2">All genders</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                  </div>
+                                <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                  <span>Avatars will be extracted after you submit the form</span>
                                 </div>
                               </div>
                             </div>
@@ -975,6 +952,15 @@ export default function CreatePage() {
           </div>
         </main>
       </div>
+
+      {/* Avatar Extraction Dialog */}
+      <AvatarExtractionDialog
+        isOpen={showAvatarDialog}
+        onClose={() => setShowAvatarDialog(false)}
+        onAvatarsSelected={handleAvatarsSelected}
+        salesPageUrl={formData.sales_page_url}
+        formData={formData}
+      />
     </ErrorBoundary>
   )
 }

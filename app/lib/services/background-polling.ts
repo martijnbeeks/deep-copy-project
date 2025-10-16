@@ -1,6 +1,7 @@
 import { query } from '@/lib/db/connection'
 import { deepCopyClient } from '@/lib/api/deepcopy-client'
-import { updateJobStatus, createResult } from '@/lib/db/queries'
+import { updateJobStatus, createResult, getRandomInjectableTemplate } from '@/lib/db/queries'
+import { processJobResults } from '@/lib/utils/template-injection'
 
 // Global polling manager for background polling
 const backgroundPollingManager = new Map<string, NodeJS.Timeout>()
@@ -149,42 +150,22 @@ export class BackgroundPollingService {
 
   private async storeJobResults(localJobId: string, result: any, deepCopyJobId: string) {
     try {
-      console.log(`📊 Background polling storing results for job ${localJobId}:`, {
-        hasResults: !!result.results,
-        hasSwipeResults: !!(result.results && result.results.swipe_results),
-        swipeResultsCount: result.results?.swipe_results?.length || 0,
-        projectName: result.project_name
-      })
+      // Get job details to determine advertorial type
+      const jobResult = await query('SELECT advertorial_type FROM jobs WHERE id = $1', [localJobId])
       
-      // Create HTML content for display
-      let htmlContent = ''
-      let sections: string[] = []
-      
-      if (result.results) {
-        // Handle nested results structure
-        if (result.results.research_page_analysis) sections.push('Research Analysis')
-        if (result.results.doc1_analysis) sections.push('Market Research')
-        if (result.results.doc2_analysis) sections.push('Customer Research')
-        if (result.results.deep_research_output) sections.push('Research Report')
-        if (result.results.avatar_sheet) sections.push('Customer Avatars')
-        if (result.results.html_content) sections.push('Generated HTML')
-        
-        // Check for swipe_results
-        if (result.results.swipe_results && Array.isArray(result.results.swipe_results)) {
-          sections.push(`Swipe Results (${result.results.swipe_results.length} templates)`)
-        }
-        
-        htmlContent = this.createResultsHTML(result.results, sections)
-      } else {
-        // Handle direct content
-        htmlContent = typeof result === 'string' ? result : JSON.stringify(result, null, 2)
+      if (jobResult.rows.length === 0) {
+        throw new Error('Job not found')
       }
+      
+      const advertorialType = jobResult.rows[0].advertorial_type as 'listicle' | 'advertorial'
+      
+        // Process results using template injection system
+        const { combinedHtml } = await processJobResults(result, advertorialType, getRandomInjectableTemplate)
+        const htmlContent = combinedHtml
       
       // Extract HTML templates count for metadata
       const htmlTemplates = this.extractHTMLTemplates(result)
       const templateCount = htmlTemplates.length
-      
-      
       
       // Store the result with full metadata
       await createResult(localJobId, htmlContent, {
@@ -194,7 +175,8 @@ export class BackgroundPollingService {
         full_result: result,
         generated_at: new Date().toISOString(),
         word_count: htmlContent.split(' ').length,
-        html_templates_count: templateCount
+        html_templates_count: templateCount,
+        template_used: advertorialType
       })
       
       

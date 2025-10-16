@@ -75,27 +75,8 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Handle avatar extraction if needed
-    let finalCustomerAvatars = customer_avatars || []
-    
-    if (target_approach === 'explore' && sales_page_url) {
-      try {
-        const avatarResponse = await deepCopyClient.extractAvatars({ url: sales_page_url })
-        
-        if (avatarResponse.success && avatarResponse.avatars.length > 0) {
-          finalCustomerAvatars = avatarResponse.avatars
-        }
-      } catch (avatarError) {
-        // If avatar extraction fails, fall back to a default avatar
-        finalCustomerAvatars = [{
-          persona_name: "General Audience",
-          description: "Broad audience interested in the product or service",
-          age_range: "25-54",
-          gender: "both",
-          key_buying_motivation: "Seeking solutions to improve their lifestyle"
-        }]
-      }
-    }
+    // Use provided customer avatars (extracted from frontend dialog)
+    const finalCustomerAvatars = customer_avatars || []
 
     // Submit job to DeepCopy API first to get the job ID
     let deepCopyJobId: string

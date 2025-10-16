@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RefreshCw, CheckCircle, AlertCircle, Users, FileText, Database, Plus, Trash2, Upload, Eye, LogOut, Briefcase } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import { TemplateEditor } from "@/components/admin/template-editor"
+import { TemplateTester } from "@/components/admin/template-tester"
 
 interface User {
   id: string
@@ -29,6 +31,17 @@ interface Job {
   user_email: string
   template_name: string | null
   template_id: string | null
+}
+
+interface InjectableTemplate {
+  id: string
+  name: string
+  type: 'listicle' | 'advertorial'
+  html_content: string
+  description?: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
 }
 
 interface Template {
@@ -58,6 +71,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false)
   const [users, setUsers] = useState<User[]>([])
   const [templates, setTemplates] = useState<Template[]>([])
+  const [injectableTemplates, setInjectableTemplates] = useState<InjectableTemplate[]>([])
   const [jobs, setJobs] = useState<Job[]>([])
   const [stats, setStats] = useState<DatabaseStats | null>(null)
   const [jobStatuses, setJobStatuses] = useState<JobStatus[]>([])
@@ -65,13 +79,18 @@ export default function AdminPage() {
   // Form states
   const [newUser, setNewUser] = useState({ email: '', password: '', name: '' })
   const [newTemplate, setNewTemplate] = useState({ name: '', description: '', category: '', htmlContent: '' })
+  const [newInjectableTemplate, setNewInjectableTemplate] = useState({ name: '', type: 'listicle' as 'listicle' | 'advertorial', description: '', htmlContent: '' })
   const [templateFile, setTemplateFile] = useState<File | null>(null)
   
   // Dialog states
   const [userDialogOpen, setUserDialogOpen] = useState(false)
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
+  const [injectableTemplateDialogOpen, setInjectableTemplateDialogOpen] = useState(false)
+  const [templateEditorOpen, setTemplateEditorOpen] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState<InjectableTemplate | null>(null)
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false)
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null)
+  const [previewInjectableTemplate, setPreviewInjectableTemplate] = useState<InjectableTemplate | null>(null)
 
   // Check if already authenticated
   useEffect(() => {
@@ -92,9 +111,10 @@ export default function AdminPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [usersRes, templatesRes, jobsRes, statsRes] = await Promise.all([
+      const [usersRes, templatesRes, injectableTemplatesRes, jobsRes, statsRes] = await Promise.all([
         fetch('/api/admin/users', { headers: getAuthHeaders() }),
         fetch('/api/admin/templates', { headers: getAuthHeaders() }),
+        fetch('/api/admin/injectable-templates', { headers: getAuthHeaders() }),
         fetch('/api/admin/jobs', { headers: getAuthHeaders() }),
         fetch('/api/admin/stats', { headers: getAuthHeaders() })
       ])
@@ -107,6 +127,11 @@ export default function AdminPage() {
       if (templatesRes.ok) {
         const templatesData = await templatesRes.json()
         setTemplates(templatesData.templates)
+      }
+      
+      if (injectableTemplatesRes.ok) {
+        const injectableTemplatesData = await injectableTemplatesRes.json()
+        setInjectableTemplates(injectableTemplatesData.templates)
       }
       
       if (jobsRes.ok) {
@@ -336,6 +361,165 @@ export default function AdminPage() {
     }
   }
 
+  // Injectable Template Management
+  const createInjectableTemplate = async () => {
+    try {
+      const response = await fetch('/api/admin/injectable-templates', {
+        method: 'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newInjectableTemplate)
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Injectable template created successfully"
+        })
+        setNewInjectableTemplate({ name: '', type: 'listicle', description: '', htmlContent: '' })
+        setInjectableTemplateDialogOpen(false)
+        loadData()
+      } else {
+        const error = await response.json()
+        throw new Error(error.error)
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create injectable template",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const deleteInjectableTemplate = async (templateId: string) => {
+    if (!confirm('Are you sure you want to delete this injectable template?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/injectable-templates?id=${templateId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Injectable template deleted successfully"
+        })
+        loadData()
+      } else {
+        const error = await response.json()
+        throw new Error(error.error)
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete injectable template",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handlePreviewInjectableTemplate = (template: InjectableTemplate) => {
+    setPreviewInjectableTemplate(template)
+    setPreviewDialogOpen(true)
+  }
+
+  const handleEditTemplate = (template: InjectableTemplate) => {
+    setEditingTemplate(template)
+    setTemplateEditorOpen(true)
+  }
+
+  const handleCreateNewTemplate = () => {
+    setEditingTemplate({
+      id: '',
+      name: '',
+      type: 'listicle',
+      html_content: '',
+      description: '',
+      is_active: true,
+      created_at: '',
+      updated_at: ''
+    })
+    setTemplateEditorOpen(true)
+  }
+
+  const handleSaveTemplate = async (templateData: any) => {
+    try {
+      if (editingTemplate?.id) {
+        // Update existing template
+        const response = await fetch('/api/admin/injectable-templates', {
+          method: 'PUT',
+          headers: {
+            ...getAuthHeaders(),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ id: editingTemplate.id, ...templateData })
+        })
+
+        if (response.ok) {
+          toast({
+            title: "Success",
+            description: "Injectable template updated successfully"
+          })
+        } else {
+          const error = await response.json()
+          throw new Error(error.error)
+        }
+      } else {
+        // Create new template
+        const response = await fetch('/api/admin/injectable-templates', {
+          method: 'POST',
+          headers: {
+            ...getAuthHeaders(),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(templateData)
+        })
+
+        if (response.ok) {
+          toast({
+            title: "Success",
+            description: "Injectable template created successfully"
+          })
+        } else {
+          const error = await response.json()
+          throw new Error(error.error)
+        }
+      }
+
+      setTemplateEditorOpen(false)
+      setEditingTemplate(null)
+      loadData()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save template",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handlePreviewTemplateContent = (htmlContent: string) => {
+    // Create a temporary template object for preview
+    const tempTemplate = {
+      id: 'preview',
+      name: 'Preview',
+      type: 'listicle' as const,
+      html_content: htmlContent,
+      description: 'Preview',
+      is_active: true,
+      created_at: '',
+      updated_at: ''
+    }
+    setPreviewInjectableTemplate(tempTemplate)
+    setPreviewDialogOpen(true)
+  }
+
   if (!isAuthenticated) {
     return <AdminAuth onAuthSuccess={() => setIsAuthenticated(true)} />
   }
@@ -436,6 +620,7 @@ export default function AdminPage() {
           <TabsList>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
+            <TabsTrigger value="injectable-templates">Injectable Templates</TabsTrigger>
             <TabsTrigger value="jobs">Jobs</TabsTrigger>
           </TabsList>
 
@@ -674,6 +859,114 @@ export default function AdminPage() {
           </Card>
             </TabsContent>
 
+            {/* Injectable Templates Tab */}
+            <TabsContent value="injectable-templates" className="space-y-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Injectable Template Management</CardTitle>
+                    <CardDescription>
+                      Create, edit, and manage templates for dynamic content injection. 
+                      Simply upload HTML files or paste content - no complex validation required!
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    onClick={handleCreateNewTemplate} 
+                    className="flex items-center gap-2"
+                    type="button"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Template
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {/* Upload Options Info */}
+                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="font-medium text-blue-900 mb-2">How to Add Templates</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-blue-800">
+                      <div className="flex items-start gap-2">
+                        <Upload className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <div className="font-medium">Upload HTML File</div>
+                          <div>Click "Add Template" → Upload .html file</div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <FileText className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <div className="font-medium">Paste HTML Content</div>
+                          <div>Click "Add Template" → Paste in editor</div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <div className="font-medium">Start with Templates</div>
+                          <div>Use pre-built swipe templates</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {injectableTemplates.map((template) => (
+                      <div key={template.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium">{template.name}</h3>
+                            <Badge variant={template.type === 'listicle' ? 'default' : 'secondary'}>
+                              {template.type}
+                            </Badge>
+                            {!template.is_active && (
+                              <Badge variant="destructive">Inactive</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {template.description || 'No description'}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Created: {new Date(template.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditTemplate(template)}
+                            className="flex items-center gap-1"
+                          >
+                            <FileText className="h-3 w-3" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePreviewInjectableTemplate(template)}
+                            className="flex items-center gap-1"
+                          >
+                            <Eye className="h-3 w-3" />
+                            Preview
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deleteInjectableTemplate(template.id)}
+                            className="flex items-center gap-1"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    {injectableTemplates.length === 0 && (
+                      <p className="text-center text-muted-foreground py-8">No injectable templates found</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             {/* Jobs Tab */}
             <TabsContent value="jobs" className="space-y-4">
               <Card>
@@ -727,22 +1020,64 @@ export default function AdminPage() {
             </TabsContent>
           </Tabs>
 
+      {/* Template Editor Dialog */}
+      <Dialog open={templateEditorOpen} onOpenChange={setTemplateEditorOpen}>
+        <DialogContent className="max-w-7xl max-h-[95vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle>
+              {editingTemplate?.id ? 'Edit Template' : 'Create New Template'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingTemplate?.id ? 'Edit your injectable template' : 'Create a new injectable template - simply upload HTML or paste content'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto min-h-0">
+            {editingTemplate && (
+              <TemplateEditor
+                template={{
+                  name: editingTemplate.name,
+                  type: editingTemplate.type,
+                  description: editingTemplate.description || '',
+                  htmlContent: editingTemplate.html_content
+                }}
+                onSave={handleSaveTemplate}
+                onCancel={() => {
+                  setTemplateEditorOpen(false)
+                  setEditingTemplate(null)
+                }}
+                onPreview={handlePreviewTemplateContent}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Template Preview Dialog */}
       <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
           <DialogHeader>
-            <DialogTitle>Template Preview: {previewTemplate?.name}</DialogTitle>
+            <DialogTitle>
+              Template Preview: {previewTemplate?.name || previewInjectableTemplate?.name}
+            </DialogTitle>
             <DialogDescription>
               Preview of the HTML template content
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-auto">
-            {previewTemplate && (
-              <iframe
-                srcDoc={previewTemplate.html_content}
-                className="w-full h-[70vh] border rounded-lg"
-                title={`Preview of ${previewTemplate.name}`}
-              />
+            {(previewTemplate || previewInjectableTemplate) && (
+              <div className="space-y-4">
+                <iframe
+                  srcDoc={(previewTemplate?.html_content || previewInjectableTemplate?.html_content) || ''}
+                  className="w-full h-[70vh] border rounded-lg"
+                  title={`Preview of ${previewTemplate?.name || previewInjectableTemplate?.name}`}
+                />
+                {previewInjectableTemplate && (
+                  <TemplateTester
+                    htmlContent={previewInjectableTemplate.html_content}
+                    templateName={previewInjectableTemplate.name}
+                  />
+                )}
+              </div>
             )}
           </div>
           <DialogFooter>

@@ -1,5 +1,5 @@
 import { query } from './connection'
-import { User, Template, Job, Result, JobWithTemplate, JobWithResult } from './types'
+import { User, Template, Job, Result, JobWithTemplate, JobWithResult, InjectableTemplate } from './types'
 import bcrypt from 'bcryptjs'
 
 // User queries
@@ -133,7 +133,11 @@ export const getJobById = async (id: string, userId?: string): Promise<JobWithRe
            r.id as result_id, r.html_content as result_html_content, r.metadata as result_metadata, r.created_at as result_created_at
     FROM jobs j
     LEFT JOIN templates t ON j.template_id = t.id
-    LEFT JOIN results r ON j.id = r.job_id
+    LEFT JOIN (
+      SELECT DISTINCT ON (job_id) *
+      FROM results
+      ORDER BY job_id, created_at DESC
+    ) r ON j.id = r.job_id
     WHERE j.id = $1
   `
   const params: any[] = [id]
@@ -226,4 +230,86 @@ export const createResult = async (jobId: string, htmlContent: string, metadata?
     [jobId, htmlContent, JSON.stringify(metadata)]
   )
   return result.rows[0]
+}
+
+// Injectable Template queries
+export const getInjectableTemplates = async (type?: 'listicle' | 'advertorial'): Promise<InjectableTemplate[]> => {
+  let sql = 'SELECT * FROM injectable_templates'
+  const params: any[] = []
+
+  if (type) {
+    sql += ' WHERE advertorial_type = $1'
+    params.push(type)
+  }
+
+  sql += ' ORDER BY created_at DESC'
+
+  const result = await query(sql, params)
+  return result.rows
+}
+
+export const getInjectableTemplateById = async (id: string): Promise<InjectableTemplate | null> => {
+  const result = await query('SELECT * FROM injectable_templates WHERE id = $1', [id])
+  return result.rows[0] || null
+}
+
+export const getRandomInjectableTemplate = async (type: 'listicle' | 'advertorial'): Promise<InjectableTemplate | null> => {
+  const result = await query(
+    'SELECT * FROM injectable_templates WHERE advertorial_type = $1 ORDER BY RANDOM() LIMIT 1',
+    [type]
+  )
+  return result.rows[0] || null
+}
+
+export const createInjectableTemplate = async (
+  name: string,
+  type: 'listicle' | 'advertorial',
+  htmlContent: string,
+  description?: string
+): Promise<InjectableTemplate> => {
+  const result = await query(
+    'INSERT INTO injectable_templates (name, advertorial_type, html_content, description) VALUES ($1, $2, $3, $4) RETURNING *',
+    [name, type, htmlContent, description]
+  )
+  return result.rows[0]
+}
+
+export const updateInjectableTemplate = async (
+  id: string,
+  updates: Partial<Pick<InjectableTemplate, 'name' | 'html_content' | 'description' | 'advertorial_type'>>
+): Promise<InjectableTemplate | null> => {
+  const fields = Object.keys(updates).filter(key => updates[key as keyof typeof updates] !== undefined)
+  if (fields.length === 0) return null
+
+  const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(', ')
+  const values = fields.map(field => updates[field as keyof typeof updates])
+  
+  const result = await query(
+    `UPDATE injectable_templates SET ${setClause}, updated_at = NOW() WHERE id = $1 RETURNING *`,
+    [id, ...values]
+  )
+  return result.rows[0] || null
+}
+
+export const deleteInjectableTemplate = async (id: string): Promise<boolean> => {
+  const result = await query('DELETE FROM injectable_templates WHERE id = $1', [id])
+  return result.rowCount > 0
+}
+
+// Job result queries
+export const updateJobResult = async (jobId: string, updates: { html_content?: string; metadata?: any }): Promise<boolean> => {
+  const fields = Object.keys(updates).filter(key => updates[key as keyof typeof updates] !== undefined)
+  if (fields.length === 0) return false
+
+  const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(', ')
+  const values = fields.map(field => {
+    const value = updates[field as keyof typeof updates]
+    return field === 'metadata' ? JSON.stringify(value) : value
+  })
+  
+  const result = await query(
+    `UPDATE results SET ${setClause} WHERE job_id = $1`,
+    [jobId, ...values]
+  )
+  return result.rowCount > 0
 }

@@ -1,5 +1,6 @@
 import { deepCopyClient } from '@/lib/api/deepcopy-client'
-import { updateJobStatus, createResult } from '@/lib/db/queries'
+import { updateJobStatus, createResult, getRandomInjectableTemplate } from '@/lib/db/queries'
+import { processJobResults } from '@/lib/utils/template-injection'
 
 // Get all jobs that are currently in processing status
 async function getProcessingJobs() {
@@ -55,30 +56,19 @@ async function checkJobStatus(job: { id: string; execution_id: string; updated_a
 // Store job results in database
 async function storeJobResults(localJobId: string, result: any, deepCopyJobId: string) {
   try {
+    // Get job details to determine advertorial type
+    const { query } = await import('@/lib/db/connection')
+    const jobResult = await query('SELECT advertorial_type FROM jobs WHERE id = $1', [localJobId])
     
-    // Create HTML content for display
-    let htmlContent = ''
-    let sections: string[] = []
-    
-    if (result.results) {
-      // Handle nested results structure
-      if (result.results.research_page_analysis) sections.push('Research Analysis')
-      if (result.results.doc1_analysis) sections.push('Market Research')
-      if (result.results.doc2_analysis) sections.push('Customer Research')
-      if (result.results.deep_research_output) sections.push('Research Report')
-      if (result.results.avatar_sheet) sections.push('Customer Avatars')
-      if (result.results.html_content) sections.push('Generated HTML')
-      
-      // Check for swipe_results
-      if (result.results.swipe_results && Array.isArray(result.results.swipe_results)) {
-        sections.push(`Swipe Results (${result.results.swipe_results.length} templates)`)
-      }
-      
-      htmlContent = createResultsHTML(result.results, sections)
-    } else {
-      // Handle direct content
-      htmlContent = typeof result === 'string' ? result : JSON.stringify(result, null, 2)
+    if (jobResult.rows.length === 0) {
+      throw new Error('Job not found')
     }
+    
+    const advertorialType = jobResult.rows[0].advertorial_type as 'listicle' | 'advertorial'
+    
+          // Process results using template injection system
+          const { combinedHtml } = await processJobResults(result, advertorialType, getRandomInjectableTemplate)
+          const htmlContent = combinedHtml
     
     // Extract HTML templates count for metadata
     const htmlTemplates = extractHTMLTemplates(result)
@@ -88,7 +78,7 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
     await createResult(localJobId, htmlContent, {
       generated_at: new Date().toISOString(),
       word_count: htmlContent.split(' ').length,
-      template_used: 'L00005',
+      template_used: advertorialType,
       deepcopy_job_id: deepCopyJobId,
       raw_data: result,
       project_name: result.project_name || null,
@@ -97,7 +87,13 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
     })
     
   } catch (error) {
-    // Error storing results
+    console.error('Error storing job results:', error)
+    // Mark job as failed if we can't store results
+    try {
+      await updateJobStatus(localJobId, 'failed')
+    } catch (updateError) {
+      console.error('Error updating job status to failed:', updateError)
+    }
   }
 }
 

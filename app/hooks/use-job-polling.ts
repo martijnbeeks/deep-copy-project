@@ -41,8 +41,6 @@ export function useJobPolling({
     }
 
     try {
-      `)
-      
       const response = await fetch(`/api/jobs/${jobId}/status`, {
         method: 'GET',
         headers: {
