@@ -86,6 +86,15 @@ export const createJob = async (jobData: {
   }
 }
 
+export const checkDuplicateJob = async (userId: string, title: string): Promise<Job | null> => {
+  // Check for jobs with the same title created within the last 30 seconds
+  const result = await query(
+    'SELECT * FROM jobs WHERE user_id = $1 AND title = $2 AND created_at > NOW() - INTERVAL \'30 seconds\' ORDER BY created_at DESC LIMIT 1',
+    [userId, title]
+  )
+  return result.rows[0] || null
+}
+
 export const getJobsByUserId = async (userId: string, filters: { status?: string; search?: string } = {}): Promise<JobWithTemplate[]> => {
   let sql = `
     SELECT j.*, t.name as template_name, t.description as template_description, t.html_content as template_html_content, t.category as template_category
@@ -233,6 +242,11 @@ export const createResult = async (jobId: string, htmlContent: string, metadata?
 }
 
 // Injectable Template queries
+export const getInjectableTemplateById = async (id: string): Promise<InjectableTemplate[]> => {
+  const result = await query('SELECT * FROM injectable_templates WHERE id = $1', [id])
+  return result.rows
+}
+
 export const getInjectableTemplates = async (type?: 'listicle' | 'advertorial'): Promise<InjectableTemplate[]> => {
   let sql = 'SELECT * FROM injectable_templates'
   const params: any[] = []
@@ -248,9 +262,47 @@ export const getInjectableTemplates = async (type?: 'listicle' | 'advertorial'):
   return result.rows
 }
 
-export const getInjectableTemplateById = async (id: string): Promise<InjectableTemplate | null> => {
-  const result = await query('SELECT * FROM injectable_templates WHERE id = $1', [id])
-  return result.rows[0] || null
+// Get injectable template ID for a given advertorial type
+// This maps the template selection to the actual swipe file ID used by DeepCopy API
+export const getInjectableTemplateIdForType = async (advertorialType: string): Promise<string | null> => {
+  const result = await query(
+    'SELECT id FROM injectable_templates WHERE advertorial_type = $1 ORDER BY created_at DESC LIMIT 1', 
+    [advertorialType]
+  )
+  return result.rows[0]?.id || null
+}
+
+// Get injectable template ID based on the selected template ID
+// This creates a mapping between regular templates and injectable templates
+export const getInjectableTemplateIdForTemplate = async (templateId: string): Promise<string | null> => {
+  // First get the template to determine its category/type
+  const templateResult = await query('SELECT category FROM templates WHERE id = $1', [templateId])
+  const template = templateResult.rows[0]
+  
+  if (!template) {
+    return null
+  }
+  
+  // Map template category to advertorial type
+  const advertorialType = template.category === 'listicle' ? 'listicle' : 'advertorial'
+  
+  // Get the injectable template with the SAME ID as the template
+  const injectableResult = await query(
+    'SELECT id FROM injectable_templates WHERE id = $1 AND advertorial_type = $2', 
+    [templateId, advertorialType]
+  )
+  
+  if (injectableResult.rows[0]) {
+    return injectableResult.rows[0].id
+  }
+  
+  // Fallback: Get the most recent injectable template for this type if exact match not found
+  const fallbackResult = await query(
+    'SELECT id FROM injectable_templates WHERE advertorial_type = $1 ORDER BY created_at DESC LIMIT 1', 
+    [advertorialType]
+  )
+  
+  return fallbackResult.rows[0]?.id || null
 }
 
 export const getRandomInjectableTemplate = async (type: 'listicle' | 'advertorial'): Promise<InjectableTemplate | null> => {
@@ -265,11 +317,12 @@ export const createInjectableTemplate = async (
   name: string,
   type: 'listicle' | 'advertorial',
   htmlContent: string,
-  description?: string
+  description?: string,
+  customId?: string
 ): Promise<InjectableTemplate> => {
   const result = await query(
-    'INSERT INTO injectable_templates (name, advertorial_type, html_content, description) VALUES ($1, $2, $3, $4) RETURNING *',
-    [name, type, htmlContent, description]
+    'INSERT INTO injectable_templates (id, name, advertorial_type, html_content, description) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    [customId || undefined, name, type, htmlContent, description]
   )
   return result.rows[0]
 }

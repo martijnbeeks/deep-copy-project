@@ -14,6 +14,7 @@ import { CheckCircle, Eye, Save, Upload } from "lucide-react"
 
 interface TemplateEditorProps {
   template: {
+    id?: string
     name: string
     type: 'listicle' | 'advertorial'
     description: string
@@ -133,6 +134,19 @@ export function TemplateEditor({ template, onSave, onCancel, onPreview }: Templa
                   onChange={(e) => handleBasicChange('name', e.target.value)}
                   placeholder="My Injectable Template"
                 />
+              </div>
+              
+              <div>
+                <Label htmlFor="templateId">Template ID (Optional)</Label>
+                <Input
+                  id="templateId"
+                  value={formData.id || ''}
+                  onChange={(e) => handleBasicChange('id', e.target.value)}
+                  placeholder="custom-template-id (leave empty for auto-generated)"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Enter a custom ID or leave empty to auto-generate one
+                </p>
               </div>
               
               <div>

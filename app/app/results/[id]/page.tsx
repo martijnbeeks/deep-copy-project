@@ -59,13 +59,23 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
   })
 
   useEffect(() => {
-    if (!isAuthenticated || !user) {
-      router.push("/login")
-      return
+    // Only load job if authenticated, don't redirect
+    if (isAuthenticated && user) {
+      loadJob()
     }
+  }, [isAuthenticated, user, loadJob])
 
-    loadJob()
-  }, [isAuthenticated, user, router, loadJob])
+  // Show loading state instead of redirecting
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar />
+        <main className="flex-1 p-6">
+          <ContentViewerSkeleton />
+        </main>
+      </div>
+    )
+  }
 
 
   if (!user || isLoading) {
@@ -186,6 +196,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                 result={currentJob.result} 
                 jobTitle={currentJob.title}
                 advertorialType={currentJob.advertorial_type}
+                templateId={currentJob.template_id}
               />
             </TabsContent>
 

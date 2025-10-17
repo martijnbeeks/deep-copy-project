@@ -178,12 +178,23 @@ export default function DashboardPage() {
       router.push(`/jobs/${job.job.id}`)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to create pipeline"
-      setError(errorMessage)
-      toast({
-        title: "Error creating pipeline",
-        description: errorMessage,
-        variant: "destructive",
-      })
+      
+      // Check if it's a duplicate job error
+      if (errorMessage.includes('Duplicate job detected')) {
+        setError('A job with this title was created recently. Please wait a moment or use a different title.')
+        toast({
+          title: "Duplicate job detected",
+          description: "A job with this title was created recently. Please wait a moment or use a different title.",
+          variant: "destructive",
+        })
+      } else {
+        setError(errorMessage)
+        toast({
+          title: "Error creating pipeline",
+          description: errorMessage,
+          variant: "destructive",
+        })
+      }
     }
   }
 

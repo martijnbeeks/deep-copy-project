@@ -48,6 +48,7 @@ export function AvatarExtractionDialog({
     setError(null)
     
     try {
+      // Step 1: Submit avatar extraction job
       const response = await fetch('/api/avatars/extract', {
         method: 'POST',
         headers: {
@@ -57,22 +58,93 @@ export function AvatarExtractionDialog({
       })
 
       if (!response.ok) {
-        throw new Error('Failed to extract avatars')
+        throw new Error('Failed to submit avatar extraction job')
       }
 
       const data = await response.json()
       
-      if (data.success && data.avatars && data.avatars.length > 0) {
-        setAvatars(data.avatars)
-      } else {
-        throw new Error('No avatars found')
+      if (!data.jobId) {
+        throw new Error('No job ID received from avatar extraction service')
       }
+
+      // Step 2: Poll for status and results
+      await pollAvatarExtractionStatus(data.jobId)
+      
     } catch (err) {
       console.error('Avatar extraction error:', err)
       setError('Failed to extract avatars from the sales page. Please try again or use the "I know exactly who my customer is" option instead.')
     } finally {
       setIsAnalyzing(false)
     }
+  }
+
+  const pollAvatarExtractionStatus = async (jobId: string) => {
+    const maxAttempts = 20 // 20 attempts * 3 seconds = 60 seconds max
+    const pollInterval = 3000 // Poll every 3 seconds (since it finishes in 20-30 seconds)
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        // Check status
+        const statusResponse = await fetch(`/api/avatars/${jobId}`)
+        
+        if (!statusResponse.ok) {
+          throw new Error(`Status check failed: ${statusResponse.status}`)
+        }
+
+        const statusData = await statusResponse.json()
+        
+        if (statusData.status === 'SUCCEEDED') {
+          // Get results
+          const resultResponse = await fetch(`/api/avatars/${jobId}/result`)
+          
+          if (!resultResponse.ok) {
+            throw new Error(`Result fetch failed: ${resultResponse.status}`)
+          }
+
+          const resultData = await resultResponse.json()
+          
+          if (resultData.success && resultData.avatars && resultData.avatars.length > 0) {
+            setAvatars(resultData.avatars)
+            return // Success!
+          } else {
+            throw new Error('No avatars found in results')
+          }
+        } else if (statusData.status === 'FAILED') {
+          throw new Error('Avatar extraction job failed')
+        }
+        
+        // Check if results are available even if status is still RUNNING
+        // (Sometimes results are available before status is updated)
+        try {
+          const resultResponse = await fetch(`/api/avatars/${jobId}/result`)
+          
+          if (resultResponse.ok) {
+            const resultData = await resultResponse.json()
+            
+            if (resultData.success && resultData.avatars && resultData.avatars.length > 0) {
+              setAvatars(resultData.avatars)
+              return // Success! Results available even though status is RUNNING
+            }
+          }
+        } catch (resultError) {
+          // Ignore result check errors, continue polling
+        }
+        
+        // If still processing, wait and try again
+        if (attempt < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, pollInterval))
+        }
+        
+      } catch (err) {
+        if (attempt === maxAttempts) {
+          throw err // Re-throw on final attempt
+        }
+        // Continue polling on intermediate errors
+        await new Promise(resolve => setTimeout(resolve, pollInterval))
+      }
+    }
+    
+    throw new Error('Avatar extraction timed out after 60 seconds. The service may be experiencing delays.')
   }
 
   const handleAvatarToggle = (index: number) => {

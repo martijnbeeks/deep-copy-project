@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await getUserByEmail(email)
-    if (!user) {
+    if (!user || !user.password_hash) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }

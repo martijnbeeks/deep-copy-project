@@ -78,8 +78,8 @@ export default function AdminPage() {
   
   // Form states
   const [newUser, setNewUser] = useState({ email: '', password: '', name: '' })
-  const [newTemplate, setNewTemplate] = useState({ name: '', description: '', category: '', htmlContent: '' })
-  const [newInjectableTemplate, setNewInjectableTemplate] = useState({ name: '', type: 'listicle' as 'listicle' | 'advertorial', description: '', htmlContent: '' })
+  const [newTemplate, setNewTemplate] = useState({ id: '', name: '', description: '', category: '', htmlContent: '' })
+  const [newInjectableTemplate, setNewInjectableTemplate] = useState({ id: '', name: '', type: 'listicle' as 'listicle' | 'advertorial', description: '', htmlContent: '' })
   const [templateFile, setTemplateFile] = useState<File | null>(null)
   
   // Dialog states
@@ -131,7 +131,7 @@ export default function AdminPage() {
       
       if (injectableTemplatesRes.ok) {
         const injectableTemplatesData = await injectableTemplatesRes.json()
-        setInjectableTemplates(injectableTemplatesData.templates)
+        setInjectableTemplates(injectableTemplatesData)
       }
       
       if (jobsRes.ok) {
@@ -267,7 +267,7 @@ export default function AdminPage() {
           title: "Success",
           description: "Template uploaded successfully"
         })
-        setNewTemplate({ name: '', description: '', category: '', htmlContent: '' })
+        setNewTemplate({ id: '', name: '', description: '', category: '', htmlContent: '' })
         setTemplateFile(null)
         setTemplateDialogOpen(false)
         loadData()
@@ -378,7 +378,7 @@ export default function AdminPage() {
           title: "Success",
           description: "Injectable template created successfully"
         })
-        setNewInjectableTemplate({ name: '', type: 'listicle', description: '', htmlContent: '' })
+        setNewInjectableTemplate({ id: '', name: '', type: 'listicle', description: '', htmlContent: '' })
         setInjectableTemplateDialogOpen(false)
         loadData()
       } else {
@@ -603,8 +603,8 @@ export default function AdminPage() {
 
           {/* Job Status Breakdown */}
           {jobStatuses.length > 0 && (
-            <Card>
-              <CardHeader>
+          <Card>
+            <CardHeader>
                 <CardTitle>Job Status Breakdown</CardTitle>
               </CardHeader>
               <CardContent>
@@ -691,7 +691,7 @@ export default function AdminPage() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                </CardHeader>
+            </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {users.map((user) => (
@@ -703,7 +703,7 @@ export default function AdminPage() {
                             Created: {new Date(user.created_at).toLocaleDateString()}
                           </p>
                         </div>
-                        <Button
+                <Button 
                           variant="destructive"
                           size="sm"
                           onClick={() => deleteUser(user.id)}
@@ -711,12 +711,12 @@ export default function AdminPage() {
                         >
                           <Trash2 className="h-3 w-3" />
                           Delete
-                        </Button>
-                      </div>
+                </Button>
+                  </div>
                     ))}
                     {users.length === 0 && (
                       <p className="text-center text-muted-foreground py-8">No users found</p>
-                    )}
+                )}
               </div>
             </CardContent>
           </Card>
@@ -766,7 +766,19 @@ export default function AdminPage() {
                             placeholder="My Template"
                           />
                         </div>
-                        <div>
+                    <div>
+                          <Label htmlFor="templateId">Template ID (Optional)</Label>
+                          <Input
+                            id="templateId"
+                            value={newTemplate.id}
+                            onChange={(e) => setNewTemplate(prev => ({ ...prev, id: e.target.value }))}
+                            placeholder="custom-template-id (leave empty for auto-generated)"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Enter a custom ID or leave empty to auto-generate one
+                          </p>
+                    </div>
+                    <div>
                           <Label htmlFor="templateDescription">Description</Label>
                           <Input
                             id="templateDescription"
@@ -774,8 +786,8 @@ export default function AdminPage() {
                             onChange={(e) => setNewTemplate(prev => ({ ...prev, description: e.target.value }))}
                             placeholder="Brief description of the template"
                           />
-                        </div>
-                        <div>
+                    </div>
+                    <div>
                           <Label htmlFor="templateCategory">Category</Label>
                           <Select value={newTemplate.category} onValueChange={(value) => setNewTemplate(prev => ({ ...prev, category: value }))}>
                             <SelectTrigger>
@@ -788,8 +800,8 @@ export default function AdminPage() {
                               <SelectItem value="other">Other</SelectItem>
                             </SelectContent>
                           </Select>
-                        </div>
-                        <div>
+                    </div>
+                    <div>
                           <Label htmlFor="templateContent">HTML Content</Label>
                           <Textarea
                             id="templateContent"
@@ -908,12 +920,12 @@ export default function AdminPage() {
                           <div className="font-medium">Start with Templates</div>
                           <div>Use pre-built swipe templates</div>
                         </div>
-                      </div>
                     </div>
                   </div>
+                </div>
 
                   <div className="space-y-2">
-                    {injectableTemplates.map((template) => (
+                    {injectableTemplates?.map((template) => (
                       <div key={template.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
@@ -963,25 +975,25 @@ export default function AdminPage() {
                         </div>
                       </div>
                     ))}
-                    {injectableTemplates.length === 0 && (
+                    {injectableTemplates?.length === 0 && (
                       <p className="text-center text-muted-foreground py-8">No injectable templates found</p>
                     )}
-                  </div>
-                </CardContent>
-              </Card>
+              </div>
+            </CardContent>
+          </Card>
             </TabsContent>
 
             {/* Jobs Tab */}
             <TabsContent value="jobs" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
                     <Briefcase className="h-5 w-5" />
                     Job Management
-                  </CardTitle>
+              </CardTitle>
                   <CardDescription>View and delete jobs</CardDescription>
-                </CardHeader>
-                <CardContent>
+            </CardHeader>
+            <CardContent>
                   <div className="space-y-2">
                     {jobs.map((job) => (
                       <div key={job.id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -1002,8 +1014,8 @@ export default function AdminPage() {
                             <span className="text-xs text-muted-foreground">
                               Created: {new Date(job.created_at).toLocaleDateString()}
                             </span>
-                          </div>
-                        </div>
+                </div>
+                </div>
                         <Button
                           variant="destructive"
                           size="sm"
@@ -1013,14 +1025,14 @@ export default function AdminPage() {
                           <Trash2 className="h-3 w-3" />
                           Delete
                         </Button>
-                      </div>
+                </div>
                     ))}
                     {jobs.length === 0 && (
                       <p className="text-center text-muted-foreground py-8">No jobs found</p>
                     )}
-                  </div>
-                </CardContent>
-              </Card>
+              </div>
+            </CardContent>
+          </Card>
             </TabsContent>
           </Tabs>
 

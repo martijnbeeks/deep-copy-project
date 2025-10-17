@@ -32,24 +32,24 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { name, description, category, htmlContent } = await request.json()
+    const { id, name, description, category, htmlContent } = await request.json()
     
     if (!name || !htmlContent) {
       return NextResponse.json({ error: 'Name and HTML content are required' }, { status: 400 })
     }
     
-    // Check if template already exists
-    const existingTemplate = await query('SELECT id FROM templates WHERE name = $1', [name])
+    // Check if template already exists (by name or custom ID)
+    const existingTemplate = await query('SELECT id FROM templates WHERE name = $1 OR id = $2', [name, id])
     if (existingTemplate.rows.length > 0) {
-      return NextResponse.json({ error: 'Template with this name already exists' }, { status: 400 })
+      return NextResponse.json({ error: 'Template with this name or ID already exists' }, { status: 400 })
     }
     
-    // Create template
+    // Create template with custom ID if provided
     const result = await query(`
-      INSERT INTO templates (name, description, category, html_content) 
-      VALUES ($1, $2, $3, $4) 
+      INSERT INTO templates (id, name, description, category, html_content) 
+      VALUES ($1, $2, $3, $4, $5) 
       RETURNING id, name, description, category, created_at
-    `, [name, description || null, category || null, htmlContent])
+    `, [id || undefined, name, description || null, category || null, htmlContent])
     
     return NextResponse.json({ template: result.rows[0] })
   } catch (error) {

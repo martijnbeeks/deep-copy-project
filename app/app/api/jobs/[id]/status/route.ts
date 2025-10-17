@@ -43,13 +43,14 @@ export async function GET(
     try {
       statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
     } catch (apiError) {
+      console.error('❌ DeepCopy API Error in status check:', apiError)
       // If API call fails, return current database status instead of error
       const errorResponse = NextResponse.json({
         status: dbStatus.status,
         progress: dbStatus.progress,
         updated_at: dbStatus.updated_at,
         deepcopy_status: 'API_ERROR',
-        deepcopy_response: { error: 'Failed to poll DeepCopy API' }
+        deepcopy_response: { error: 'Failed to poll DeepCopy API', details: apiError instanceof Error ? apiError.message : String(apiError) }
       })
 
       // Add cache-busting headers
@@ -66,8 +67,13 @@ export async function GET(
       await updateJobStatus(jobId, 'completed', 100)
       
       // Get results and store them
-      const result = await deepCopyClient.getJobResult(deepCopyJobId)
-      await storeJobResults(jobId, result, deepCopyJobId)
+      try {
+        const result = await deepCopyClient.getJobResult(deepCopyJobId)
+        await storeJobResults(jobId, result, deepCopyJobId)
+      } catch (resultError) {
+        console.error('❌ Error fetching/storing job results:', resultError)
+        // Continue even if result fetching fails
+      }
       
     } else if (statusResponse.status === 'FAILED') {
       await updateJobStatus(jobId, 'failed')
@@ -104,8 +110,9 @@ export async function GET(
     return response
     
   } catch (error) {
+    console.error('❌ Job Status Error:', error)
     return NextResponse.json(
-      { error: 'Failed to check job status' },
+      { error: 'Failed to check job status', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }

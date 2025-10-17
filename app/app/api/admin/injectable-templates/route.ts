@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { 
   getInjectableTemplates, 
+  getInjectableTemplateById,
   createInjectableTemplate, 
   updateInjectableTemplate,
   deleteInjectableTemplate 
@@ -8,17 +9,21 @@ import {
 import { verifyAdminAuth, createAuthResponse } from '@/lib/auth/admin-auth'
 
 export async function GET(request: NextRequest) {
-  const authResult = await verifyAdminAuth(request)
-  if (authResult.error) {
-    return createAuthResponse(authResult.error)
-  }
-
   try {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type') as 'listicle' | 'advertorial' | null
+    const id = searchParams.get('id')
 
-    const templates = await getInjectableTemplates(type)
-    return NextResponse.json({ templates })
+    let templates
+    if (id) {
+      // Fetch specific template by ID
+      templates = await getInjectableTemplateById(id)
+    } else {
+      // Fetch templates by type
+      templates = await getInjectableTemplates(type)
+    }
+    
+    return NextResponse.json(templates)
   } catch (error) {
     console.error('Error fetching injectable templates:', error)
     return NextResponse.json({ error: 'Failed to fetch injectable templates' }, { status: 500 })
@@ -33,7 +38,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { name, type, htmlContent, description } = body
+    const { id, name, type, htmlContent, description } = body
 
     if (!name || !type || !htmlContent) {
       return NextResponse.json({ error: 'Name, type, and HTML content are required' }, { status: 400 })
@@ -43,7 +48,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Type must be either "listicle" or "advertorial"' }, { status: 400 })
     }
 
-    const template = await createInjectableTemplate(name, type, htmlContent, description)
+    const template = await createInjectableTemplate(name, type, htmlContent, description, id)
     return NextResponse.json({ template })
   } catch (error) {
     console.error('Error creating injectable template:', error)

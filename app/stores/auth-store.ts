@@ -67,7 +67,16 @@ export const useAuthStore = create<AuthState & AuthActions>()(
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+      partialize: (state) => ({ 
+        user: state.user ? {
+          id: state.user.id,
+          email: state.user.email,
+          created_at: state.user.created_at,
+          updated_at: state.user.updated_at,
+          // Don't persist sensitive data
+        } : null,
+        isAuthenticated: state.isAuthenticated 
+      }),
     }
   )
 )

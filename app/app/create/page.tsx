@@ -66,6 +66,7 @@ export default function CreatePage() {
     gender: "",
   })
   const [errors, setErrors] = useState<Partial<Record<keyof PipelineFormData, string>>>({})
+  const [generalError, setGeneralError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   
   // Pagination state
@@ -185,11 +186,23 @@ export default function CreatePage() {
       })
       setSelectedTemplate(null)
       setErrors({})
+      setGeneralError(null)
       setCurrentStep(1)
       
       router.push("/dashboard")
     } catch (error) {
-      // Error handling is done in the catch block above
+      console.error('Job creation error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create job'
+      
+      // Check if it's a duplicate job error
+      if (errorMessage.includes('Duplicate job detected')) {
+        setErrors({ 
+          title: 'A job with this title was created recently. Please wait a moment or use a different title.'
+        })
+        setGeneralError(errorMessage)
+      } else {
+        setGeneralError(errorMessage)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -222,12 +235,24 @@ export default function CreatePage() {
       })
       setSelectedTemplate(null)
       setErrors({})
+      setGeneralError(null)
       setCurrentStep(1)
       setShowAvatarDialog(false)
       
       router.push("/dashboard")
     } catch (error) {
       console.error('Error creating job with avatars:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create job'
+      
+      // Check if it's a duplicate job error
+      if (errorMessage.includes('Duplicate job detected')) {
+        setErrors({ 
+          title: 'A job with this title was created recently. Please wait a moment or use a different title.'
+        })
+        setGeneralError(errorMessage)
+      } else {
+        setGeneralError(errorMessage)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -452,6 +477,13 @@ export default function CreatePage() {
                         <Alert variant="destructive" className="border-destructive/50">
                           <AlertCircle className="h-4 w-4" />
                           <AlertDescription className="text-sm">{errors.template_id}</AlertDescription>
+                        </Alert>
+                      )}
+
+                      {generalError && (
+                        <Alert variant="destructive" className="border-destructive/50">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription className="text-sm">{generalError}</AlertDescription>
                         </Alert>
                       )}
 

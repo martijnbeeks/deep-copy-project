@@ -3,11 +3,14 @@ export interface ContentData {
   hero: {
     headline: string
     subheadline: string
+    image: string
+    imageAlt: string
   }
   author: {
     name: string
     image: string
     date: string
+    verifiedIcon: string
   }
   topbar: {
     label: string
@@ -95,36 +98,63 @@ export interface ContentData {
   }
   cta: {
     primary: string
-    secondary: string
     primaryUrl: string
+    secondary: string
+    secondaryUrl: string
   }
   sidebar: {
     ctaHeadline: string
     ctaButton: string
+    ctaUrl: string
+    productImage: string
+    ratingImage: string
   }
   sticky: {
     cta: string
+    ctaUrl: string
   }
   reactions: {
     title: string
     r1: {
-      name: string
       text: string
+      name: string
+      image: string
+      likes: string
       time: string
-      likes: number
+      reply: string
     }
     r2: {
-      name: string
       text: string
+      name: string
+      image: string
+      likes: string
       time: string
-      likes: number
+      reply: string
     }
     r3: {
-      name: string
       text: string
+      name: string
+      image: string
+      likes: string
       time: string
-      likes: number
+      reply: string
     }
+    r4: {
+      text: string
+      name: string
+      image: string
+      likes: string
+      time: string
+      reply: string
+    }
+  }
+  footer: {
+    copyright: string
+    disclaimer: string
+    contactUrl: string
+    privacyUrl: string
+    termsUrl: string
+    cookieUrl: string
   }
   brands: {
     brand1: {
@@ -132,23 +162,24 @@ export interface ContentData {
       logo: string
     }
   }
+  product: {
+    name: string
+    image: string
+  }
   guarantee: {
     badge: string
-    text: string
   }
   assurances: {
     blurb: string
   }
-  footer: {
-    copyright: string
-    disclaimer: string
-  }
   shipping: {
     threshold: string
   }
-  brand: {
-    name: string
-    logo: string
+  info: {
+    icon: string
+  }
+  reviews: {
+    url: string
   }
 }
 
@@ -320,6 +351,236 @@ export function extractContentFromAngle(results: any, swipe: any, angleIndex: nu
     }
   }
 
+  return content
+}
+
+// Extract content data from individual swipe result - EXACT field mapping
+export function extractContentFromSwipeResult(swipeResult: any, templateType: 'listicle' | 'advertorial'): ContentData {
+  // Parse the swipe result content - this contains the rich JSON data for this specific angle
+  const swipeContent = swipeResult.content ? JSON.parse(swipeResult.content) : {}
+  
+  // Create content data using EXACT field names from API - NO DUPLICATES
+  const content: ContentData = {
+    // Hero section - exact field mapping with fallback images
+    hero: {
+      headline: swipeContent.hero?.headline || 'Default Headline',
+      subheadline: swipeContent.hero?.subheadline || 'Default Subheadline',
+      image: swipeContent.hero?.image || 'https://placehold.co/600x400?text=Hero+Image',
+      imageAlt: swipeContent.hero?.imageAlt || 'Hero Image'
+    },
+    
+    // Author section - exact field mapping with fallback images
+    author: {
+      name: swipeContent.author?.name || 'Default Author',
+      image: swipeContent.author?.image || 'https://placehold.co/100x100?text=Author',
+      date: swipeContent.author?.date || new Date().toLocaleDateString(),
+      verifiedIcon: 'https://placehold.co/20x20?text=✓' // Not in API, keep default
+    },
+    
+    // Topbar - exact field mapping
+    topbar: {
+      label: swipeContent.topbar?.label || 'Default Label'
+    },
+    
+    // Alert banner - exact field mapping
+    alert: {
+      banner: swipeContent.alert?.banner || 'Default Banner'
+    },
+    
+    // Breadcrumbs - exact field mapping
+    breadcrumbs: {
+      text: swipeContent.breadcrumbs?.text || 'Default Breadcrumbs'
+    },
+    
+    // Story intro - exact field mapping
+    story: {
+      intro: swipeContent.story?.intro || 'Default Story Intro'
+    },
+    
+    // Sections 1-12 - exact field mapping with descriptive fallback images
+    section1: {
+      title: swipeContent.section1?.title || 'Default Section 1 Title',
+      body: swipeContent.section1?.body || 'Default Section 1 Body',
+      image: swipeContent.section1?.image || 'https://placehold.co/600x400?text=Section+1+Image',
+      imageAlt: swipeContent.section1?.imageAlt || 'Section 1 Image'
+    },
+    section2: {
+      title: swipeContent.section2?.title || 'Default Section 2 Title',
+      body: swipeContent.section2?.body || 'Default Section 2 Body',
+      image: swipeContent.section2?.image || 'https://placehold.co/600x400?text=Section+2+Image',
+      imageAlt: swipeContent.section2?.imageAlt || 'Section 2 Image'
+    },
+    section3: {
+      title: swipeContent.section3?.title || 'Default Section 3 Title',
+      body: swipeContent.section3?.body || 'Default Section 3 Body',
+      image: swipeContent.section3?.image || 'https://placehold.co/600x400?text=Section+3+Image',
+      imageAlt: swipeContent.section3?.imageAlt || 'Section 3 Image'
+    },
+    section4: {
+      title: swipeContent.section4?.title || 'Default Section 4 Title',
+      body: swipeContent.section4?.body || 'Default Section 4 Body',
+      image: swipeContent.section4?.image || 'https://placehold.co/600x400?text=Section+4+Image',
+      imageAlt: swipeContent.section4?.imageAlt || 'Section 4 Image'
+    },
+    section5: {
+      title: swipeContent.section5?.title || 'Default Section 5 Title',
+      body: swipeContent.section5?.body || 'Default Section 5 Body',
+      image: swipeContent.section5?.image || 'https://placehold.co/600x400?text=Section+5+Image',
+      imageAlt: swipeContent.section5?.imageAlt || 'Section 5 Image'
+    },
+    section6: {
+      title: swipeContent.section6?.title || 'Default Section 6 Title',
+      body: swipeContent.section6?.body || 'Default Section 6 Body',
+      image: swipeContent.section6?.image || 'https://placehold.co/600x400?text=Section+6+Image',
+      imageAlt: swipeContent.section6?.imageAlt || 'Section 6 Image'
+    },
+    section7: {
+      title: swipeContent.section7?.title || 'Default Section 7 Title',
+      body: swipeContent.section7?.body || 'Default Section 7 Body',
+      image: swipeContent.section7?.image || 'https://placehold.co/600x400?text=Section+7+Image',
+      imageAlt: swipeContent.section7?.imageAlt || 'Section 7 Image'
+    },
+    section8: {
+      title: swipeContent.section8?.title || 'Default Section 8 Title',
+      body: swipeContent.section8?.body || 'Default Section 8 Body',
+      image: swipeContent.section8?.image || 'https://placehold.co/600x400?text=Section+8+Image',
+      imageAlt: swipeContent.section8?.imageAlt || 'Section 8 Image'
+    },
+    section9: {
+      title: swipeContent.section9?.title || 'Default Section 9 Title',
+      body: swipeContent.section9?.body || 'Default Section 9 Body',
+      image: swipeContent.section9?.image || 'https://placehold.co/600x400?text=Section+9+Image',
+      imageAlt: swipeContent.section9?.imageAlt || 'Section 9 Image'
+    },
+    section10: {
+      title: swipeContent.section10?.title || 'Default Section 10 Title',
+      body: swipeContent.section10?.body || 'Default Section 10 Body',
+      image: swipeContent.section10?.image || 'https://placehold.co/600x400?text=Section+10+Image',
+      imageAlt: swipeContent.section10?.imageAlt || 'Section 10 Image'
+    },
+    section11: {
+      title: swipeContent.section11?.title || 'Default Section 11 Title',
+      body: swipeContent.section11?.body || 'Default Section 11 Body',
+      image: swipeContent.section11?.image || 'https://placehold.co/600x400?text=Section+11+Image',
+      imageAlt: swipeContent.section11?.imageAlt || 'Section 11 Image'
+    },
+    section12: {
+      title: swipeContent.section12?.title || 'Default Section 12 Title',
+      body: swipeContent.section12?.body || 'Default Section 12 Body',
+      image: swipeContent.section12?.image || 'https://placehold.co/600x400?text=Section+12+Image',
+      imageAlt: swipeContent.section12?.imageAlt || 'Section 12 Image'
+    },
+    
+    // CTA section - exact field mapping
+    cta: {
+      primary: swipeContent.cta?.primary || 'Default Primary CTA',
+      primaryUrl: '#', // Not in API, keep default
+      secondary: swipeContent.cta?.secondary || 'Default Secondary CTA',
+      secondaryUrl: '#' // Not in API, keep default
+    },
+    
+    // Sidebar section - exact field mapping with fallback images
+    sidebar: {
+      ctaHeadline: swipeContent.sidebar?.ctaHeadline || 'Default Sidebar Headline',
+      ctaButton: swipeContent.sidebar?.ctaButton || 'Default Sidebar Button',
+      ctaUrl: '#', // Not in API, keep default
+      productImage: 'https://placehold.co/300x300?text=Product+Image', // Not in API, keep default
+      ratingImage: 'https://placehold.co/20x20?text=★' // Not in API, keep default
+    },
+    
+    // Sticky CTA - not in API, keep defaults
+    sticky: {
+      cta: 'Default Sticky CTA',
+      ctaUrl: '#'
+    },
+    
+    // Reactions section - exact field mapping with fallback images
+    reactions: {
+      title: swipeContent.reactions?.title || 'Default Reactions Title',
+      r1: {
+        text: swipeContent.reactions?.r1?.text || 'Default Reaction 1 Text',
+        name: swipeContent.reactions?.r1?.name || 'Default Name 1',
+        image: swipeContent.reactions?.r1?.avatar || swipeContent.reactions?.r1?.image || 'https://placehold.co/40x40?text=User+1',
+        likes: swipeContent.reactions?.r1?.likes || '0',
+        time: swipeContent.reactions?.r1?.time || '1h',
+        reply: 'Reply' // Not in API, keep default
+      },
+      r2: {
+        text: swipeContent.reactions?.r2?.text || 'Default Reaction 2 Text',
+        name: swipeContent.reactions?.r2?.name || 'Default Name 2',
+        image: swipeContent.reactions?.r2?.avatar || swipeContent.reactions?.r2?.image || 'https://placehold.co/40x40?text=User+2',
+        likes: swipeContent.reactions?.r2?.likes || '0',
+        time: swipeContent.reactions?.r2?.time || '2h',
+        reply: 'Reply' // Not in API, keep default
+      },
+      r3: {
+        text: swipeContent.reactions?.r3?.text || 'Default Reaction 3 Text',
+        name: swipeContent.reactions?.r3?.name || 'Default Name 3',
+        image: swipeContent.reactions?.r3?.avatar || swipeContent.reactions?.r3?.image || 'https://placehold.co/40x40?text=User+3',
+        likes: swipeContent.reactions?.r3?.likes || '0',
+        time: swipeContent.reactions?.r3?.time || '3h',
+        reply: 'Reply' // Not in API, keep default
+      },
+      r4: {
+        text: swipeContent.reactions?.r4?.text || 'Default Reaction 4 Text',
+        name: swipeContent.reactions?.r4?.name || 'Default Name 4',
+        image: swipeContent.reactions?.r4?.avatar || swipeContent.reactions?.r4?.image || 'https://placehold.co/40x40?text=User+4',
+        likes: swipeContent.reactions?.r4?.likes || '0',
+        time: swipeContent.reactions?.r4?.time || '4h',
+        reply: 'Reply' // Not in API, keep default
+      }
+    },
+    
+    // Footer section - exact field mapping
+    footer: {
+      copyright: swipeContent.footer?.copyright || 'Default Copyright',
+      disclaimer: swipeContent.footer?.disclaimer || 'Default Disclaimer',
+      contactUrl: '#', // Not in API, keep default
+      privacyUrl: '#', // Not in API, keep default
+      termsUrl: '#', // Not in API, keep default
+      cookieUrl: '#' // Not in API, keep default
+    },
+    
+    // Brands section - not in API, keep defaults with descriptive fallback images
+    brands: {
+      brand1: {
+        name: 'Default Brand',
+        logo: 'https://placehold.co/100x50?text=Brand+Logo'
+      }
+    },
+    
+    // Product section - not in API, keep defaults with descriptive fallback images
+    product: {
+      name: 'Default Product',
+      image: 'https://placehold.co/400x400?text=Product+Image'
+    },
+    
+    // Guarantee section - not in API, keep defaults with descriptive fallback images
+    guarantee: {
+      badge: 'https://placehold.co/80x80?text=Guarantee+Badge'
+    },
+    
+    // Assurances section - exact field mapping
+    assurances: {
+      blurb: swipeContent.assurances?.blurb || 'Default Assurances Blurb'
+    },
+    
+    // Shipping section - not in API, keep defaults
+    shipping: {
+      threshold: 'Default Shipping Threshold'
+    },
+    
+    // Info section - not in API, keep defaults with descriptive fallback images
+    info: {
+      icon: 'https://placehold.co/20x20?text=Info+Icon'
+    },
+    
+    // Reviews section - not in API, keep defaults
+    reviews: {
+      url: '#'
+    }
+  }
+  
   return content
 }
 
@@ -546,7 +807,6 @@ export function extractContentFromResults(results: any): ContentData {
 }
 
 export function injectContentIntoTemplate(template: InjectableTemplate, content: ContentData): string {
-  
   let htmlContent = template.html_content
 
   // Replace all placeholders with actual content
@@ -635,8 +895,8 @@ export function injectContentIntoTemplate(template: InjectableTemplate, content:
     '{{content.footer.copyright}}': content.footer.copyright,
     '{{content.footer.disclaimer}}': content.footer.disclaimer,
     '{{content.shipping.threshold}}': content.shipping.threshold,
-    '{{content.brand.name}}': content.brand.name,
-    '{{content.brand.logo}}': content.brand.logo,
+    '{{content.brands.brand1.name}}': content.brands.brand1.name,
+    '{{content.brands.brand1.logo}}': content.brands.brand1.logo,
   }
 
   // Apply all replacements
@@ -645,29 +905,258 @@ export function injectContentIntoTemplate(template: InjectableTemplate, content:
     if (htmlContent.includes(placeholder)) {
       htmlContent = htmlContent.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value)
       replacementCount++
-      console.log(`✅ Replaced: ${placeholder} -> ${value.substring(0, 50)}...`)
     }
   }
 
-  console.log(`🔧 Total replacements made: ${replacementCount}`)
-  console.log(`📄 Final HTML length: ${htmlContent.length}`)
+  
+  // Add image fallback handling to prevent broken image symbols
+  htmlContent = addImageFallbacks(htmlContent)
+  
+  // Add CSS to hide broken images gracefully
+  htmlContent = addBrokenImageCSS(htmlContent)
+  
+  // Add JavaScript to handle broken images dynamically
+  htmlContent = addBrokenImageJS(htmlContent)
+  
+  // Disable all clickable links to prevent navigation
+  htmlContent = disableAllLinks(htmlContent)
+  
+  return htmlContent
+}
+
+// Create appropriate fallback image URL based on context
+function createFallbackImageUrl(altText: string, originalSrc: string): string {
+  // Determine image type and dimensions based on context
+  let dimensions = '600x400'
+  let text = altText || 'Image'
+  
+  // Adjust dimensions based on image context
+  if (altText.toLowerCase().includes('avatar') || altText.toLowerCase().includes('profile')) {
+    dimensions = '100x100'
+    text = 'Avatar'
+  } else if (altText.toLowerCase().includes('icon') || altText.toLowerCase().includes('logo')) {
+    dimensions = '50x50'
+    text = 'Icon'
+  } else if (altText.toLowerCase().includes('thumbnail') || altText.toLowerCase().includes('small')) {
+    dimensions = '200x150'
+    text = 'Thumbnail'
+  } else if (altText.toLowerCase().includes('banner') || altText.toLowerCase().includes('hero')) {
+    dimensions = '800x400'
+    text = 'Banner'
+  } else if (altText.toLowerCase().includes('rating') || altText.toLowerCase().includes('star')) {
+    dimensions = '20x20'
+    text = '★'
+  }
+  
+  // Clean up text for URL
+  text = text.replace(/[^a-zA-Z0-9\s]/g, '').substring(0, 20)
+  
+  return `https://placehold.co/${dimensions}?text=${encodeURIComponent(text)}`
+}
+
+// Add image fallback handling to prevent broken image symbols
+function addImageFallbacks(htmlContent: string): string {
+  
+  // Replace all <img> tags with versions that have onerror fallbacks
+  htmlContent = htmlContent.replace(
+    /<img([^>]*?)\s+src\s*=\s*["']([^"']*)["']([^>]*?)>/gi,
+    (match, beforeSrc, src, afterSrc) => {
+      // Extract alt text if present
+      const altMatch = match.match(/alt\s*=\s*["']([^"']*)["']/i)
+      const altText = altMatch ? altMatch[1] : 'Image'
+      
+      // Create fallback image URL with descriptive text and appropriate dimensions
+      const fallbackUrl = createFallbackImageUrl(altText, src)
+      
+      // Return img tag with onerror handler
+      return `<img${beforeSrc} src="${src}"${afterSrc} onerror="this.src='${fallbackUrl}'; this.onerror=null;" style="object-fit: cover;">`
+    }
+  )
+  
+  // Also handle img tags without explicit src attributes (in case of template placeholders)
+  htmlContent = htmlContent.replace(
+    /<img([^>]*?)>/gi,
+    (match, attributes) => {
+      // Check if src is already handled
+      if (match.includes('onerror=')) {
+        return match
+      }
+      
+      // Extract src if present
+      const srcMatch = match.match(/src\s*=\s*["']([^"']*)["']/i)
+      const src = srcMatch ? srcMatch[1] : ''
+      
+      // Extract alt text
+      const altMatch = match.match(/alt\s*=\s*["']([^"']*)["']/i)
+      const altText = altMatch ? altMatch[1] : 'Image'
+      
+      // Create fallback image URL
+      const fallbackUrl = createFallbackImageUrl(altText, src)
+      
+      // Add onerror handler
+      return match.replace('>', ` onerror="this.src='${fallbackUrl}'; this.onerror=null;" style="object-fit: cover;">`)
+    }
+  )
+  
+  return htmlContent
+}
+
+// Add CSS to hide broken images gracefully
+function addBrokenImageCSS(htmlContent: string): string {
+  
+  // CSS to hide broken images and provide graceful fallbacks
+  const brokenImageCSS = `
+    <style>
+      /* Hide broken images completely */
+      img:not([src]), 
+      img[src=""], 
+      img[src*="undefined"], 
+      img[src*="null"] {
+        display: none !important;
+      }
+      
+      /* Style for fallback images */
+      img[src*="placehold.co"] {
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        background-color: #f9fafb;
+      }
+      
+      /* Ensure images don't break layout when they fail */
+      img {
+        max-width: 100%;
+        height: auto;
+        object-fit: cover;
+      }
+      
+      /* Hide any remaining broken image symbols */
+      img::before {
+        content: "";
+        display: none;
+      }
+    </style>
+  `
+  
+  // Insert CSS into the head section
+  if (htmlContent.includes('<head>')) {
+    htmlContent = htmlContent.replace('<head>', `<head>${brokenImageCSS}`)
+  } else if (htmlContent.includes('<html>')) {
+    htmlContent = htmlContent.replace('<html>', `<html>${brokenImageCSS}`)
+    } else {
+    // If no head tag, add CSS at the beginning
+    htmlContent = `${brokenImageCSS}${htmlContent}`
+  }
+  
+  return htmlContent
+}
+
+// Add JavaScript to handle broken images dynamically
+function addBrokenImageJS(htmlContent: string): string {
+  
+  // JavaScript to handle broken images dynamically
+  const brokenImageJS = `
+      <script>
+      (function() {
+        // Function to create fallback image
+        function createFallbackImage(altText, originalSrc) {
+          let dimensions = '600x400';
+          let text = altText || 'Image';
+          
+          // Adjust dimensions based on context
+          if (altText && altText.toLowerCase().includes('avatar')) {
+            dimensions = '100x100';
+            text = 'Avatar';
+          } else if (altText && altText.toLowerCase().includes('icon')) {
+            dimensions = '50x50';
+            text = 'Icon';
+          } else if (altText && altText.toLowerCase().includes('rating')) {
+            dimensions = '20x20';
+            text = '★';
+          }
+          
+          text = text.replace(/[^a-zA-Z0-9\\s]/g, '').substring(0, 20);
+          return 'https://placehold.co/' + dimensions + '?text=' + encodeURIComponent(text);
+        }
+        
+        // Handle broken images when page loads
+        function handleBrokenImages() {
+          const images = document.querySelectorAll('img');
+          images.forEach(function(img) {
+            // Check if image is broken
+            if (img.naturalWidth === 0 || img.complete === false) {
+              const altText = img.alt || 'Image';
+              const fallbackUrl = createFallbackImage(altText, img.src);
+              img.src = fallbackUrl;
+              img.style.objectFit = 'cover';
+            }
+            
+            // Add error handler for future failures
+            img.addEventListener('error', function() {
+              const altText = this.alt || 'Image';
+              const fallbackUrl = createFallbackImage(altText, this.src);
+              this.src = fallbackUrl;
+              this.style.objectFit = 'cover';
+            });
+          });
+        }
+        
+        // Run when DOM is ready
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', handleBrokenImages);
+        } else {
+          handleBrokenImages();
+        }
+        
+        // Also run after a short delay to catch any late-loading images
+        setTimeout(handleBrokenImages, 1000);
+      })();
+      </script>
+    `
+    
+  // Insert JavaScript before closing body tag or at the end
+  if (htmlContent.includes('</body>')) {
+    htmlContent = htmlContent.replace('</body>', `${brokenImageJS}</body>`)
+  } else if (htmlContent.includes('</html>')) {
+    htmlContent = htmlContent.replace('</html>', `${brokenImageJS}</html>`)
+  } else {
+    // If no body tag, add script at the end
+    htmlContent = `${htmlContent}${brokenImageJS}`
+  }
+  
+  return htmlContent
+}
+
+// Disable all clickable links to prevent navigation
+function disableAllLinks(htmlContent: string): string {
+  
+  // Remove all href attributes from <a> tags
+  htmlContent = htmlContent.replace(/<a([^>]*)\s+href\s*=\s*["'][^"']*["']([^>]*)>/gi, '<a$1$2>')
+  
+  // Remove all onclick attributes
+  htmlContent = htmlContent.replace(/\s+onclick\s*=\s*["'][^"']*["']/gi, '')
+  
+  // Remove all onmousedown attributes
+  htmlContent = htmlContent.replace(/\s+onmousedown\s*=\s*["'][^"']*["']/gi, '')
+  
+  // Remove all onmouseup attributes
+  htmlContent = htmlContent.replace(/\s+onmouseup\s*=\s*["'][^"']*["']/gi, '')
+  
+  // Add pointer-events: none to all links via inline styles
+  htmlContent = htmlContent.replace(/<a([^>]*)>/gi, '<a$1 style="pointer-events: none; cursor: default;">')
+  
+  // Also disable buttons that might have click handlers
+  htmlContent = htmlContent.replace(/<button([^>]*)>/gi, '<button$1 style="pointer-events: none; cursor: default;">')
   
   return htmlContent
 }
 
 function createCarouselHtml(templates: Array<{angle: string, html: string}>): string {
-  console.log(`🎠 Creating carousel with ${templates.length} templates`)
-  templates.forEach((template, i) => {
-    console.log(`  Template ${i + 1}: ${template.angle} (HTML length: ${template.html.length})`)
-  })
   
   if (templates.length === 0) {
-    console.log('⚠️ No templates provided to carousel')
     return '<div>No templates available</div>'
   }
 
   if (templates.length === 1) {
-    console.log('📄 Single template, returning directly')
     return templates[0].html
   }
 
@@ -968,7 +1457,7 @@ export async function processJobResults(
       // Fallback: generate one template with basic content
       const content = extractContentFromResults(results)
       const finalHtml = injectContentIntoTemplate(template, content)
-      return {
+    return {
         templates: [{ angle: 'Default', html: finalHtml }],
         combinedHtml: finalHtml
       }

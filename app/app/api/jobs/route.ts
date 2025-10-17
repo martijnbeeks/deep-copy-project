@@ -75,8 +75,39 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // Check for duplicate jobs (same title created within last 30 seconds)
+    const { checkDuplicateJob } = await import('@/lib/db/queries')
+    const duplicateJob = await checkDuplicateJob(user.id, title)
+    
+    if (duplicateJob) {
+      return NextResponse.json(
+        { 
+          error: 'Duplicate job detected', 
+          message: `A job with the title "${title}" was created recently. Please wait a moment before creating another job with the same title.`,
+          duplicateJobId: duplicateJob.id
+        },
+        { status: 409 } // Conflict status
+      )
+    }
+    
     // Use provided customer avatars (extracted from frontend dialog)
     const finalCustomerAvatars = customer_avatars || []
+
+    // Use the template_id directly as swipe_file_id for DeepCopy API
+    // The template_id (e.g., L00001, A00001) is what DeepCopy API expects
+    const swipeFileId = template_id || (advertorial_type === 'listicle' ? 'L00005' : 'A00001')
+    
+    console.log(`🔍 Template Selection Debug:`)
+    console.log(`  - Advertorial Type: ${advertorial_type}`)
+    console.log(`  - Selected Template ID: ${template_id}`)
+    console.log(`  - Swipe File ID for DeepCopy: ${swipeFileId}`)
+    
+    if (!swipeFileId) {
+      return NextResponse.json(
+        { error: `No template ID provided for advertorial type: ${advertorial_type}` },
+        { status: 400 }
+      )
+    }
 
     // Submit job to DeepCopy API first to get the job ID
     let deepCopyJobId: string
@@ -84,7 +115,7 @@ export async function POST(request: NextRequest) {
       const jobPayload: any = {
         sales_page_url: sales_page_url || '',
         project_name: title,
-        swipe_file_id: 'L00005', // Hardcoded as requested
+        swipe_file_id: swipeFileId, 
         advertorial_type
       }
 
@@ -103,8 +134,9 @@ export async function POST(request: NextRequest) {
       deepCopyJobId = deepCopyResponse.jobId
 
     } catch (apiError) {
+      console.error('❌ DeepCopy API Error:', apiError)
       return NextResponse.json(
-        { error: 'Failed to submit job to DeepCopy API' },
+        { error: 'Failed to submit job to DeepCopy API', details: apiError instanceof Error ? apiError.message : String(apiError) },
         { status: 500 }
       )
     }
@@ -157,8 +189,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(job)
   } catch (error) {
+    console.error('❌ Job Creation Error:', error)
     return NextResponse.json(
-      { error: 'Failed to create job' },
+      { error: 'Failed to create job', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }

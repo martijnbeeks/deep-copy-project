@@ -21,25 +21,49 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   const createSmallPreviewHTML = (htmlContent: string) => {
-    // Use the exact same HTML as full preview, just add scaling
-    return htmlContent.replace(
+    // Fix broken image URLs and use the exact same HTML as full preview, just add scaling
+    let processedContent = htmlContent
+      .replace(/https?:\/\/[^\s"']*FFFFFF\?[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
+      .replace(/https?:\/\/[^\s"']*placehold\.co\/[^"'\s]*FFFFFF[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
+      .replace(/src="[^"]*FFFFFF[^"]*"/g, 'src="https://placehold.co/600x400?text=Image"')
+      .replace(/src='[^']*FFFFFF[^']*'/g, "src='https://placehold.co/600x400?text=Image'")
+    
+    // Wrap in basic HTML structure with Tailwind CDN
+    const wrappedContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Template Preview</title>
+  <script src="https://cdn.tailwindcss.com?v=${Date.now()}"></script>
+</head>
+<body>
+  ${processedContent}
+</body>
+</html>`
+    
+    return wrappedContent.replace(
       /<body([^>]*)>/i,
       '<body$1 style="transform: scale(0.3); transform-origin: top left; width: 333%; height: 333%; overflow: hidden;">'  
     )
   }
 
   const createFullPreviewHTML = (htmlContent: string) => {
-    // For full preview, use the original complete HTML structure
-    if (htmlContent.includes('<!DOCTYPE') || htmlContent.includes('<html')) {
-      return htmlContent
-    }
-
-    return `<!DOCTYPE html>
+    // Use the same logic as small preview but without scaling - just full size
+    let processedContent = htmlContent
+      .replace(/https?:\/\/[^\s"']*FFFFFF\?[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
+      .replace(/https?:\/\/[^\s"']*placehold\.co\/[^"'\s]*FFFFFF[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
+      .replace(/src="[^"]*FFFFFF[^"]*"/g, 'src="https://placehold.co/600x400?text=Image"')
+      .replace(/src='[^']*FFFFFF[^']*'/g, "src='https://placehold.co/600x400?text=Image'")
+    
+    // Wrap in basic HTML structure with Tailwind CDN - same as small preview but no scaling
+    const wrappedContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Template Preview</title>
+  <script src="https://cdn.tailwindcss.com?v=${Date.now()}"></script>
   <style>
     body { 
       margin: 0; 
@@ -55,7 +79,7 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
   </style>
 </head>
 <body>
-  ${htmlContent}
+  ${processedContent}
   <script>
     document.addEventListener('click', function(e) {
       const target = e.target.closest('a, button, [onclick]');
@@ -73,6 +97,8 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
   </script>
 </body>
 </html>`
+    
+    return wrappedContent
   }
 
   useEffect(() => {
@@ -114,11 +140,10 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
       <div className="flex-1 relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border">
         
         <iframe
-          key={template.id}
+          key={`${template.id}-${Date.now()}`}
           ref={iframeRef}
           srcDoc={createSmallPreviewHTML(template.html_content)}
           className="w-full h-full border-0"
-          sandbox="allow-same-origin allow-scripts"
           loading="eager"
           title={`Preview of ${template.name}`}
           onLoad={() => {
@@ -129,43 +154,6 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
           }}
         />
 
-        {/* Full Preview Button - Hidden overlay */}
-        <div className="absolute inset-0 bg-transparent flex items-center justify-center">
-          <Dialog>
-            <DialogTrigger asChild>
-              <button
-                type="button"
-                className="opacity-0 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-2 cursor-pointer"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Eye className="h-4 w-4" />
-                Full Preview
-              </button>
-            </DialogTrigger>
-            <DialogContent className="!max-w-[98vw] !max-h-[98vh] !w-[98vw] !h-[98vh] overflow-hidden">
-              <div className="p-4 pb-0">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-bold">Template Preview: {template.name}</DialogTitle>
-                  <DialogDescription>
-                    {template.description || 'This is how your content will look with the selected template'}
-                  </DialogDescription>
-                </DialogHeader>
-              </div>
-              <div className="flex-1 border-t bg-white overflow-hidden">
-                <iframe
-                  srcDoc={createFullPreviewHTML(template.html_content)}
-                  className="w-full h-full border-0"
-                  sandbox="allow-same-origin"
-                  style={{ 
-                    width: '100%', 
-                    height: 'calc(98vh - 120px)',
-                    border: 'none'
-                  }}
-                />
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
       </div>
 
       {/* Action Buttons */}
@@ -192,9 +180,9 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
             </div>
             <div className="flex-1 border-t bg-white overflow-hidden">
               <iframe
+                key={`full-${template.id}-${Date.now()}`}
                 srcDoc={createFullPreviewHTML(template.html_content)}
                 className="w-full h-full border-0"
-                sandbox="allow-same-origin"
                 style={{ 
                   width: '100%', 
                   height: 'calc(98vh - 120px)',
