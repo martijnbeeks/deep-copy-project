@@ -343,8 +343,123 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
       word_count: htmlContent.split(' ').length,
       html_templates_count: templateCount
     })
+
+    // Generate and store injected templates for each angle
+    await generateAndStoreInjectedTemplates(localJobId, result)
     
   } catch (error) {
     // Error storing results
+  }
+}
+
+async function generateAndStoreInjectedTemplates(jobId: string, result: any) {
+  try {
+    // Get job details to find template_id and advertorial_type
+    const jobResult = await query(`
+      SELECT template_id, advertorial_type, title
+      FROM jobs 
+      WHERE id = $1
+    `, [jobId])
+    
+    if (jobResult.rows.length === 0) {
+      console.log('Job not found for injected template generation:', jobId)
+      return
+    }
+    
+    const job = jobResult.rows[0]
+    
+    // Get the injectable template
+    const injectableTemplate = await getInjectableTemplateForJob(job)
+    
+    if (!injectableTemplate) {
+      console.log('No injectable template found for job:', jobId)
+      return
+    }
+    
+    // Check if we have swipe_results in the result
+    const apiResult = result.results || result
+    // Look for swipe_results in the correct location
+    const swipeResults = apiResult.swipe_results || 
+                        apiResult.full_result?.results?.swipe_results || 
+                        apiResult.full_result?.swipe_results ||
+                        []
+    
+    if (!swipeResults || !Array.isArray(swipeResults) || swipeResults.length === 0) {
+      console.log('No swipe_results found for job:', jobId)
+      return
+    }
+    
+    // Extract angles from swipe results
+    const angles = swipeResults.map((swipe, index) => {
+      if (swipe && typeof swipe === 'object') {
+        return swipe.angle || swipe.angle_name || `Angle ${index + 1}`
+      }
+      return `Angle ${index + 1}`
+    })
+    
+    console.log(`Generating injected templates for job ${jobId} with ${angles.length} angles`)
+    
+    // Create injected_templates table if it doesn't exist
+    await query(`
+      CREATE TABLE IF NOT EXISTS injected_templates (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+        angle_index INTEGER NOT NULL,
+        angle_name VARCHAR(255) NOT NULL,
+        html_content TEXT NOT NULL,
+        template_id VARCHAR(255),
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
+    
+    // Process each angle
+    for (let i = 0; i < angles.length; i++) {
+      const angle = angles[i]
+      const swipeResult = swipeResults[i]
+      
+      if (swipeResult) {
+        try {
+          // Import template injection utilities
+          const { extractContentFromSwipeResult, injectContentIntoTemplate } = await import('@/lib/utils/template-injection')
+          
+          // Extract content from swipe result
+          const contentData = extractContentFromSwipeResult(swipeResult)
+          
+          // Inject content into template
+          const injectedHtml = injectContentIntoTemplate(injectableTemplate.html_content, contentData)
+          
+          // Store the injected template
+          await query(`
+            INSERT INTO injected_templates (job_id, angle_index, angle_name, html_content)
+            VALUES ($1, $2, $3, $4)
+          `, [jobId, i + 1, angle || `Angle ${i + 1}`, injectedHtml])
+          
+          console.log(`✅ Generated injected template for angle ${i + 1}: ${angle}`)
+        } catch (error) {
+          console.error(`Error generating injected template for angle ${i + 1}:`, error)
+        }
+      }
+    }
+    
+    console.log(`✅ Generated ${apiResult.angles.length} injected templates for job ${jobId}`)
+  } catch (error) {
+    console.error('Error generating injected templates:', error)
+  }
+}
+
+async function getInjectableTemplateForJob(job: any) {
+  try {
+    // First try to get by template_id
+    if (job.template_id) {
+      const result = await query('SELECT * FROM injectable_templates WHERE id = $1', [job.template_id])
+      if (result.rows.length > 0) return result.rows[0]
+    }
+    
+    // Fallback to getting by advertorial_type
+    const result = await query('SELECT * FROM injectable_templates WHERE advertorial_type = $1 LIMIT 1', [job.advertorial_type])
+    return result.rows[0] || null
+  } catch (error) {
+    console.error('Error fetching injectable template:', error)
+    return null
   }
 }

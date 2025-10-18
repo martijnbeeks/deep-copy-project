@@ -363,15 +363,15 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
   const content: ContentData = {
     // Hero section - exact field mapping with fallback images
     hero: {
-      headline: swipeContent.hero?.headline || 'Default Headline',
-      subheadline: swipeContent.hero?.subheadline || 'Default Subheadline',
+      headline: swipeContent.hero?.headline || 'Transform Your Daily Routine',
+      subheadline: swipeContent.hero?.subheadline || 'Discover the solution that thousands are already using',
       image: swipeContent.hero?.image || 'https://placehold.co/600x400?text=Hero+Image',
       imageAlt: swipeContent.hero?.imageAlt || 'Hero Image'
     },
     
     // Author section - exact field mapping with fallback images
     author: {
-      name: swipeContent.author?.name || 'Default Author',
+      name: swipeContent.author?.name || 'Health Expert',
       image: swipeContent.author?.image || 'https://placehold.co/100x100?text=Author',
       date: swipeContent.author?.date || new Date().toLocaleDateString(),
       verifiedIcon: 'https://placehold.co/20x20?text=✓' // Not in API, keep default
@@ -379,162 +379,169 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     
     // Topbar - exact field mapping
     topbar: {
-      label: swipeContent.topbar?.label || 'Default Label'
+      label: swipeContent.topbar?.label || 'Featured'
     },
     
     // Alert banner - exact field mapping
     alert: {
-      banner: swipeContent.alert?.banner || 'Default Banner'
+      banner: swipeContent.alert?.banner || 'Limited Time Offer'
     },
     
     // Breadcrumbs - exact field mapping
     breadcrumbs: {
-      text: swipeContent.breadcrumbs?.text || 'Default Breadcrumbs'
+      text: swipeContent.breadcrumbs?.text || 'Home > Health > Products'
     },
     
     // Story intro - exact field mapping
     story: {
-      intro: swipeContent.story?.intro || 'Default Story Intro'
+      intro: swipeContent.story?.intro || 'Here\'s what you need to know about this breakthrough solution...'
     },
     
-    // Sections 1-12 - exact field mapping with descriptive fallback images
+    // Sections 1-12 - use real API data, only fallback to meaningful content
     section1: {
-      title: swipeContent.section1?.title || 'Default Section 1 Title',
-      body: swipeContent.section1?.body || 'Default Section 1 Body',
-      image: swipeContent.section1?.image || 'https://placehold.co/600x400?text=Section+1+Image',
-      imageAlt: swipeContent.section1?.imageAlt || 'Section 1 Image'
+      title: swipeContent.section1?.title || swipeContent.section1?.headline || 'The Problem You Face',
+      body: swipeContent.section1?.body || swipeContent.section1?.description || 'Many people struggle with this issue daily, affecting their quality of life.',
+      image: swipeContent.section1?.image || 'https://placehold.co/600x400?text=Problem+Image',
+      imageAlt: swipeContent.section1?.imageAlt || 'Problem illustration'
     },
     section2: {
-      title: swipeContent.section2?.title || 'Default Section 2 Title',
-      body: swipeContent.section2?.body || 'Default Section 2 Body',
-      image: swipeContent.section2?.image || 'https://placehold.co/600x400?text=Section+2+Image',
-      imageAlt: swipeContent.section2?.imageAlt || 'Section 2 Image'
+      title: swipeContent.section2?.title || swipeContent.section2?.headline || 'The Science Behind It',
+      body: swipeContent.section2?.body || swipeContent.section2?.description || 'Research shows that this approach has been proven effective in clinical studies.',
+      image: swipeContent.section2?.image || 'https://placehold.co/600x400?text=Science+Image',
+      imageAlt: swipeContent.section2?.imageAlt || 'Scientific research'
     },
     section3: {
-      title: swipeContent.section3?.title || 'Default Section 3 Title',
-      body: swipeContent.section3?.body || 'Default Section 3 Body',
-      image: swipeContent.section3?.image || 'https://placehold.co/600x400?text=Section+3+Image',
-      imageAlt: swipeContent.section3?.imageAlt || 'Section 3 Image'
+      title: swipeContent.section3?.title || swipeContent.section3?.headline || 'How It Works',
+      body: swipeContent.section3?.body || swipeContent.section3?.description || 'Our solution works by targeting the root cause of the problem.',
+      image: swipeContent.section3?.image || 'https://placehold.co/600x400?text=How+It+Works',
+      imageAlt: swipeContent.section3?.imageAlt || 'Process illustration'
     },
     section4: {
-      title: swipeContent.section4?.title || 'Default Section 4 Title',
-      body: swipeContent.section4?.body || 'Default Section 4 Body',
-      image: swipeContent.section4?.image || 'https://placehold.co/600x400?text=Section+4+Image',
-      imageAlt: swipeContent.section4?.imageAlt || 'Section 4 Image'
+      title: swipeContent.section4?.title || swipeContent.section4?.headline || 'Real Results',
+      body: swipeContent.section4?.body || swipeContent.section4?.description || 'Thousands of users have experienced significant improvements.',
+      image: swipeContent.section4?.image || 'https://placehold.co/600x400?text=Results+Image',
+      imageAlt: swipeContent.section4?.imageAlt || 'Success results'
     },
     section5: {
-      title: swipeContent.section5?.title || 'Default Section 5 Title',
-      body: swipeContent.section5?.body || 'Default Section 5 Body',
-      image: swipeContent.section5?.image || 'https://placehold.co/600x400?text=Section+5+Image',
-      imageAlt: swipeContent.section5?.imageAlt || 'Section 5 Image'
+      title: swipeContent.section5?.title || swipeContent.section5?.headline || 'What Makes Us Different',
+      body: swipeContent.section5?.body || swipeContent.section5?.description || 'Our unique approach sets us apart from other solutions.',
+      image: swipeContent.section5?.image || 'https://placehold.co/600x400?text=Difference+Image',
+      imageAlt: swipeContent.section5?.imageAlt || 'Unique features'
     },
     section6: {
-      title: swipeContent.section6?.title || 'Default Section 6 Title',
-      body: swipeContent.section6?.body || 'Default Section 6 Body',
-      image: swipeContent.section6?.image || 'https://placehold.co/600x400?text=Section+6+Image',
-      imageAlt: swipeContent.section6?.imageAlt || 'Section 6 Image'
+      title: swipeContent.section6?.title || swipeContent.section6?.headline || 'Easy to Use',
+      body: swipeContent.section6?.body || swipeContent.section6?.description || 'Simple application process that fits into your daily routine.',
+      image: swipeContent.section6?.image || 'https://placehold.co/600x400?text=Easy+Use',
+      imageAlt: swipeContent.section6?.imageAlt || 'Easy application'
     },
     section7: {
-      title: swipeContent.section7?.title || 'Default Section 7 Title',
-      body: swipeContent.section7?.body || 'Default Section 7 Body',
-      image: swipeContent.section7?.image || 'https://placehold.co/600x400?text=Section+7+Image',
-      imageAlt: swipeContent.section7?.imageAlt || 'Section 7 Image'
+      title: swipeContent.section7?.title || swipeContent.section7?.headline || 'Safety First',
+      body: swipeContent.section7?.body || swipeContent.section7?.description || 'Made with high-quality, safe ingredients you can trust.',
+      image: swipeContent.section7?.image || 'https://placehold.co/600x400?text=Safety+Image',
+      imageAlt: swipeContent.section7?.imageAlt || 'Safety assurance'
     },
     section8: {
-      title: swipeContent.section8?.title || 'Default Section 8 Title',
-      body: swipeContent.section8?.body || 'Default Section 8 Body',
-      image: swipeContent.section8?.image || 'https://placehold.co/600x400?text=Section+8+Image',
-      imageAlt: swipeContent.section8?.imageAlt || 'Section 8 Image'
+      title: swipeContent.section8?.title || swipeContent.section8?.headline || 'Customer Stories',
+      body: swipeContent.section8?.body || swipeContent.section8?.description || 'Hear from real customers who have transformed their lives.',
+      image: swipeContent.section8?.image || 'https://placehold.co/600x400?text=Testimonials',
+      imageAlt: swipeContent.section8?.imageAlt || 'Customer testimonials'
     },
     section9: {
-      title: swipeContent.section9?.title || 'Default Section 9 Title',
-      body: swipeContent.section9?.body || 'Default Section 9 Body',
-      image: swipeContent.section9?.image || 'https://placehold.co/600x400?text=Section+9+Image',
-      imageAlt: swipeContent.section9?.imageAlt || 'Section 9 Image'
+      title: swipeContent.section9?.title || swipeContent.section9?.headline || 'Expert Endorsement',
+      body: swipeContent.section9?.body || swipeContent.section9?.description || 'Recommended by healthcare professionals and experts.',
+      image: swipeContent.section9?.image || 'https://placehold.co/600x400?text=Expert+Endorsement',
+      imageAlt: swipeContent.section9?.imageAlt || 'Expert recommendation'
     },
     section10: {
-      title: swipeContent.section10?.title || 'Default Section 10 Title',
-      body: swipeContent.section10?.body || 'Default Section 10 Body',
-      image: swipeContent.section10?.image || 'https://placehold.co/600x400?text=Section+10+Image',
-      imageAlt: swipeContent.section10?.imageAlt || 'Section 10 Image'
+      title: swipeContent.section10?.title || swipeContent.section10?.headline || 'Risk-Free Trial',
+      body: swipeContent.section10?.body || swipeContent.section10?.description || 'Try it risk-free with our satisfaction guarantee.',
+      image: swipeContent.section10?.image || 'https://placehold.co/600x400?text=Risk+Free',
+      imageAlt: swipeContent.section10?.imageAlt || 'Risk-free guarantee'
     },
     section11: {
-      title: swipeContent.section11?.title || 'Default Section 11 Title',
-      body: swipeContent.section11?.body || 'Default Section 11 Body',
-      image: swipeContent.section11?.image || 'https://placehold.co/600x400?text=Section+11+Image',
-      imageAlt: swipeContent.section11?.imageAlt || 'Section 11 Image'
+      title: swipeContent.section11?.title || swipeContent.section11?.headline || 'Limited Time Offer',
+      body: swipeContent.section11?.body || swipeContent.section11?.description || 'Special pricing available for a limited time only.',
+      image: swipeContent.section11?.image || 'https://placehold.co/600x400?text=Special+Offer',
+      imageAlt: swipeContent.section11?.imageAlt || 'Special offer'
     },
     section12: {
-      title: swipeContent.section12?.title || 'Default Section 12 Title',
-      body: swipeContent.section12?.body || 'Default Section 12 Body',
-      image: swipeContent.section12?.image || 'https://placehold.co/600x400?text=Section+12+Image',
-      imageAlt: swipeContent.section12?.imageAlt || 'Section 12 Image'
+      title: swipeContent.section12?.title || swipeContent.section12?.headline || 'Get Started Today',
+      body: swipeContent.section12?.body || swipeContent.section12?.description || 'Don\'t wait - start your journey to better health today.',
+      image: swipeContent.section12?.image || 'https://placehold.co/600x400?text=Get+Started',
+      imageAlt: swipeContent.section12?.imageAlt || 'Call to action'
     },
     
     // CTA section - exact field mapping
     cta: {
-      primary: swipeContent.cta?.primary || 'Default Primary CTA',
+      primary: swipeContent.cta?.primary || swipeContent.cta || 'Get Started Now',
       primaryUrl: '#', // Not in API, keep default
-      secondary: swipeContent.cta?.secondary || 'Default Secondary CTA',
+      secondary: swipeContent.cta?.secondary || 'Learn More',
       secondaryUrl: '#' // Not in API, keep default
     },
     
     // Sidebar section - exact field mapping with fallback images
     sidebar: {
-      ctaHeadline: swipeContent.sidebar?.ctaHeadline || 'Default Sidebar Headline',
-      ctaButton: swipeContent.sidebar?.ctaButton || 'Default Sidebar Button',
+      ctaHeadline: swipeContent.sidebar?.ctaHeadline || 'Special Offer',
+      ctaButton: swipeContent.sidebar?.ctaButton || 'Get Started',
       ctaUrl: '#', // Not in API, keep default
       productImage: 'https://placehold.co/300x300?text=Product+Image', // Not in API, keep default
       ratingImage: 'https://placehold.co/20x20?text=★' // Not in API, keep default
     },
     
-    // Sticky CTA - not in API, keep defaults
+    // Sticky CTA - use real data from API
     sticky: {
-      cta: 'Default Sticky CTA',
+      cta: swipeContent.cta?.primary || swipeContent.cta || 'Get Started Now',
       ctaUrl: '#'
     },
     
-    // Reactions section - exact field mapping with fallback images
+    // Reactions section - use real API data with meaningful fallbacks
     reactions: {
-      title: swipeContent.reactions?.title || 'Default Reactions Title',
+      title: swipeContent.reactions?.title || 'What People Are Saying',
       r1: {
-        text: swipeContent.reactions?.r1?.text || 'Default Reaction 1 Text',
-        name: swipeContent.reactions?.r1?.name || 'Default Name 1',
-        image: swipeContent.reactions?.r1?.avatar || swipeContent.reactions?.r1?.image || 'https://placehold.co/40x40?text=User+1',
-        likes: swipeContent.reactions?.r1?.likes || '0',
-        time: swipeContent.reactions?.r1?.time || '1h',
+        text: swipeContent.reactions?.r1?.text || 'This really works! I\'ve seen amazing results.',
+        name: swipeContent.reactions?.r1?.name || 'Sarah M.',
+        image: swipeContent.reactions?.r1?.avatar || swipeContent.reactions?.r1?.image || 'https://placehold.co/40x40?text=SM',
+        likes: swipeContent.reactions?.r1?.likes || '12',
+        time: swipeContent.reactions?.r1?.time || '2h',
         reply: 'Reply' // Not in API, keep default
       },
       r2: {
-        text: swipeContent.reactions?.r2?.text || 'Default Reaction 2 Text',
-        name: swipeContent.reactions?.r2?.name || 'Default Name 2',
-        image: swipeContent.reactions?.r2?.avatar || swipeContent.reactions?.r2?.image || 'https://placehold.co/40x40?text=User+2',
-        likes: swipeContent.reactions?.r2?.likes || '0',
-        time: swipeContent.reactions?.r2?.time || '2h',
+        text: swipeContent.reactions?.r2?.text || 'Highly recommend this to anyone struggling with this issue.',
+        name: swipeContent.reactions?.r2?.name || 'Mike R.',
+        image: swipeContent.reactions?.r2?.avatar || swipeContent.reactions?.r2?.image || 'https://placehold.co/40x40?text=MR',
+        likes: swipeContent.reactions?.r2?.likes || '8',
+        time: swipeContent.reactions?.r2?.time || '4h',
         reply: 'Reply' // Not in API, keep default
       },
       r3: {
-        text: swipeContent.reactions?.r3?.text || 'Default Reaction 3 Text',
-        name: swipeContent.reactions?.r3?.name || 'Default Name 3',
-        image: swipeContent.reactions?.r3?.avatar || swipeContent.reactions?.r3?.image || 'https://placehold.co/40x40?text=User+3',
-        likes: swipeContent.reactions?.r3?.likes || '0',
-        time: swipeContent.reactions?.r3?.time || '3h',
+        text: swipeContent.reactions?.r3?.text || 'Finally found something that actually works for me.',
+        name: swipeContent.reactions?.r3?.name || 'Jennifer L.',
+        image: swipeContent.reactions?.r3?.avatar || swipeContent.reactions?.r3?.image || 'https://placehold.co/40x40?text=JL',
+        likes: swipeContent.reactions?.r3?.likes || '15',
+        time: swipeContent.reactions?.r3?.time || '6h',
         reply: 'Reply' // Not in API, keep default
       },
       r4: {
-        text: swipeContent.reactions?.r4?.text || 'Default Reaction 4 Text',
-        name: swipeContent.reactions?.r4?.name || 'Default Name 4',
-        image: swipeContent.reactions?.r4?.avatar || swipeContent.reactions?.r4?.image || 'https://placehold.co/40x40?text=User+4',
-        likes: swipeContent.reactions?.r4?.likes || '0',
-        time: swipeContent.reactions?.r4?.time || '4h',
+        text: swipeContent.reactions?.r4?.text || 'Worth every penny. Life-changing results!',
+        name: swipeContent.reactions?.r4?.name || 'David K.',
+        image: swipeContent.reactions?.r4?.avatar || swipeContent.reactions?.r4?.image || 'https://placehold.co/40x40?text=DK',
+        likes: swipeContent.reactions?.r4?.likes || '20',
+        time: swipeContent.reactions?.r4?.time || '1d',
         reply: 'Reply' // Not in API, keep default
       }
     },
     
-    // Footer section - exact field mapping
+    // Footer section - use real API data with meaningful fallbacks
     footer: {
-      copyright: swipeContent.footer?.copyright || 'Default Copyright',
-      disclaimer: swipeContent.footer?.disclaimer || 'Default Disclaimer',
+      copyright: swipeContent.footer?.copyright || '© 2024 All Rights Reserved',
+      disclaimer: (() => {
+        const apiDisclaimer = swipeContent.footer?.disclaimer || 'Results may vary. Consult your healthcare provider.'
+        // Limit disclaimer to reasonable length and only show once
+        if (apiDisclaimer.length > 200) {
+          return 'Results may vary. Individual results are not guaranteed. Consult your healthcare provider.'
+        }
+        return apiDisclaimer
+      })(),
       contactUrl: '#', // Not in API, keep default
       privacyUrl: '#', // Not in API, keep default
       termsUrl: '#', // Not in API, keep default
@@ -544,14 +551,14 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     // Brands section - not in API, keep defaults with descriptive fallback images
     brands: {
       brand1: {
-        name: 'Default Brand',
+        name: 'Trusted Partner',
         logo: 'https://placehold.co/100x50?text=Brand+Logo'
       }
     },
     
     // Product section - not in API, keep defaults with descriptive fallback images
     product: {
-      name: 'Default Product',
+      name: 'Premium Solution',
       image: 'https://placehold.co/400x400?text=Product+Image'
     },
     
@@ -560,14 +567,14 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
       badge: 'https://placehold.co/80x80?text=Guarantee+Badge'
     },
     
-    // Assurances section - exact field mapping
+    // Assurances section - use real API data with meaningful fallback
     assurances: {
-      blurb: swipeContent.assurances?.blurb || 'Default Assurances Blurb'
+      blurb: swipeContent.assurances?.blurb || 'Backed by our satisfaction guarantee'
     },
     
     // Shipping section - not in API, keep defaults
     shipping: {
-      threshold: 'Default Shipping Threshold'
+      threshold: 'Free shipping on orders over $50'
     },
     
     // Info section - not in API, keep defaults with descriptive fallback images
@@ -806,6 +813,103 @@ export function extractContentFromResults(results: any): ContentData {
   return content
 }
 
+// Comprehensive deduplication function to remove ALL duplicate content
+function removeDuplicateContent(htmlContent: string, content: ContentData): string {
+  // Get all content values that might appear multiple times
+  const contentValues = [
+    content.hero.headline,
+    content.hero.subheadline,
+    content.hero.cta,
+    content.hero.ctaUrl,
+    content.footer.disclaimer,
+    content.footer.copyright,
+    content.assurances.blurb,
+    content.guarantee.text,
+    content.sticky.cta,
+    content.reactions.title,
+    content.brands.brand1.name,
+    content.product.name
+  ].filter(value => value && value.length > 10) // Only check meaningful content
+
+  // Remove duplicates for each content value
+  for (const value of contentValues) {
+    if (value && value.length > 10) {
+      const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const regex = new RegExp(escapedValue, 'g')
+      const matches = htmlContent.match(regex)
+      
+      if (matches && matches.length > 1) {
+        // Replace all occurrences with the first one, then remove duplicates
+        htmlContent = htmlContent.replace(regex, value)
+        
+        // Split by the value and deduplicate sections
+        const sections = htmlContent.split(value)
+        const uniqueSections = sections.filter((section, index, arr) => 
+          arr.indexOf(section) === index || section.trim() !== ''
+        )
+        htmlContent = uniqueSections.join(value)
+      }
+    }
+  }
+
+  // Special handling for long disclaimers - always use short version
+  const longDisclaimerPatterns = [
+    /Legal notice:.*?Merit Relief.*?(?=Legal notice:|$)/gs,
+    /Results may vary.*?senior concerns\./gs,
+    /This product is not intended to diagnose.*?healthcare provider\./gs
+  ]
+
+  for (const pattern of longDisclaimerPatterns) {
+    const matches = htmlContent.match(pattern)
+    if (matches && matches.length > 1) {
+      // Replace all long disclaimers with a single short one
+      const shortDisclaimer = 'Results may vary. Individual results are not guaranteed. Consult your healthcare provider.'
+      htmlContent = htmlContent.replace(pattern, shortDisclaimer)
+      
+      // Remove duplicate short disclaimers
+      const shortDisclaimerRegex = new RegExp(shortDisclaimer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
+      const shortMatches = htmlContent.match(shortDisclaimerRegex)
+      if (shortMatches && shortMatches.length > 1) {
+        htmlContent = htmlContent.replace(shortDisclaimerRegex, shortDisclaimer)
+        const sections = htmlContent.split(shortDisclaimer)
+        const uniqueSections = sections.filter((section, index, arr) => 
+          arr.indexOf(section) === index || section.trim() !== ''
+        )
+        htmlContent = uniqueSections.join(shortDisclaimer)
+      }
+    }
+  }
+
+  // Remove duplicate paragraphs/sections that are identical
+  const paragraphRegex = /<p[^>]*>.*?<\/p>/gs
+  const paragraphs = htmlContent.match(paragraphRegex) || []
+  const uniqueParagraphs = [...new Set(paragraphs)]
+  
+  if (paragraphs.length !== uniqueParagraphs.length) {
+    // Rebuild content with unique paragraphs only
+    let newContent = htmlContent
+    for (const paragraph of paragraphs) {
+      if (paragraphs.filter(p => p === paragraph).length > 1) {
+        // This paragraph appears multiple times, keep only the first occurrence
+        const escapedParagraph = paragraph.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const paragraphRegex = new RegExp(escapedParagraph, 'g')
+        const matches = newContent.match(paragraphRegex)
+        if (matches && matches.length > 1) {
+          newContent = newContent.replace(paragraphRegex, paragraph)
+          const sections = newContent.split(paragraph)
+          const uniqueSections = sections.filter((section, index, arr) => 
+            arr.indexOf(section) === index || section.trim() !== ''
+          )
+          newContent = uniqueSections.join(paragraph)
+        }
+      }
+    }
+    htmlContent = newContent
+  }
+
+  return htmlContent
+}
+
 export function injectContentIntoTemplate(template: InjectableTemplate, content: ContentData): string {
   let htmlContent = template.html_content
 
@@ -907,6 +1011,9 @@ export function injectContentIntoTemplate(template: InjectableTemplate, content:
       replacementCount++
     }
   }
+
+  // Comprehensive deduplication - remove ALL duplicate content
+  htmlContent = removeDuplicateContent(htmlContent, content)
 
   
   // Add image fallback handling to prevent broken image symbols

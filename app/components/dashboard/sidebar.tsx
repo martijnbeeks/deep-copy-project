@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/stores/auth-store"
-import { LayoutDashboard, LogOut, PenTool, Loader2 } from "lucide-react"
+import { LayoutDashboard, LogOut, PenTool, Loader2, Grid3X3 } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -13,6 +13,7 @@ import { useState } from "react"
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Create", href: "/create", icon: PenTool },
+  { name: "Gallery", href: "/gallery", icon: Grid3X3 },
 ]
 
 export function Sidebar() {

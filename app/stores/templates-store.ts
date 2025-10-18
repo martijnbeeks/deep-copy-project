@@ -19,6 +19,7 @@ interface TemplatesActions {
   setError: (error: string | null) => void
   setFilters: (filters: Partial<TemplatesState['filters']>) => void
   fetchTemplates: () => Promise<void>
+  preloadTemplates: () => Promise<void>
   getTemplateById: (id: string) => Template | undefined
 }
 
@@ -38,6 +39,13 @@ export const useTemplatesStore = create<TemplatesState & TemplatesActions>((set,
   })),
 
   fetchTemplates: async () => {
+    const { templates, isLoading } = get()
+    
+    // Don't fetch if already loading or if templates are already loaded
+    if (isLoading || templates.length > 0) {
+      return
+    }
+    
     set({ isLoading: true, error: null })
     try {
       const { filters } = get()
@@ -56,6 +64,26 @@ export const useTemplatesStore = create<TemplatesState & TemplatesActions>((set,
         error: error instanceof Error ? error.message : 'Failed to fetch templates',
         isLoading: false 
       })
+    }
+  },
+
+  preloadTemplates: async () => {
+    const { templates, isLoading } = get()
+    
+    // Don't preload if already loading or if templates are already loaded
+    if (isLoading || templates.length > 0) {
+      return
+    }
+    
+    // Start loading in background without blocking UI
+    try {
+      const response = await fetch('/api/templates')
+      if (response.ok) {
+        const { templates } = await response.json()
+        set({ templates })
+      }
+    } catch (error) {
+      // Silently fail for preload - will be handled by regular fetchTemplates
     }
   },
 

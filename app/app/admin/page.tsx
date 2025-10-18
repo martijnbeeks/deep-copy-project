@@ -69,6 +69,7 @@ interface JobStatus {
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [isMigrating, setIsMigrating] = useState(false)
   const [users, setUsers] = useState<User[]>([])
   const [templates, setTemplates] = useState<Template[]>([])
   const [injectableTemplates, setInjectableTemplates] = useState<InjectableTemplate[]>([])
@@ -153,6 +154,44 @@ export default function AdminPage() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Migration function
+  const runMigration = async () => {
+    setIsMigrating(true)
+    try {
+      const response = await fetch('/api/migrate-jobs', {
+        method: 'POST',
+        headers: getAuthHeaders()
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        toast({
+          title: "Migration Successful",
+          description: `Processed ${result.summary.successCount} jobs successfully. ${result.summary.errorCount} failed.`,
+        })
+        
+        // Reload data to show updated stats
+        loadData()
+      } else {
+        toast({
+          title: "Migration Failed",
+          description: result.error || "Unknown error occurred",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Migration error:', error)
+      toast({
+        title: "Migration Error",
+        description: "Failed to run migration",
+        variant: "destructive"
+      })
+    } finally {
+      setIsMigrating(false)
     }
   }
 
@@ -543,6 +582,14 @@ export default function AdminPage() {
               <Button onClick={loadData} disabled={loading} className="flex items-center gap-2">
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
+              </Button>
+              <Button 
+                onClick={runMigration} 
+                disabled={isMigrating || loading} 
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+              >
+                <Database className={`h-4 w-4 ${isMigrating ? 'animate-spin' : ''}`} />
+                {isMigrating ? 'Migrating...' : 'Migrate Jobs'}
               </Button>
               <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2">
                 <LogOut className="h-4 w-4" />

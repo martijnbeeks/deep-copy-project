@@ -45,7 +45,7 @@ interface PipelineFormData {
 }
 
 export default function CreatePage() {
-  const { templates, fetchTemplates, selectedTemplate, setSelectedTemplate, isLoading: templatesLoading } = useTemplatesStore()
+  const { templates, fetchTemplates, selectedTemplate, setSelectedTemplate, isLoading: templatesLoading, preloadTemplates } = useTemplatesStore()
   const { createJob } = useJobsStore()
   const { user, isAuthenticated } = useAuthStore()
   const { isCollapsed, setIsCollapsed } = useSidebar()
@@ -76,13 +76,18 @@ export default function CreatePage() {
   // Avatar extraction dialog state
   const [showAvatarDialog, setShowAvatarDialog] = useState(false)
 
+  // Preload templates early for better UX
+  useEffect(() => {
+    preloadTemplates()
+  }, [])
+
   useEffect(() => {
     if (!isAuthenticated || !user) {
       router.push("/login")
       return
     }
     fetchTemplates()
-  }, [isAuthenticated, user, router, fetchTemplates])
+  }, [isAuthenticated, user, router])
 
   const validateStep = (step: number): boolean => {
     const newErrors: Partial<Record<keyof PipelineFormData, string>> = {}
@@ -106,7 +111,7 @@ export default function CreatePage() {
         newErrors.sales_page_url = "Please enter a valid URL"
       }
       if (!formData.advertorial_type) {
-        newErrors.advertorial_type = "Advertorial type is required"
+        newErrors.advertorial_type = "Please select a template to auto-determine content type"
       }
       if (!formData.target_approach) {
         newErrors.target_approach = "Target approach is required"
@@ -260,9 +265,15 @@ export default function CreatePage() {
 
   const handleTemplateChange = (templateId: string) => {
     const template = templates.find(t => t.id === templateId)
-    setFormData(prev => ({ ...prev, template_id: templateId }))
+    setFormData(prev => ({ 
+      ...prev, 
+      template_id: templateId,
+      // Auto-select advertorial type based on template category
+      advertorial_type: template?.category === 'listicle' ? 'listicle' : 'advertorial'
+    }))
     setSelectedTemplate(template || null)
     if (errors.template_id) setErrors(prev => ({ ...prev, template_id: undefined }))
+    if (errors.advertorial_type) setErrors(prev => ({ ...prev, advertorial_type: undefined }))
   }
 
   // Pagination logic
@@ -290,10 +301,10 @@ export default function CreatePage() {
 
   if (templatesLoading) {
     return (
-      <div className="flex h-screen bg-background">
+      <div className="flex h-screen bg-background overflow-x-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-auto md:ml-0">
-          <div className="p-4 md:p-6">
+        <main className="flex-1 overflow-hidden md:ml-0">
+          <div className="p-4 md:p-6 overflow-y-auto h-full">
             {/* Header skeleton */}
             <div className="mb-4 md:mb-6">
               <div className="flex items-start justify-between gap-4">
@@ -352,10 +363,10 @@ export default function CreatePage() {
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen bg-background">
+      <div className="flex h-screen bg-background overflow-x-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-auto md:ml-0">
-          <div className="p-4 md:p-6">
+        <main className="flex-1 overflow-hidden md:ml-0">
+          <div className="p-4 md:p-6 overflow-y-auto h-full">
             <div className="mb-4 md:mb-6">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
@@ -596,35 +607,33 @@ export default function CreatePage() {
                           )}
                         </div>
 
-                        {/* Content Type Selection */}
+                        {/* Content Type Display (Auto-selected based on template) */}
                         <div className="space-y-4">
                           <div className="space-y-2">
-                            <Label htmlFor="advertorial_type" className="text-base font-semibold text-foreground">
-                              Content Type <span className="text-destructive">*</span>
+                            <Label className="text-base font-semibold text-foreground">
+                              Content Type
                             </Label>
-                            <p className="text-sm text-muted-foreground">Choose the type of content you want to generate</p>
+                            <p className="text-sm text-muted-foreground">Automatically selected based on your chosen template</p>
                           </div>
-                          <Select
-                            value={formData.advertorial_type}
-                            onValueChange={(value) => {
-                              setFormData((prev) => ({ ...prev, advertorial_type: value }))
-                              if (errors.advertorial_type) setErrors((prev) => ({ ...prev, advertorial_type: undefined }))
-                            }}
-                            disabled={isLoading}
-                          >
-                            <SelectTrigger className={`h-12 text-base ${errors.advertorial_type ? "border-destructive focus-visible:ring-destructive" : "border-input focus-visible:ring-primary"}`}>
-                              <SelectValue placeholder="Select content type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="listicle" className="text-base py-3">Listicle - "Top 10" style articles</SelectItem>
-                              <SelectItem value="advertorial" className="text-base py-3">Advertorial - Editorial-style ads</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {errors.advertorial_type && (
-                            <p className="text-sm text-destructive flex items-center gap-2">
-                              <AlertCircle className="h-4 w-4" />
-                              {errors.advertorial_type}
-                            </p>
+                          
+                          {formData.advertorial_type ? (
+                            <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-3 h-3 rounded-full ${formData.advertorial_type === 'listicle' ? 'bg-blue-500' : 'bg-green-500'}`}></div>
+                                <span className="text-base font-medium capitalize">
+                                  {formData.advertorial_type === 'listicle' ? '📝 Listicle' : '📰 Advertorial'}
+                                </span>
+                              </div>
+                              <Badge variant="secondary" className="text-xs">
+                                {formData.advertorial_type === 'listicle' ? 'List-based content' : 'Editorial-style ads'}
+                              </Badge>
+                            </div>
+                          ) : (
+                            <div className="p-4 bg-muted/30 rounded-lg border border-dashed">
+                              <p className="text-sm text-muted-foreground text-center">
+                                Select a template above to auto-determine content type
+                              </p>
+                            </div>
                           )}
                           
                           {/* Dynamic Content Options Based on Type */}

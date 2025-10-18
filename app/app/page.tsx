@@ -7,7 +7,7 @@ import { ArrowRight, Zap, Target, TrendingUp, Search, Brain, Copy, Palette, BarC
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background overflow-x-hidden">
       <Hero />
       <Features />
       <HowItWorks />

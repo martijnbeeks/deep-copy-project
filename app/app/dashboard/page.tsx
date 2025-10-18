@@ -19,7 +19,7 @@ import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useSidebar } from "@/contexts/sidebar-context"
 import { useJobs, useCreateJob, useInvalidateJobs } from "@/lib/hooks/use-jobs"
-import { useSimplePolling } from "@/hooks/use-simple-polling"
+import { useAutoPolling } from "@/hooks/use-auto-polling"
 import { Job } from "@/lib/db/types"
 
 export default function DashboardPage() {
@@ -36,65 +36,14 @@ export default function DashboardPage() {
   const createJobMutation = useCreateJob()
   const invalidateJobs = useInvalidateJobs()
 
-  // Simple global polling - refreshes jobs list every 10 seconds
-  const { isPolling } = useSimplePolling({
-    enabled: true, // Always enabled when on dashboard
-    interval: 10000 // Poll every 10 seconds
-  })
+  // Use auto-polling for processing jobs (hits DeepCopy API directly)
+  const { processingJobsCount } = useAutoPolling()
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
       router.push("/login")
     }
   }, [isAuthenticated, user, router])
-
-  // Poll individual job statuses for processing jobs
-  useEffect(() => {
-    const pollProcessingJobs = async () => {
-      const processingJobs = jobs.filter(job =>
-        job.status === 'processing' || job.status === 'pending'
-      )
-
-      if (processingJobs.length === 0) return
-
-      for (const job of processingJobs) {
-        try {
-          const response = await fetch(`/api/jobs/${job.id}/status`)
-          if (response.ok) {
-            const data = await response.json()
-
-            // If job completed, refresh the jobs list
-            if (data.status === 'completed' || data.status === 'failed') {
-              refetch()
-            }
-          }
-        } catch (error) {
-          // Silently handle polling errors
-        }
-      }
-    }
-
-    // Poll processing jobs every 15 seconds
-    const interval = setInterval(pollProcessingJobs, 15000)
-
-    // Poll immediately
-    pollProcessingJobs()
-
-    return () => clearInterval(interval)
-  }, [jobs, refetch])
-
-  // Auto-refresh for processing jobs every 10 seconds
-  useEffect(() => {
-    const hasProcessingJobs = jobs.some((job: any) => job.status === 'processing' || job.status === 'pending')
-
-    if (hasProcessingJobs) {
-      const interval = setInterval(() => {
-        invalidateJobs()
-      }, 10000) // Refresh every 10 seconds
-
-      return () => clearInterval(interval)
-    }
-  }, [jobs, invalidateJobs])
 
   // Filter jobs based on search and status
   const filteredJobs = jobs.filter((job: any) => {
