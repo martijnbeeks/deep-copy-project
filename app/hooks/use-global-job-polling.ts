@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { deepCopyClient } from '@/lib/api/deepcopy-client'
 
 interface GlobalJobPollingOptions {
   interval?: number
@@ -44,29 +45,15 @@ export function useGlobalJobPolling({
     })
   }, [])
 
-  // Check a single job status
+  // Check a single job status - hits DeepCopy API directly
   const checkJobStatus = useCallback(async (job: PollingJob) => {
     try {
+      console.log(`🔍 Global polling: Checking DeepCopy API for job ${job.id}`)
       
+      // Hit DeepCopy API directly for status
+      const data = await deepCopyClient.getJobStatus(job.id)
       
-      const response = await fetch(`/api/jobs/${job.id}/status`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      })
-
-      if (!response.ok) {
-        if (response.status === 400) {
-          
-          removeJobFromPolling(job.id)
-          return
-        }
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      
+      console.log(`📊 DeepCopy API response for job ${job.id}:`, data.status)
 
       // Update job in polling list
       setPollingJobs(prev => {
@@ -90,18 +77,19 @@ export function useGlobalJobPolling({
 
       // If job completed, remove from polling and call completion callback
       if (data.status === 'completed') {
-        
+        console.log(`✅ Global polling: Job ${job.id} completed via DeepCopy API`)
         removeJobFromPolling(job.id)
         if (onJobComplete) {
           onJobComplete(job.id, data)
         }
       } else if (data.status === 'failed') {
-        
+        console.log(`❌ Global polling: Job ${job.id} failed via DeepCopy API`)
         removeJobFromPolling(job.id)
       }
-
+      
     } catch (error) {
-      console.error(`Error in global polling for job ${job.id}:`, error)
+      console.error(`❌ Global polling error for job ${job.id}:`, error)
+      // Don't remove job from polling on error, just log it
     }
   }, [onJobUpdate, onJobComplete, removeJobFromPolling])
 

@@ -74,10 +74,12 @@ export default function RootLayout({
                     <QueryProvider>
                       <AppProvider>
                         <SidebarProvider>
-                          <PageTransition>
-                            {children}
-                          </PageTransition>
-                          <Toaster />
+                          <GlobalPollingProvider>
+                            <PageTransition>
+                              {children}
+                            </PageTransition>
+                            <Toaster />
+                          </GlobalPollingProvider>
                         </SidebarProvider>
                       </AppProvider>
                     </QueryProvider>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Eye } from "lucide-react"
 
@@ -20,50 +20,53 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
   const [isLoaded, setIsLoaded] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
-  const createSmallPreviewHTML = (htmlContent: string) => {
-    // Fix broken image URLs and use the exact same HTML as full preview, just add scaling
-    let processedContent = htmlContent
-      .replace(/https?:\/\/[^\s"']*FFFFFF\?[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
-      .replace(/https?:\/\/[^\s"']*placehold\.co\/[^"'\s]*FFFFFF[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
-      .replace(/src="[^"]*FFFFFF[^"]*"/g, 'src="https://placehold.co/600x400?text=Image"')
-      .replace(/src='[^']*FFFFFF[^']*'/g, "src='https://placehold.co/600x400?text=Image'")
-    
-    // Wrap in basic HTML structure with Tailwind CDN
-    const wrappedContent = `<!DOCTYPE html>
+  const createSmallPreviewHTML = useMemo(() => {
+    return (htmlContent: string) => {
+      // Fix broken image URLs and use the exact same HTML as full preview, just add scaling
+      let processedContent = htmlContent
+        .replace(/https?:\/\/[^\s"']*FFFFFF\?[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
+        .replace(/https?:\/\/[^\s"']*placehold\.co\/[^"'\s]*FFFFFF[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
+        .replace(/src="[^"]*FFFFFF[^"]*"/g, 'src="https://placehold.co/600x400?text=Image"')
+        .replace(/src='[^']*FFFFFF[^']*'/g, "src='https://placehold.co/600x400?text=Image'")
+      
+      // Wrap in basic HTML structure with Tailwind CDN
+      const wrappedContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Template Preview</title>
-  <script src="https://cdn.tailwindcss.com?v=${Date.now()}"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
   ${processedContent}
 </body>
 </html>`
-    
-    return wrappedContent.replace(
-      /<body([^>]*)>/i,
-      '<body$1 style="transform: scale(0.3); transform-origin: top left; width: 333%; height: 333%; overflow: hidden;">'  
-    )
-  }
+      
+      return wrappedContent.replace(
+        /<body([^>]*)>/i,
+        '<body$1 style="transform: scale(0.3); transform-origin: top left; width: 333%; height: 333%; overflow: hidden;">'  
+      )
+    }
+  }, [])
 
-  const createFullPreviewHTML = (htmlContent: string) => {
-    // Use the same logic as small preview but without scaling - just full size
-    let processedContent = htmlContent
-      .replace(/https?:\/\/[^\s"']*FFFFFF\?[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
-      .replace(/https?:\/\/[^\s"']*placehold\.co\/[^"'\s]*FFFFFF[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
-      .replace(/src="[^"]*FFFFFF[^"]*"/g, 'src="https://placehold.co/600x400?text=Image"')
-      .replace(/src='[^']*FFFFFF[^']*'/g, "src='https://placehold.co/600x400?text=Image'")
-    
-    // Wrap in basic HTML structure with Tailwind CDN - same as small preview but no scaling
-    const wrappedContent = `<!DOCTYPE html>
+  const createFullPreviewHTML = useMemo(() => {
+    return (htmlContent: string) => {
+      // Use the same logic as small preview but without scaling - just full size
+      let processedContent = htmlContent
+        .replace(/https?:\/\/[^\s"']*FFFFFF\?[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
+        .replace(/https?:\/\/[^\s"']*placehold\.co\/[^"'\s]*FFFFFF[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
+        .replace(/src="[^"]*FFFFFF[^"]*"/g, 'src="https://placehold.co/600x400?text=Image"')
+        .replace(/src='[^']*FFFFFF[^']*'/g, "src='https://placehold.co/600x400?text=Image'")
+      
+      // Wrap in basic HTML structure with Tailwind CDN - same as small preview but no scaling
+      const wrappedContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Template Preview</title>
-  <script src="https://cdn.tailwindcss.com?v=${Date.now()}"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { 
       margin: 0; 
@@ -97,9 +100,10 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
   </script>
 </body>
 </html>`
-    
-    return wrappedContent
-  }
+      
+      return wrappedContent
+    }
+  }, [])
 
   useEffect(() => {
     const iframe = iframeRef.current
@@ -140,7 +144,7 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
       <div className="flex-1 relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border">
         
         <iframe
-          key={`${template.id}-${Date.now()}`}
+          key={template.id}
           ref={iframeRef}
           srcDoc={createSmallPreviewHTML(template.html_content)}
           className="w-full h-full border-0"
@@ -180,7 +184,7 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
             </div>
             <div className="flex-1 border-t bg-white overflow-hidden">
               <iframe
-                key={`full-${template.id}-${Date.now()}`}
+                key={`full-${template.id}`}
                 srcDoc={createFullPreviewHTML(template.html_content)}
                 className="w-full h-full border-0"
                 style={{ 

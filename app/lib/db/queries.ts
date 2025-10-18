@@ -95,6 +95,67 @@ export const checkDuplicateJob = async (userId: string, title: string): Promise<
   return result.rows[0] || null
 }
 
+export const getJobsByUserIdWithResults = async (userId: string, filters: { status?: string; search?: string; page?: number; limit?: number; offset?: number } = {}): Promise<JobWithResult[]> => {
+  let sql = `
+    SELECT j.*, t.name as template_name, t.description as template_description, t.html_content as template_html_content, t.category as template_category,
+           r.id as result_id, r.html_content as result_html_content, r.metadata as result_metadata, r.created_at as result_created_at
+    FROM jobs j
+    LEFT JOIN templates t ON j.template_id = t.id
+    LEFT JOIN results r ON j.id = r.job_id
+    WHERE j.user_id = $1
+  `
+  const params: any[] = [userId]
+  const conditions: string[] = []
+
+  if (filters.status) {
+    conditions.push('j.status = $' + (params.length + 1))
+    params.push(filters.status)
+  }
+
+  if (filters.search) {
+    conditions.push('(j.title ILIKE $' + (params.length + 1) + ' OR j.brand_info ILIKE $' + (params.length + 1) + ')')
+    params.push(`%${filters.search}%`)
+  }
+
+  if (conditions.length > 0) {
+    sql += ' AND ' + conditions.join(' AND ')
+  }
+
+  sql += ' ORDER BY j.created_at DESC'
+
+  // Add pagination
+  if (filters.limit) {
+    sql += ' LIMIT $' + (params.length + 1)
+    params.push(filters.limit)
+  }
+
+  if (filters.offset) {
+    sql += ' OFFSET $' + (params.length + 1)
+    params.push(filters.offset)
+  }
+
+  const result = await query(sql, params)
+  return result.rows.map(row => ({
+    ...row,
+    template: row.template_id ? {
+      id: row.template_id,
+      name: row.template_name,
+      description: row.template_description,
+      html_content: row.template_html_content,
+      category: row.template_category,
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    } : undefined,
+    result: row.result_id ? {
+      id: row.result_id,
+      job_id: row.id,
+      html_content: row.result_html_content,
+      metadata: row.result_metadata,
+      created_at: row.result_created_at
+    } : undefined
+  }))
+}
+
 export const getJobsByUserId = async (userId: string, filters: { status?: string; search?: string } = {}): Promise<JobWithTemplate[]> => {
   let sql = `
     SELECT j.*, t.name as template_name, t.description as template_description, t.html_content as template_html_content, t.category as template_category

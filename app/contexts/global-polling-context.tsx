@@ -27,7 +27,7 @@ export function GlobalPollingProvider({ children }: { children: React.ReactNode 
     } = useGlobalJobPolling({
       interval: 10000, // Poll every 10 seconds
       onJobUpdate: (jobId, status, progress) => {
-        `)
+        console.log(`🔄 Global polling: Job ${jobId} status updated to ${status}`)
         // Refresh jobs list to show updated status
         try {
           fetchJobs()
@@ -36,7 +36,7 @@ export function GlobalPollingProvider({ children }: { children: React.ReactNode 
         }
       },
       onJobComplete: (jobId, result) => {
-        
+        console.log(`✅ Global polling: Job ${jobId} completed`)
         // Refresh jobs list to show completed status
         try {
           fetchJobs()
@@ -46,8 +46,16 @@ export function GlobalPollingProvider({ children }: { children: React.ReactNode 
       }
     })
 
-    // Don't auto-start polling to avoid issues
-    // Polling will start when jobs are added via addJobToPolling
+    // Auto-start polling when there are jobs to poll
+    useEffect(() => {
+      if (pollingJobsCount > 0 && !isPolling) {
+        console.log('🚀 Starting global polling for', pollingJobsCount, 'jobs')
+        startPolling()
+      } else if (pollingJobsCount === 0 && isPolling) {
+        console.log('⏹️ Stopping global polling - no jobs to poll')
+        stopPolling()
+      }
+    }, [pollingJobsCount, isPolling, startPolling, stopPolling])
 
     return (
       <GlobalPollingContext.Provider value={{
