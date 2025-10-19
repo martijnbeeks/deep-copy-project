@@ -6,11 +6,11 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🔄 Server-side polling: Starting...')
     
-    // Get all processing jobs
+    // Get all jobs that need polling (submitted, pending, processing)
     const jobs = await query(`
       SELECT id, status, progress, updated_at
       FROM jobs 
-      WHERE status IN ('processing', 'pending')
+      WHERE UPPER(status) IN ('SUBMITTED', 'PENDING', 'PROCESSING')
       ORDER BY updated_at DESC
     `)
     
