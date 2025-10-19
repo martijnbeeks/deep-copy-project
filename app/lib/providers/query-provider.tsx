@@ -8,13 +8,13 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 5 * 60 * 1000, // Data is fresh for 5 minutes
-        gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+        staleTime: 0, // Data is never stale - always refetch
+        gcTime: 0, // Don't keep in cache
         retry: 1,
-        refetchOnWindowFocus: false, // Don't refetch on window focus
-        refetchOnMount: false, // Don't refetch on mount if data is fresh
+        refetchOnWindowFocus: true, // Always refetch on window focus
+        refetchOnMount: true, // Always refetch on mount
         refetchOnReconnect: true, // Refetch when reconnected
-        // Don't cache authentication-related queries
+        // Don't cache any queries
         meta: {
           persist: false
         }

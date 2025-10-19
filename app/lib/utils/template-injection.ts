@@ -379,7 +379,8 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     
     // Topbar - exact field mapping
     topbar: {
-      label: swipeContent.topbar?.label || 'Featured'
+      label: swipeContent.topbar?.label || 'Featured',
+      image: swipeContent.topbar?.image || 'https://placehold.co/50x50?text=Icon'
     },
     
     // Alert banner - exact field mapping
@@ -473,25 +474,25 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     
     // CTA section - exact field mapping
     cta: {
-      primary: swipeContent.cta?.primary || swipeContent.cta || 'Get Started Now',
-      primaryUrl: '#', // Not in API, keep default
+      primary: swipeContent.cta?.primary || swipeContent.cta || swipeContent.hero?.cta || 'Get Started Now',
+      primaryUrl: swipeContent.cta?.primaryUrl || swipeContent.hero?.ctaUrl || '#order',
       secondary: swipeContent.cta?.secondary || 'Learn More',
-      secondaryUrl: '#' // Not in API, keep default
+      secondaryUrl: swipeContent.cta?.secondaryUrl || '#learn'
     },
     
-    // Sidebar section - exact field mapping with fallback images
+    // Sidebar section - exact field mapping with comprehensive fallbacks
     sidebar: {
-      ctaHeadline: swipeContent.sidebar?.ctaHeadline || 'Special Offer',
-      ctaButton: swipeContent.sidebar?.ctaButton || 'Get Started',
-      ctaUrl: '#', // Not in API, keep default
-      productImage: 'https://placehold.co/300x300?text=Product+Image', // Not in API, keep default
-      ratingImage: 'https://placehold.co/20x20?text=★' // Not in API, keep default
+      ctaHeadline: swipeContent.sidebar?.ctaHeadline || swipeContent.cta?.primary || 'Special Offer',
+      ctaButton: swipeContent.sidebar?.ctaButton || swipeContent.cta?.primary || 'Get Started',
+      ctaUrl: swipeContent.sidebar?.ctaUrl || swipeContent.cta?.primaryUrl || '#order',
+      productImage: swipeContent.sidebar?.productImage || swipeContent.product?.image || 'https://placehold.co/300x300?text=Product+Image',
+      ratingImage: swipeContent.sidebar?.ratingImage || 'https://placehold.co/20x20?text=★'
     },
     
-    // Sticky CTA - use real data from API
+    // Sticky CTA - use real data from API with comprehensive fallbacks
     sticky: {
-      cta: swipeContent.cta?.primary || swipeContent.cta || 'Get Started Now',
-      ctaUrl: '#'
+      cta: swipeContent.sticky?.cta || swipeContent.cta?.primary || swipeContent.cta || 'Get Started Now',
+      ctaUrl: swipeContent.sticky?.ctaUrl || swipeContent.cta?.primaryUrl || '#order'
     },
     
     // Reactions section - use real API data with meaningful fallbacks
@@ -528,6 +529,30 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
         likes: swipeContent.reactions?.r4?.likes || '20',
         time: swipeContent.reactions?.r4?.time || '1d',
         reply: 'Reply' // Not in API, keep default
+      },
+      r5: {
+        text: swipeContent.reactions?.r5?.text || 'Amazing product! Highly recommended.',
+        name: swipeContent.reactions?.r5?.name || 'Lisa P.',
+        image: swipeContent.reactions?.r5?.avatar || swipeContent.reactions?.r5?.image || 'https://placehold.co/40x40?text=LP',
+        likes: swipeContent.reactions?.r5?.likes || '10',
+        time: swipeContent.reactions?.r5?.time || '10h',
+        reply: 'Reply'
+      },
+      r6: {
+        text: swipeContent.reactions?.r6?.text || 'This changed my life completely.',
+        name: swipeContent.reactions?.r6?.name || 'Tom W.',
+        image: swipeContent.reactions?.r6?.avatar || swipeContent.reactions?.r6?.image || 'https://placehold.co/40x40?text=TW',
+        likes: swipeContent.reactions?.r6?.likes || '18',
+        time: swipeContent.reactions?.r6?.time || '12h',
+        reply: 'Reply'
+      },
+      r7: {
+        text: swipeContent.reactions?.r7?.text || 'Best investment I\'ve made for my health.',
+        name: swipeContent.reactions?.r7?.name || 'Emma S.',
+        image: swipeContent.reactions?.r7?.avatar || swipeContent.reactions?.r7?.image || 'https://placehold.co/40x40?text=ES',
+        likes: swipeContent.reactions?.r7?.likes || '14',
+        time: swipeContent.reactions?.r7?.time || '14h',
+        reply: 'Reply'
       }
     },
     
@@ -998,9 +1023,7 @@ export function injectContentIntoTemplate(template: InjectableTemplate, content:
     '{{content.assurances.blurb}}': content.assurances.blurb,
     '{{content.footer.copyright}}': content.footer.copyright,
     '{{content.footer.disclaimer}}': content.footer.disclaimer,
-    '{{content.shipping.threshold}}': content.shipping.threshold,
-    '{{content.brands.brand1.name}}': content.brands.brand1.name,
-    '{{content.brands.brand1.logo}}': content.brands.brand1.logo,
+    '{{content.shipping.threshold}}': content.shipping.threshold
   }
 
   // Apply all replacements
@@ -1014,6 +1037,9 @@ export function injectContentIntoTemplate(template: InjectableTemplate, content:
 
   // Comprehensive deduplication - remove ALL duplicate content
   htmlContent = removeDuplicateContent(htmlContent, content)
+  
+  // Additional aggressive deduplication
+  htmlContent = aggressiveDeduplication(htmlContent)
 
   
   // Add image fallback handling to prevent broken image symbols
@@ -1031,35 +1057,114 @@ export function injectContentIntoTemplate(template: InjectableTemplate, content:
   return htmlContent
 }
 
-// Create appropriate fallback image URL based on context
-function createFallbackImageUrl(altText: string, originalSrc: string): string {
-  // Determine image type and dimensions based on context
-  let dimensions = '600x400'
-  let text = altText || 'Image'
+// Aggressive deduplication function to remove all duplicates
+function aggressiveDeduplication(htmlContent: string): string {
+  console.log('🧹 Starting aggressive deduplication...')
   
-  // Adjust dimensions based on image context
-  if (altText.toLowerCase().includes('avatar') || altText.toLowerCase().includes('profile')) {
-    dimensions = '100x100'
-    text = 'Avatar'
-  } else if (altText.toLowerCase().includes('icon') || altText.toLowerCase().includes('logo')) {
-    dimensions = '50x50'
-    text = 'Icon'
-  } else if (altText.toLowerCase().includes('thumbnail') || altText.toLowerCase().includes('small')) {
-    dimensions = '200x150'
-    text = 'Thumbnail'
-  } else if (altText.toLowerCase().includes('banner') || altText.toLowerCase().includes('hero')) {
-    dimensions = '800x400'
-    text = 'Banner'
-  } else if (altText.toLowerCase().includes('rating') || altText.toLowerCase().includes('star')) {
-    dimensions = '20x20'
-    text = '★'
+  let cleanedContent = htmlContent
+  
+  // 1. Remove duplicate legal notices/disclaimers (most common issue)
+  const disclaimerPatterns = [
+    /Legal notice:.*?senior concerns\./gs,
+    /Results may vary.*?healthcare provider\./gs,
+    /This product is not intended to diagnose.*?healthcare provider\./gs,
+    /Individual results vary.*?senior concerns\./gs,
+    /Merit Relief is an over.*?senior concerns\./gs,
+    /The statements on this page.*?senior concerns\./gs,
+    /The Mineral Delivery System.*?complete details\./gs
+  ]
+  
+  for (const pattern of disclaimerPatterns) {
+    const matches = cleanedContent.match(pattern)
+    if (matches && matches.length > 1) {
+      console.log(`🗑️ Removing ${matches.length - 1} duplicate disclaimers`)
+      // Keep only the first occurrence
+      cleanedContent = cleanedContent.replace(pattern, (match, offset) => {
+        return offset === cleanedContent.indexOf(match) ? match : ''
+      })
+    }
   }
   
-  // Clean up text for URL
-  text = text.replace(/[^a-zA-Z0-9\s]/g, '').substring(0, 20)
+  // 2. Remove duplicate CTAs
+  const ctaPatterns = [
+    /Try Merit Relief.*?Today/gi,
+    /Get Started Now/gi,
+    /Order Now/gi,
+    /Limited.*?trial/gi,
+    /Risk.*?Free/gi
+  ]
   
-  return `https://placehold.co/${dimensions}?text=${encodeURIComponent(text)}`
+  for (const pattern of ctaPatterns) {
+    const matches = cleanedContent.match(pattern)
+    if (matches && matches.length > 1) {
+      console.log(`🗑️ Removing ${matches.length - 1} duplicate CTAs`)
+      // Keep only the first occurrence
+      cleanedContent = cleanedContent.replace(pattern, (match, offset) => {
+        return offset === cleanedContent.indexOf(match) ? match : ''
+      })
+    }
+  }
+  
+  // 3. Remove duplicate paragraphs (same content appearing multiple times)
+  const paragraphs = cleanedContent.split(/\n\s*\n/).filter(p => p.trim().length > 50)
+  const uniqueParagraphs = []
+  const seenParagraphs = new Set()
+  
+  for (const paragraph of paragraphs) {
+    const normalized = paragraph.trim().toLowerCase().replace(/\s+/g, ' ')
+    if (!seenParagraphs.has(normalized)) {
+      seenParagraphs.add(normalized)
+      uniqueParagraphs.push(paragraph)
+    } else {
+      console.log('🗑️ Removing duplicate paragraph')
+    }
+  }
+  
+  cleanedContent = uniqueParagraphs.join('\n\n')
+  
+  // 4. Remove duplicate sections
+  const sections = cleanedContent.split(/<section|<div class="section"|<div class="content"/gi)
+  const uniqueSections = []
+  const seenSections = new Set()
+  
+  for (const section of sections) {
+    if (section.trim().length > 100) {
+      const normalized = section.trim().toLowerCase().replace(/\s+/g, ' ')
+      if (!seenSections.has(normalized)) {
+        seenSections.add(normalized)
+        uniqueSections.push(section)
+      } else {
+        console.log('🗑️ Removing duplicate section')
+      }
+    }
+  }
+  
+  cleanedContent = uniqueSections.join('')
+  
+  // 5. Remove duplicate buttons/CTAs in HTML
+  const buttonPattern = /<button[^>]*>.*?<\/button>/gi
+  const buttons = cleanedContent.match(buttonPattern) || []
+  const uniqueButtons = [...new Set(buttons)]
+  
+  if (buttons.length !== uniqueButtons.length) {
+    console.log(`🗑️ Removing ${buttons.length - uniqueButtons.length} duplicate buttons`)
+    // Keep only unique buttons
+    let newContent = cleanedContent
+    for (const button of buttons) {
+      if (buttons.filter(b => b === button).length > 1) {
+        // This button appears multiple times, keep only the first occurrence
+        const escapedButton = button.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const buttonRegex = new RegExp(escapedButton, 'g')
+        newContent = newContent.replace(buttonRegex, button)
+      }
+    }
+    cleanedContent = newContent
+  }
+  
+  console.log('✅ Aggressive deduplication completed')
+  return cleanedContent
 }
+
 
 // Add image fallback handling to prevent broken image symbols
 function addImageFallbacks(htmlContent: string): string {

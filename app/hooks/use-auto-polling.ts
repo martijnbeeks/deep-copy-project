@@ -10,8 +10,20 @@ import { useJobs } from '@/lib/hooks/use-jobs'
  * processing jobs are monitored globally
  */
 export function useAutoPolling() {
-  const { addJobToPolling, removeJobFromPolling } = useGlobalPolling()
   const { data: jobs = [] } = useJobs()
+  
+  // Try to get global polling context, but don't fail if it's not available
+  let addJobToPolling: (jobId: string, status: string, progress?: number) => void = () => {}
+  let removeJobFromPolling: (jobId: string) => void = () => {}
+  
+  try {
+    const globalPolling = useGlobalPolling()
+    addJobToPolling = globalPolling.addJobToPolling
+    removeJobFromPolling = globalPolling.removeJobFromPolling
+    console.log('✅ useAutoPolling: Global polling context available')
+  } catch (error) {
+    console.log('⚠️ useAutoPolling: Global polling context not available, using fallback')
+  }
 
   useEffect(() => {
     // Add all processing jobs to global polling
@@ -19,10 +31,11 @@ export function useAutoPolling() {
       job.status === 'processing' || job.status === 'pending'
     )
 
-    console.log(`🔄 Auto-polling: Found ${processingJobs.length} processing jobs`)
+    console.log(`🔄 Auto-polling: Found ${processingJobs.length} processing jobs:`, processingJobs.map(j => `${j.id}(${j.status})`))
 
     // Add each processing job to global polling
     processingJobs.forEach(job => {
+      console.log(`➕ Adding job ${job.id} to global polling (${job.status})`)
       addJobToPolling(job.id, job.status, job.progress)
     })
 
@@ -32,6 +45,7 @@ export function useAutoPolling() {
     )
 
     completedJobs.forEach(job => {
+      console.log(`➖ Removing completed job ${job.id} from global polling (${job.status})`)
       removeJobFromPolling(job.id)
     })
 

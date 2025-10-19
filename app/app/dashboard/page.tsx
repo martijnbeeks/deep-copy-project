@@ -13,13 +13,13 @@ import { EmptyState } from "@/components/ui/empty-state"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
-import { BarChart3, FileText, Clock, TrendingUp, AlertCircle, Zap, Menu, ChevronLeft, ChevronRight, Eye, Search, Filter, Calendar } from "lucide-react"
+import { BarChart3, FileText, Clock, TrendingUp, AlertCircle, Zap, Menu, ChevronLeft, ChevronRight, Eye, Search, Filter, Calendar, RefreshCw } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useSidebar } from "@/contexts/sidebar-context"
 import { useJobs, useCreateJob, useInvalidateJobs } from "@/lib/hooks/use-jobs"
-import { useAutoPolling } from "@/hooks/use-auto-polling"
+import { useSimplePolling } from "@/hooks/use-simple-polling"
 import { Job } from "@/lib/db/types"
 
 export default function DashboardPage() {
@@ -36,8 +36,36 @@ export default function DashboardPage() {
   const createJobMutation = useCreateJob()
   const invalidateJobs = useInvalidateJobs()
 
-  // Use auto-polling for processing jobs (hits DeepCopy API directly)
-  const { processingJobsCount } = useAutoPolling()
+  // Use simple polling for processing jobs (hits DeepCopy API directly)
+  const { isPolling } = useSimplePolling(jobs)
+  
+  // Count processing jobs
+  const processingJobsCount = jobs.filter(job => 
+    job.status === 'processing' || job.status === 'pending'
+  ).length
+  
+  // Log when jobs data changes
+  useEffect(() => {
+    const processingJobs = jobs.filter(j => j.status === 'processing' || j.status === 'pending')
+    const completedJobs = jobs.filter(j => j.status === 'completed')
+    const failedJobs = jobs.filter(j => j.status === 'failed')
+    
+    console.log(`📊 Dashboard: Jobs updated - ${jobs.length} total`)
+    console.log(`  - Processing: ${processingJobs.length}`)
+    console.log(`  - Completed: ${completedJobs.length}`)
+    console.log(`  - Failed: ${failedJobs.length}`)
+    
+    // Log ALL jobs with their statuses for debugging
+    console.log(`📋 All jobs:`, jobs.map(j => ({ id: j.id, title: j.title, status: j.status })))
+    
+    if (processingJobs.length > 0) {
+      console.log(`🔄 Processing jobs:`, processingJobs.map(j => ({ id: j.id, title: j.title, status: j.status })))
+    }
+    
+    if (failedJobs.length > 0) {
+      console.log(`❌ Failed jobs:`, failedJobs.map(j => ({ id: j.id, title: j.title, status: j.status })))
+    }
+  }, [jobs])
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -161,6 +189,17 @@ export default function DashboardPage() {
                   <p className="text-sm md:text-base text-muted-foreground mt-1">Welcome back, {user.name}! Create amazing content with AI.</p>
                 </div>
                 <div className="flex gap-2">
+                  {/* Refresh button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetch()}
+                    className="h-8 w-8 p-0"
+                    title={isPolling ? "Polling active - jobs updating automatically" : "Refresh jobs"}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isPolling ? 'animate-spin' : ''}`} />
+                  </Button>
+                  
                   {/* Mobile menu button */}
                   <Button
                     variant="outline"
@@ -202,13 +241,23 @@ export default function DashboardPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Active Jobs</CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    {isPolling && (
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-xs text-green-600">Polling</span>
+                      </div>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
                     {jobs.filter(job => job.status === 'pending' || job.status === 'processing').length}
                   </div>
-                  <p className="text-xs text-muted-foreground">Currently processing</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isPolling ? 'Auto-updating every 5s' : 'Currently processing'}
+                  </p>
                 </CardContent>
               </Card>
               <Card>

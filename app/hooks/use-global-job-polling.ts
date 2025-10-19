@@ -45,15 +45,17 @@ export function useGlobalJobPolling({
     })
   }, [])
 
-  // Check a single job status - hits DeepCopy API directly
+  // Check a single job status - DISABLED: Now using server-side polling to avoid CORS
   const checkJobStatus = useCallback(async (job: PollingJob) => {
+    console.log('⚠️ Client-side polling is disabled. Use server-side polling instead.')
+    return
     try {
       console.log(`🔍 Global polling: Checking DeepCopy API for job ${job.id}`)
       
       // Hit DeepCopy API directly for status
       const data = await deepCopyClient.getJobStatus(job.id)
       
-      console.log(`📊 DeepCopy API response for job ${job.id}:`, data.status)
+      console.log(`📊 DeepCopy API response for job ${job.id}:`, data.status, data.progress ? `(${data.progress}%)` : '')
 
       // Update job in polling list
       setPollingJobs(prev => {

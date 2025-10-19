@@ -21,6 +21,7 @@ import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { TemplatePreview } from "@/components/template-preview"
 import { useSidebar } from "@/contexts/sidebar-context"
 import { AvatarExtractionDialog } from "@/components/avatar-extraction-dialog"
+import { useAutoPolling } from "@/hooks/use-auto-polling"
 
 interface CustomerAvatar {
   persona_name: string
@@ -50,6 +51,9 @@ export default function CreatePage() {
   const { user, isAuthenticated } = useAuthStore()
   const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
+
+  // Use auto-polling for processing jobs (hits DeepCopy API directly)
+  const { processingJobsCount } = useAutoPolling()
 
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<PipelineFormData>({
