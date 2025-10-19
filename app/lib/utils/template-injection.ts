@@ -1254,7 +1254,7 @@ function addBrokenImageCSS(htmlContent: string): string {
     htmlContent = htmlContent.replace('<head>', `<head>${brokenImageCSS}`)
   } else if (htmlContent.includes('<html>')) {
     htmlContent = htmlContent.replace('<html>', `<html>${brokenImageCSS}`)
-    } else {
+  } else {
     // If no head tag, add CSS at the beginning
     htmlContent = `${brokenImageCSS}${htmlContent}`
   }
@@ -1315,7 +1315,7 @@ function addBrokenImageJS(htmlContent: string): string {
         // Run when DOM is ready
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', handleBrokenImages);
-        } else {
+  } else {
           handleBrokenImages();
         }
         
