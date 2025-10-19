@@ -680,21 +680,15 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                                 <div
                                   className="w-full h-[600px] overflow-auto template-content-isolation"
                                   style={{
-                                    // CSS isolation to prevent parent styles from affecting template
-                                    all: 'initial',
-                                    fontFamily: 'inherit',
-                                    fontSize: 'inherit',
-                                    lineHeight: 'inherit',
-                                    color: 'inherit',
-                                    // Reset any inherited styles that might break layout
-                                    boxSizing: 'border-box',
                                     // Ensure proper word wrapping for long content
                                     wordWrap: 'break-word',
                                     overflowWrap: 'break-word',
                                     // Prevent content from breaking out of container
                                     maxWidth: '100%',
                                     // Ensure proper text rendering
-                                    textRendering: 'optimizeLegibility'
+                                    textRendering: 'optimizeLegibility',
+                                    // Prevent layout issues
+                                    contain: 'layout style'
                                   }}
                                   dangerouslySetInnerHTML={{
                                     __html: injectedTemplates[currentTemplateIndex]?.html_content || '<p class="p-4 text-gray-500">No content available</p>'
@@ -771,21 +765,15 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                   <div
                     className="w-full h-full overflow-auto template-content-isolation"
                     style={{
-                      // CSS isolation to prevent parent styles from affecting template
-                      all: 'initial',
-                      fontFamily: 'inherit',
-                      fontSize: 'inherit',
-                      lineHeight: 'inherit',
-                      color: 'inherit',
-                      // Reset any inherited styles that might break layout
-                      boxSizing: 'border-box',
                       // Ensure proper word wrapping for long content
                       wordWrap: 'break-word',
                       overflowWrap: 'break-word',
                       // Prevent content from breaking out of container
                       maxWidth: '100%',
                       // Ensure proper text rendering
-                      textRendering: 'optimizeLegibility'
+                      textRendering: 'optimizeLegibility',
+                      // Prevent layout issues
+                      contain: 'layout style'
                     }}
                     dangerouslySetInnerHTML={{
                       __html: injectedTemplates[currentTemplateIndex]?.html_content || '<p class="p-4 text-gray-500">No content available</p>'

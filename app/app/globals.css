@@ -4,18 +4,12 @@
 
 /* Template Content Isolation */
 .template-content-isolation {
-  /* Reset all inherited styles to prevent conflicts */
-  all: initial;
-
-  /* Restore essential properties */
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  color: inherit;
+  /* More targeted isolation instead of all: initial */
+  position: relative;
+  display: block;
 
   /* Ensure proper layout behavior */
   box-sizing: border-box;
-  display: block;
 
   /* Prevent content overflow issues */
   word-wrap: break-word;
@@ -31,15 +25,13 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Reset any potential layout breaking styles */
-  margin: 0;
-  padding: 0;
-  border: none;
-  outline: none;
-
   /* Ensure proper scrolling behavior */
   overflow: auto;
   overflow-x: hidden;
+
+  /* Prevent parent styles from interfering */
+  isolation: isolate;
+  contain: layout style;
 }
 
 /* Additional styles for template content to prevent layout issues */
@@ -69,6 +61,30 @@
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow-wrap: break-word;
+}
+
+/* Ensure template content is stable and doesn't flicker */
+.template-content-isolation {
+  /* Prevent content from disappearing */
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+
+  /* Ensure content is rendered */
+  will-change: auto;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Prevent any parent styles from affecting template content */
+.template-content-isolation,
+.template-content-isolation * {
+  /* Reset any potentially problematic inherited styles */
+  animation: none !important;
+  transition: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  mix-blend-mode: normal !important;
 }
 
 /* Lovable Design System */
