@@ -6,15 +6,15 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { 
-  ArrowLeft, 
-  Download, 
-  Share2, 
-  FileText, 
-  Target, 
-  Users, 
-  Brain, 
-  Sparkles, 
+import {
+  ArrowLeft,
+  Download,
+  Share2,
+  FileText,
+  Target,
+  Users,
+  Brain,
+  Sparkles,
   CheckCircle2,
   TrendingUp,
   AlertTriangle,
@@ -108,7 +108,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
 
   const fetchInjectedTemplates = useCallback(async () => {
     if (!currentJob?.id) return
-    
+
     try {
       setTemplatesLoading(true)
       const response = await fetch(`/api/templates/injected?job_id=${currentJob.id}`)
@@ -125,13 +125,13 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
 
   // Carousel navigation functions
   const goToNextTemplate = () => {
-    setCurrentTemplateIndex((prev) => 
+    setCurrentTemplateIndex((prev) =>
       prev < injectedTemplates.length - 1 ? prev + 1 : 0
     )
   }
 
   const goToPreviousTemplate = () => {
-    setCurrentTemplateIndex((prev) => 
+    setCurrentTemplateIndex((prev) =>
       prev > 0 ? prev - 1 : injectedTemplates.length - 1
     )
   }
@@ -144,11 +144,11 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
   const { processingJobsCount } = useAutoPolling()
 
   // Use client-side polling for job status updates
-  const { 
-    jobStatus, 
-    isPolling, 
-    attempts, 
-    maxAttempts 
+  const {
+    jobStatus,
+    isPolling,
+    attempts,
+    maxAttempts
   } = useJobPolling({
     jobId: params.id,
     enabled: currentJob?.status === 'processing' || currentJob?.status === 'pending',
@@ -225,7 +225,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
     if (!content) return <p className="text-gray-500 italic">No content available</p>
     return (
       <div className="prose prose-lg max-w-none text-black prose-headings:text-gray-900 prose-p:text-gray-800 prose-strong:text-gray-900 prose-ul:text-gray-800 prose-ol:text-gray-800 prose-li:text-gray-800">
-        <div dangerouslySetInnerHTML={{ 
+        <div dangerouslySetInnerHTML={{
           __html: content
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
             .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
@@ -243,7 +243,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
   // Function to render avatar sheet with special layout
   const renderAvatarSheet = (avatarData: any) => {
     if (!avatarData) return <p className="text-gray-500 italic">No avatar data available</p>
-    
+
     // If it's a string (JSON), parse it
     let parsedData = avatarData
     if (typeof avatarData === 'string') {
@@ -253,10 +253,10 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
         return <p className="text-gray-500 italic">Invalid avatar data format</p>
       }
     }
-    
+
     return (
       <div className="space-y-6">
-        
+
         {/* Demographics */}
         {parsedData.demographics && (
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
@@ -416,15 +416,15 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
   const renderApiSections = (): JSX.Element[] => {
     const sections: JSX.Element[] = []
     const excludedKeys = ['swipe_results'] // Exclude swipe_results as it's handled separately
-    
+
     Object.entries(result).forEach(([key, value], index) => {
       if (excludedKeys.includes(key) || !value) return
-      
+
       const sectionId = `api-${key}`
       const title = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-      
+
       sections.push(
-        <div 
+        <div
           key={key}
           id={sectionId}
           ref={(el) => registerSection(sectionId, el)}
@@ -486,7 +486,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
         </div>
       )
     })
-    
+
     return sections
   }
 
@@ -539,7 +539,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                 <CheckCircle2 className="w-4 h-4" />
                 <span className="text-sm font-medium">Content Generation Complete</span>
               </div>
-              
+
               <h1 className="text-3xl sm:text-5xl font-bold mb-6 text-visible">
                 {currentJob.title}
               </h1>
@@ -581,7 +581,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
             {renderApiSections()}
 
             {/* Generated Templates Section - Carousel Only */}
-            <div 
+            <div
               id="templates"
               ref={(el) => registerSection('templates', el)}
               className="mb-12"
@@ -648,18 +648,17 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                                   <ChevronLeft className="w-4 h-4" />
                                   Previous
                                 </Button>
-                                
+
                                 {/* Template Dots */}
                                 <div className="flex items-center gap-2">
                                   {injectedTemplates.map((_, index) => (
                                     <button
                                       key={index}
                                       onClick={() => goToTemplate(index)}
-                                      className={`w-3 h-3 rounded-full transition-colors ${
-                                        index === currentTemplateIndex
-                                          ? 'bg-orange-500'
-                                          : 'bg-gray-300 hover:bg-gray-400'
-                                      }`}
+                                      className={`w-3 h-3 rounded-full transition-colors ${index === currentTemplateIndex
+                                        ? 'bg-orange-500'
+                                        : 'bg-gray-300 hover:bg-gray-400'
+                                        }`}
                                     />
                                   ))}
                                 </div>
@@ -678,9 +677,26 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
 
                               {/* Current Template Display */}
                               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                                <div 
-                                  className="w-full h-[600px] overflow-auto"
-                                  dangerouslySetInnerHTML={{ 
+                                <div
+                                  className="w-full h-[600px] overflow-auto template-content-isolation"
+                                  style={{
+                                    // CSS isolation to prevent parent styles from affecting template
+                                    all: 'initial',
+                                    fontFamily: 'inherit',
+                                    fontSize: 'inherit',
+                                    lineHeight: 'inherit',
+                                    color: 'inherit',
+                                    // Reset any inherited styles that might break layout
+                                    boxSizing: 'border-box',
+                                    // Ensure proper word wrapping for long content
+                                    wordWrap: 'break-word',
+                                    overflowWrap: 'break-word',
+                                    // Prevent content from breaking out of container
+                                    maxWidth: '100%',
+                                    // Ensure proper text rendering
+                                    textRendering: 'optimizeLegibility'
+                                  }}
+                                  dangerouslySetInnerHTML={{
                                     __html: injectedTemplates[currentTemplateIndex]?.html_content || '<p class="p-4 text-gray-500">No content available</p>'
                                   }}
                                 />
@@ -752,9 +768,26 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
 
                 {/* Modal Content */}
                 <div className="flex-1 overflow-hidden">
-                  <div 
-                    className="w-full h-full overflow-auto"
-                    dangerouslySetInnerHTML={{ 
+                  <div
+                    className="w-full h-full overflow-auto template-content-isolation"
+                    style={{
+                      // CSS isolation to prevent parent styles from affecting template
+                      all: 'initial',
+                      fontFamily: 'inherit',
+                      fontSize: 'inherit',
+                      lineHeight: 'inherit',
+                      color: 'inherit',
+                      // Reset any inherited styles that might break layout
+                      boxSizing: 'border-box',
+                      // Ensure proper word wrapping for long content
+                      wordWrap: 'break-word',
+                      overflowWrap: 'break-word',
+                      // Prevent content from breaking out of container
+                      maxWidth: '100%',
+                      // Ensure proper text rendering
+                      textRendering: 'optimizeLegibility'
+                    }}
+                    dangerouslySetInnerHTML={{
                       __html: injectedTemplates[currentTemplateIndex]?.html_content || '<p class="p-4 text-gray-500">No content available</p>'
                     }}
                   />
