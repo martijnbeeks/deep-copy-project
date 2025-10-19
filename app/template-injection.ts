@@ -14,7 +14,6 @@ export interface ContentData {
   }
   topbar: {
     label: string
-    image: string
   }
   alert: {
     banner: string
@@ -188,33 +187,29 @@ export function extractContentFromAngle(results: any, swipe: any, angleIndex: nu
   // Parse the swipe content for this specific angle
   const swipeContent = swipe.content ? JSON.parse(swipe.content) : {}
   const listicles = swipeContent.listicles || []
-
+  
   console.log(`🔍 Extracting content for angle ${angleIndex + 1}: ${swipe.angle}`)
   console.log('- Swipe content:', swipeContent)
   console.log('- Listicles count:', listicles.length)
   console.log('- First listicle:', listicles[0])
-
+  
   // Extract key information
   const projectName = results.project_name || 'Nerve Relief™'
   const productName = swipeContent.title || projectName
-
+  
   // Create content specific to this angle
   const content: ContentData = {
     hero: {
       headline: swipe.angle || swipeContent.title || productName || 'Finally — real relief for nerve pain',
-      subheadline: swipeContent.summary || 'Pharmaceutical-grade transdermal magnesium that targets damaged nerves. Try risk-free for 90 days.',
-      image: swipeContent.hero?.image || 'https://placehold.co/600x400?text=Hero+Image',
-      imageAlt: swipeContent.hero?.imageAlt || 'Hero Image'
+      subheadline: swipeContent.summary || 'Pharmaceutical-grade transdermal magnesium that targets damaged nerves. Try risk-free for 90 days.'
     },
     author: {
       name: swipeContent.author || 'Nerve Relief Content Team',
       image: 'https://placehold.co/100x100?text=Author',
-      date: new Date().toLocaleDateString(),
-      verifiedIcon: 'https://placehold.co/20x20?text=✓'
+      date: new Date().toLocaleDateString()
     },
     topbar: {
-      label: 'LIMITED TIME OFFER - 50% OFF TODAY ONLY!',
-      image: 'https://placehold.co/50x50?text=Icon'
+      label: 'LIMITED TIME OFFER - 50% OFF TODAY ONLY!'
     },
     alert: {
       banner: 'Hurry! Only 47 left in stock. Order now before it\'s too late!'
@@ -299,20 +294,15 @@ export function extractContentFromAngle(results: any, swipe: any, angleIndex: nu
     },
     cta: {
       primary: swipeContent.cta || 'Get Yours Now - 50% Off!',
-      primaryUrl: '#order',
       secondary: 'Order Today and Save Big!',
-      secondaryUrl: '#learn'
+      primaryUrl: '#order'
     },
     sidebar: {
       ctaHeadline: 'Limited Time Offer!',
-      ctaButton: 'Order Now - 50% Off!',
-      ctaUrl: '#order',
-      productImage: 'https://placehold.co/300x300?text=Product+Image',
-      ratingImage: 'https://placehold.co/20x20?text=★'
+      ctaButton: 'Order Now - 50% Off!'
     },
     sticky: {
-      cta: 'Order Now - 50% Off!',
-      ctaUrl: '#order'
+      cta: 'Order Now - 50% Off!'
     },
     reactions: {
       title: 'What Our Customers Are Saying',
@@ -320,67 +310,44 @@ export function extractContentFromAngle(results: any, swipe: any, angleIndex: nu
         name: 'Sarah M.',
         text: 'This product changed my life! I can\'t believe how well it works.',
         time: '2 hours ago',
-        likes: '24',
-        image: 'https://placehold.co/40x40?text=SM',
-        reply: 'Reply'
+        likes: 24
       },
       r2: {
         name: 'Mike R.',
         text: 'Amazing results in just one week. Highly recommended!',
         time: '5 hours ago',
-        likes: '18',
-        image: 'https://placehold.co/40x40?text=MR',
-        reply: 'Reply'
+        likes: 18
       },
       r3: {
         name: 'Jennifer L.',
         text: 'Best purchase I\'ve made this year. Worth every penny!',
         time: '1 day ago',
-        likes: '31',
-        image: 'https://placehold.co/40x40?text=JL',
-        reply: 'Reply'
-      },
-      r4: {
-        name: 'David K.',
-        text: 'Worth every penny. Life-changing results!',
-        time: '1d',
-        likes: '20',
-        image: 'https://placehold.co/40x40?text=DK',
-        reply: 'Reply'
+        likes: 31
+      }
+    },
+    brands: {
+      brand1: {
+        name: 'Trusted Brand',
+        logo: 'https://placehold.co/120x40?text=Brand+Logo'
       }
     },
     guarantee: {
-      badge: 'https://placehold.co/80x80?text=Badge'
+      badge: 'https://placehold.co/80x80?text=Badge',
+      text: '30-Day Money Back Guarantee'
     },
     assurances: {
       blurb: 'Your satisfaction is our top priority. If you\'re not completely satisfied, we\'ll refund your money, no questions asked.'
     },
     footer: {
       copyright: '© 2024 Your Company. All rights reserved.',
-      disclaimer: 'Results may vary. Individual results are not guaranteed.',
-      contactUrl: '#',
-      privacyUrl: '#',
-      termsUrl: '#',
-      cookieUrl: '#'
+      disclaimer: 'Results may vary. Individual results are not guaranteed.'
     },
     shipping: {
       threshold: '$50'
     },
-    product: {
-      name: 'Your Product',
-      image: 'https://placehold.co/400x400?text=Product+Image'
-    },
-    info: {
-      icon: 'https://placehold.co/20x20?text=Info+Icon'
-    },
-    reviews: {
-      url: '#'
-    },
-    brands: {
-      brand1: {
-        name: 'Your Brand',
-        logo: 'https://placehold.co/120x40?text=Your+Logo'
-      }
+    brand: {
+      name: 'Your Brand',
+      logo: 'https://placehold.co/120x40?text=Your+Logo'
     }
   }
 
@@ -391,7 +358,7 @@ export function extractContentFromAngle(results: any, swipe: any, angleIndex: nu
 export function extractContentFromSwipeResult(swipeResult: any, templateType: 'listicle' | 'advertorial'): ContentData {
   // Parse the swipe result content - this contains the rich JSON data for this specific angle
   const swipeContent = swipeResult.content ? JSON.parse(swipeResult.content) : {}
-
+  
   // Create content data using EXACT field names from API - NO DUPLICATES
   const content: ContentData = {
     // Hero section - exact field mapping with fallback images
@@ -401,7 +368,7 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
       image: swipeContent.hero?.image || 'https://placehold.co/600x400?text=Hero+Image',
       imageAlt: swipeContent.hero?.imageAlt || 'Hero Image'
     },
-
+    
     // Author section - exact field mapping with fallback images
     author: {
       name: swipeContent.author?.name || 'Health Expert',
@@ -409,28 +376,27 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
       date: swipeContent.author?.date || new Date().toLocaleDateString(),
       verifiedIcon: 'https://placehold.co/20x20?text=✓' // Not in API, keep default
     },
-
+    
     // Topbar - exact field mapping
     topbar: {
-      label: swipeContent.topbar?.label || 'Featured',
-      image: swipeContent.topbar?.image || 'https://placehold.co/50x50?text=Icon'
+      label: swipeContent.topbar?.label || 'Featured'
     },
-
+    
     // Alert banner - exact field mapping
     alert: {
       banner: swipeContent.alert?.banner || 'Limited Time Offer'
     },
-
+    
     // Breadcrumbs - exact field mapping
     breadcrumbs: {
       text: swipeContent.breadcrumbs?.text || 'Home > Health > Products'
     },
-
+    
     // Story intro - exact field mapping
     story: {
       intro: swipeContent.story?.intro || 'Here\'s what you need to know about this breakthrough solution...'
     },
-
+    
     // Sections 1-12 - use real API data, only fallback to meaningful content
     section1: {
       title: swipeContent.section1?.title || swipeContent.section1?.headline || 'The Problem You Face',
@@ -504,30 +470,30 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
       image: swipeContent.section12?.image || 'https://placehold.co/600x400?text=Get+Started',
       imageAlt: swipeContent.section12?.imageAlt || 'Call to action'
     },
-
+    
     // CTA section - exact field mapping
     cta: {
-      primary: swipeContent.cta?.primary || swipeContent.cta || swipeContent.hero?.cta || 'Get Started Now',
-      primaryUrl: swipeContent.cta?.primaryUrl || swipeContent.hero?.ctaUrl || '#order',
+      primary: swipeContent.cta?.primary || swipeContent.cta || 'Get Started Now',
+      primaryUrl: '#', // Not in API, keep default
       secondary: swipeContent.cta?.secondary || 'Learn More',
-      secondaryUrl: swipeContent.cta?.secondaryUrl || '#learn'
+      secondaryUrl: '#' // Not in API, keep default
     },
-
-    // Sidebar section - exact field mapping with comprehensive fallbacks
+    
+    // Sidebar section - exact field mapping with fallback images
     sidebar: {
-      ctaHeadline: swipeContent.sidebar?.ctaHeadline || swipeContent.cta?.primary || 'Special Offer',
-      ctaButton: swipeContent.sidebar?.ctaButton || swipeContent.cta?.primary || 'Get Started',
-      ctaUrl: swipeContent.sidebar?.ctaUrl || swipeContent.cta?.primaryUrl || '#order',
-      productImage: swipeContent.sidebar?.productImage || swipeContent.product?.image || 'https://placehold.co/300x300?text=Product+Image',
-      ratingImage: swipeContent.sidebar?.ratingImage || 'https://placehold.co/20x20?text=★'
+      ctaHeadline: swipeContent.sidebar?.ctaHeadline || 'Special Offer',
+      ctaButton: swipeContent.sidebar?.ctaButton || 'Get Started',
+      ctaUrl: '#', // Not in API, keep default
+      productImage: 'https://placehold.co/300x300?text=Product+Image', // Not in API, keep default
+      ratingImage: 'https://placehold.co/20x20?text=★' // Not in API, keep default
     },
-
-    // Sticky CTA - use real data from API with comprehensive fallbacks
+    
+    // Sticky CTA - use real data from API
     sticky: {
-      cta: swipeContent.sticky?.cta || swipeContent.cta?.primary || swipeContent.cta || 'Get Started Now',
-      ctaUrl: swipeContent.sticky?.ctaUrl || swipeContent.cta?.primaryUrl || '#order'
+      cta: swipeContent.cta?.primary || swipeContent.cta || 'Get Started Now',
+      ctaUrl: '#'
     },
-
+    
     // Reactions section - use real API data with meaningful fallbacks
     reactions: {
       title: swipeContent.reactions?.title || 'What People Are Saying',
@@ -564,7 +530,7 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
         reply: 'Reply' // Not in API, keep default
       }
     },
-
+    
     // Footer section - use real API data with meaningful fallbacks
     footer: {
       copyright: swipeContent.footer?.copyright || '© 2024 All Rights Reserved',
@@ -581,7 +547,7 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
       termsUrl: '#', // Not in API, keep default
       cookieUrl: '#' // Not in API, keep default
     },
-
+    
     // Brands section - not in API, keep defaults with descriptive fallback images
     brands: {
       brand1: {
@@ -589,39 +555,39 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
         logo: 'https://placehold.co/100x50?text=Brand+Logo'
       }
     },
-
+    
     // Product section - not in API, keep defaults with descriptive fallback images
     product: {
       name: 'Premium Solution',
       image: 'https://placehold.co/400x400?text=Product+Image'
     },
-
+    
     // Guarantee section - not in API, keep defaults with descriptive fallback images
     guarantee: {
       badge: 'https://placehold.co/80x80?text=Guarantee+Badge'
     },
-
+    
     // Assurances section - use real API data with meaningful fallback
     assurances: {
       blurb: swipeContent.assurances?.blurb || 'Backed by our satisfaction guarantee'
     },
-
+    
     // Shipping section - not in API, keep defaults
     shipping: {
       threshold: 'Free shipping on orders over $50'
     },
-
+    
     // Info section - not in API, keep defaults with descriptive fallback images
     info: {
       icon: 'https://placehold.co/20x20?text=Info+Icon'
     },
-
+    
     // Reviews section - not in API, keep defaults
     reviews: {
       url: '#'
     }
   }
-
+  
   return content
 }
 
@@ -633,11 +599,11 @@ export function extractContentFromResults(results: any): ContentData {
   const avatarSheet = results.avatar_sheet ? JSON.parse(results.avatar_sheet) : {}
   const swipeResults = results.swipe_results || []
   const deepResearch = results.deep_research_output || ''
-
+  
   // Process all swipe results to get diverse content
   const allListicles: any[] = []
   const allAngles: string[] = []
-
+  
   swipeResults.forEach((swipe: any, index: number) => {
     if (swipe.content) {
       try {
@@ -651,11 +617,11 @@ export function extractContentFromResults(results: any): ContentData {
       }
     }
   })
-
+  
   // Get the first swipe result for main content structure
   const firstSwipe = swipeResults[0] || {}
   const swipeContent = firstSwipe.content ? JSON.parse(firstSwipe.content) : {}
-
+  
   console.log('🔍 Extracting content from API results:')
   console.log('- Summary length:', summary.length)
   console.log('- Swipe results count:', swipeResults.length)
@@ -663,32 +629,28 @@ export function extractContentFromResults(results: any): ContentData {
   console.log('- Total listicles from all angles:', allListicles.length)
   console.log('- First 3 listicles:', allListicles.slice(0, 3).map(l => ({ title: l.title, number: l.number })))
   console.log('- Using listicles 0-14 for sections 1-15')
-
+  
   // Extract key information
   const projectName = results.project_name || 'Nerve Relief™'
   const productName = swipeContent.title || projectName
-
+  
   // Create rich content from API data
   // Use different angles for variety - mix content from different swipe results
   const heroAngle = swipeResults[1] || swipeResults[0] || {} // Use second angle for hero if available
   const heroContent = heroAngle.content ? JSON.parse(heroAngle.content) : swipeContent
-
+  
   const content: ContentData = {
     hero: {
       headline: heroContent.title || swipeContent.title || productName || 'Finally — real relief for nerve pain',
-      subheadline: heroContent.summary || swipeContent.summary || 'Pharmaceutical-grade transdermal magnesium that targets damaged nerves. Try risk-free for 90 days.',
-      image: heroContent.hero?.image || swipeContent.hero?.image || 'https://placehold.co/600x400?text=Hero+Image',
-      imageAlt: heroContent.hero?.imageAlt || swipeContent.hero?.imageAlt || 'Hero Image'
+      subheadline: heroContent.summary || swipeContent.summary || 'Pharmaceutical-grade transdermal magnesium that targets damaged nerves. Try risk-free for 90 days.'
     },
     author: {
       name: swipeContent.author || 'Nerve Relief Content Team',
       image: 'https://placehold.co/100x100?text=Author',
-      date: new Date().toLocaleDateString(),
-      verifiedIcon: 'https://placehold.co/20x20?text=✓'
+      date: new Date().toLocaleDateString()
     },
     topbar: {
-      label: 'LIMITED TIME OFFER - 50% OFF TODAY ONLY!',
-      image: 'https://placehold.co/50x50?text=Icon'
+      label: 'LIMITED TIME OFFER - 50% OFF TODAY ONLY!'
     },
     alert: {
       banner: 'Hurry! Only 47 left in stock. Order now before it\'s too late!'
@@ -771,22 +733,35 @@ export function extractContentFromResults(results: any): ContentData {
       image: 'https://placehold.co/600x400?text=Call+To+Action',
       imageAlt: 'Risk-free trial offer'
     },
+    section13: {
+      title: allListicles[12]?.title || 'Why Choose Nerve Relief™ Over Other Options',
+      body: allListicles[12]?.description || 'Unlike generic OTC creams, Nerve Relief™ uses pharmaceutical-grade ingredients with a targeted delivery system designed to reach damaged nerve sites rather than just masking symptoms.',
+      image: 'https://placehold.co/600x400?text=Comparison',
+      imageAlt: 'Product comparison'
+    },
+    section14: {
+      title: allListicles[13]?.title || 'The Science Behind Nerve Relief™',
+      body: allListicles[13]?.description || 'Our proprietary transdermal formula combines magnesium chloride with MSM, arnica, and B6 to create a "repair kit for frayed wiring" that helps nourish damaged peripheral nerves.',
+      image: 'https://placehold.co/600x400?text=Science',
+      imageAlt: 'Scientific mechanism'
+    },
+    section15: {
+      title: allListicles[14]?.title || 'Start Your Risk-Free Journey Today',
+      body: allListicles[14]?.description || 'Don\'t let nerve pain control your life. Try Nerve Relief™ risk-free for 90 days and experience the difference that pharmaceutical-grade, targeted relief can make.',
+      image: 'https://placehold.co/600x400?text=Final+CTA',
+      imageAlt: 'Final call to action'
+    },
     cta: {
       primary: heroContent.cta || swipeContent.cta || 'Try Nerve Relief™ Risk-Free — From $1.30/day. Subscribe & Save 13% — Cancel Anytime',
-      primaryUrl: '#order',
       secondary: 'Join 90,000+ satisfied users who trust Nerve Relief™',
-      secondaryUrl: '#learn'
+      primaryUrl: '#order'
     },
     sidebar: {
       ctaHeadline: '4.8/5 from 4,219 reviews • 90-day money-back',
-      ctaButton: 'Subscribe & Save 13% — Cancel Anytime',
-      ctaUrl: '#order',
-      productImage: 'https://placehold.co/300x300?text=Product+Image',
-      ratingImage: 'https://placehold.co/20x20?text=★'
+      ctaButton: 'Subscribe & Save 13% — Cancel Anytime'
     },
     sticky: {
-      cta: 'Try Risk-Free for 90 Days',
-      ctaUrl: '#order'
+      cta: 'Try Risk-Free for 90 Days'
     },
     reactions: {
       title: 'What Our Customers Are Saying',
@@ -794,33 +769,19 @@ export function extractContentFromResults(results: any): ContentData {
         name: 'Sarah M.',
         text: 'This cream really helped my nerve pain after just a few days.',
         time: '2 hours ago',
-        likes: '24',
-        image: 'https://placehold.co/40x40?text=SM',
-        reply: 'Reply'
+        likes: 24
       },
       r2: {
         name: 'Mike R.',
         text: 'Love the fast absorption with no greasy feel.',
         time: '5 hours ago',
-        likes: '18',
-        image: 'https://placehold.co/40x40?text=MR',
-        reply: 'Reply'
+        likes: 18
       },
       r3: {
         name: 'Jennifer L.',
         text: 'Good value compared to prescriptions that just didn\'t work.',
         time: '1 day ago',
-        likes: '31',
-        image: 'https://placehold.co/40x40?text=JL',
-        reply: 'Reply'
-      },
-      r4: {
-        name: 'David K.',
-        text: 'Worth every penny. Life-changing results!',
-        time: '1d',
-        likes: '20',
-        image: 'https://placehold.co/40x40?text=DK',
-        reply: 'Reply'
+        likes: 31
       }
     },
     brands: {
@@ -830,31 +791,22 @@ export function extractContentFromResults(results: any): ContentData {
       }
     },
     guarantee: {
-      badge: 'https://placehold.co/80x80?text=90+Day'
+      badge: 'https://placehold.co/80x80?text=90+Day',
+      text: '90-Day Money Back Guarantee'
     },
     assurances: {
       blurb: 'Try it risk-free for 90 days. If you\'re not completely satisfied, contact support for a full refund — no hoops.'
     },
     footer: {
       copyright: '© 2024 Nerve Relief™. All rights reserved.',
-      disclaimer: 'Results may vary. Individual results are not guaranteed. This product is not intended to diagnose, treat, cure, or prevent any disease.',
-      contactUrl: '#',
-      privacyUrl: '#',
-      termsUrl: '#',
-      cookieUrl: '#'
+      disclaimer: 'Results may vary. Individual results are not guaranteed. This product is not intended to diagnose, treat, cure, or prevent any disease.'
     },
     shipping: {
       threshold: 'Free shipping on subscriptions'
     },
-    product: {
+    brand: {
       name: 'Nerve Relief™',
-      image: 'https://placehold.co/400x400?text=Product+Image'
-    },
-    info: {
-      icon: 'https://placehold.co/20x20?text=Info+Icon'
-    },
-    reviews: {
-      url: '#'
+      logo: 'https://placehold.co/120x40?text=Nerve+Relief'
     }
   }
 
@@ -867,12 +819,12 @@ function removeDuplicateContent(htmlContent: string, content: ContentData): stri
   const contentValues = [
     content.hero.headline,
     content.hero.subheadline,
-    content.cta.primary,
-    content.cta.primaryUrl,
+    content.hero.cta,
+    content.hero.ctaUrl,
     content.footer.disclaimer,
     content.footer.copyright,
     content.assurances.blurb,
-    content.guarantee.badge,
+    content.guarantee.text,
     content.sticky.cta,
     content.reactions.title,
     content.brands.brand1.name,
@@ -885,14 +837,14 @@ function removeDuplicateContent(htmlContent: string, content: ContentData): stri
       const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
       const regex = new RegExp(escapedValue, 'g')
       const matches = htmlContent.match(regex)
-
+      
       if (matches && matches.length > 1) {
         // Replace all occurrences with the first one, then remove duplicates
         htmlContent = htmlContent.replace(regex, value)
-
+        
         // Split by the value and deduplicate sections
         const sections = htmlContent.split(value)
-        const uniqueSections = sections.filter((section, index, arr) =>
+        const uniqueSections = sections.filter((section, index, arr) => 
           arr.indexOf(section) === index || section.trim() !== ''
         )
         htmlContent = uniqueSections.join(value)
@@ -902,9 +854,9 @@ function removeDuplicateContent(htmlContent: string, content: ContentData): stri
 
   // Special handling for long disclaimers - always use short version
   const longDisclaimerPatterns = [
-    /Legal notice:[\s\S]*?Merit Relief[\s\S]*?(?=Legal notice:|$)/g,
-    /Results may vary[\s\S]*?senior concerns\./g,
-    /This product is not intended to diagnose[\s\S]*?healthcare provider\./g
+    /Legal notice:.*?Merit Relief.*?(?=Legal notice:|$)/gs,
+    /Results may vary.*?senior concerns\./gs,
+    /This product is not intended to diagnose.*?healthcare provider\./gs
   ]
 
   for (const pattern of longDisclaimerPatterns) {
@@ -913,14 +865,14 @@ function removeDuplicateContent(htmlContent: string, content: ContentData): stri
       // Replace all long disclaimers with a single short one
       const shortDisclaimer = 'Results may vary. Individual results are not guaranteed. Consult your healthcare provider.'
       htmlContent = htmlContent.replace(pattern, shortDisclaimer)
-
+      
       // Remove duplicate short disclaimers
       const shortDisclaimerRegex = new RegExp(shortDisclaimer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
       const shortMatches = htmlContent.match(shortDisclaimerRegex)
       if (shortMatches && shortMatches.length > 1) {
         htmlContent = htmlContent.replace(shortDisclaimerRegex, shortDisclaimer)
         const sections = htmlContent.split(shortDisclaimer)
-        const uniqueSections = sections.filter((section, index, arr) =>
+        const uniqueSections = sections.filter((section, index, arr) => 
           arr.indexOf(section) === index || section.trim() !== ''
         )
         htmlContent = uniqueSections.join(shortDisclaimer)
@@ -929,10 +881,10 @@ function removeDuplicateContent(htmlContent: string, content: ContentData): stri
   }
 
   // Remove duplicate paragraphs/sections that are identical
-  const paragraphRegex = /<p[^>]*>[\s\S]*?<\/p>/g
+  const paragraphRegex = /<p[^>]*>.*?<\/p>/gs
   const paragraphs = htmlContent.match(paragraphRegex) || []
   const uniqueParagraphs = [...new Set(paragraphs)]
-
+  
   if (paragraphs.length !== uniqueParagraphs.length) {
     // Rebuild content with unique paragraphs only
     let newContent = htmlContent
@@ -945,7 +897,7 @@ function removeDuplicateContent(htmlContent: string, content: ContentData): stri
         if (matches && matches.length > 1) {
           newContent = newContent.replace(paragraphRegex, paragraph)
           const sections = newContent.split(paragraph)
-          const uniqueSections = sections.filter((section, index, arr) =>
+          const uniqueSections = sections.filter((section, index, arr) => 
             arr.indexOf(section) === index || section.trim() !== ''
           )
           newContent = uniqueSections.join(paragraph)
@@ -959,378 +911,132 @@ function removeDuplicateContent(htmlContent: string, content: ContentData): stri
 }
 
 export function injectContentIntoTemplate(template: InjectableTemplate, content: ContentData): string {
-  try {
-    let htmlContent = template.html_content
+  let htmlContent = template.html_content
 
-    // Validate template has content
-    if (!htmlContent || htmlContent.trim().length === 0) {
-      console.warn('⚠️ Template has no HTML content, using fallback')
-      return createFallbackTemplate(content)
-    }
-
-    // Replace all placeholders with actual content
-    const replacements: { [key: string]: string } = {
-      '{{content.hero.headline}}': content.hero.headline,
-      '{{content.hero.subheadline}}': content.hero.subheadline,
-      '{{content.author.name}}': content.author.name,
-      '{{content.author.image}}': content.author.image,
-      '{{content.author.date}}': content.author.date,
-      '{{content.topbar.label}}': content.topbar.label,
-      '{{content.topbar.image}}': content.topbar.image,
-      '{{content.alert.banner}}': content.alert.banner,
-      '{{content.breadcrumbs.text}}': content.breadcrumbs.text,
-      '{{content.story.intro}}': content.story.intro,
-      '{{content.section1.title}}': content.section1.title,
-      '{{content.section1.body}}': content.section1.body,
-      '{{content.section1.image}}': content.section1.image,
-      '{{content.section1.imageAlt}}': content.section1.imageAlt,
-      '{{content.section2.title}}': content.section2.title,
-      '{{content.section2.body}}': content.section2.body,
-      '{{content.section2.image}}': content.section2.image,
-      '{{content.section2.imageAlt}}': content.section2.imageAlt,
-      '{{content.section3.title}}': content.section3.title,
-      '{{content.section3.body}}': content.section3.body,
-      '{{content.section3.image}}': content.section3.image,
-      '{{content.section3.imageAlt}}': content.section3.imageAlt,
-      '{{content.section4.title}}': content.section4.title,
-      '{{content.section4.body}}': content.section4.body,
-      '{{content.section4.image}}': content.section4.image,
-      '{{content.section4.imageAlt}}': content.section4.imageAlt,
-      '{{content.section5.title}}': content.section5.title,
-      '{{content.section5.body}}': content.section5.body,
-      '{{content.section5.image}}': content.section5.image,
-      '{{content.section5.imageAlt}}': content.section5.imageAlt,
-      '{{content.section6.title}}': content.section6.title,
-      '{{content.section6.body}}': content.section6.body,
-      '{{content.section6.image}}': content.section6.image,
-      '{{content.section6.imageAlt}}': content.section6.imageAlt,
-      '{{content.section7.title}}': content.section7.title,
-      '{{content.section7.body}}': content.section7.body,
-      '{{content.section7.image}}': content.section7.image,
-      '{{content.section7.imageAlt}}': content.section7.imageAlt,
-      '{{content.section8.title}}': content.section8.title,
-      '{{content.section8.body}}': content.section8.body,
-      '{{content.section8.image}}': content.section8.image,
-      '{{content.section8.imageAlt}}': content.section8.imageAlt,
-      '{{content.section9.title}}': content.section9.title,
-      '{{content.section9.body}}': content.section9.body,
-      '{{content.section9.image}}': content.section9.image,
-      '{{content.section9.imageAlt}}': content.section9.imageAlt,
-      '{{content.section10.title}}': content.section10.title,
-      '{{content.section10.body}}': content.section10.body,
-      '{{content.section10.image}}': content.section10.image,
-      '{{content.section10.imageAlt}}': content.section10.imageAlt,
-      '{{content.section11.title}}': content.section11.title,
-      '{{content.section11.body}}': content.section11.body,
-      '{{content.section11.image}}': content.section11.image,
-      '{{content.section11.imageAlt}}': content.section11.imageAlt,
-      '{{content.section12.title}}': content.section12.title,
-      '{{content.section12.body}}': content.section12.body,
-      '{{content.section12.image}}': content.section12.image,
-      '{{content.section12.imageAlt}}': content.section12.imageAlt,
-      '{{content.cta.primary}}': content.cta.primary,
-      '{{content.cta.primaryUrl}}': content.cta.primaryUrl,
-      '{{content.cta.secondary}}': content.cta.secondary,
-      '{{content.cta.secondaryUrl}}': content.cta.secondaryUrl,
-      '{{content.sidebar.ctaHeadline}}': content.sidebar.ctaHeadline,
-      '{{content.sidebar.ctaButton}}': content.sidebar.ctaButton,
-      '{{content.sidebar.ctaUrl}}': content.sidebar.ctaUrl,
-      '{{content.sticky.cta}}': content.sticky.cta,
-      '{{content.sticky.ctaUrl}}': content.sticky.ctaUrl,
-      '{{content.reactions.title}}': content.reactions.title,
-      '{{content.reactions.r1.name}}': content.reactions.r1.name,
-      '{{content.reactions.r1.text}}': content.reactions.r1.text,
-      '{{content.reactions.r1.time}}': content.reactions.r1.time,
-      '{{content.reactions.r1.likes}}': content.reactions.r1.likes.toString(),
-      '{{content.reactions.r2.name}}': content.reactions.r2.name,
-      '{{content.reactions.r2.text}}': content.reactions.r2.text,
-      '{{content.reactions.r2.time}}': content.reactions.r2.time,
-      '{{content.reactions.r2.likes}}': content.reactions.r2.likes.toString(),
-      '{{content.reactions.r3.name}}': content.reactions.r3.name,
-      '{{content.reactions.r3.text}}': content.reactions.r3.text,
-      '{{content.reactions.r3.time}}': content.reactions.r3.time,
-      '{{content.reactions.r3.likes}}': content.reactions.r3.likes.toString(),
-      '{{content.brands.brand1.name}}': content.brands.brand1.name,
-      '{{content.brands.brand1.logo}}': content.brands.brand1.logo,
-      '{{content.guarantee.badge}}': content.guarantee.badge,
-      '{{content.assurances.blurb}}': content.assurances.blurb,
-      '{{content.footer.copyright}}': content.footer.copyright,
-      '{{content.footer.disclaimer}}': content.footer.disclaimer,
-      '{{content.shipping.threshold}}': content.shipping.threshold
-    }
-
-    // Apply all replacements
-    let replacementCount = 0
-    for (const [placeholder, value] of Object.entries(replacements)) {
-      if (htmlContent.includes(placeholder)) {
-        htmlContent = htmlContent.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value)
-        replacementCount++
-      }
-    }
-
-    // Comprehensive deduplication - remove ALL duplicate content
-    htmlContent = removeDuplicateContent(htmlContent, content)
-
-    // Additional aggressive deduplication
-    htmlContent = aggressiveDeduplication(htmlContent)
-
-
-    // Add image fallback handling to prevent broken image symbols
-    htmlContent = addImageFallbacks(htmlContent)
-
-    // Add CSS to hide broken images gracefully
-    htmlContent = addBrokenImageCSS(htmlContent)
-
-    // Add JavaScript to handle broken images dynamically
-    htmlContent = addBrokenImageJS(htmlContent)
-
-    // Disable all clickable links to prevent navigation
-    htmlContent = disableAllLinks(htmlContent)
-
-    return htmlContent
-
-  } catch (error) {
-    console.error('❌ Error in injectContentIntoTemplate:', error)
-    console.warn('⚠️ Falling back to basic template generation')
-    return createFallbackTemplate(content)
+  // Replace all placeholders with actual content
+  const replacements: { [key: string]: string } = {
+    '{{content.hero.headline}}': content.hero.headline,
+    '{{content.hero.subheadline}}': content.hero.subheadline,
+    '{{content.author.name}}': content.author.name,
+    '{{content.author.image}}': content.author.image,
+    '{{content.author.date}}': content.author.date,
+    '{{content.topbar.label}}': content.topbar.label,
+    '{{content.alert.banner}}': content.alert.banner,
+    '{{content.breadcrumbs.text}}': content.breadcrumbs.text,
+    '{{content.story.intro}}': content.story.intro,
+    '{{content.section1.title}}': content.section1.title,
+    '{{content.section1.body}}': content.section1.body,
+    '{{content.section1.image}}': content.section1.image,
+    '{{content.section1.imageAlt}}': content.section1.imageAlt,
+    '{{content.section2.title}}': content.section2.title,
+    '{{content.section2.body}}': content.section2.body,
+    '{{content.section2.image}}': content.section2.image,
+    '{{content.section2.imageAlt}}': content.section2.imageAlt,
+    '{{content.section3.title}}': content.section3.title,
+    '{{content.section3.body}}': content.section3.body,
+    '{{content.section3.image}}': content.section3.image,
+    '{{content.section3.imageAlt}}': content.section3.imageAlt,
+    '{{content.section4.title}}': content.section4.title,
+    '{{content.section4.body}}': content.section4.body,
+    '{{content.section4.image}}': content.section4.image,
+    '{{content.section4.imageAlt}}': content.section4.imageAlt,
+    '{{content.section5.title}}': content.section5.title,
+    '{{content.section5.body}}': content.section5.body,
+    '{{content.section5.image}}': content.section5.image,
+    '{{content.section5.imageAlt}}': content.section5.imageAlt,
+    '{{content.section6.title}}': content.section6.title,
+    '{{content.section6.body}}': content.section6.body,
+    '{{content.section6.image}}': content.section6.image,
+    '{{content.section6.imageAlt}}': content.section6.imageAlt,
+    '{{content.section7.title}}': content.section7.title,
+    '{{content.section7.body}}': content.section7.body,
+    '{{content.section7.image}}': content.section7.image,
+    '{{content.section7.imageAlt}}': content.section7.imageAlt,
+    '{{content.section8.title}}': content.section8.title,
+    '{{content.section8.body}}': content.section8.body,
+    '{{content.section8.image}}': content.section8.image,
+    '{{content.section8.imageAlt}}': content.section8.imageAlt,
+    '{{content.section9.title}}': content.section9.title,
+    '{{content.section9.body}}': content.section9.body,
+    '{{content.section9.image}}': content.section9.image,
+    '{{content.section9.imageAlt}}': content.section9.imageAlt,
+    '{{content.section10.title}}': content.section10.title,
+    '{{content.section10.body}}': content.section10.body,
+    '{{content.section10.image}}': content.section10.image,
+    '{{content.section10.imageAlt}}': content.section10.imageAlt,
+    '{{content.section11.title}}': content.section11.title,
+    '{{content.section11.body}}': content.section11.body,
+    '{{content.section11.image}}': content.section11.image,
+    '{{content.section11.imageAlt}}': content.section11.imageAlt,
+    '{{content.section12.title}}': content.section12.title,
+    '{{content.section12.body}}': content.section12.body,
+    '{{content.section12.image}}': content.section12.image,
+    '{{content.section12.imageAlt}}': content.section12.imageAlt,
+    '{{content.cta.primary}}': content.cta.primary,
+    '{{content.cta.secondary}}': content.cta.secondary,
+    '{{content.cta.primaryUrl}}': content.cta.primaryUrl,
+    '{{content.sidebar.ctaHeadline}}': content.sidebar.ctaHeadline,
+    '{{content.sidebar.ctaButton}}': content.sidebar.ctaButton,
+    '{{content.sticky.cta}}': content.sticky.cta,
+    '{{content.reactions.title}}': content.reactions.title,
+    '{{content.reactions.r1.name}}': content.reactions.r1.name,
+    '{{content.reactions.r1.text}}': content.reactions.r1.text,
+    '{{content.reactions.r1.time}}': content.reactions.r1.time,
+    '{{content.reactions.r1.likes}}': content.reactions.r1.likes.toString(),
+    '{{content.reactions.r2.name}}': content.reactions.r2.name,
+    '{{content.reactions.r2.text}}': content.reactions.r2.text,
+    '{{content.reactions.r2.time}}': content.reactions.r2.time,
+    '{{content.reactions.r2.likes}}': content.reactions.r2.likes.toString(),
+    '{{content.reactions.r3.name}}': content.reactions.r3.name,
+    '{{content.reactions.r3.text}}': content.reactions.r3.text,
+    '{{content.reactions.r3.time}}': content.reactions.r3.time,
+    '{{content.reactions.r3.likes}}': content.reactions.r3.likes.toString(),
+    '{{content.brands.brand1.name}}': content.brands.brand1.name,
+    '{{content.brands.brand1.logo}}': content.brands.brand1.logo,
+    '{{content.guarantee.badge}}': content.guarantee.badge,
+    '{{content.guarantee.text}}': content.guarantee.text,
+    '{{content.assurances.blurb}}': content.assurances.blurb,
+    '{{content.footer.copyright}}': content.footer.copyright,
+    '{{content.footer.disclaimer}}': content.footer.disclaimer,
+    '{{content.shipping.threshold}}': content.shipping.threshold,
+    '{{content.brands.brand1.name}}': content.brands.brand1.name,
+    '{{content.brands.brand1.logo}}': content.brands.brand1.logo,
   }
+
+  // Apply all replacements
+  let replacementCount = 0
+  for (const [placeholder, value] of Object.entries(replacements)) {
+    if (htmlContent.includes(placeholder)) {
+      htmlContent = htmlContent.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value)
+      replacementCount++
+    }
+  }
+
+  // Comprehensive deduplication - remove ALL duplicate content
+  htmlContent = removeDuplicateContent(htmlContent, content)
+
+  
+  // Add image fallback handling to prevent broken image symbols
+  htmlContent = addImageFallbacks(htmlContent)
+  
+  // Add CSS to hide broken images gracefully
+  htmlContent = addBrokenImageCSS(htmlContent)
+  
+  // Add JavaScript to handle broken images dynamically
+  htmlContent = addBrokenImageJS(htmlContent)
+  
+  // Disable all clickable links to prevent navigation
+  htmlContent = disableAllLinks(htmlContent)
+  
+  return htmlContent
 }
-
-// Create a fallback template when injection fails
-function createFallbackTemplate(content: ContentData): string {
-  console.log('🔧 Creating fallback template')
-
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${content.hero.headline}</title>
-  <style>
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-      line-height: 1.6; 
-      margin: 0; 
-      padding: 20px; 
-      background: #f5f5f5;
-    }
-    .container { 
-      max-width: 800px; 
-      margin: 0 auto; 
-      background: white; 
-      padding: 40px; 
-      border-radius: 8px; 
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .hero { 
-      text-align: center; 
-      margin-bottom: 40px; 
-      padding: 40px 0; 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border-radius: 8px;
-    }
-    .hero h1 { 
-      font-size: 2.5rem; 
-      margin-bottom: 20px; 
-      font-weight: 700;
-    }
-    .hero p { 
-      font-size: 1.2rem; 
-      opacity: 0.9;
-    }
-    .section { 
-      margin: 30px 0; 
-      padding: 20px; 
-      border-left: 4px solid #667eea;
-      background: #f8f9fa;
-    }
-    .section h2 { 
-      color: #333; 
-      margin-bottom: 15px; 
-      font-size: 1.5rem;
-    }
-    .cta { 
-      text-align: center; 
-      margin: 40px 0; 
-      padding: 30px; 
-      background: #28a745; 
-      color: white; 
-      border-radius: 8px;
-    }
-    .cta button { 
-      background: white; 
-      color: #28a745; 
-      border: none; 
-      padding: 15px 30px; 
-      font-size: 1.1rem; 
-      border-radius: 25px; 
-      cursor: pointer; 
-      font-weight: 600;
-    }
-    .footer { 
-      text-align: center; 
-      margin-top: 40px; 
-      padding: 20px; 
-      color: #666; 
-      font-size: 0.9rem;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="hero">
-      <h1>${content.hero.headline}</h1>
-      <p>${content.hero.subheadline}</p>
-    </div>
-    
-    <div class="section">
-      <h2>${content.section1.title}</h2>
-      <p>${content.section1.body}</p>
-    </div>
-    
-    <div class="section">
-      <h2>${content.section2.title}</h2>
-      <p>${content.section2.body}</p>
-    </div>
-    
-    <div class="section">
-      <h2>${content.section3.title}</h2>
-      <p>${content.section3.body}</p>
-    </div>
-    
-    <div class="cta">
-      <h2>Ready to Get Started?</h2>
-      <p>${content.cta.primary}</p>
-      <button>${content.cta.primary}</button>
-    </div>
-    
-    <div class="footer">
-      <p>${content.footer.copyright}</p>
-      <p>${content.footer.disclaimer}</p>
-    </div>
-  </div>
-</body>
-</html>
-  `.trim()
-}
-
-// Aggressive deduplication function to remove all duplicates
-function aggressiveDeduplication(htmlContent: string): string {
-  console.log('🧹 Starting aggressive deduplication...')
-
-  let cleanedContent = htmlContent
-
-  // 1. Remove duplicate legal notices/disclaimers (most common issue)
-  const disclaimerPatterns = [
-    /Legal notice:[\s\S]*?senior concerns\./g,
-    /Results may vary[\s\S]*?healthcare provider\./g,
-    /This product is not intended to diagnose[\s\S]*?healthcare provider\./g,
-    /Individual results vary[\s\S]*?senior concerns\./g,
-    /Merit Relief is an over[\s\S]*?senior concerns\./g,
-    /The statements on this page[\s\S]*?senior concerns\./g,
-    /The Mineral Delivery System[\s\S]*?complete details\./g
-  ]
-
-  for (const pattern of disclaimerPatterns) {
-    const matches = cleanedContent.match(pattern)
-    if (matches && matches.length > 1) {
-      console.log(`🗑️ Removing ${matches.length - 1} duplicate disclaimers`)
-      // Keep only the first occurrence
-      cleanedContent = cleanedContent.replace(pattern, (match, offset) => {
-        return offset === cleanedContent.indexOf(match) ? match : ''
-      })
-    }
-  }
-
-  // 2. Remove duplicate CTAs
-  const ctaPatterns = [
-    /Try Merit Relief.*?Today/gi,
-    /Get Started Now/gi,
-    /Order Now/gi,
-    /Limited.*?trial/gi,
-    /Risk.*?Free/gi
-  ]
-
-  for (const pattern of ctaPatterns) {
-    const matches = cleanedContent.match(pattern)
-    if (matches && matches.length > 1) {
-      console.log(`🗑️ Removing ${matches.length - 1} duplicate CTAs`)
-      // Keep only the first occurrence
-      cleanedContent = cleanedContent.replace(pattern, (match, offset) => {
-        return offset === cleanedContent.indexOf(match) ? match : ''
-      })
-    }
-  }
-
-  // 3. Remove duplicate paragraphs (same content appearing multiple times)
-  const paragraphs = cleanedContent.split(/\n\s*\n/).filter(p => p.trim().length > 50)
-  const uniqueParagraphs = []
-  const seenParagraphs = new Set()
-
-  for (const paragraph of paragraphs) {
-    const normalized = paragraph.trim().toLowerCase().replace(/\s+/g, ' ')
-    if (!seenParagraphs.has(normalized)) {
-      seenParagraphs.add(normalized)
-      uniqueParagraphs.push(paragraph)
-    } else {
-      console.log('🗑️ Removing duplicate paragraph')
-    }
-  }
-
-  cleanedContent = uniqueParagraphs.join('\n\n')
-
-  // 4. Remove duplicate sections
-  const sections = cleanedContent.split(/<section|<div class="section"|<div class="content"/gi)
-  const uniqueSections = []
-  const seenSections = new Set()
-
-  for (const section of sections) {
-    if (section.trim().length > 100) {
-      const normalized = section.trim().toLowerCase().replace(/\s+/g, ' ')
-      if (!seenSections.has(normalized)) {
-        seenSections.add(normalized)
-        uniqueSections.push(section)
-      } else {
-        console.log('🗑️ Removing duplicate section')
-      }
-    }
-  }
-
-  cleanedContent = uniqueSections.join('')
-
-  // 5. Remove duplicate buttons/CTAs in HTML
-  const buttonPattern = /<button[^>]*>.*?<\/button>/gi
-  const buttons = cleanedContent.match(buttonPattern) || []
-  const uniqueButtons = [...new Set(buttons)]
-
-  if (buttons.length !== uniqueButtons.length) {
-    console.log(`🗑️ Removing ${buttons.length - uniqueButtons.length} duplicate buttons`)
-    // Keep only unique buttons
-    let newContent = cleanedContent
-    for (const button of buttons) {
-      if (buttons.filter(b => b === button).length > 1) {
-        // This button appears multiple times, keep only the first occurrence
-        const escapedButton = button.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        const buttonRegex = new RegExp(escapedButton, 'g')
-        newContent = newContent.replace(buttonRegex, button)
-      }
-    }
-    cleanedContent = newContent
-  }
-
-  console.log('✅ Aggressive deduplication completed')
-  return cleanedContent
-}
-
 
 // Create appropriate fallback image URL based on context
 function createFallbackImageUrl(altText: string, originalSrc: string): string {
   // Determine image type and dimensions based on context
   let dimensions = '600x400'
   let text = altText || 'Image'
-
+  
   // Adjust dimensions based on image context
   if (altText.toLowerCase().includes('avatar') || altText.toLowerCase().includes('profile')) {
     dimensions = '100x100'
@@ -1348,16 +1054,16 @@ function createFallbackImageUrl(altText: string, originalSrc: string): string {
     dimensions = '20x20'
     text = '★'
   }
-
+  
   // Clean up text for URL
   text = text.replace(/[^a-zA-Z0-9\s]/g, '').substring(0, 20)
-
+  
   return `https://placehold.co/${dimensions}?text=${encodeURIComponent(text)}`
 }
 
 // Add image fallback handling to prevent broken image symbols
 function addImageFallbacks(htmlContent: string): string {
-
+  
   // Replace all <img> tags with versions that have onerror fallbacks
   htmlContent = htmlContent.replace(
     /<img([^>]*?)\s+src\s*=\s*["']([^"']*)["']([^>]*?)>/gi,
@@ -1365,15 +1071,15 @@ function addImageFallbacks(htmlContent: string): string {
       // Extract alt text if present
       const altMatch = match.match(/alt\s*=\s*["']([^"']*)["']/i)
       const altText = altMatch ? altMatch[1] : 'Image'
-
+      
       // Create fallback image URL with descriptive text and appropriate dimensions
       const fallbackUrl = createFallbackImageUrl(altText, src)
-
+      
       // Return img tag with onerror handler
       return `<img${beforeSrc} src="${src}"${afterSrc} onerror="this.src='${fallbackUrl}'; this.onerror=null;" style="object-fit: cover;">`
     }
   )
-
+  
   // Also handle img tags without explicit src attributes (in case of template placeholders)
   htmlContent = htmlContent.replace(
     /<img([^>]*?)>/gi,
@@ -1382,29 +1088,29 @@ function addImageFallbacks(htmlContent: string): string {
       if (match.includes('onerror=')) {
         return match
       }
-
+      
       // Extract src if present
       const srcMatch = match.match(/src\s*=\s*["']([^"']*)["']/i)
       const src = srcMatch ? srcMatch[1] : ''
-
+      
       // Extract alt text
       const altMatch = match.match(/alt\s*=\s*["']([^"']*)["']/i)
       const altText = altMatch ? altMatch[1] : 'Image'
-
+      
       // Create fallback image URL
       const fallbackUrl = createFallbackImageUrl(altText, src)
-
+      
       // Add onerror handler
       return match.replace('>', ` onerror="this.src='${fallbackUrl}'; this.onerror=null;" style="object-fit: cover;">`)
     }
   )
-
+  
   return htmlContent
 }
 
 // Add CSS to hide broken images gracefully
 function addBrokenImageCSS(htmlContent: string): string {
-
+  
   // CSS to hide broken images and provide graceful fallbacks
   const brokenImageCSS = `
     <style>
@@ -1437,23 +1143,23 @@ function addBrokenImageCSS(htmlContent: string): string {
       }
     </style>
   `
-
+  
   // Insert CSS into the head section
   if (htmlContent.includes('<head>')) {
     htmlContent = htmlContent.replace('<head>', `<head>${brokenImageCSS}`)
   } else if (htmlContent.includes('<html>')) {
     htmlContent = htmlContent.replace('<html>', `<html>${brokenImageCSS}`)
-  } else {
+    } else {
     // If no head tag, add CSS at the beginning
     htmlContent = `${brokenImageCSS}${htmlContent}`
   }
-
+  
   return htmlContent
 }
 
 // Add JavaScript to handle broken images dynamically
 function addBrokenImageJS(htmlContent: string): string {
-
+  
   // JavaScript to handle broken images dynamically
   const brokenImageJS = `
       <script>
@@ -1504,7 +1210,7 @@ function addBrokenImageJS(htmlContent: string): string {
         // Run when DOM is ready
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', handleBrokenImages);
-  } else {
+        } else {
           handleBrokenImages();
         }
         
@@ -1513,7 +1219,7 @@ function addBrokenImageJS(htmlContent: string): string {
       })();
       </script>
     `
-
+    
   // Insert JavaScript before closing body tag or at the end
   if (htmlContent.includes('</body>')) {
     htmlContent = htmlContent.replace('</body>', `${brokenImageJS}</body>`)
@@ -1523,36 +1229,36 @@ function addBrokenImageJS(htmlContent: string): string {
     // If no body tag, add script at the end
     htmlContent = `${htmlContent}${brokenImageJS}`
   }
-
+  
   return htmlContent
 }
 
 // Disable all clickable links to prevent navigation
 function disableAllLinks(htmlContent: string): string {
-
+  
   // Remove all href attributes from <a> tags
   htmlContent = htmlContent.replace(/<a([^>]*)\s+href\s*=\s*["'][^"']*["']([^>]*)>/gi, '<a$1$2>')
-
+  
   // Remove all onclick attributes
   htmlContent = htmlContent.replace(/\s+onclick\s*=\s*["'][^"']*["']/gi, '')
-
+  
   // Remove all onmousedown attributes
   htmlContent = htmlContent.replace(/\s+onmousedown\s*=\s*["'][^"']*["']/gi, '')
-
+  
   // Remove all onmouseup attributes
   htmlContent = htmlContent.replace(/\s+onmouseup\s*=\s*["'][^"']*["']/gi, '')
-
+  
   // Add pointer-events: none to all links via inline styles
   htmlContent = htmlContent.replace(/<a([^>]*)>/gi, '<a$1 style="pointer-events: none; cursor: default;">')
-
+  
   // Also disable buttons that might have click handlers
   htmlContent = htmlContent.replace(/<button([^>]*)>/gi, '<button$1 style="pointer-events: none; cursor: default;">')
-
+  
   return htmlContent
 }
 
-function createCarouselHtml(templates: Array<{ angle: string, html: string }>): string {
-
+function createCarouselHtml(templates: Array<{angle: string, html: string}>): string {
+  
   if (templates.length === 0) {
     return '<div>No templates available</div>'
   }
@@ -1562,7 +1268,7 @@ function createCarouselHtml(templates: Array<{ angle: string, html: string }>): 
   }
 
   const carouselId = `carousel-${Date.now()}`
-
+  
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -1830,7 +1536,7 @@ export async function processJobResults(
   results: any,
   advertorialType: 'listicle' | 'advertorial',
   getRandomInjectableTemplate: (type: 'listicle' | 'advertorial') => Promise<InjectableTemplate | null>
-): Promise<{ templates: Array<{ angle: string, html: string }>, combinedHtml: string }> {
+): Promise<{ templates: Array<{angle: string, html: string}>, combinedHtml: string}> {
   try {
     console.log(`🚀 Processing job results for advertorial type: ${advertorialType}`)
     console.log('📊 Results structure:', {
@@ -1839,35 +1545,26 @@ export async function processJobResults(
       swipeResultsCount: results.swipe_results?.length || 0,
       projectName: results.project_name
     })
-
+    
     // Get a random template for the specified type
     const template = await getRandomInjectableTemplate(advertorialType)
-
+    
     if (!template) {
       console.error(`No ${advertorialType} template found in database`)
-      console.warn('⚠️ Creating fallback template without injectable template')
-
-      // Create fallback content and return it
-      const fallbackContent = extractContentFromResults(results)
-      const fallbackHtml = createFallbackTemplate(fallbackContent)
-
-      return {
-        templates: [{ angle: 'Fallback', html: fallbackHtml }],
-        combinedHtml: fallbackHtml
-      }
+      throw new Error(`No ${advertorialType} template found`)
     }
 
     console.log(`✅ Found template: ${template.name} (${template.advertorial_type})`)
 
     // Process each marketing angle separately
     const swipeResults = results.swipe_results || []
-    const generatedTemplates: Array<{ angle: string, html: string }> = []
-
+    const generatedTemplates: Array<{angle: string, html: string}> = []
+    
     if (swipeResults.length === 0) {
       // Fallback: generate one template with basic content
       const content = extractContentFromResults(results)
       const finalHtml = injectContentIntoTemplate(template, content)
-      return {
+    return {
         templates: [{ angle: 'Default', html: finalHtml }],
         combinedHtml: finalHtml
       }
@@ -1877,13 +1574,13 @@ export async function processJobResults(
     for (let i = 0; i < swipeResults.length; i++) {
       const swipe = swipeResults[i]
       console.log(`\n🎯 Processing angle ${i + 1}/${swipeResults.length}: ${swipe.angle}`)
-
+      
       try {
         // Extract content for this specific angle
         const content = extractContentFromAngle(results, swipe, i)
         console.log(`📝 Angle ${i + 1} content keys:`, Object.keys(content))
         console.log(`📝 Angle ${i + 1} hero headline:`, content.hero.headline)
-
+        
         // Inject content into template
         const angleHtml = injectContentIntoTemplate(template, content)
         generatedTemplates.push({
@@ -1891,19 +1588,11 @@ export async function processJobResults(
           html: angleHtml
         })
         console.log(`✅ Angle ${i + 1} HTML generated. Length: ${angleHtml.length}`)
-
+        
       } catch (error) {
         console.error(`❌ Error processing angle ${i + 1}:`, error)
         // Continue with other angles even if one fails
       }
-    }
-
-    // Ensure we always have at least one template
-    if (generatedTemplates.length === 0) {
-      console.warn('⚠️ No templates generated, creating fallback')
-      const fallbackContent = extractContentFromResults(results)
-      const fallbackHtml = createFallbackTemplate(fallbackContent)
-      generatedTemplates.push({ angle: 'Fallback', html: fallbackHtml })
     }
 
     // Create carousel HTML that displays all templates
@@ -1917,34 +1606,6 @@ export async function processJobResults(
 
   } catch (error) {
     console.error('❌ Error in processJobResults:', error)
-    console.warn('⚠️ Returning fallback template due to error')
-
-    // Always return a fallback template even on error
-    try {
-      const fallbackContent = extractContentFromResults(results)
-      const fallbackHtml = createFallbackTemplate(fallbackContent)
-
-      return {
-        templates: [{ angle: 'Error Fallback', html: fallbackHtml }],
-        combinedHtml: fallbackHtml
-      }
-    } catch (fallbackError) {
-      console.error('❌ Even fallback template failed:', fallbackError)
-      // Last resort - return a basic HTML template
-      const basicHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head><title>Template Error</title></head>
-        <body>
-          <h1>Template Generation Error</h1>
-          <p>There was an error generating the template. Please try again.</p>
-        </body>
-        </html>
-      `
-      return {
-        templates: [{ angle: 'Error', html: basicHtml }],
-        combinedHtml: basicHtml
-      }
-    }
+    throw error
   }
 }
