@@ -93,6 +93,27 @@ export async function GET(
     
     const currentStatus = updatedJob.rows[0]
     
+    // Check if templates are missing for completed jobs
+    if (currentStatus.status === 'completed') {
+      const templateCount = await query(`
+        SELECT COUNT(*) as count
+        FROM injected_templates 
+        WHERE job_id = $1
+      `, [jobId])
+      
+      const count = parseInt(templateCount.rows[0].count)
+      if (count === 0) {
+        console.log(`🔧 No templates found for completed job ${jobId}, generating...`)
+        try {
+          const result = await deepCopyClient.getJobResult(deepCopyJobId)
+          const templateResult = await generateAndStoreInjectedTemplates(jobId, result)
+          console.log('📊 Template generation result:', templateResult)
+        } catch (error) {
+          console.error('❌ Error generating templates for completed job:', error)
+        }
+      }
+    }
+
     const response = NextResponse.json({
       status: currentStatus.status,
       progress: currentStatus.progress || 0,
