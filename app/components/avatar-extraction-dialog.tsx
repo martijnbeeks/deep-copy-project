@@ -53,8 +53,12 @@ export function AvatarExtractionDialog({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         },
-        body: JSON.stringify({ url: salesPageUrl })
+        body: JSON.stringify({ url: salesPageUrl }),
+        cache: 'no-store'
       })
 
       if (!response.ok) {
@@ -84,8 +88,15 @@ export function AvatarExtractionDialog({
     
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        // Check status
-        const statusResponse = await fetch(`/api/avatars/${jobId}`)
+        // Check status with cache-busting
+        const statusResponse = await fetch(`/api/avatars/${jobId}?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        })
         
         if (!statusResponse.ok) {
           throw new Error(`Status check failed: ${statusResponse.status}`)
@@ -94,8 +105,15 @@ export function AvatarExtractionDialog({
         const statusData = await statusResponse.json()
         
         if (statusData.status === 'SUCCEEDED') {
-          // Get results
-          const resultResponse = await fetch(`/api/avatars/${jobId}/result`)
+          // Get results with cache-busting
+          const resultResponse = await fetch(`/api/avatars/${jobId}/result?t=${Date.now()}`, {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            }
+          })
           
           if (!resultResponse.ok) {
             throw new Error(`Result fetch failed: ${resultResponse.status}`)
@@ -116,7 +134,14 @@ export function AvatarExtractionDialog({
         // Check if results are available even if status is still RUNNING
         // (Sometimes results are available before status is updated)
         try {
-          const resultResponse = await fetch(`/api/avatars/${jobId}/result`)
+          const resultResponse = await fetch(`/api/avatars/${jobId}/result?t=${Date.now()}`, {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            }
+          })
           
           if (resultResponse.ok) {
             const resultData = await resultResponse.json()

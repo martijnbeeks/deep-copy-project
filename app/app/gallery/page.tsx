@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Loader2, Search, Filter, Download, Copy, Eye, Grid3X3, List, ChevronLeft, ChevronRight, X } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import { useAutoPolling } from "@/hooks/use-auto-polling"
 
 interface GalleryTemplate {
   id: string
@@ -29,6 +30,9 @@ interface GalleryTemplate {
 export default function ResultsGalleryPage() {
   const { user, isAuthenticated } = useAuthStore()
   const router = useRouter()
+  
+  // Use auto-polling for processing jobs (hits DeepCopy API directly)
+  const { processingJobsCount } = useAutoPolling()
   
   const [galleryTemplates, setGalleryTemplates] = useState<GalleryTemplate[]>([])
   const [filteredTemplates, setFilteredTemplates] = useState<GalleryTemplate[]>([])

@@ -379,10 +379,15 @@ async function generateAndStoreInjectedTemplates(jobId: string, result: any) {
     // Check if we have swipe_results in the result
     const apiResult = result.results || result
     // Look for swipe_results in the correct location
-    const swipeResults = apiResult.swipe_results || 
-                        apiResult.full_result?.results?.swipe_results || 
-                        apiResult.full_result?.swipe_results ||
-                        []
+    let swipeResults = apiResult.swipe_results || 
+                      apiResult.full_result?.results?.swipe_results || 
+                      apiResult.full_result?.swipe_results ||
+                      []
+    
+    // If swipeResults is an object, convert it to an array
+    if (swipeResults && typeof swipeResults === 'object' && !Array.isArray(swipeResults)) {
+      swipeResults = Object.values(swipeResults)
+    }
     
     if (!swipeResults || !Array.isArray(swipeResults) || swipeResults.length === 0) {
       console.log('No swipe_results found for job:', jobId)
@@ -423,16 +428,16 @@ async function generateAndStoreInjectedTemplates(jobId: string, result: any) {
           const { extractContentFromSwipeResult, injectContentIntoTemplate } = await import('@/lib/utils/template-injection')
           
           // Extract content from swipe result
-          const contentData = extractContentFromSwipeResult(swipeResult)
+          const contentData = extractContentFromSwipeResult(swipeResult, job.advertorial_type)
           
           // Inject content into template
-          const injectedHtml = injectContentIntoTemplate(injectableTemplate.html_content, contentData)
+          const injectedHtml = injectContentIntoTemplate(injectableTemplate, contentData)
           
           // Store the injected template
           await query(`
-            INSERT INTO injected_templates (job_id, angle_index, angle_name, html_content)
-            VALUES ($1, $2, $3, $4)
-          `, [jobId, i + 1, angle || `Angle ${i + 1}`, injectedHtml])
+            INSERT INTO injected_templates (job_id, angle_index, angle_name, html_content, template_id)
+            VALUES ($1, $2, $3, $4, $5)
+          `, [jobId, i + 1, angle || `Angle ${i + 1}`, injectedHtml, job.template_id])
           
           console.log(`✅ Generated injected template for angle ${i + 1}: ${angle}`)
         } catch (error) {
@@ -441,7 +446,7 @@ async function generateAndStoreInjectedTemplates(jobId: string, result: any) {
       }
     }
     
-    console.log(`✅ Generated ${apiResult.angles.length} injected templates for job ${jobId}`)
+    console.log(`✅ Generated ${angles.length} injected templates for job ${jobId}`)
   } catch (error) {
     console.error('Error generating injected templates:', error)
   }

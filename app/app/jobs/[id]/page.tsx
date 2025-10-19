@@ -15,6 +15,7 @@ import { useJob } from "@/lib/hooks/use-jobs"
 import { JobWithResult } from "@/lib/db/types"
 import { JobDetailsSkeleton } from "@/components/ui/skeleton-loaders"
 import { useJobPolling } from "@/hooks/use-job-polling"
+import { useAutoPolling } from "@/hooks/use-auto-polling"
 import { useToast } from "@/hooks/use-toast"
 
 export default function JobDetailPage({ params }: { params: { id: string } }) {
@@ -27,6 +28,9 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
 
   // Use TanStack Query for data fetching
   const { data: currentJob, isLoading, error, refetch } = useJob(params.id)
+
+  // Use auto-polling for processing jobs (hits DeepCopy API directly)
+  const { processingJobsCount } = useAutoPolling()
 
   // Use client-side polling for job status updates
   const { 

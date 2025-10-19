@@ -94,8 +94,8 @@ export async function POST(request: NextRequest) {
     const finalCustomerAvatars = customer_avatars || []
 
     // Use the template_id directly as swipe_file_id for DeepCopy API
-    // The template_id (e.g., L00001, A00001) is what DeepCopy API expects
-    const swipeFileId = template_id || (advertorial_type === 'listicle' ? 'L00005' : 'A00001')
+    // Ensure we have valid template IDs: A00001-A00004 for advertorial, L00001-L00004 for listicle
+    const swipeFileId = template_id || (advertorial_type === 'listicle' ? 'L00001' : 'A00001')
     
     console.log(`🔍 Template Selection Debug:`)
     console.log(`  - Advertorial Type: ${advertorial_type}`)

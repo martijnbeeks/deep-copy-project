@@ -107,13 +107,19 @@ class DeepCopyClient {
   }
 
   private async getAccessToken(): Promise<string> {
-      // ALWAYS get a fresh token - no caching for serverless
+      // ALWAYS get a fresh token - no caching
+      console.log('Requesting fresh access token...')
+      
       try {
           const response = await fetch(this.config.tokenEndpoint, {
               method: 'POST',
+              cache: 'no-store',
               headers: {
                   'Content-Type': 'application/x-www-form-urlencoded',
-                  'Authorization': `Basic ${btoa(`${this.config.clientId}:${this.config.clientSecret}`)}`
+                  'Authorization': `Basic ${btoa(`${this.config.clientId}:${this.config.clientSecret}`)}`,
+                  'Cache-Control': 'no-cache, no-store, must-revalidate',
+                  'Pragma': 'no-cache',
+                  'Expires': '0'
               },
               body: new URLSearchParams({
                   grant_type: 'client_credentials',
@@ -123,21 +129,30 @@ class DeepCopyClient {
 
           if (!response.ok) {
               const errorText = await response.text()
+              console.error(`Token request failed: ${response.status} ${response.statusText} - ${errorText}`)
               throw new Error(`Token request failed: ${response.status} ${response.statusText} - ${errorText}`)
           }
 
           const data: AccessTokenResponse = await response.json()
+          console.log('Fresh access token obtained, expires_in:', data.expires_in)
+          console.log('Token preview:', data.access_token.substring(0, 20) + '...')
           return data.access_token
       } catch (error) {
+          console.error('Authentication error:', error)
           throw new Error('Authentication failed')
       }
   }
 
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
       const token = await this.getAccessToken()
-      const fullUrl = `${this.config.apiUrl}${endpoint}`
+      console.log(`🔑 Using token: ${token.substring(0, 20)}...`)
+      const fullUrl = `${this.config.apiUrl}${endpoint}?t=${Date.now()}`
+      console.log(`🌐 Making request to: ${fullUrl}`)
       const headers: Record<string, string> = {
           'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
           ...(options.headers as Record<string, string> || {})
       }
 
@@ -148,11 +163,17 @@ class DeepCopyClient {
 
       const response = await fetch(fullUrl, {
           ...options,
+          cache: 'no-store',
           headers
       })
 
+      console.log(`📊 Response status: ${response.status} ${response.statusText}`)
+
       if (!response.ok) {
           const errorText = await response.text()
+          console.error(`❌ API Error: ${response.status} ${response.statusText} - ${errorText}`)
+          console.error(`❌ Request URL: ${fullUrl}`)
+          console.error(`❌ Request headers:`, headers)
           throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`)
       }
 
@@ -173,9 +194,8 @@ class DeepCopyClient {
   }
 
   async getJobStatus(jobId: string): Promise<JobStatusResponse> {
-      // Add timestamp to prevent caching
-      const timestamp = Date.now()
-      return this.makeRequest<JobStatusResponse>(`jobs/${jobId}?t=${timestamp}`)
+      // Don't add timestamp here - makeRequest will add it
+      return this.makeRequest<JobStatusResponse>(`jobs/${jobId}`)
   }
 
   async getJobResult(jobId: string): Promise<JobResult> {
@@ -197,7 +217,7 @@ export const deepCopyClient = new DeepCopyClient({
   apiUrl: 'https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/',
   tokenEndpoint: 'https://deepcopy-613663743323-eu-west-1.auth.eu-west-1.amazoncognito.com/oauth2/token',
   clientId: process.env.DEEPCOPY_CLIENT_ID || '5mbatc7uv35hr23qip437s2ai5',
-  clientSecret: process.env.DEEPCOPY_CLIENT_SECRET || '1msm19oltu724113t5vujtldr4uvum7hvn6cj7n1s3tg1ar02k5'
+  clientSecret: process.env.DEEPCOPY_CLIENT_SECRET || '1msm19oltu7241134t5vujtldr4uvum7hvn6cj7n1s3tg1ar02k5'
 })
 
 export type { SubmitJobRequest, SubmitJobResponse, JobStatusResponse, JobResult, SwipeResult, Listicle, ListicleItem, Advertorial, CustomerAvatar, AvatarExtractionRequest, AvatarExtractionResponse }

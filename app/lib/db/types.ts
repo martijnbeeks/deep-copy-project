@@ -59,7 +59,7 @@ export interface JobWithResult extends Job {
 export interface InjectableTemplate {
   id: string
   name: string
-  type: 'listicle' | 'advertorial'
+  advertorial_type: 'listicle' | 'advertorial'
   html_content: string
   description?: string
   is_active: boolean
