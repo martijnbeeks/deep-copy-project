@@ -5,6 +5,7 @@ import { useJobsStore } from "@/stores/jobs-store"
 import { useSidebar } from "@/contexts/sidebar-context"
 import { useJobs, useInvalidateJobs } from "@/lib/hooks/use-jobs"
 import { useAutoPolling } from "@/hooks/use-auto-polling"
+import { useSimplePolling } from "@/hooks/use-simple-polling"
 import { Job } from "@/lib/db/types"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Button } from "@/components/ui/button"
@@ -35,6 +36,9 @@ export default function JobsPage() {
 
   // Use auto-polling for processing jobs (hits DeepCopy API directly)
   const { processingJobsCount } = useAutoPolling()
+  
+  // Use simple polling for processing jobs (hits DeepCopy API directly)
+  const { isPolling } = useSimplePolling(jobs)
 
   useEffect(() => {
     if (!user) {
@@ -323,15 +327,21 @@ export default function JobsPage() {
 }
 
 const getStatusBadge = (status: Job["status"]) => {
+  const normalizedStatus = status?.toLowerCase()
+  
   const variants = {
     completed: "default",
     processing: "secondary",
+    running: "secondary",
     pending: "outline",
+    submitted: "outline",
     failed: "destructive",
   } as const
 
+  const variant = variants[normalizedStatus as keyof typeof variants] || "outline"
+
   return (
-    <Badge variant={variants[status]} className="capitalize">
+    <Badge variant={variant} className="capitalize">
       {status}
     </Badge>
   )

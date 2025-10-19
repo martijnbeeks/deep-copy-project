@@ -23,15 +23,21 @@ const getStatusIcon = (status: JobWithTemplate["status"]) => {
 }
 
 const getStatusBadge = (status: JobWithTemplate["status"]) => {
+  const normalizedStatus = status?.toLowerCase()
+  
   const variants = {
     completed: "default",
     processing: "secondary",
+    running: "secondary",
     pending: "outline",
+    submitted: "outline",
     failed: "destructive",
   } as const
 
+  const variant = variants[normalizedStatus as keyof typeof variants] || "outline"
+
   return (
-    <Badge variant={variants[status]} className="capitalize">
+    <Badge variant={variant} className="capitalize">
       {status}
     </Badge>
   )

@@ -43,13 +43,18 @@ export default function DashboardPage() {
   const processingJobsCount = jobs.filter(job => 
     job.status?.toLowerCase() === 'submitted' || 
     job.status?.toLowerCase() === 'processing' || 
+    job.status?.toLowerCase() === 'running' ||
     job.status?.toLowerCase() === 'pending'
   ).length
   
   // Log when jobs data changes
   useEffect(() => {
     const submittedJobs = jobs.filter(j => j.status?.toLowerCase() === 'submitted')
-    const processingJobs = jobs.filter(j => j.status?.toLowerCase() === 'processing' || j.status?.toLowerCase() === 'pending')
+    const processingJobs = jobs.filter(j => 
+      j.status?.toLowerCase() === 'processing' || 
+      j.status?.toLowerCase() === 'running' || 
+      j.status?.toLowerCase() === 'pending'
+    )
     const completedJobs = jobs.filter(j => j.status?.toLowerCase() === 'completed')
     const failedJobs = jobs.filter(j => j.status?.toLowerCase() === 'failed')
     
