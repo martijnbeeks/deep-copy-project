@@ -39,24 +39,32 @@ export default function DashboardPage() {
   // Use simple polling for processing jobs (hits DeepCopy API directly)
   const { isPolling } = useSimplePolling(jobs)
   
-  // Count processing jobs
+  // Count processing jobs (handle both uppercase and lowercase)
   const processingJobsCount = jobs.filter(job => 
-    job.status === 'processing' || job.status === 'pending'
+    job.status?.toLowerCase() === 'submitted' || 
+    job.status?.toLowerCase() === 'processing' || 
+    job.status?.toLowerCase() === 'pending'
   ).length
   
   // Log when jobs data changes
   useEffect(() => {
-    const processingJobs = jobs.filter(j => j.status === 'processing' || j.status === 'pending')
-    const completedJobs = jobs.filter(j => j.status === 'completed')
-    const failedJobs = jobs.filter(j => j.status === 'failed')
+    const submittedJobs = jobs.filter(j => j.status?.toLowerCase() === 'submitted')
+    const processingJobs = jobs.filter(j => j.status?.toLowerCase() === 'processing' || j.status?.toLowerCase() === 'pending')
+    const completedJobs = jobs.filter(j => j.status?.toLowerCase() === 'completed')
+    const failedJobs = jobs.filter(j => j.status?.toLowerCase() === 'failed')
     
     console.log(`📊 Dashboard: Jobs updated - ${jobs.length} total`)
+    console.log(`  - Submitted: ${submittedJobs.length}`)
     console.log(`  - Processing: ${processingJobs.length}`)
     console.log(`  - Completed: ${completedJobs.length}`)
     console.log(`  - Failed: ${failedJobs.length}`)
     
     // Log ALL jobs with their statuses for debugging
     console.log(`📋 All jobs:`, jobs.map(j => ({ id: j.id, title: j.title, status: j.status })))
+    
+    if (submittedJobs.length > 0) {
+      console.log(`📤 Submitted jobs:`, submittedJobs.map(j => ({ id: j.id, title: j.title, status: j.status })))
+    }
     
     if (processingJobs.length > 0) {
       console.log(`🔄 Processing jobs:`, processingJobs.map(j => ({ id: j.id, title: j.title, status: j.status })))

@@ -20,9 +20,11 @@ export function useSimplePolling(jobs: any[]) {
       return
     }
 
-    // Find processing jobs
+    // Find jobs that need polling (handle both uppercase and lowercase)
     const processingJobs = jobs.filter(job => 
-      job.status === 'processing' || job.status === 'pending'
+      job.status?.toLowerCase() === 'submitted' || 
+      job.status?.toLowerCase() === 'processing' || 
+      job.status?.toLowerCase() === 'pending'
     )
 
     console.log(`🔄 Simple polling: Found ${processingJobs.length} processing jobs out of ${jobs.length} total`)
