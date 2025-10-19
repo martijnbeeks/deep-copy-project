@@ -105,9 +105,23 @@ export async function GET(
       if (count === 0) {
         console.log(`🔧 No templates found for completed job ${jobId}, generating...`)
         try {
-          const result = await deepCopyClient.getJobResult(deepCopyJobId)
-          const templateResult = await generateAndStoreInjectedTemplates(jobId, result)
-          console.log('📊 Template generation result:', templateResult)
+          // Get the result from the results table instead of calling DeepCopy API
+          const resultData = await query(`
+            SELECT metadata
+            FROM results 
+            WHERE job_id = $1
+            LIMIT 1
+          `, [jobId])
+          
+          if (resultData.rows.length > 0) {
+            const metadata = resultData.rows[0].metadata
+            const parsedMetadata = typeof metadata === 'string' ? JSON.parse(metadata) : metadata
+            const result = parsedMetadata.full_result
+            const templateResult = await generateAndStoreInjectedTemplates(jobId, result)
+            console.log('📊 Template generation result:', templateResult)
+          } else {
+            console.error('❌ No result data found in database for job:', jobId)
+          }
         } catch (error) {
           console.error('❌ Error generating templates for completed job:', error)
         }
@@ -404,14 +418,12 @@ async function generateAndStoreInjectedTemplates(jobId: string, result: any) {
     console.log(`✅ Found injectable template: ${injectableTemplate.id}`)
     
     // Check if we have swipe_results in the result
+    // The actual data structure is: result.results.swipe_results
     const apiResult = result.results || result
     console.log(`📊 API Result structure:`, Object.keys(apiResult))
     
     // Look for swipe_results in the correct location
-    let swipeResults = apiResult.swipe_results || 
-                      apiResult.full_result?.results?.swipe_results || 
-                      apiResult.full_result?.swipe_results ||
-                      []
+    let swipeResults = apiResult.swipe_results || []
     
     console.log(`📊 Swipe results found:`, swipeResults ? swipeResults.length : 0)
     
