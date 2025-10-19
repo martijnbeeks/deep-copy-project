@@ -24,6 +24,7 @@ export function useSimplePolling(jobs: any[]) {
     const processingJobs = jobs.filter(job => 
       job.status?.toLowerCase() === 'submitted' || 
       job.status?.toLowerCase() === 'processing' || 
+      job.status?.toLowerCase() === 'running' ||
       job.status?.toLowerCase() === 'pending'
     )
 

@@ -6,11 +6,11 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🔄 Server-side polling: Starting...')
     
-    // Get all jobs that need polling (submitted, pending, processing)
+    // Get all jobs that need polling (submitted, pending, processing, running)
     const jobs = await query(`
       SELECT id, status, progress, updated_at
       FROM jobs 
-      WHERE UPPER(status) IN ('SUBMITTED', 'PENDING', 'PROCESSING')
+      WHERE UPPER(status) IN ('SUBMITTED', 'PENDING', 'PROCESSING', 'RUNNING')
       ORDER BY updated_at DESC
     `)
     
@@ -30,12 +30,20 @@ export async function POST(request: NextRequest) {
         const data = await deepCopyClient.getJobStatus(job.id)
         console.log(`📊 Job ${job.id}: ${data.status}${data.progress ? ` (${data.progress}%)` : ''}`)
         
+        // Map DeepCopy status to our database status
+        let mappedStatus = data.status
+        if (data.status === 'RUNNING') {
+          mappedStatus = 'PROCESSING'
+        } else if (data.status === 'SUCCEEDED') {
+          mappedStatus = 'COMPLETED'
+        }
+        
         // Update job status in database
         await query(`
           UPDATE jobs 
           SET status = $1, progress = $2, updated_at = NOW()
           WHERE id = $3
-        `, [data.status, data.progress || 0, job.id])
+        `, [mappedStatus, data.progress || 0, job.id])
         
         console.log(`✅ Updated job ${job.id} status from ${job.status} to ${data.status}`)
         
