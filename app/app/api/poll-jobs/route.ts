@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         })
         
         // If job completed, trigger result processing
-        if (data.status === 'completed') {
+        if (mappedStatus === 'COMPLETED') {
           console.log(`✅ Job ${job.id} completed, triggering result processing...`)
           
           // Call the status endpoint to process results
