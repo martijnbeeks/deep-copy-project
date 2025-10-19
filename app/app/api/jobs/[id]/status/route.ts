@@ -93,6 +93,27 @@ export async function GET(
     
     const currentStatus = updatedJob.rows[0]
     
+    // Check if templates are missing for completed jobs
+    if (currentStatus.status === 'completed') {
+      const templateCount = await query(`
+        SELECT COUNT(*) as count
+        FROM injected_templates 
+        WHERE job_id = $1
+      `, [jobId])
+      
+      const count = parseInt(templateCount.rows[0].count)
+      if (count === 0) {
+        console.log(`🔧 No templates found for completed job ${jobId}, generating...`)
+        try {
+          const result = await deepCopyClient.getJobResult(deepCopyJobId)
+          const templateResult = await generateAndStoreInjectedTemplates(jobId, result)
+          console.log('📊 Template generation result:', templateResult)
+        } catch (error) {
+          console.error('❌ Error generating templates for completed job:', error)
+        }
+      }
+    }
+
     const response = NextResponse.json({
       status: currentStatus.status,
       progress: currentStatus.progress || 0,
@@ -345,7 +366,8 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
     })
 
     // Generate and store injected templates for each angle
-    await generateAndStoreInjectedTemplates(localJobId, result)
+    const templateResult = await generateAndStoreInjectedTemplates(localJobId, result)
+    console.log('📊 Template generation result:', templateResult)
     
   } catch (error) {
     // Error storing results
@@ -354,6 +376,8 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
 
 async function generateAndStoreInjectedTemplates(jobId: string, result: any) {
   try {
+    console.log(`🔧 Starting injected template generation for job ${jobId}`)
+    
     // Get job details to find template_id and advertorial_type
     const jobResult = await query(`
       SELECT template_id, advertorial_type, title
@@ -362,36 +386,46 @@ async function generateAndStoreInjectedTemplates(jobId: string, result: any) {
     `, [jobId])
     
     if (jobResult.rows.length === 0) {
-      console.log('Job not found for injected template generation:', jobId)
-      return
+      console.error('❌ Job not found for injected template generation:', jobId)
+      return { success: false, error: 'Job not found' }
     }
     
     const job = jobResult.rows[0]
+    console.log(`📊 Job details: template_id=${job.template_id}, type=${job.advertorial_type}`)
     
     // Get the injectable template
     const injectableTemplate = await getInjectableTemplateForJob(job)
     
     if (!injectableTemplate) {
-      console.log('No injectable template found for job:', jobId)
-      return
+      console.error('❌ No injectable template found for job:', jobId, 'template_id:', job.template_id)
+      return { success: false, error: `No injectable template found for template_id: ${job.template_id}` }
     }
+    
+    console.log(`✅ Found injectable template: ${injectableTemplate.id}`)
     
     // Check if we have swipe_results in the result
     const apiResult = result.results || result
+    console.log(`📊 API Result structure:`, Object.keys(apiResult))
+    
     // Look for swipe_results in the correct location
     let swipeResults = apiResult.swipe_results || 
                       apiResult.full_result?.results?.swipe_results || 
                       apiResult.full_result?.swipe_results ||
                       []
     
+    console.log(`📊 Swipe results found:`, swipeResults ? swipeResults.length : 0)
+    
     // If swipeResults is an object, convert it to an array
     if (swipeResults && typeof swipeResults === 'object' && !Array.isArray(swipeResults)) {
       swipeResults = Object.values(swipeResults)
+      console.log(`📊 Converted object to array, length:`, swipeResults.length)
     }
     
     if (!swipeResults || !Array.isArray(swipeResults) || swipeResults.length === 0) {
-      console.log('No swipe_results found for job:', jobId)
-      return
+      console.error('❌ No swipe_results found for job:', jobId)
+      console.error('❌ Available keys in result:', Object.keys(result))
+      console.error('❌ Available keys in apiResult:', Object.keys(apiResult))
+      return { success: false, error: 'No swipe_results found in API response' }
     }
     
     // Extract angles from swipe results
@@ -418,20 +452,27 @@ async function generateAndStoreInjectedTemplates(jobId: string, result: any) {
     `)
     
     // Process each angle
+    let successCount = 0
+    let errorCount = 0
+    
     for (let i = 0; i < angles.length; i++) {
       const angle = angles[i]
       const swipeResult = swipeResults[i]
       
       if (swipeResult) {
         try {
+          console.log(`🔧 Processing angle ${i + 1}/${angles.length}: ${angle}`)
+          
           // Import template injection utilities
           const { extractContentFromSwipeResult, injectContentIntoTemplate } = await import('@/lib/utils/template-injection')
           
           // Extract content from swipe result
           const contentData = extractContentFromSwipeResult(swipeResult, job.advertorial_type)
+          console.log(`📊 Content data extracted for angle ${i + 1}`)
           
           // Inject content into template
           const injectedHtml = injectContentIntoTemplate(injectableTemplate, contentData)
+          console.log(`📊 Template injected for angle ${i + 1}, HTML length: ${injectedHtml.length}`)
           
           // Store the injected template
           await query(`
@@ -440,15 +481,31 @@ async function generateAndStoreInjectedTemplates(jobId: string, result: any) {
           `, [jobId, i + 1, angle || `Angle ${i + 1}`, injectedHtml, job.template_id])
           
           console.log(`✅ Generated injected template for angle ${i + 1}: ${angle}`)
+          successCount++
         } catch (error) {
-          console.error(`Error generating injected template for angle ${i + 1}:`, error)
+          console.error(`❌ Error generating injected template for angle ${i + 1}:`, error)
+          errorCount++
         }
+      } else {
+        console.error(`❌ No swipe result data for angle ${i + 1}`)
+        errorCount++
       }
     }
     
-    console.log(`✅ Generated ${angles.length} injected templates for job ${jobId}`)
+    console.log(`✅ Generated ${successCount}/${angles.length} injected templates for job ${jobId}`)
+    if (errorCount > 0) {
+      console.error(`❌ Failed to generate ${errorCount} templates`)
+    }
+    
+    return { 
+      success: successCount > 0, 
+      generated: successCount, 
+      total: angles.length, 
+      errors: errorCount 
+    }
   } catch (error) {
-    console.error('Error generating injected templates:', error)
+    console.error('❌ Error generating injected templates:', error)
+    return { success: false, error: error.message }
   }
 }
 
