@@ -3,11 +3,10 @@
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { DeepCopyResults } from "@/components/results/deepcopy-results"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useCallback } from "react"
-import { ArrowLeft, BarChart3, FileText, RefreshCw, ExternalLink, Menu, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowLeft, RefreshCw, ExternalLink, Menu, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
@@ -37,11 +36,11 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
   }, [fetchJob, params.id])
 
   // Use client-side polling for job status updates
-  const { 
-    jobStatus, 
-    isPolling, 
-    attempts, 
-    maxAttempts 
+  const {
+    jobStatus,
+    isPolling,
+    attempts,
+    maxAttempts
   } = useJobPolling({
     jobId: params.id,
     enabled: currentJob?.status === 'processing' || currentJob?.status === 'pending',
@@ -110,7 +109,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
     <div className="flex h-screen bg-background">
       <Sidebar />
       <main className="flex-1 overflow-auto md:ml-0">
-        <div className="p-4 md:p-6">
+        <div className="p-4 md:p-6 pb-20">
           <div className="flex items-start justify-between mb-4 md:mb-6 gap-4">
             <div className="flex items-center gap-4">
               <Link href="/dashboard">
@@ -153,13 +152,13 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
               </Button>
             </div>
           </div>
-          
-          <div className="flex items-center justify-end mb-4">
-            <div className="flex items-center gap-2">
+
+          <div className="flex items-center justify-end mb-6">
+            <div className="flex items-center gap-3">
               {isPolling && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <RefreshCw className="h-4 w-4 animate-spin" />
-                  <span>Polling DeepCopy API ({attempts}/{maxAttempts})</span>
+                  <span>Processing ({attempts}/{maxAttempts})</span>
                   {jobStatus.progress && (
                     <span className="text-blue-600 font-medium">
                       {jobStatus.progress}%
@@ -167,11 +166,11 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                   )}
                 </div>
               )}
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                 {currentJob.status}
               </Badge>
               <Link href={`/jobs/${currentJob.id}`}>
-                <Button variant="outline" size="sm">
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Job Details
                 </Button>
@@ -179,116 +178,12 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
             </div>
           </div>
 
-          <Tabs defaultValue="content" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="content" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Content
-              </TabsTrigger>
-              <TabsTrigger value="analytics" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Analytics
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="content">
-              <DeepCopyResults 
-                result={currentJob.result} 
-                jobTitle={currentJob.title}
-                advertorialType={currentJob.advertorial_type}
-                templateId={currentJob.template_id}
-              />
-            </TabsContent>
-
-            <TabsContent value="analytics">
-              <div className="space-y-6">
-                <div className="bg-card border rounded-lg p-6">
-                  <h3 className="text-lg font-semibold mb-4 text-card-foreground">Job Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">Generated At</p>
-                      <p className="font-medium text-card-foreground">{new Date(currentJob.result.created_at).toLocaleString()}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">Template Used</p>
-                      <p className="font-medium text-card-foreground">L00005 (DeepCopy)</p>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">Status</p>
-                      <p className="font-medium capitalize text-card-foreground">{currentJob.status}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">Progress</p>
-                      <p className="font-medium text-card-foreground">Processing</p>
-                    </div>
-                    {currentJob.result.metadata?.deepcopy_job_id && (
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">DeepCopy Job ID</p>
-                        <p className="font-medium font-mono text-sm text-card-foreground">{currentJob.result.metadata.deepcopy_job_id}</p>
-                      </div>
-                    )}
-                    {currentJob.result.metadata?.project_name && (
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Project Name</p>
-                        <p className="font-medium text-card-foreground">{currentJob.result.metadata.project_name}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {currentJob.result.metadata?.word_count && (
-                  <div className="bg-card border rounded-lg p-6">
-                    <h3 className="text-lg font-semibold mb-4 text-card-foreground">Content Metrics</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Generated At</p>
-                        <p className="text-sm text-card-foreground">{currentJob.result.metadata.generated_at ? new Date(currentJob.result.metadata.generated_at).toLocaleString() : 'Unknown'}</p>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">API Timestamp</p>
-                        <p className="text-sm text-card-foreground">{currentJob.result.metadata.timestamp_iso ? new Date(currentJob.result.metadata.timestamp_iso).toLocaleString() : 'Unknown'}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {currentJob.result.metadata?.full_result?.results && (
-                  <div className="bg-card border rounded-lg p-6">
-                    <h3 className="text-lg font-semibold mb-4 text-card-foreground">Analysis Summary</h3>
-                    <div className="space-y-4">
-                      {currentJob.result.metadata.full_result.results.research_page_analysis && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground mb-2">Page Analysis</p>
-                          <p className="text-sm line-clamp-3 text-card-foreground">
-                            {currentJob.result.metadata.full_result.results.research_page_analysis.substring(0, 200)}...
-                          </p>
-                        </div>
-                      )}
-                      {currentJob.result.metadata.full_result.results.doc1_analysis && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground mb-2">Document Analysis 1</p>
-                          <p className="text-sm line-clamp-3 text-card-foreground">
-                            {currentJob.result.metadata.full_result.results.doc1_analysis.substring(0, 200)}...
-                          </p>
-                        </div>
-                      )}
-                      {currentJob.result.metadata.full_result.results.html_templates && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground mb-2">HTML Templates</p>
-                          <p className="text-sm text-card-foreground">
-                            {Array.isArray(currentJob.result.metadata.full_result.results.html_templates) 
-                              ? `${currentJob.result.metadata.full_result.results.html_templates.length} template(s) generated`
-                              : '1 template generated'
-                            }
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
+          <DeepCopyResults
+            result={currentJob.result}
+            jobTitle={currentJob.title}
+            advertorialType={currentJob.advertorial_type}
+            templateId={currentJob.template_id}
+          />
         </div>
       </main>
     </div>

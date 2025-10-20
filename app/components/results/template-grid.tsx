@@ -1,0 +1,194 @@
+"use client"
+
+import { useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Copy, Download, Eye, FileText } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+
+interface Template {
+    name: string
+    type: string
+    html: string
+    angle?: string
+    timestamp?: string
+}
+
+interface TemplateGridProps {
+    templates: Template[]
+    isLoading?: boolean
+}
+
+export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
+    const [copied, setCopied] = useState(false)
+    const { toast } = useToast()
+
+    const handleCopyHTML = async (content: string) => {
+        try {
+            await navigator.clipboard.writeText(content)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+            toast({
+                title: "HTML copied",
+                description: "The HTML content has been copied to your clipboard.",
+            })
+        } catch (err) {
+            console.error('Failed to copy HTML:', err)
+            toast({
+                title: "Copy failed",
+                description: "Failed to copy HTML to clipboard.",
+                variant: "destructive",
+            })
+        }
+    }
+
+    const handleDownload = (content: string, filename: string) => {
+        const blob = new Blob([content], { type: 'text/html' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+    }
+
+    if (isLoading) {
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 3 }).map((_, index) => (
+                    <Card key={index} className="animate-pulse">
+                        <CardContent className="p-6">
+                            <div className="h-4 bg-muted rounded mb-2"></div>
+                            <div className="h-3 bg-muted rounded mb-4 w-2/3"></div>
+                            <div className="h-32 bg-muted rounded"></div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        )
+    }
+
+    if (templates.length === 0) {
+        return (
+            <div className="text-center py-12">
+                <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No HTML Templates</h3>
+                <p className="text-muted-foreground">
+                    No HTML templates were generated for this job.
+                </p>
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h3 className="text-lg font-semibold">HTML Templates</h3>
+                    <p className="text-sm text-muted-foreground">
+                        {templates.length} template{templates.length !== 1 ? 's' : ''} generated
+                    </p>
+                </div>
+                <Badge variant="outline">
+                    {templates.length} template{templates.length !== 1 ? 's' : ''}
+                </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {templates.map((template, index) => (
+                    <Card key={index} className="group hover:shadow-md transition-shadow">
+                        <CardContent className="p-6">
+                            <div className="space-y-4">
+                                <div>
+                                    <h4 className="font-semibold text-foreground mb-1 line-clamp-2">
+                                        {template.angle || template.name}
+                                    </h4>
+                                    <p className="text-sm text-muted-foreground">
+                                        {template.type}
+                                    </p>
+                                    {template.timestamp && (
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {new Date(template.timestamp).toLocaleDateString()}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="h-32 bg-white rounded-lg overflow-hidden border border-gray-200 relative">
+                                    <div className="absolute inset-0 overflow-hidden">
+                                        <iframe
+                                            srcDoc={template.html}
+                                            className="w-full h-full"
+                                            style={{
+                                                border: 'none',
+                                                transform: 'scale(0.3)',
+                                                transformOrigin: 'top left',
+                                                width: '333.33%',
+                                                height: '333.33%',
+                                                pointerEvents: 'none'
+                                            }}
+                                            sandbox="allow-same-origin allow-scripts"
+                                            title={`Preview of ${template.angle || template.name}`}
+                                        />
+                                    </div>
+                                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/20 pointer-events-none"></div>
+                                </div>
+
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <Button className="w-full" size="sm">
+                                            <Eye className="h-4 w-4 mr-2" />
+                                            Preview Template
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="!max-w-[98vw] !max-h-[98vh] !w-[98vw] !h-[98vh] overflow-hidden p-2">
+                                        <DialogHeader className="pb-2">
+                                            <DialogTitle className="text-xl font-bold">
+                                                {template.angle || template.name}
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                {template.type} • {template.timestamp ? new Date(template.timestamp).toLocaleString() : 'Generated'}
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="h-[calc(98vh-120px)] border rounded-lg bg-background overflow-auto">
+                                            <iframe
+                                                srcDoc={template.html}
+                                                className="w-full h-full"
+                                                sandbox="allow-same-origin allow-scripts"
+                                                style={{
+                                                    border: 'none',
+                                                    width: '100%',
+                                                    height: '100%'
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="flex gap-2 pt-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleCopyHTML(template.html)}
+                                            >
+                                                {copied ? 'Copied!' : 'Copy HTML'}
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleDownload(template.html, `${template.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`)}
+                                            >
+                                                <Download className="h-4 w-4 mr-2" />
+                                                Download
+                                            </Button>
+                                        </div>
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    )
+}
