@@ -22,14 +22,16 @@ interface AvatarExtractionDialogProps {
   onAvatarsSelected: (avatars: ExtractedAvatar[]) => void
   salesPageUrl: string
   formData: any
+  isLoading?: boolean
 }
 
-export function AvatarExtractionDialog({ 
-  isOpen, 
-  onClose, 
-  onAvatarsSelected, 
+export function AvatarExtractionDialog({
+  isOpen,
+  onClose,
+  onAvatarsSelected,
   salesPageUrl,
-  formData 
+  formData,
+  isLoading = false
 }: AvatarExtractionDialogProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [avatars, setAvatars] = useState<ExtractedAvatar[]>([])
@@ -46,7 +48,7 @@ export function AvatarExtractionDialog({
   const extractAvatars = async () => {
     setIsAnalyzing(true)
     setError(null)
-    
+
     try {
       // Step 1: Submit avatar extraction job
       const response = await fetch('/api/avatars/extract', {
@@ -66,14 +68,14 @@ export function AvatarExtractionDialog({
       }
 
       const data = await response.json()
-      
+
       if (!data.jobId) {
         throw new Error('No job ID received from avatar extraction service')
       }
 
       // Step 2: Poll for status and results
       await pollAvatarExtractionStatus(data.jobId)
-      
+
     } catch (err) {
       console.error('Avatar extraction error:', err)
       setError('Failed to extract avatars from the sales page. Please try again or use the "I know exactly who my customer is" option instead.')
@@ -85,7 +87,7 @@ export function AvatarExtractionDialog({
   const pollAvatarExtractionStatus = async (jobId: string) => {
     const maxAttempts = 20 // 20 attempts * 3 seconds = 60 seconds max
     const pollInterval = 3000 // Poll every 3 seconds (since it finishes in 20-30 seconds)
-    
+
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         // Check status with cache-busting
@@ -97,13 +99,13 @@ export function AvatarExtractionDialog({
             'Expires': '0'
           }
         })
-        
+
         if (!statusResponse.ok) {
           throw new Error(`Status check failed: ${statusResponse.status}`)
         }
 
         const statusData = await statusResponse.json()
-        
+
         if (statusData.status === 'SUCCEEDED') {
           // Get results with cache-busting
           const resultResponse = await fetch(`/api/avatars/${jobId}/result?t=${Date.now()}`, {
@@ -114,13 +116,13 @@ export function AvatarExtractionDialog({
               'Expires': '0'
             }
           })
-          
+
           if (!resultResponse.ok) {
             throw new Error(`Result fetch failed: ${resultResponse.status}`)
           }
 
           const resultData = await resultResponse.json()
-          
+
           if (resultData.success && resultData.avatars && resultData.avatars.length > 0) {
             setAvatars(resultData.avatars)
             return // Success!
@@ -130,7 +132,7 @@ export function AvatarExtractionDialog({
         } else if (statusData.status === 'FAILED') {
           throw new Error('Avatar extraction job failed')
         }
-        
+
         // Check if results are available even if status is still RUNNING
         // (Sometimes results are available before status is updated)
         try {
@@ -142,10 +144,10 @@ export function AvatarExtractionDialog({
               'Expires': '0'
             }
           })
-          
+
           if (resultResponse.ok) {
             const resultData = await resultResponse.json()
-            
+
             if (resultData.success && resultData.avatars && resultData.avatars.length > 0) {
               setAvatars(resultData.avatars)
               return // Success! Results available even though status is RUNNING
@@ -154,12 +156,12 @@ export function AvatarExtractionDialog({
         } catch (resultError) {
           // Ignore result check errors, continue polling
         }
-        
+
         // If still processing, wait and try again
         if (attempt < maxAttempts) {
           await new Promise(resolve => setTimeout(resolve, pollInterval))
         }
-        
+
       } catch (err) {
         if (attempt === maxAttempts) {
           throw err // Re-throw on final attempt
@@ -168,7 +170,7 @@ export function AvatarExtractionDialog({
         await new Promise(resolve => setTimeout(resolve, pollInterval))
       }
     }
-    
+
     throw new Error('Avatar extraction timed out after 60 seconds. The service may be experiencing delays.')
   }
 
@@ -189,7 +191,7 @@ export function AvatarExtractionDialog({
     }
 
     setIsSubmitting(true)
-    
+
     try {
       const selectedAvatarData = Array.from(selectedAvatars).map(index => avatars[index])
       onAvatarsSelected(selectedAvatarData)
@@ -259,13 +261,12 @@ export function AvatarExtractionDialog({
 
             <div className="grid gap-4">
               {avatars.map((avatar, index) => (
-                <Card 
+                <Card
                   key={index}
-                  className={`cursor-pointer transition-all duration-200 ${
-                    selectedAvatars.has(index) 
-                      ? 'ring-2 ring-primary bg-primary/5' 
+                  className={`cursor-pointer transition-all duration-200 ${selectedAvatars.has(index)
+                      ? 'ring-2 ring-primary bg-primary/5'
                       : 'hover:shadow-md'
-                  }`}
+                    }`}
                   onClick={() => handleAvatarToggle(index)}
                 >
                   <CardHeader className="pb-3">
@@ -311,14 +312,14 @@ export function AvatarExtractionDialog({
                 {selectedAvatars.size} persona{selectedAvatars.size !== 1 ? 's' : ''} selected
               </div>
               <div className="flex gap-3">
-                <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+                <Button variant="outline" onClick={onClose} disabled={isSubmitting || isLoading}>
                   Cancel
                 </Button>
-                <Button 
-                  onClick={handleSubmit} 
-                  disabled={selectedAvatars.size === 0 || isSubmitting}
+                <Button
+                  onClick={handleSubmit}
+                  disabled={selectedAvatars.size === 0 || isSubmitting || isLoading}
                 >
-                  {isSubmitting ? (
+                  {isSubmitting || isLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Creating Job...
