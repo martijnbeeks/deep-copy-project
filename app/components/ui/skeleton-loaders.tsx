@@ -123,7 +123,7 @@ export function JobDetailsSkeleton() {
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-3/4" />
       </div>
-      
+
       <div className="grid gap-4 md:grid-cols-2">
         <SkeletonCard className="p-4">
           <div className="space-y-3">
@@ -156,7 +156,7 @@ export function ContentViewerSkeleton() {
           <Skeleton className="h-4 w-3/4" />
         </div>
       </div>
-      
+
       <div className="grid gap-4 md:grid-cols-2">
         {Array.from({ length: 4 }).map((_, i) => (
           <SkeletonCard key={i} className="p-4">
@@ -233,6 +233,44 @@ export function PageSkeleton() {
         </div>
       </main>
     </div>
+  )
+}
+
+// Gallery card skeleton
+export function GalleryCardSkeleton() {
+  return (
+    <SkeletonCard className="h-[420px] md:h-[460px] flex flex-col space-y-4">
+      {/* Header section */}
+      <div className="flex items-start justify-between">
+        <div className="space-y-2 flex-1">
+          <Skeleton className="h-5 w-3/4" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-1" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <Skeleton className="h-6 w-16 rounded-full" />
+          <Skeleton className="h-6 w-20 rounded-full" />
+        </div>
+      </div>
+
+      {/* Preview area */}
+      <div className="flex-1 relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border">
+        <Skeleton className="h-full w-full" />
+      </div>
+
+      {/* Actions section */}
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-3 w-20" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-20" />
+          <Skeleton className="h-8 w-16" />
+          <Skeleton className="h-8 w-20" />
+        </div>
+      </div>
+    </SkeletonCard>
   )
 }
 

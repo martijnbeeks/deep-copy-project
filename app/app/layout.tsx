@@ -68,22 +68,22 @@ export default function RootLayout({
           }}
         />
       </head>
-                  <body
-                    className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`}
-                  >
-                    <QueryProvider>
-                      <AppProvider>
-                        <SidebarProvider>
-                          <GlobalPollingProvider>
-                            <PageTransition>
-                              {children}
-                            </PageTransition>
-                            <Toaster />
-                          </GlobalPollingProvider>
-                        </SidebarProvider>
-                      </AppProvider>
-                    </QueryProvider>
-                  </body>
+      <body
+        className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`}
+      >
+        <QueryProvider>
+          <AppProvider>
+            <SidebarProvider>
+              <GlobalPollingProvider>
+                <PageTransition>
+                  {children}
+                </PageTransition>
+                <Toaster />
+              </GlobalPollingProvider>
+            </SidebarProvider>
+          </AppProvider>
+        </QueryProvider>
+      </body>
     </html>
   );
 }

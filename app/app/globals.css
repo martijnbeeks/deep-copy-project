@@ -2,6 +2,91 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Template Content Isolation */
+.template-content-isolation {
+  /* More targeted isolation instead of all: initial */
+  position: relative;
+  display: block;
+
+  /* Ensure proper layout behavior */
+  box-sizing: border-box;
+
+  /* Prevent content overflow issues */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+
+  /* Ensure content stays within bounds */
+  max-width: 100%;
+  width: 100%;
+
+  /* Improve text rendering */
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Ensure proper scrolling behavior */
+  overflow: auto;
+  overflow-x: hidden;
+
+  /* Prevent parent styles from interfering */
+  isolation: isolate;
+  contain: layout style;
+}
+
+/* Additional styles for template content to prevent layout issues */
+.template-content-isolation * {
+  /* Ensure all child elements respect container bounds */
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.template-content-isolation img {
+  /* Prevent images from breaking layout */
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.template-content-isolation table {
+  /* Ensure tables don't break layout */
+  width: 100%;
+  table-layout: fixed;
+  word-wrap: break-word;
+}
+
+.template-content-isolation pre,
+.template-content-isolation code {
+  /* Ensure code blocks don't break layout */
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Ensure template content is stable and doesn't flicker */
+.template-content-isolation {
+  /* Prevent content from disappearing */
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+
+  /* Ensure content is rendered */
+  will-change: auto;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Prevent any parent styles from affecting template content */
+.template-content-isolation,
+.template-content-isolation * {
+  /* Reset any potentially problematic inherited styles */
+  animation: none !important;
+  transition: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  mix-blend-mode: normal !important;
+}
+
 /* Lovable Design System */
 @layer base {
   :root {
@@ -42,11 +127,11 @@
     --gradient-accent: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent-glow)));
     --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
-    
+
     --shadow-glow: 0 0 40px hsl(var(--primary) / 0.3);
     --shadow-accent: 0 0 30px hsl(var(--accent) / 0.2);
     --shadow-elegant: 0 10px 30px -10px hsl(var(--primary) / 0.3);
-    
+
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
@@ -88,43 +173,43 @@
   .bg-gradient-primary {
     background: var(--gradient-primary);
   }
-  
+
   .bg-gradient-accent {
     background: var(--gradient-accent);
   }
-  
+
   .bg-gradient-hero {
     background: var(--gradient-hero);
   }
-  
+
   .bg-gradient-subtle {
     background: var(--gradient-subtle);
   }
-  
+
   .shadow-glow {
     box-shadow: var(--shadow-glow);
   }
-  
+
   .shadow-accent {
     box-shadow: var(--shadow-accent);
   }
-  
+
   .shadow-elegant {
     box-shadow: var(--shadow-elegant);
   }
-  
+
   .transition-smooth {
     transition: var(--transition-smooth);
   }
-  
+
   .transition-bounce {
     transition: var(--transition-bounce);
   }
-  
+
   .text-visible {
     color: #1a1a1a !important;
   }
-  
+
   .text-visible-muted {
     color: #4a4a4a !important;
   }
@@ -135,38 +220,38 @@
   .scrollbar-thin {
     scrollbar-width: thin;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: hsl(var(--muted-foreground) / 0.2);
     border-radius: 3px;
     transition: background-color 0.2s ease;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background-color: hsl(var(--muted-foreground) / 0.3);
   }
-  
+
   .scrollbar-track-transparent::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   .scrollbar-thumb-muted-foreground\/20::-webkit-scrollbar-thumb {
     background-color: hsl(var(--muted-foreground) / 0.2);
   }
-  
+
   .scrollbar-thumb-muted-foreground\/30::-webkit-scrollbar-thumb {
     background-color: hsl(var(--muted-foreground) / 0.3);
   }
-  
+
   .hover\:scrollbar-thumb-muted-foreground\/30:hover::-webkit-scrollbar-thumb {
     background-color: hsl(var(--muted-foreground) / 0.3);
   }
@@ -209,11 +294,11 @@
   --gradient-accent: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent-glow)));
   --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
   --gradient-subtle: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
-  
+
   --shadow-glow: 0 0 40px hsl(var(--primary) / 0.18);
   --shadow-accent: 0 0 30px hsl(var(--accent) / 0.14);
   --shadow-elegant: 0 10px 24px -12px hsl(210 10% 20% / 0.12);
-  
+
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
@@ -280,55 +365,56 @@
   * {
     border-color: hsl(var(--border));
   }
-  
+
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
-  
+
   /* Add cursor pointer for clickable elements */
-  button, 
-  [role="button"], 
-  a, 
-  input[type="button"], 
-  input[type="submit"], 
+  button,
+  [role="button"],
+  a,
+  input[type="button"],
+  input[type="submit"],
   input[type="reset"],
   [data-radix-collection-item],
   [data-state="open"],
   [data-state="closed"] {
     cursor: pointer;
   }
-  
+
   /* Ensure dropdown menu items are clickable */
   [data-slot="dropdown-menu-item"] {
     cursor: pointer !important;
   }
-  
+
   /* Ensure buttons have pointer cursor */
   button {
     cursor: pointer !important;
   }
-  
+
   /* Performance optimizations */
   * {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  
+
   /* Optimize animations for better performance */
   .animate-pulse-slow,
   .animate-shimmer {
     will-change: transform, opacity;
   }
-  
+
   /* Sidebar hover effects - improved */
   .sidebar-nav-item {
     position: relative;
     overflow: hidden;
-    transform: translateZ(0); /* Force hardware acceleration */
+    transform: translateZ(0);
+    /* Force hardware acceleration */
     will-change: transform, background-color;
   }
-  
+
   .sidebar-nav-item::before {
     content: '';
     position: absolute;
@@ -342,40 +428,41 @@
     z-index: 0;
     transform: translateZ(0);
   }
-  
+
   .sidebar-nav-item:hover::before {
     opacity: 1;
   }
-  
-  .sidebar-nav-item > * {
+
+  .sidebar-nav-item>* {
     position: relative;
     z-index: 1;
   }
-  
+
   /* Ensure consistent hover states */
   .sidebar-nav-item:hover {
     background-color: hsl(var(--sidebar-accent));
     color: hsl(var(--sidebar-accent-foreground));
   }
-  
+
   /* Active state should override hover */
   .sidebar-nav-item[data-active="true"] {
     background-color: hsl(var(--sidebar-primary));
     color: hsl(var(--sidebar-primary-foreground));
   }
-  
+
   .sidebar-nav-item[data-active="true"]:hover {
     background-color: hsl(var(--sidebar-primary));
     color: hsl(var(--sidebar-primary-foreground));
   }
-  
+
   /* Reduce motion for users who prefer it */
   @media (prefers-reduced-motion: reduce) {
+
     .animate-pulse-slow,
     .animate-shimmer {
       animation: none;
     }
-    
+
     .sidebar-nav-item::before {
       transition: none;
     }
@@ -389,12 +476,31 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  .bg-gradient-primary { background: var(--gradient-primary); }
-  .bg-gradient-accent { background: var(--gradient-accent); }
-  .bg-gradient-subtle { background: var(--gradient-subtle); }
-  .shadow-elegant { box-shadow: var(--shadow-elegant); }
-  .shadow-glow { box-shadow: var(--shadow-glow); }
-  .bg-clip-text { -webkit-background-clip: text; background-clip: text; }
+
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .bg-gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .bg-gradient-subtle {
+    background: var(--gradient-subtle);
+  }
+
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .bg-clip-text {
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
 }
 
 /* Skeleton loading animations */
@@ -402,15 +508,19 @@
   0% {
     transform: translateX(-100%);
   }
+
   100% {
     transform: translateX(100%);
   }
 }
 
 @keyframes pulse-slow {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }

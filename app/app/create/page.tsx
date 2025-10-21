@@ -22,6 +22,7 @@ import { TemplatePreview } from "@/components/template-preview"
 import { useSidebar } from "@/contexts/sidebar-context"
 import { AvatarExtractionDialog } from "@/components/avatar-extraction-dialog"
 import { useAutoPolling } from "@/hooks/use-auto-polling"
+import { useToast } from "@/hooks/use-toast"
 
 interface CustomerAvatar {
   persona_name: string
@@ -54,6 +55,7 @@ export default function CreatePage() {
 
   // Use auto-polling for processing jobs (hits DeepCopy API directly)
   const { processingJobsCount } = useAutoPolling()
+  const { toast } = useToast()
 
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<PipelineFormData>({
@@ -72,7 +74,7 @@ export default function CreatePage() {
   const [errors, setErrors] = useState<Partial<Record<keyof PipelineFormData, string>>>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const templatesPerPage = 4
@@ -95,7 +97,7 @@ export default function CreatePage() {
 
   const validateStep = (step: number): boolean => {
     const newErrors: Partial<Record<keyof PipelineFormData, string>> = {}
-    
+
     if (step === 1) {
       if (!formData.template_id) {
         newErrors.template_id = "Template selection is required"
@@ -120,7 +122,7 @@ export default function CreatePage() {
       if (!formData.target_approach) {
         newErrors.target_approach = "Target approach is required"
       }
-      
+
       // Validate customer avatars for "known" approach
       if (formData.target_approach === 'known') {
         if (!formData.customer_avatars || formData.customer_avatars.length === 0) {
@@ -169,6 +171,9 @@ export default function CreatePage() {
     e.preventDefault()
     if (!validateStep(2)) return
 
+    // Prevent duplicate submissions
+    if (isLoading) return
+
     // If user selected "explore new avatars", show the extraction dialog
     if (formData.target_approach === 'explore') {
       setShowAvatarDialog(true)
@@ -179,7 +184,17 @@ export default function CreatePage() {
     try {
       setIsLoading(true)
       await createJob(formData)
-      
+
+      // Show success message
+      toast({
+        title: "Success!",
+        description: "Job created successfully! Redirecting to dashboard...",
+        variant: "default",
+      })
+
+      // Brief delay to show success message
+      await new Promise(resolve => setTimeout(resolve, 1500))
+
       setFormData({
         title: "",
         brand_info: "",
@@ -197,15 +212,22 @@ export default function CreatePage() {
       setErrors({})
       setGeneralError(null)
       setCurrentStep(1)
-      
+
       router.push("/dashboard")
     } catch (error) {
       console.error('Job creation error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to create job'
-      
+
+      // Show error toast
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+
       // Check if it's a duplicate job error
       if (errorMessage.includes('Duplicate job detected')) {
-        setErrors({ 
+        setErrors({
           title: 'A job with this title was created recently. Please wait a moment or use a different title.'
         })
         setGeneralError(errorMessage)
@@ -218,17 +240,30 @@ export default function CreatePage() {
   }
 
   const handleAvatarsSelected = async (selectedAvatars: any[]) => {
+    // Prevent duplicate submissions
+    if (isLoading) return
+
     try {
       setIsLoading(true)
-      
+
       // Update form data with selected avatars
       const updatedFormData = {
         ...formData,
         customer_avatars: selectedAvatars
       }
-      
+
       await createJob(updatedFormData)
-      
+
+      // Show success message
+      toast({
+        title: "Success!",
+        description: "Job created successfully! Redirecting to dashboard...",
+        variant: "default",
+      })
+
+      // Brief delay to show success message
+      await new Promise(resolve => setTimeout(resolve, 1500))
+
       setFormData({
         title: "",
         brand_info: "",
@@ -247,15 +282,22 @@ export default function CreatePage() {
       setGeneralError(null)
       setCurrentStep(1)
       setShowAvatarDialog(false)
-      
+
       router.push("/dashboard")
     } catch (error) {
       console.error('Error creating job with avatars:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to create job'
-      
+
+      // Show error toast
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+
       // Check if it's a duplicate job error
       if (errorMessage.includes('Duplicate job detected')) {
-        setErrors({ 
+        setErrors({
           title: 'A job with this title was created recently. Please wait a moment or use a different title.'
         })
         setGeneralError(errorMessage)
@@ -269,8 +311,8 @@ export default function CreatePage() {
 
   const handleTemplateChange = (templateId: string) => {
     const template = templates.find(t => t.id === templateId)
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       template_id: templateId,
       // Auto-select advertorial type based on template category
       advertorial_type: template?.category === 'listicle' ? 'listicle' : 'advertorial'
@@ -320,7 +362,7 @@ export default function CreatePage() {
                   <div className="h-8 w-8 bg-muted animate-pulse-slow rounded-md" />
                 </div>
               </div>
-              
+
               {/* Progress steps skeleton */}
               <div className="flex items-center gap-2 md:gap-4 mt-3 md:mt-4">
                 <div className="flex items-center gap-2">
@@ -340,7 +382,7 @@ export default function CreatePage() {
               <div className="border rounded-lg p-6">
                 <div className="h-6 w-48 bg-muted animate-pulse-slow rounded-md mb-2" />
                 <div className="h-4 w-96 bg-muted animate-pulse-slow rounded-md mb-6" />
-                
+
                 {/* Template grid skeleton */}
                 <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
                   {Array.from({ length: 4 }).map((_, i) => (
@@ -352,7 +394,7 @@ export default function CreatePage() {
                     </div>
                   ))}
                 </div>
-                
+
                 {/* Next button skeleton */}
                 <div className="flex justify-end mt-6">
                   <div className="h-10 w-32 bg-muted animate-pulse-slow rounded-md" />
@@ -387,7 +429,7 @@ export default function CreatePage() {
                   >
                     <Menu className="h-4 w-4" />
                   </Button>
-                  
+
                   {/* Desktop collapse button */}
                   <Button
                     variant="outline"
@@ -403,21 +445,19 @@ export default function CreatePage() {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-center gap-6 mt-6">
                 <div className={`flex items-center gap-3 ${currentStep >= 1 ? 'text-primary' : 'text-muted-foreground'}`}>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${
-                    currentStep >= 1 ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted border-2 border-muted-foreground/20'
-                  }`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${currentStep >= 1 ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted border-2 border-muted-foreground/20'
+                    }`}>
                     1
                   </div>
                   <span className="text-sm font-semibold">Choose Template</span>
                 </div>
                 <div className={`w-8 h-px ${currentStep >= 2 ? 'bg-primary' : 'bg-muted-foreground/30'}`}></div>
                 <div className={`flex items-center gap-3 ${currentStep >= 2 ? 'text-primary' : 'text-muted-foreground'}`}>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${
-                    currentStep >= 2 ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted border-2 border-muted-foreground/20'
-                  }`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${currentStep >= 2 ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted border-2 border-muted-foreground/20'
+                    }`}>
                     2
                   </div>
                   <span className="text-sm font-semibold">Project Details</span>
@@ -441,7 +481,7 @@ export default function CreatePage() {
                         <h3 className="text-xl font-semibold text-foreground">Available Templates</h3>
                         <p className="text-sm text-muted-foreground">Click on any template to preview and select it</p>
                       </div>
-                      
+
                       <div id="template-section" className={`grid gap-6 ${isCollapsed ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2'}`}>
                         {currentTemplates.map((template) => (
                           <TemplatePreview
@@ -452,19 +492,19 @@ export default function CreatePage() {
                           />
                         ))}
                       </div>
-                      
+
                       {/* Pagination */}
                       {totalPages > 1 && (
                         <div className="flex justify-center">
                           <Pagination>
                             <PaginationContent>
                               <PaginationItem>
-                                <PaginationPrevious 
+                                <PaginationPrevious
                                   onClick={() => handlePageChange(currentPage - 1)}
                                   className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                                 />
                               </PaginationItem>
-                              
+
                               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                                 <PaginationItem key={page}>
                                   <PaginationLink
@@ -476,9 +516,9 @@ export default function CreatePage() {
                                   </PaginationLink>
                                 </PaginationItem>
                               ))}
-                              
+
                               <PaginationItem>
-                                <PaginationNext 
+                                <PaginationNext
                                   onClick={() => handlePageChange(currentPage + 1)}
                                   className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                                 />
@@ -487,7 +527,7 @@ export default function CreatePage() {
                           </Pagination>
                         </div>
                       )}
-                      
+
                       {errors.template_id && (
                         <Alert variant="destructive" className="border-destructive/50">
                           <AlertCircle className="h-4 w-4" />
@@ -504,7 +544,7 @@ export default function CreatePage() {
 
                       {/* Action Button */}
                       <div className="flex justify-center pt-4">
-                        <Button 
+                        <Button
                           onClick={handleNext}
                           disabled={!formData.template_id}
                           className="h-12 px-8 text-base font-medium bg-primary hover:bg-primary/90"
@@ -619,7 +659,7 @@ export default function CreatePage() {
                             </Label>
                             <p className="text-sm text-muted-foreground">Automatically selected based on your chosen template</p>
                           </div>
-                          
+
                           {formData.advertorial_type ? (
                             <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border">
                               <div className="flex items-center gap-2">
@@ -639,7 +679,7 @@ export default function CreatePage() {
                               </p>
                             </div>
                           )}
-                          
+
                           {/* Dynamic Content Options Based on Type */}
                           {formData.advertorial_type && (
                             <div className="p-4 bg-muted/50 rounded-lg border">
@@ -673,7 +713,7 @@ export default function CreatePage() {
                             <h3 className="text-lg font-semibold text-foreground">Target Audience</h3>
                             <p className="text-sm text-muted-foreground">Choose your approach to define your target audience</p>
                           </div>
-                          
+
                           {/* Choose Your Approach */}
                           <div className="space-y-4">
                             <div className="space-y-2">
@@ -682,20 +722,18 @@ export default function CreatePage() {
                               </Label>
                               <p className="text-sm text-muted-foreground">Select how you want to approach your target audience</p>
                             </div>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div 
-                                className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                                  formData.target_approach === 'explore' 
-                                    ? 'border-primary bg-primary/5 shadow-lg' 
-                                    : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                                }`}
+                              <div
+                                className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${formData.target_approach === 'explore'
+                                  ? 'border-primary bg-primary/5 shadow-lg'
+                                  : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                                  }`}
                                 onClick={() => setFormData(prev => ({ ...prev, target_approach: 'explore', persona: '', age_range: '', gender: '' }))}
                               >
                                 <div className="flex items-start gap-4">
-                                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                                    formData.target_approach === 'explore' ? 'border-primary bg-primary' : 'border-muted-foreground'
-                                  }`}>
+                                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${formData.target_approach === 'explore' ? 'border-primary bg-primary' : 'border-muted-foreground'
+                                    }`}>
                                     {formData.target_approach === 'explore' && (
                                       <div className="w-2 h-2 bg-primary-foreground rounded-full"></div>
                                     )}
@@ -711,19 +749,17 @@ export default function CreatePage() {
                                   </div>
                                 </div>
                               </div>
-                              
-                              <div 
-                                className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                                  formData.target_approach === 'known' 
-                                    ? 'border-primary bg-primary/5 shadow-lg' 
-                                    : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                                }`}
+
+                              <div
+                                className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${formData.target_approach === 'known'
+                                  ? 'border-primary bg-primary/5 shadow-lg'
+                                  : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                                  }`}
                                 onClick={() => setFormData(prev => ({ ...prev, target_approach: 'known', persona: '', age_range: '', gender: '' }))}
                               >
                                 <div className="flex items-start gap-4">
-                                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                                    formData.target_approach === 'known' ? 'border-primary bg-primary' : 'border-muted-foreground'
-                                  }`}>
+                                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${formData.target_approach === 'known' ? 'border-primary bg-primary' : 'border-muted-foreground'
+                                    }`}>
                                     {formData.target_approach === 'known' && (
                                       <div className="w-2 h-2 bg-primary-foreground rounded-full"></div>
                                     )}
@@ -750,7 +786,7 @@ export default function CreatePage() {
                                   AI Avatar Discovery
                                 </h4>
                                 <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">
-                                  Our AI will analyze your sales page to discover and extract customer personas automatically. 
+                                  Our AI will analyze your sales page to discover and extract customer personas automatically.
                                   No manual selection needed - just provide your sales page URL and we'll do the research for you.
                                 </p>
                                 <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
@@ -770,7 +806,7 @@ export default function CreatePage() {
                                 <p className="text-sm text-green-800 dark:text-green-200 mb-4">
                                   Describe your specific target customer persona with all required details:
                                 </p>
-                                
+
                                 <div className="space-y-4">
                                   <div className="space-y-2">
                                     <Label className="text-sm font-medium text-green-900 dark:text-green-100">
@@ -964,18 +1000,18 @@ export default function CreatePage() {
 
                         {/* Action Buttons */}
                         <div className="flex gap-4 pt-4">
-                          <Button 
-                            type="button" 
-                            variant="outline" 
+                          <Button
+                            type="button"
+                            variant="outline"
                             onClick={handleBack}
                             className="flex-1 h-12 text-base font-medium"
                           >
                             <ChevronLeft className="h-4 w-4 mr-2" />
                             Back to Templates
                           </Button>
-                          <Button 
-                            type="submit" 
-                            className="flex-1 h-12 text-base font-medium bg-primary hover:bg-primary/90" 
+                          <Button
+                            type="submit"
+                            className="flex-1 h-12 text-base font-medium bg-primary hover:bg-primary/90"
                             disabled={isLoading}
                           >
                             {isLoading ? (
@@ -1005,8 +1041,8 @@ export default function CreatePage() {
         onAvatarsSelected={handleAvatarsSelected}
         salesPageUrl={formData.sales_page_url}
         formData={formData}
+        isLoading={isLoading}
       />
     </ErrorBoundary>
   )
 }
-  
