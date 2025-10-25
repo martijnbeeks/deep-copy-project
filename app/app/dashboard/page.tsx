@@ -109,8 +109,15 @@ export default function DashboardPage() {
       failed: "destructive",
     } as const
 
+    const statusColors = {
+      completed: "bg-gradient-primary text-primary-foreground",
+      processing: "bg-gradient-accent text-accent-foreground",
+      pending: "bg-muted text-muted-foreground",
+      failed: "bg-destructive text-destructive-foreground",
+    }
+
     return (
-      <Badge variant={variants[status]} className="capitalize">
+      <Badge variant={variants[status]} className={`capitalize text-xs ${statusColors[status]}`}>
         {status}
       </Badge>
     )
@@ -196,7 +203,7 @@ export default function DashboardPage() {
         <Sidebar />
         <main className="flex-1 overflow-auto md:ml-0">
           <div className="p-4 md:p-6">
-            <div className="mb-4 md:mb-6">
+            <div className="mb-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   {/* Sidebar toggle button - moved to left */}
@@ -214,7 +221,7 @@ export default function DashboardPage() {
                   </Button>
 
                   <div className="flex-1 min-w-0">
-                    <h1 className="text-xl md:text-2xl font-bold text-foreground">Dashboard</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">Dashboard</h1>
                     <p className="text-sm text-muted-foreground">Welcome back, {user.name}!</p>
                   </div>
                 </div>
@@ -227,33 +234,39 @@ export default function DashboardPage() {
                   className="h-8 w-8 p-0"
                   title={isPolling ? "Auto-updating" : "Refresh"}
                 >
-                  <RefreshCw className={`h-4 w-4 ${isPolling ? 'animate-spin text-green-500' : ''}`} />
+                  <RefreshCw className={`h-4 w-4 ${isPolling ? 'animate-spin text-accent' : ''}`} />
                 </Button>
               </div>
             </div>
 
             {/* Compact stats bar */}
-            <div className="flex items-center justify-center gap-6 py-3 px-4 bg-muted/30 rounded-lg mb-6">
+            <div className="flex items-center justify-center gap-6 py-4 px-6 bg-gradient-subtle rounded-xl border border-border/50 shadow-elegant mb-8">
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">
+                <div className="w-6 h-6 bg-gradient-accent rounded-lg flex items-center justify-center">
+                  <Clock className="h-3 w-3 text-accent-foreground" />
+                </div>
+                <span className="text-sm font-medium text-foreground">
                   Active: {jobs.filter(job => job.status === 'pending' || job.status === 'processing').length}
                 </span>
                 {isPolling && (
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
                 )}
               </div>
               <div className="w-px h-4 bg-border"></div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span className="text-sm font-medium">
+                <div className="w-6 h-6 bg-gradient-primary rounded-lg flex items-center justify-center">
+                  <CheckCircle className="h-3 w-3 text-primary-foreground" />
+                </div>
+                <span className="text-sm font-medium text-foreground">
                   Completed: {jobs.filter(job => job.status === 'completed').length}
                 </span>
               </div>
               <div className="w-px h-4 bg-border"></div>
               <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Total: {jobs.length}</span>
+                <div className="w-6 h-6 bg-gradient-accent rounded-lg flex items-center justify-center">
+                  <FileText className="h-3 w-3 text-accent-foreground" />
+                </div>
+                <span className="text-sm font-medium text-foreground">Total: {jobs.length}</span>
               </div>
             </div>
 
@@ -271,9 +284,11 @@ export default function DashboardPage() {
             {/* Hero CTA */}
             <div className="mb-8">
               <Link href="/create" className="block">
-                <div className="bg-primary hover:bg-primary/90 rounded-xl p-8 text-center shadow-lg hover:shadow-xl transition-all duration-300 group">
+                <div className="bg-gradient-primary hover:bg-gradient-primary/90 rounded-xl p-8 text-center shadow-elegant hover:shadow-glow transition-all duration-300 group">
                   <div className="flex items-center justify-center gap-3 mb-2">
-                    <Zap className="h-6 w-6 text-primary-foreground group-hover:scale-110 transition-transform" />
+                    <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Zap className="h-5 w-5 text-primary-foreground" />
+                    </div>
                     <h2 className="text-2xl font-bold text-primary-foreground">Create New Content</h2>
                   </div>
                   <p className="text-primary-foreground/80 text-sm">Start generating AI-powered content in seconds</p>
@@ -283,22 +298,33 @@ export default function DashboardPage() {
 
             {/* Jobs and Results - Tabbed Layout */}
             <Tabs defaultValue="jobs" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="jobs" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-gradient-subtle border border-border/50 shadow-elegant">
+                <TabsTrigger value="jobs" className="flex items-center gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-primary-foreground">
+                  <div className="w-5 h-5 bg-gradient-accent rounded-md flex items-center justify-center">
+                    <FileText className="h-3 w-3 text-accent-foreground" />
+                  </div>
                   All Jobs
                 </TabsTrigger>
-                <TabsTrigger value="results" className="flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
+                <TabsTrigger value="results" className="flex items-center gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-primary-foreground">
+                  <div className="w-5 h-5 bg-gradient-accent rounded-md flex items-center justify-center">
+                    <BarChart3 className="h-3 w-3 text-accent-foreground" />
+                  </div>
                   Recent Results
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="jobs" className="space-y-4">
-                <Card>
+                <Card className="bg-card/80 border-border/50 shadow-elegant">
                   <CardHeader>
-                    <CardTitle>All Jobs</CardTitle>
-                    <CardDescription>Manage and monitor your AI content generation tasks</CardDescription>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gradient-accent rounded-lg flex items-center justify-center">
+                        <FileText className="w-4 h-4 text-accent-foreground" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg font-bold text-foreground">All Jobs</CardTitle>
+                        <CardDescription className="text-muted-foreground">Manage and monitor your AI content generation tasks</CardDescription>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {/* Compact Search and Filter */}
@@ -345,40 +371,49 @@ export default function DashboardPage() {
                         />
                       </div>
                     ) : (
-                      <div className="space-y-3">
-                        {filteredJobs.map((job: any) => (
-                          <div
-                            key={job.id}
-                            className="p-4 rounded-lg border border-border/50 hover:border-border hover:shadow-sm transition-all cursor-pointer group"
-                            onClick={() => router.push(`/jobs/${job.id}`)}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-3 mb-1">
-                                  <h3 className="font-semibold text-foreground truncate">{job.title}</h3>
-                                  {getStatusBadge(job.status)}
-                                </div>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <span className="capitalize">{job.template?.name || 'AI Generated'}</span>
-                                  <span>•</span>
-                                  <span>{new Date(job.created_at).toLocaleDateString()}</span>
-                                </div>
-                              </div>
-                              <Eye className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                       <div className="space-y-3">
+                         {filteredJobs.map((job: any) => (
+                           <div
+                             key={job.id}
+                             className="p-4 rounded-lg border border-border/50 hover:border-border hover:shadow-elegant transition-all cursor-pointer group bg-card/50"
+                             onClick={() => router.push(`/jobs/${job.id}`)}
+                           >
+                             <div className="flex items-center justify-between">
+                               <div className="flex-1 min-w-0">
+                                 <div className="flex items-center gap-3 mb-1">
+                                   <h3 className="font-semibold text-foreground truncate">{job.title}</h3>
+                                   {getStatusBadge(job.status)}
+                                 </div>
+                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                   <span className="capitalize">{job.template?.name || 'AI Generated'}</span>
+                                   <span>•</span>
+                                   <span>{new Date(job.created_at).toLocaleDateString()}</span>
+                                 </div>
+                               </div>
+                               <div className="w-8 h-8 bg-gradient-accent/20 rounded-lg flex items-center justify-center group-hover:bg-gradient-accent/30 transition-colors">
+                                 <Eye className="h-4 w-4 text-accent group-hover:text-accent-foreground transition-colors" />
+                               </div>
+                             </div>
+                           </div>
+                         ))}
+                       </div>
                     )}
                   </CardContent>
                 </Card>
               </TabsContent>
 
               <TabsContent value="results" className="space-y-4">
-                <Card>
+                <Card className="bg-card/80 border-border/50 shadow-elegant">
                   <CardHeader>
-                    <CardTitle>Recent Results</CardTitle>
-                    <CardDescription>View your completed AI-generated content</CardDescription>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+                        <BarChart3 className="w-4 h-4 text-primary-foreground" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg font-bold text-foreground">Recent Results</CardTitle>
+                        <CardDescription className="text-muted-foreground">View your completed AI-generated content</CardDescription>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {completedJobs.length === 0 ? (
@@ -394,32 +429,34 @@ export default function DashboardPage() {
                         />
                       </div>
                     ) : (
-                      <div className="space-y-3">
-                        {completedJobs.slice(0, 8).map((job: any) => (
-                          <div
-                            key={job.id}
-                            className="p-4 rounded-lg border border-border/50 hover:border-border hover:shadow-sm transition-all cursor-pointer group"
-                            onClick={() => router.push(`/results/${job.id}`)}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-3 mb-1">
-                                  <h4 className="font-semibold text-foreground truncate">{job.title}</h4>
-                                  <Badge variant="default" className="text-xs">
-                                    completed
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <span className="capitalize">{job.template?.name || 'AI Generated'}</span>
-                                  <span>•</span>
-                                  <span>{new Date(job.created_at).toLocaleDateString()}</span>
-                                </div>
-                              </div>
-                              <Eye className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                       <div className="space-y-3">
+                         {completedJobs.slice(0, 8).map((job: any) => (
+                           <div
+                             key={job.id}
+                             className="p-4 rounded-lg border border-border/50 hover:border-border hover:shadow-elegant transition-all cursor-pointer group bg-card/50"
+                             onClick={() => router.push(`/results/${job.id}`)}
+                           >
+                             <div className="flex items-center justify-between">
+                               <div className="flex-1 min-w-0">
+                                 <div className="flex items-center gap-3 mb-1">
+                                   <h4 className="font-semibold text-foreground truncate">{job.title}</h4>
+                                   <Badge variant="default" className="text-xs bg-gradient-primary text-primary-foreground">
+                                     completed
+                                   </Badge>
+                                 </div>
+                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                   <span className="capitalize">{job.template?.name || 'AI Generated'}</span>
+                                   <span>•</span>
+                                   <span>{new Date(job.created_at).toLocaleDateString()}</span>
+                                 </div>
+                               </div>
+                               <div className="w-8 h-8 bg-gradient-primary/20 rounded-lg flex items-center justify-center group-hover:bg-gradient-primary/30 transition-colors">
+                                 <Eye className="h-4 w-4 text-primary group-hover:text-primary-foreground transition-colors" />
+                               </div>
+                             </div>
+                           </div>
+                         ))}
+                       </div>
                     )}
                   </CardContent>
                 </Card>

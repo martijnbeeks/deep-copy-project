@@ -59,9 +59,11 @@ export function Sidebar() {
         {/* Desktop sidebar content */}
         <div className="flex h-16 items-center px-6 border-b border-sidebar-border">
           <div className="flex items-center gap-2">
-            <PenTool className="h-6 w-6 text-sidebar-primary" />
+            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">AI</span>
+            </div>
             {!isCollapsed && (
-              <span className="text-lg font-bold text-sidebar-foreground">AI Copywriting</span>
+              <span className="text-xl font-bold text-sidebar-foreground">DeepCopy</span>
             )}
           </div>
         </div>
@@ -77,12 +79,12 @@ export function Sidebar() {
                 disabled={isLoading}
                 data-active={isActive}
                 className={cn(
-                  "sidebar-nav-item w-full group relative overflow-hidden rounded-md transition-all duration-200 ease-in-out",
+                  "sidebar-nav-item w-full group relative overflow-hidden rounded-lg transition-all duration-200 ease-in-out",
                   "flex items-center gap-3 px-3 py-2.5 text-sm font-medium",
                   isCollapsed ? "justify-center px-2" : "justify-start",
                   isActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                    : "text-sidebar-foreground",
+                    ? "bg-gradient-primary text-primary-foreground shadow-glow"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/20",
                   isLoading && "opacity-70 cursor-not-allowed",
                   "hover:scale-[1.02] active:scale-[0.98]"
                 )}
@@ -114,8 +116,8 @@ export function Sidebar() {
 
         <div className="border-t border-sidebar-border p-4">
           <div className={cn("flex items-center gap-3 mb-3", isCollapsed ? "justify-center" : "")}>
-            <div className="h-8 w-8 rounded-full bg-sidebar-primary flex items-center justify-center">
-              <span className="text-sm font-medium text-sidebar-primary-foreground">{user?.name?.charAt(0) || "U"}</span>
+            <div className="h-8 w-8 rounded-full bg-gradient-accent flex items-center justify-center shadow-elegant">
+              <span className="text-sm font-medium text-accent-foreground">{user?.name?.charAt(0) || "U"}</span>
             </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
@@ -153,8 +155,10 @@ export function Sidebar() {
       )}>
         <div className="flex h-16 items-center px-6 border-b border-sidebar-border">
           <div className="flex items-center gap-2">
-            <PenTool className="h-6 w-6 text-sidebar-primary" />
-            <span className="text-lg font-bold text-sidebar-foreground">AI Copywriting</span>
+            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">AI</span>
+            </div>
+            <span className="text-xl font-bold text-sidebar-foreground">DeepCopy</span>
           </div>
         </div>
 
@@ -169,11 +173,11 @@ export function Sidebar() {
                 disabled={isLoading}
                 data-active={isActive}
                 className={cn(
-                  "sidebar-nav-item w-full group relative overflow-hidden rounded-md transition-all duration-200 ease-in-out",
+                  "sidebar-nav-item w-full group relative overflow-hidden rounded-lg transition-all duration-200 ease-in-out",
                   "flex items-center gap-3 px-3 py-2.5 text-sm font-medium justify-start",
                   isActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                    : "text-sidebar-foreground",
+                    ? "bg-gradient-primary text-primary-foreground shadow-glow"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/20",
                   isLoading && "opacity-70 cursor-not-allowed",
                   "hover:scale-[1.02] active:scale-[0.98]"
                 )}
@@ -202,8 +206,8 @@ export function Sidebar() {
 
         <div className="border-t border-sidebar-border p-4">
           <div className="flex items-center gap-3 mb-3">
-            <div className="h-8 w-8 rounded-full bg-sidebar-primary flex items-center justify-center">
-              <span className="text-sm font-medium text-sidebar-primary-foreground">{user?.name?.charAt(0) || "U"}</span>
+            <div className="h-8 w-8 rounded-full bg-gradient-accent flex items-center justify-center shadow-elegant">
+              <span className="text-sm font-medium text-accent-foreground">{user?.name?.charAt(0) || "U"}</span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.name || "User"}</p>

@@ -117,34 +117,18 @@ export default function ResultsGalleryPage() {
     }
   }
 
-  // Create small preview HTML using same logic as create page - memoized to prevent refreshing
+  // Use same HTML rendering approach as results page - no extra wrapping
   const createSmallPreviewHTML = useMemo(() => {
     return (htmlContent: string) => {
-      // Fix broken image URLs and use the exact same HTML as full preview, just add scaling
+      // Fix broken image URLs - same as results page
       let processedContent = htmlContent
         .replace(/https?:\/\/[^\s"']*FFFFFF\?[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
         .replace(/https?:\/\/[^\s"']*placehold\.co\/[^"'\s]*FFFFFF[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
         .replace(/src="[^"]*FFFFFF[^"]*"/g, 'src="https://placehold.co/600x400?text=Image"')
         .replace(/src='[^']*FFFFFF[^']*'/g, "src='https://placehold.co/600x400?text=Image'")
 
-      // Wrap in basic HTML structure with Tailwind CDN - NO cache busting to prevent refreshing
-      const wrappedContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Template Preview</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body>
-  ${processedContent}
-</body>
-</html>`
-
-      return wrappedContent.replace(
-        /<body([^>]*)>/i,
-        '<body$1 style="transform: scale(0.3); transform-origin: top left; width: 333%; height: 333%; overflow: hidden;">'
-      )
+      // Return the HTML content directly - same as results page TemplateGrid
+      return processedContent
     }
   }, [])
 
@@ -160,7 +144,7 @@ export default function ResultsGalleryPage() {
 
       console.log('Fetching all templates for user:', user.email)
 
-      // Fetch all templates at once (no pagination)
+      // Use the original gallery API but with better error handling
       const response = await fetch(`/api/gallery/templates?page=1&limit=1000`, {
         headers: {
           'Authorization': `Bearer ${user.email}`
@@ -179,9 +163,11 @@ export default function ResultsGalleryPage() {
         }
       } else {
         console.error('Failed to fetch templates:', response.status, response.statusText)
+        setAllTemplates([])
       }
     } catch (error) {
       console.error('Error loading gallery data:', error)
+      setAllTemplates([])
     } finally {
       setIsLoading(false)
     }
@@ -391,13 +377,20 @@ export default function ResultsGalleryPage() {
                           </div>
                         ) : (
                           <iframe
-                            srcDoc={createSmallPreviewHTML(template.html)}
+                            srcDoc={template.html}
                             className="w-full h-full border-0"
                             onLoad={() => handlePreviewLoaded(template.id)}
                             onLoadStart={() => handlePreviewLoad(template.id)}
-                            sandbox="allow-same-origin"
+                            sandbox="allow-same-origin allow-scripts"
                             loading="eager"
                             title={`Preview of ${template.jobTitle}`}
+                            style={{
+                              transform: 'scale(0.3)',
+                              transformOrigin: 'top left',
+                              width: '333.33%',
+                              height: '333.33%',
+                              pointerEvents: 'none'
+                            }}
                           />
                         )}
                       </div>
@@ -447,7 +440,7 @@ export default function ResultsGalleryPage() {
             {filteredTemplates.length > 0 && (
               <div className="flex flex-col items-center justify-center mt-12 space-y-6">
                 <div className="text-sm text-muted-foreground font-medium">
-                  Showing {paginatedTemplates.length} of {filteredTemplates.length} templates
+                  Showing {((currentPage - 1) * templatesPerPage) + 1}-{Math.min(currentPage * templatesPerPage, filteredTemplates.length)} of {filteredTemplates.length} templates
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
@@ -612,9 +605,22 @@ export default function ResultsGalleryPage() {
               {/* Full Screen Preview */}
               <div className="h-[calc(100vh-120px)] border-0 bg-background overflow-auto">
                 <iframe
-                  srcDoc={selectedTemplate.html}
+                  srcDoc={`
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                      <meta charset="UTF-8">
+                      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                      <title>Template Preview</title>
+                      <script src="https://cdn.tailwindcss.com"></script>
+                    </head>
+                    <body>
+                      ${selectedTemplate.html}
+                    </body>
+                    </html>
+                  `}
                   className="w-full h-full"
-                  sandbox="allow-same-origin"
+                  sandbox="allow-same-origin allow-scripts"
                 />
               </div>
             </div>

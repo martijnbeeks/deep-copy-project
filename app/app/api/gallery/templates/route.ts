@@ -19,10 +19,12 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '6')
+    const limit = parseInt(searchParams.get('limit') || '6') // Proper pagination - 6 templates per page
     const offset = (page - 1) * limit
 
-    // Get completed jobs with their results metadata
+    console.log(`🔍 Fetching gallery templates for user: ${userEmail} (ID: ${user.id})`)
+
+    // Get completed jobs with their results metadata - SAME LOGIC AS RESULTS PAGE
     const jobsResult = await query(`
       SELECT 
         j.id,
@@ -43,7 +45,9 @@ export async function GET(request: NextRequest) {
       LIMIT $2 OFFSET $3
     `, [user.id, limit, offset])
 
-    // Get total count of completed jobs
+    console.log(`📊 Found ${jobsResult.rows.length} completed jobs with results`)
+
+    // Get total count for pagination
     const countResult = await query(`
       SELECT COUNT(*) as total
       FROM jobs j
@@ -56,141 +60,88 @@ export async function GET(request: NextRequest) {
     const total = parseInt(countResult.rows[0].total)
     const hasMore = offset + limit < total
 
-    // Process each job to generate templates dynamically
+    // Generate templates dynamically - EXACT SAME LOGIC AS RESULTS PAGE
     const templates = []
-
-    // First try to get templates from injected_templates table as fallback
-    const fallbackTemplates = await query(`
-      SELECT 
-        it.id,
-        it.job_id,
-        it.angle_index,
-        it.angle_name,
-        it.html_content,
-        it.template_id,
-        it.created_at,
-        j.title as job_title,
-        j.status as job_status,
-        j.advertorial_type,
-        j.created_at as job_created_at,
-        t.name as template_name
-      FROM injected_templates it
-      JOIN jobs j ON it.job_id = j.id
-      LEFT JOIN templates t ON j.template_id = t.id
-      WHERE j.user_id = $1
-      ORDER BY it.created_at DESC
-      LIMIT $2 OFFSET $3
-    `, [user.id, limit, offset])
-
-    // If we have fallback templates, use them
-    if (fallbackTemplates.rows.length > 0) {
-      console.log(`📦 Using ${fallbackTemplates.rows.length} templates from injected_templates table`)
-
-      const fallbackTemplatesFormatted = fallbackTemplates.rows.map(row => ({
-        id: `${row.job_id}-${row.angle_index}`,
-        jobId: row.job_id,
-        jobTitle: row.job_title,
-        templateName: row.template_name || 'Unknown Template',
-        angle: row.angle_name,
-        html: row.html_content,
-        createdAt: row.job_created_at,
-        status: row.job_status,
-        advertorialType: row.advertorial_type || 'unknown',
-        thumbnail: generateThumbnail(row.html_content)
-      }))
-
-      return NextResponse.json({
-        templates: fallbackTemplatesFormatted,
-        total,
-        hasMore,
-        page,
-        limit,
-        source: 'injected_templates_table' // Add source indicator for debugging
-      })
-    }
-
-    // Otherwise, generate templates dynamically
     console.log(`🔄 Generating templates dynamically for ${jobsResult.rows.length} jobs`)
 
     for (const job of jobsResult.rows) {
       try {
         console.log(`🔍 Processing job ${job.id}: ${job.title}`)
 
-        const metadata = job.metadata
-        const fullResult = metadata?.full_result
+        // Check if job has result with swipe_results - SAME AS RESULTS PAGE
+        if (job.metadata?.full_result?.results?.swipe_results) {
+          const swipeResults = job.metadata.full_result.results.swipe_results
+          console.log(`📊 Found ${swipeResults.length} swipe results for job ${job.id}`)
 
-        if (!fullResult || !fullResult.results?.swipe_results) {
-          console.log(`⚠️ Job ${job.id} has no swipe_results, skipping`)
-          continue
-        }
+          // Get injectable template for this job - SAME LOGIC AS RESULTS PAGE
+          const templateType = job.advertorial_type === 'listicle' ? 'listicle' : 'advertorial'
+          let injectableTemplate = null
 
-        const swipeResults = fullResult.results.swipe_results
-        console.log(`📊 Found ${swipeResults.length} swipe results for job ${job.id}`)
-
-        // Get injectable template for this job
-        const templateType = job.advertorial_type === 'listicle' ? 'listicle' : 'advertorial'
-
-        let injectableTemplate = null
-
-        if (job.template_id) {
-          // Try to fetch the specific injectable template with the same ID
-          console.log(`🔍 Looking for injectable template with ID: ${job.template_id}`)
-          const specificResponse = await query(`
-            SELECT * FROM injectable_templates WHERE id = $1
-          `, [job.template_id])
-
-          if (specificResponse.rows.length > 0) {
-            injectableTemplate = specificResponse.rows[0]
-            console.log(`✅ Found specific injectable template: ${injectableTemplate.name}`)
-          }
-        }
-
-        // Fallback: fetch by type if specific template not found
-        if (!injectableTemplate) {
-          console.log(`⚠️ Specific template not found, fetching by type: ${templateType}`)
-          const typeResponse = await query(`
-            SELECT * FROM injectable_templates WHERE advertorial_type = $1 LIMIT 1
-          `, [templateType])
-
-          if (typeResponse.rows.length > 0) {
-            injectableTemplate = typeResponse.rows[0]
-            console.log(`✅ Using fallback injectable template: ${injectableTemplate.name}`)
-          }
-        }
-
-        if (!injectableTemplate) {
-          console.log(`⚠️ No injectable template found for job ${job.id}, skipping`)
-          continue
-        }
-
-        // Process each swipe result to create templates
-        swipeResults.forEach((swipeResult, index) => {
           try {
-            // Extract content from the individual swipe result
-            const contentData = extractContentFromSwipeResult(swipeResult, templateType)
+            if (job.template_id) {
+              // Try to fetch the specific injectable template with the same ID
+              console.log(`🔍 Looking for injectable template with ID: ${job.template_id}`)
+              const specificResponse = await query(`
+                SELECT * FROM injectable_templates WHERE id = $1
+              `, [job.template_id])
 
-            // Inject content into the injectable template
-            const renderedHtml = injectContentIntoTemplate(injectableTemplate, contentData)
+              if (specificResponse.rows.length > 0) {
+                injectableTemplate = specificResponse.rows[0]
+                console.log(`✅ Found specific injectable template: ${injectableTemplate.name}`)
+              }
+            }
 
-            templates.push({
-              id: `${job.id}-${index + 1}`,
-              jobId: job.id,
-              jobTitle: job.title,
-              templateName: job.template_name || injectableTemplate.name || 'Unknown Template',
-              angle: swipeResult.angle || `Angle ${index + 1}`,
-              html: renderedHtml,
-              createdAt: job.created_at,
-              status: job.status,
-              advertorialType: job.advertorial_type || 'unknown',
-              thumbnail: generateThumbnail(renderedHtml)
-            })
+            // Fallback: fetch by type if specific template not found
+            if (!injectableTemplate) {
+              console.log(`⚠️ Specific template not found, fetching by type: ${templateType}`)
+              const typeResponse = await query(`
+                SELECT * FROM injectable_templates WHERE advertorial_type = $1 LIMIT 1
+              `, [templateType])
 
-            console.log(`✅ Generated template for angle ${index + 1}: ${swipeResult.angle}`)
+              if (typeResponse.rows.length > 0) {
+                injectableTemplate = typeResponse.rows[0]
+                console.log(`✅ Using fallback injectable template: ${injectableTemplate.name}`)
+              }
+            }
           } catch (error) {
-            console.error(`❌ Error processing angle ${index + 1} for job ${job.id}:`, error)
+            console.error('❌ Error fetching injectable templates:', error)
+            continue // Skip this job
           }
-        })
 
+          if (injectableTemplate) {
+            // Process each swipe result to create templates - SAME LOGIC AS RESULTS PAGE
+            swipeResults.forEach((swipeResult, index) => {
+              try {
+                // Extract content from the individual swipe result
+                const contentData = extractContentFromSwipeResult(swipeResult, templateType)
+
+                // Inject content into the injectable template
+                const renderedHtml = injectContentIntoTemplate(injectableTemplate, contentData)
+
+                templates.push({
+                  id: `${job.id}-${index + 1}`,
+                  jobId: job.id,
+                  jobTitle: job.title,
+                  templateName: job.template_name || injectableTemplate.name || 'Unknown Template',
+                  angle: swipeResult.angle || `Angle ${index + 1}`,
+                  html: renderedHtml,
+                  createdAt: job.created_at,
+                  status: job.status,
+                  advertorialType: job.advertorial_type || 'unknown',
+                  thumbnail: generateThumbnail(renderedHtml)
+                })
+
+                console.log(`✅ Generated template for angle ${index + 1}: ${swipeResult.angle}`)
+              } catch (error) {
+                console.error(`❌ Error processing angle ${index + 1} for job ${job.id}:`, error)
+              }
+            })
+          } else {
+            console.log(`⚠️ No injectable template found for job ${job.id}, skipping`)
+          }
+        } else {
+          console.log(`⚠️ Job ${job.id} has no swipe_results, skipping`)
+        }
       } catch (error) {
         console.error(`❌ Error processing job ${job.id}:`, error)
       }
@@ -204,7 +155,7 @@ export async function GET(request: NextRequest) {
       hasMore,
       page,
       limit,
-      source: 'dynamic_generation' // Add source indicator for debugging
+      source: 'dynamic_generation'
     })
   } catch (error) {
     console.error('Error fetching gallery templates:', error)
