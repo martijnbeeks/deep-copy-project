@@ -78,7 +78,7 @@ export function AvatarExtractionDialog({
 
     } catch (err) {
       console.error('Avatar extraction error:', err)
-      setError('Failed to extract avatars from the sales page. Please try again or use the "I know exactly who my customer is" option instead.')
+      setError('Failed to extract avatars from the sales page. This could be due to:\n\n• The URL is not accessible or requires authentication\n• The page doesn\'t contain enough customer information\n• The service is temporarily unavailable\n\nPlease try again or use the "I know exactly who my customer is" option instead.')
     } finally {
       setIsAnalyzing(false)
     }
@@ -237,9 +237,16 @@ export function AvatarExtractionDialog({
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
             <h3 className="text-lg font-semibold mb-2">Analyzing Business</h3>
-            <p className="text-muted-foreground text-center max-w-md">
+            <p className="text-muted-foreground text-center max-w-md mb-6">
               Our AI is examining your sales page to identify potential customer segments and their motivations...
             </p>
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="mt-4"
+            >
+              Cancel
+            </Button>
           </div>
         )}
 
@@ -327,7 +334,7 @@ export function AvatarExtractionDialog({
                   ) : (
                     <>
                       <User className="h-4 w-4 mr-2" />
-                      Create Job with Selected Personas
+                      Proceed to Template selection
                     </>
                   )}
                 </Button>
