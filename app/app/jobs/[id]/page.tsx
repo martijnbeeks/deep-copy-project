@@ -1,12 +1,11 @@
 "use client"
 
 import { Sidebar } from "@/components/dashboard/sidebar"
-import { JobDetails } from "@/components/jobs/job-details"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useRouter } from "next/navigation"
-import { useEffect, useState, useCallback } from "react"
-import { ArrowLeft, RefreshCw, Download, Eye, Menu, ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { ArrowLeft, RefreshCw, Download, Eye, Menu, ChevronLeft, ChevronRight, Trash2, Globe, Sparkles, Users, Hash } from "lucide-react"
 import Link from "next/link"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
@@ -60,6 +59,16 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
       return
     }
   }, [isAuthenticated, user, router])
+
+
+  const getProgressPercentage = () => {
+    if (!currentJob) return 0
+    if (currentJob.status === 'completed') return 100
+    if (currentJob.status === 'failed') return 0
+    if (currentJob.status === 'processing') return currentJob.progress || 50
+    if (currentJob.status === 'pending') return 25
+    return 0
+  }
 
   const handleDeleteJob = async () => {
     if (!currentJob) return
@@ -134,13 +143,19 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
               <Link href="/dashboard">
                 <Button variant="ghost" size="sm">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Back to Dashboard</span>
+                  <span className="hidden sm:inline">← Back to Jobs</span>
                   <span className="sm:hidden">Back</span>
                 </Button>
               </Link>
               <div>
-                <h1 className="text-xl md:text-2xl font-bold">Job Details</h1>
-                <p className="text-sm md:text-base text-muted-foreground">Monitor your AI content generation progress</p>
+                <h1 className="text-xl md:text-2xl font-bold">
+                  {currentJob.status === 'completed' ? 'Completed' : 'Processing Your Request'}
+                </h1>
+                <p className="text-sm md:text-base text-muted-foreground">
+                  {currentJob.status === 'completed' 
+                    ? 'Your AI content has been generated successfully!' 
+                    : 'Job submitted, waiting to start...'}
+                </p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -169,6 +184,18 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
               </Button>
             </div>
           </div>
+
+          {/* Progress Bar */}
+          {currentJob && (
+            <div className="mb-6">
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-primary h-2 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${getProgressPercentage()}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
           
           <div className="flex items-center justify-end mb-4">
             <div className="flex items-center gap-2">
@@ -237,7 +264,53 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
           </div>
 
           <div className="space-y-6">
-            <JobDetails job={currentJob} />
+            {/* Job Details Section */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold">Job Details</h2>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Product Page:</span>
+                  <a 
+                    href={currentJob.sales_page_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:text-blue-800 underline"
+                  >
+                    {currentJob.sales_page_url}
+                  </a>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Sparkles className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Template Style:</span>
+                  <span className="text-sm text-muted-foreground">
+                    {currentJob.template?.name || 'AI Generated'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Target Avatar:</span>
+                  <span className="text-sm text-muted-foreground">
+                    {currentJob.customer_avatars?.[0]?.persona_name || 'General Audience'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Hash className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Job ID:</span>
+                  <span className="text-sm text-muted-foreground font-mono">
+                    {currentJob.id}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* What's happening section */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold">What's happening?</h2>
+              <p className="text-sm text-muted-foreground">
+                Our AI is analyzing your product page, researching your market, and crafting compelling copy tailored to your specific audience. This process typically takes 3-5 minutes. You can safely leave this page - we'll save your progress and you can return anytime.
+              </p>
+            </div>
           </div>
         </div>
       </main>
