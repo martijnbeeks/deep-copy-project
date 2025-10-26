@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { ArrowLeft, RefreshCw, Download, Eye, Menu, ChevronLeft, ChevronRight, Trash2, Globe, Sparkles, Users, Hash } from "lucide-react"
+import { ArrowLeft, RefreshCw, Download, Eye, Menu, ChevronLeft, ChevronRight, Trash2, Globe, Sparkles, Users } from "lucide-react"
 import Link from "next/link"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
@@ -264,10 +264,10 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
           </div>
 
           <div className="space-y-6">
-            {/* Job Details Section */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold">Job Details</h2>
-              <div className="space-y-3">
+            {/* Job Details Section - Form in Box Style */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+              <h2 className="text-lg font-semibold mb-4">Job Details</h2>
+              <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <Globe className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Product Page:</span>
@@ -292,13 +292,6 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
                   <span className="text-sm font-medium">Target Avatar:</span>
                   <span className="text-sm text-muted-foreground">
                     {currentJob.customer_avatars?.[0]?.persona_name || 'General Audience'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Hash className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Job ID:</span>
-                  <span className="text-sm text-muted-foreground font-mono">
-                    {currentJob.id}
                   </span>
                 </div>
               </div>
