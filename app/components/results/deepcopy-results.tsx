@@ -335,48 +335,6 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
         </div>
       )}
 
-      {/* Document Analysis */}
-      {(fullResult?.results?.doc1_analysis || fullResult?.results?.doc2_analysis) && (
-        <div className="mb-12">
-          <Accordion type="single" collapsible>
-            <AccordionItem value="document-analysis">
-              <Card className="bg-card/80 border-border/50">
-                <div className="p-8">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
-                        <BookOpen className="w-5 h-5 text-primary-foreground" />
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-foreground">Document Analysis</h2>
-                        <p className="text-sm text-muted-foreground">Market research insights and findings</p>
-                      </div>
-                    </div>
-                    <AccordionTrigger />
-                  </div>
-                </div>
-
-                <AccordionContent>
-                  <div className="px-8 pb-8 space-y-6 border-t border-border/50 pt-6">
-                    {fullResult?.results?.doc1_analysis && (
-                      <div>
-                        <h4 className="text-lg font-semibold mb-3">Research Document 1</h4>
-                        <MarkdownContent content={fullResult.results.doc1_analysis} />
-                      </div>
-                    )}
-                    {fullResult?.results?.doc2_analysis && (
-                      <div>
-                        <h4 className="text-lg font-semibold mb-3">Research Document 2</h4>
-                        <MarkdownContent content={fullResult.results.doc2_analysis} />
-                      </div>
-                    )}
-                  </div>
-                </AccordionContent>
-              </Card>
-            </AccordionItem>
-          </Accordion>
-        </div>
-      )}
 
       {/* Research Output */}
       {fullResult?.results?.deep_research_output && (

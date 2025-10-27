@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Loader2, CheckCircle, AlertCircle, Users, User } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
@@ -14,6 +15,10 @@ interface ExtractedAvatar {
   age_range: string
   gender: string
   key_buying_motivation: string
+  pain_point?: string
+  emotion?: string
+  desire?: string
+  hook_line?: string
 }
 
 interface AvatarExtractionDialogProps {
@@ -41,6 +46,10 @@ export function AvatarExtractionDialog({
 
   useEffect(() => {
     if (isOpen && salesPageUrl) {
+      // Reset state when dialog opens
+      setAvatars([])
+      setSelectedAvatars(new Set())
+      setError(null)
       extractAvatars()
     }
   }, [isOpen, salesPageUrl])
@@ -175,18 +184,16 @@ export function AvatarExtractionDialog({
   }
 
   const handleAvatarToggle = (index: number) => {
-    const newSelected = new Set(selectedAvatars)
-    if (newSelected.has(index)) {
-      newSelected.delete(index)
+    if (selectedAvatars.has(index)) {
+      setSelectedAvatars(new Set())
     } else {
-      newSelected.add(index)
+      setSelectedAvatars(new Set([index]))
     }
-    setSelectedAvatars(newSelected)
   }
 
   const handleSubmit = async () => {
     if (selectedAvatars.size === 0) {
-      setError('Please select at least one avatar to continue')
+      setError('Please select a persona to continue')
       return
     }
 
@@ -222,7 +229,7 @@ export function AvatarExtractionDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
@@ -266,57 +273,91 @@ export function AvatarExtractionDialog({
               </p>
             </div>
 
-            <div className="grid gap-4">
-              {avatars.map((avatar, index) => (
-                <Card
-                  key={index}
-                  className={`cursor-pointer transition-all duration-200 ${selectedAvatars.has(index)
-                      ? 'ring-2 ring-primary bg-primary/5'
-                      : 'hover:shadow-md'
-                    }`}
-                  onClick={() => handleAvatarToggle(index)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="text-2xl">{getGenderIcon(avatar.gender)}</div>
-                        <div>
-                          <CardTitle className="text-lg">{avatar.persona_name}</CardTitle>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge className={getAgeBadgeColor(avatar.age_range)}>
-                              {avatar.age_range}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                              {avatar.gender}
-                            </Badge>
+            <Accordion type="single" collapsible className="w-full space-y-3">
+              {avatars.map((avatar, index) => {
+                const isSelected = selectedAvatars.has(index)
+                
+                return (
+                  <AccordionItem key={index} value={`avatar-${index}`} className="border-none">
+                    <Card 
+                      className={`transition-all cursor-pointer hover:shadow-md ${
+                        isSelected 
+                          ? 'border-2 border-primary bg-primary/10' 
+                          : 'border border-border hover:border-primary/50'
+                      }`}
+                      onClick={() => handleAvatarToggle(index)}
+                    >
+                      <div className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 flex-1">
+                            <span className="text-2xl">{getGenderIcon(avatar.gender)}</span>
+                            <div>
+                              <div className="font-semibold text-base">{avatar.persona_name}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isSelected && (
+                              <CheckCircle className="w-5 h-5 text-primary" />
+                            )}
+                            <AccordionTrigger />
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center">
-                        {selectedAvatars.has(index) ? (
-                          <CheckCircle className="h-5 w-5 text-primary" />
-                        ) : (
-                          <div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <CardDescription className="text-sm mb-3">
-                      {avatar.description}
-                    </CardDescription>
-                    <div className="bg-muted/50 p-3 rounded-lg">
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Key Buying Motivation:</p>
-                      <p className="text-sm">{avatar.key_buying_motivation}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      <AccordionContent className="px-4 pb-4">
+                        <div className="space-y-2 text-sm">
+                          <div>
+                            <span className="font-medium">Age Range:</span>
+                            <p className="text-muted-foreground">{avatar.age_range}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium">Description:</span>
+                            <p className="text-muted-foreground">{avatar.description}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium">Gender:</span>
+                            <p className="text-muted-foreground">{avatar.gender}</p>
+                          </div>
+                          {avatar.key_buying_motivation && (
+                            <div>
+                              <span className="font-medium">Key Buying Motivation:</span>
+                              <p className="text-muted-foreground">{avatar.key_buying_motivation}</p>
+                            </div>
+                          )}
+                          {avatar.pain_point && (
+                            <div>
+                              <span className="font-medium">Pain Point:</span>
+                              <p className="text-muted-foreground">{avatar.pain_point}</p>
+                            </div>
+                          )}
+                          {avatar.emotion && (
+                            <div>
+                              <span className="font-medium">Emotion:</span>
+                              <p className="text-muted-foreground">{avatar.emotion}</p>
+                            </div>
+                          )}
+                          {avatar.desire && (
+                            <div>
+                              <span className="font-medium">Desire:</span>
+                              <p className="text-muted-foreground">{avatar.desire}</p>
+                            </div>
+                          )}
+                          {avatar.hook_line && (
+                            <div className="pt-2 border-t border-border">
+                              <span className="font-medium">Hook Line:</span>
+                              <p className="text-primary italic">{avatar.hook_line}</p>
+                            </div>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </Card>
+                  </AccordionItem>
+                )
+              })}
+            </Accordion>
 
             <div className="flex items-center justify-between pt-4 border-t">
               <div className="text-sm text-muted-foreground">
-                {selectedAvatars.size} persona{selectedAvatars.size !== 1 ? 's' : ''} selected
+                {selectedAvatars.size > 0 ? '1 persona selected' : 'No persona selected'}
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" onClick={onClose} disabled={isSubmitting || isLoading}>

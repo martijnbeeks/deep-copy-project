@@ -103,11 +103,7 @@ export default function CreatePage() {
       if (!formData.title.trim()) {
         newErrors.title = "Project title is required"
       }
-      if (!formData.brand_info.trim()) {
-        newErrors.brand_info = "Brand information is required"
-      } else if (formData.brand_info.trim().length < 10) {
-        newErrors.brand_info = "Brand information must be at least 10 characters"
-      }
+      // Brand info is optional - no validation needed
       if (!formData.sales_page_url.trim()) {
         newErrors.sales_page_url = "Sales page URL is required"
       } else if (!isValidUrl(formData.sales_page_url)) {
@@ -457,7 +453,7 @@ export default function CreatePage() {
                         <div className="space-y-4">
                           <div className="space-y-2">
                             <Label htmlFor="brand_info" className="text-base font-semibold text-foreground">
-                              Brand Information <span className="text-destructive">*</span>
+                              Brand Information <span className="text-muted-foreground text-sm">(Optional)</span>
                             </Label>
                             <p className="text-sm text-muted-foreground">Describe your brand, product, or service in detail</p>
                           </div>
