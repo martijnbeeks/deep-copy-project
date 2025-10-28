@@ -451,7 +451,6 @@ class DeepCopy:
         try:
             prompt = f"""
             Now that you understand how to conduct research, create a full, best-practice prompt for Deep Research tool to research products from {sales_page_url} according to the sections below. 
-            Be as concise as possible, and include instructions to compile all findings into a single document of max 3 pages.
             Please only return the actual prompt that directly can be used in the Deep Research tool, no other text or return questions.
             Do not ask to add any appendices, everything should be text and in a single document.
 
@@ -484,7 +483,7 @@ class DeepCopy:
     def execute_deep_research(self, prompt):
         """Execute deep research using Perplexity API"""
         try:
-            model_name = "sonar"
+            model_name = "sonar-deep-research"
             api_key = self.secrets["PERPLEXITY_API_KEY"]
             if not api_key:
                 raise RuntimeError("PERPLEXITY_API_KEY not set in environment")
@@ -808,7 +807,8 @@ class DeepCopy:
             Sorted list of unique swipe file base names (without extensions)
         """
         try:
-            available_files = set()
+            html_files = set()
+            json_files = set()
             paginator = self.s3_client.get_paginator('list_objects_v2')
             pages = paginator.paginate(Bucket=s3_bucket, Prefix='content_library/')
             
@@ -821,11 +821,16 @@ class DeepCopy:
                         # Remove file extensions to get unique base names
                         if filename.endswith('_original.html'):
                             base_name = filename.replace('_original.html', '')
-                            available_files.add(base_name)
+                            html_files.add(base_name)
+                        elif filename.endswith('_orginal.html'):  # Handle typo in filename
+                            base_name = filename.replace('_orginal.html', '')
+                            html_files.add(base_name)
                         elif filename.endswith('.json') and not filename.endswith('_analysis.json'):
                             base_name = filename.replace('.json', '')
-                            available_files.add(base_name)
+                            json_files.add(base_name)
             
+            # Only return files that have BOTH HTML and JSON files
+            available_files = html_files.intersection(json_files)
             return sorted(list(available_files))
         except Exception as e:
             logger.error(f"Error listing available swipe files from S3: {e}")
@@ -887,11 +892,17 @@ def run_pipeline(event, context):
 
         try:
             # load both the html as the json file
-            s3_key_html = f"content_library/{swipe_file_id}_original.html"
-            # s3_key_html_analysis = f"content_library/{swipe_file_id}_analysis.txt"
+            # Try both spellings: "original" and "orginal" (typo in some files)
+            s3_key_html_correct = f"content_library/{swipe_file_id}_original.html"
+            s3_key_html_typo = f"content_library/{swipe_file_id}_orginal.html"
             s3_key_json = f"content_library/{swipe_file_id}.json"
             
-            obj_html = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_html)
+            # Try the correct spelling first, then the typo
+            try:
+                obj_html = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_html_correct)
+            except Exception:
+                obj_html = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_html_typo)
+            
             html_bytes = obj_html["Body"].read()
             swipe_file_html = html_bytes.decode("utf-8")
             
@@ -901,33 +912,50 @@ def run_pipeline(event, context):
             swipe_file_model = load_schema_as_model(json_text)
             
         except Exception as e:
-            # Get list of available swipe files from S3
-            available_files_list = generator.get_available_swipe_files(s3_bucket)
-            
-            if available_files_list:
-                error_msg = (
-                    f"Error: The swipe file '{swipe_file_id}' is not available in the library. "
-                    f"Available swipe files: {', '.join(available_files_list)}. "
-                    f"Please select one of the available files."
-                )
-            else:
-                error_msg = (
-                    f"Error: The swipe file '{swipe_file_id}' is not available in the library. "
-                    f"No swipe files found in content_library folder."
-                )
-            
-            logger.error(error_msg)
-            try:
-                generator.update_job_status(job_id, "FAILED", {"error": error_msg})
-            except Exception:
-                pass
-            return {
-                "statusCode": 404,
-                "body": {
-                    "error": error_msg,
-                    "available_files": available_files_list
+            # Check if it's a file not found error (NoSuchKey)
+            if hasattr(e, 'response') and e.response.get('Error', {}).get('Code') == 'NoSuchKey':
+                # Get list of available swipe files from S3
+                available_files_list = generator.get_available_swipe_files(s3_bucket)
+                
+                if available_files_list:
+                    error_msg = (
+                        f"Error: The swipe file '{swipe_file_id}' is not available in the library. "
+                        f"Available swipe files: {', '.join(available_files_list)}. "
+                        f"Please select one of the available files."
+                    )
+                else:
+                    error_msg = (
+                        f"Error: The swipe file '{swipe_file_id}' is not available in the library. "
+                        f"No swipe files found in content_library folder."
+                    )
+                
+                logger.error(error_msg)
+                try:
+                    generator.update_job_status(job_id, "FAILED", {"error": error_msg})
+                except Exception:
+                    pass
+                return {
+                    "statusCode": 404,
+                    "body": {
+                        "error": error_msg,
+                        "available_files": available_files_list
+                    }
                 }
-            }
+            else:
+                # It's a different error (JSON parsing, schema validation, etc.)
+                error_msg = f"Error loading swipe file '{swipe_file_id}': {str(e)}"
+                logger.error(error_msg)
+                try:
+                    generator.update_job_status(job_id, "FAILED", {"error": error_msg})
+                except Exception:
+                    pass
+                return {
+                    "statusCode": 500,
+                    "body": {
+                        "error": error_msg,
+                        "message": "Failed to load or parse swipe file"
+                    }
+                }
         # Get customer avatars from event
         customer_avatars = event.get("customer_avatars", [])
         # Step 1: Analyze research page
@@ -997,6 +1025,7 @@ def run_pipeline(event, context):
             "offer_brief": offer_brief,
             "marketing_philosophy_analysis": marketing_philosophy_analysis,
             "summary": summary,
+            "swipe_file_id": swipe_file_id,
             "swipe_results": swipe_results,
             "marketing_angles": angles
         }

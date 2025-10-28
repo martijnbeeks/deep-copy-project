@@ -94,7 +94,7 @@ def encode_image_bytes(image_bytes: bytes) -> str:
     return base64.b64encode(image_bytes).decode("utf-8")
 
 
-def extract_avatars_from_url(url: str, openai_api_key: str, model: str = "gpt-4o") -> AvatarCollection:
+def extract_avatars_from_url(url: str, openai_api_key: str, model: str = "gpt-5") -> AvatarCollection:
     """
     Extract customer avatars from a product page URL using OpenAI vision.
     Optimized for AWS Lambda - no file storage required.
@@ -137,7 +137,7 @@ For each avatar, include:
 - Gender: male, female, or both.
 - Key buying motivation: what drives them to purchase this product.
 
-Provide at least 3 avatars that represent distinct customer segments."""
+Provide at least 5 avatars that represent distinct customer segments."""
 
         # Call OpenAI API with structured output
         logger.info(f"Calling OpenAI API ({model}) to extract avatars")

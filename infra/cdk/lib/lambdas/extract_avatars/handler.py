@@ -125,7 +125,7 @@ def lambda_handler(event, context):
             raise RuntimeError(error_msg)
         
         # Get model from environment or use default
-        model = os.environ.get('OPENAI_MODEL', 'gpt-4o')
+        model = "gpt-5"
         
         # Extract avatars using OpenAI
         logger.info(f'Processing avatar extraction for job {job_id}, URL: {url}')
@@ -158,8 +158,10 @@ def lambda_handler(event, context):
 
 if __name__ == "__main__":
     # Local testing
+    # set RESULTS_BUCKET to the results bucket
+    os.environ['RESULTS_BUCKET'] = 'deepcopystack-resultsbucketa95a2103-zhwjflrlpfih'
     test_event = {
         "job_id": "test-job-123",
         "url": "https://hypowered.nl/en"
     }
-    print(lambda_handler(test_event, {}))
+    logger.info(lambda_handler(test_event, {}))
