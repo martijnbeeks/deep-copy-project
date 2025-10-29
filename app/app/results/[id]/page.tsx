@@ -118,10 +118,6 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
               </div>
               <div className="flex items-center gap-3">
                 <Button variant="outline" size="sm">
-                  <Download className="w-4 h-4 mr-2" />
-                  Export Report
-                </Button>
-                <Button variant="outline" size="sm">
                   <Share2 className="w-4 h-4 mr-2" />
                   Share
                 </Button>
@@ -144,7 +140,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                 <CheckCircle2 className="w-4 h-4" />
                 <span className="text-sm font-medium">Step 3: Content Generation Complete</span>
               </div>
-              
+
               <h1 className="text-3xl sm:text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
                 Content Results
               </h1>

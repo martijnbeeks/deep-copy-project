@@ -223,7 +223,7 @@ export default function ResultsPage() {
                     <span className="sm:hidden">Create</span>
                   </Button>
                 </Link>
-                
+
                 {/* Mobile menu button */}
                 <Button
                   variant="outline"
@@ -233,7 +233,7 @@ export default function ResultsPage() {
                 >
                   <Menu className="h-4 w-4" />
                 </Button>
-                
+
                 {/* Desktop collapse button */}
                 <Button
                   variant="outline"
@@ -381,11 +381,13 @@ export default function ResultsPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                            <Download className="h-4 w-4 mr-2" />
-                            <span className="hidden sm:inline">Download</span>
-                            <span className="sm:hidden">DL</span>
-                          </Button>
+                          <Link href={`/results/${job.id}`}>
+                            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                              <Download className="h-4 w-4 mr-2" />
+                              <span className="hidden sm:inline">Download</span>
+                              <span className="sm:hidden">DL</span>
+                            </Button>
+                          </Link>
                           <Link href={`/results/${job.id}`}>
                             <Button variant="outline" size="sm" className="w-full sm:w-auto">
                               <Eye className="h-4 w-4 mr-2" />

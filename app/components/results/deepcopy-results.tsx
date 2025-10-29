@@ -243,8 +243,8 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
         <Accordion type="single" collapsible>
           <AccordionItem value="project-overview">
             <Card className="bg-card/80 border-border/50">
-              <div className="p-8">
-                <div className="flex items-center justify-between">
+              <AccordionTrigger className="p-8 hover:no-underline">
+                <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-accent rounded-lg flex items-center justify-center">
                       <Calendar className="w-5 h-5 text-accent-foreground" />
@@ -254,9 +254,8 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
                       <p className="text-sm text-muted-foreground">Job details and metadata</p>
                     </div>
                   </div>
-                  <AccordionTrigger />
                 </div>
-              </div>
+              </AccordionTrigger>
 
               <AccordionContent>
                 <div className="px-8 pb-8 space-y-6 border-t border-border/50 pt-6">
@@ -309,8 +308,8 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
           <Accordion type="single" collapsible>
             <AccordionItem value="page-analysis">
               <Card className="bg-card/80 border-border/50">
-                <div className="p-8">
-                  <div className="flex items-center justify-between">
+                <AccordionTrigger className="p-8 hover:no-underline">
+                  <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-accent rounded-lg flex items-center justify-center">
                         <BarChart3 className="w-5 h-5 text-accent-foreground" />
@@ -320,9 +319,8 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
                         <p className="text-sm text-muted-foreground">Detailed analysis of the target page</p>
                       </div>
                     </div>
-                    <AccordionTrigger />
                   </div>
-                </div>
+                </AccordionTrigger>
 
                 <AccordionContent>
                   <div className="px-8 pb-8 border-t border-border/50 pt-6">
@@ -342,8 +340,8 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
           <Accordion type="single" collapsible>
             <AccordionItem value="research-output">
               <Card className="bg-card/80 border-border/50">
-                <div className="p-8">
-                  <div className="flex items-center justify-between">
+                <AccordionTrigger className="p-8 hover:no-underline">
+                  <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-accent rounded-lg flex items-center justify-center">
                         <BookOpen className="w-5 h-5 text-accent-foreground" />
@@ -353,9 +351,8 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
                         <p className="text-sm text-muted-foreground">Comprehensive research findings and recommendations</p>
                       </div>
                     </div>
-                    <AccordionTrigger />
                   </div>
-                </div>
+                </AccordionTrigger>
 
                 <AccordionContent>
                   <div className="px-8 pb-8 border-t border-border/50 pt-6">
@@ -374,8 +371,8 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
           <Accordion type="single" collapsible>
             <AccordionItem value="avatar-marketing">
               <Card className="bg-card/80 border-border/50">
-                <div className="p-8">
-                  <div className="flex items-center justify-between">
+                <AccordionTrigger className="p-8 hover:no-underline">
+                  <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
                         <User className="w-5 h-5 text-primary-foreground" />
@@ -385,9 +382,8 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
                         <p className="text-sm text-muted-foreground">Customer avatar and marketing angles</p>
                       </div>
                     </div>
-                    <AccordionTrigger />
                   </div>
-                </div>
+                </AccordionTrigger>
 
                 <AccordionContent>
                   <div className="px-8 pb-8 space-y-6 border-t border-border/50 pt-6">
@@ -565,8 +561,8 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
         <Accordion type="single" collapsible>
           <AccordionItem value="html-templates">
             <Card className="bg-card/80 border-border/50">
-              <div className="p-8">
-                <div className="flex items-center justify-between">
+              <AccordionTrigger className="p-8 hover:no-underline">
+                <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
                       <FileText className="w-5 h-5 text-primary-foreground" />
@@ -576,9 +572,8 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
                       <p className="text-sm text-muted-foreground">Generated marketing templates and angles</p>
                     </div>
                   </div>
-                  <AccordionTrigger />
                 </div>
-              </div>
+              </AccordionTrigger>
 
               <AccordionContent>
                 <div className="px-8 pb-8 border-t border-border/50 pt-6">

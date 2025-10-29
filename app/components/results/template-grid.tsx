@@ -5,8 +5,9 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Copy, Download, Eye, FileText } from "lucide-react"
+import { Copy, Download, Eye, FileText, DownloadCloud } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import JSZip from "jszip"
 
 interface Template {
     name: string
@@ -45,15 +46,72 @@ export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
     }
 
     const handleDownload = (content: string, filename: string) => {
-        const blob = new Blob([content], { type: 'text/html' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = filename
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
+        try {
+            const blob = new Blob([content], { type: 'text/html' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = filename
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+            toast({
+                title: "Downloaded",
+                description: `${filename} has been downloaded.`,
+            })
+        } catch (err) {
+            console.error('Failed to download template:', err)
+            toast({
+                title: "Download failed",
+                description: "Failed to download template.",
+                variant: "destructive",
+            })
+        }
+    }
+
+    const handleDownloadAll = async () => {
+        if (templates.length === 0) {
+            toast({
+                title: "No templates",
+                description: "There are no templates to download.",
+                variant: "destructive",
+            })
+            return
+        }
+
+        try {
+            const zip = new JSZip()
+
+            // Add all templates to zip
+            templates.forEach((template) => {
+                const filename = `${template.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`
+                zip.file(filename, template.html)
+            })
+
+            // Generate zip file
+            const zipBlob = await zip.generateAsync({ type: 'blob' })
+            const url = URL.createObjectURL(zipBlob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `templates_${new Date().getTime()}.zip`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+
+            toast({
+                title: "Download complete",
+                description: `All ${templates.length} template(s) downloaded as ZIP file.`,
+            })
+        } catch (err) {
+            console.error('Failed to create zip file:', err)
+            toast({
+                title: "Download failed",
+                description: "Failed to create ZIP file. Please try again.",
+                variant: "destructive",
+            })
+        }
     }
 
     if (isLoading) {
@@ -93,9 +151,21 @@ export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
                         {templates.length} template{templates.length !== 1 ? 's' : ''} generated
                     </p>
                 </div>
-                <Badge variant="outline">
-                    {templates.length} template{templates.length !== 1 ? 's' : ''}
-                </Badge>
+                <div className="flex items-center gap-2">
+                    {templates.length > 0 && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleDownloadAll}
+                        >
+                            <DownloadCloud className="h-4 w-4 mr-2" />
+                            Download All
+                        </Button>
+                    )}
+                    <Badge variant="outline">
+                        {templates.length} template{templates.length !== 1 ? 's' : ''}
+                    </Badge>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -137,53 +207,64 @@ export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
                                     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/20 pointer-events-none"></div>
                                 </div>
 
-                                <Dialog>
-                                    <DialogTrigger asChild>
-                                        <Button className="w-full" size="sm">
-                                            <Eye className="h-4 w-4 mr-2" />
-                                            Preview Template
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="!max-w-[98vw] !max-h-[98vh] !w-[98vw] !h-[98vh] overflow-hidden p-2">
-                                        <DialogHeader className="pb-2">
-                                            <DialogTitle className="text-xl font-bold">
-                                                {template.angle || template.name}
-                                            </DialogTitle>
-                                            <DialogDescription>
-                                                {template.type} • {template.timestamp ? new Date(template.timestamp).toLocaleString() : 'Generated'}
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <div className="h-[calc(98vh-120px)] border rounded-lg bg-background overflow-auto">
-                                            <iframe
-                                                srcDoc={template.html}
-                                                className="w-full h-full"
-                                                sandbox="allow-same-origin allow-scripts"
-                                                style={{
-                                                    border: 'none',
-                                                    width: '100%',
-                                                    height: '100%'
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="flex gap-2 pt-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleCopyHTML(template.html)}
-                                            >
-                                                {copied ? 'Copied!' : 'Copy HTML'}
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleDownload(template.html, `${template.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`)}
+                                        className="flex-1"
+                                    >
+                                        <Download className="h-4 w-4 mr-2" />
+                                        Download
+                                    </Button>
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <Button className="flex-1" size="sm">
+                                                <Eye className="h-4 w-4 mr-2" />
+                                                Preview
                                             </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleDownload(template.html, `${template.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`)}
-                                            >
-                                                <Download className="h-4 w-4 mr-2" />
-                                                Download
-                                            </Button>
-                                        </div>
-                                    </DialogContent>
-                                </Dialog>
+                                        </DialogTrigger>
+                                        <DialogContent className="!max-w-[98vw] !max-h-[98vh] !w-[98vw] !h-[98vh] overflow-hidden p-2">
+                                            <DialogHeader className="pb-2">
+                                                <DialogTitle className="text-xl font-bold">
+                                                    {template.angle || template.name}
+                                                </DialogTitle>
+                                                <DialogDescription>
+                                                    {template.type} • {template.timestamp ? new Date(template.timestamp).toLocaleString() : 'Generated'}
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="h-[calc(98vh-120px)] border rounded-lg bg-background overflow-auto">
+                                                <iframe
+                                                    srcDoc={template.html}
+                                                    className="w-full h-full"
+                                                    sandbox="allow-same-origin allow-scripts"
+                                                    style={{
+                                                        border: 'none',
+                                                        width: '100%',
+                                                        height: '100%'
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="flex gap-2 pt-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleCopyHTML(template.html)}
+                                                >
+                                                    {copied ? 'Copied!' : 'Copy HTML'}
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleDownload(template.html, `${template.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`)}
+                                                >
+                                                    <Download className="h-4 w-4 mr-2" />
+                                                    Download
+                                                </Button>
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
