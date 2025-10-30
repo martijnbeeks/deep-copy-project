@@ -8,7 +8,7 @@ interface AccessTokenResponse {
 
 async function getAccessToken(): Promise<string> {
   console.log('Requesting fresh access token...')
-  
+
   const clientId = process.env.DEEPCOPY_CLIENT_ID || '5mbatc7uv35hr23qip437s2ai5'
   const clientSecret = process.env.DEEPCOPY_CLIENT_SECRET || '1msm19oltu7241134t5vujtldr4uvum7hvn6cj7n1s3tg1ar02k5'
   const tokenEndpoint = 'https://deepcopy-613663743323-eu-west-1.auth.eu-west-1.amazoncognito.com/oauth2/token'
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const accessToken = await getAccessToken()
 
     // Get avatar extraction job status with cache-busting
-    const response = await fetch(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/${id}?t=${Date.now()}`, {
+    const response = await fetch(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/jobs/${id}?t=${Date.now()}`, {
       method: 'GET',
       cache: 'no-store',
       headers: {
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     const data = await response.json()
-    
+
     return NextResponse.json(data)
 
   } catch (error) {
