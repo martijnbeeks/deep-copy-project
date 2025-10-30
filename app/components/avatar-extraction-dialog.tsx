@@ -92,14 +92,11 @@ export function AvatarExtractionDialog({
     setError(null)
 
     try {
-      // Step 1: Submit avatar extraction job to AWS
-      const response = await fetchWithAuth(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/extract?t=${Date.now()}`, {
+      // Step 1: Submit avatar extraction job to AWS (exact cURL equivalent)
+      const response = await fetchWithAuth('https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/extract', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ url: salesPageUrl })
       })
@@ -132,14 +129,9 @@ export function AvatarExtractionDialog({
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        // Check status with cache-busting (AWS jobs)
-        const statusResponse = await fetchWithAuth(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/jobs/${jobId}?t=${Date.now()}`, {
-          method: 'GET',
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
+        // Check status (exact cURL equivalent)
+        const statusResponse = await fetchWithAuth(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/jobs/${jobId}`, {
+          method: 'GET'
         })
 
         if (!statusResponse.ok) {
@@ -149,14 +141,9 @@ export function AvatarExtractionDialog({
         const statusData = await statusResponse.json()
 
         if (statusData.status === 'SUCCEEDED') {
-          // Get results with cache-busting (AWS avatars result)
-          const resultResponse = await fetchWithAuth(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/${jobId}/result?t=${Date.now()}`, {
-            method: 'GET',
-            headers: {
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Pragma': 'no-cache',
-              'Expires': '0'
-            }
+          // Get results (exact cURL equivalent)
+          const resultResponse = await fetchWithAuth(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/${jobId}/result`, {
+            method: 'GET'
           })
 
           if (!resultResponse.ok) {
@@ -178,13 +165,8 @@ export function AvatarExtractionDialog({
         // Check if results are available even if status is still RUNNING
         // (Sometimes results are available before status is updated)
         try {
-          const resultResponse = await fetchWithAuth(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/${jobId}/result?t=${Date.now()}`, {
-            method: 'GET',
-            headers: {
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Pragma': 'no-cache',
-              'Expires': '0'
-            }
+          const resultResponse = await fetchWithAuth(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/${jobId}/result`, {
+            method: 'GET'
           }, false)
 
           if (resultResponse.ok) {
