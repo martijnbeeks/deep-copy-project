@@ -22,15 +22,21 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
 
   const createSmallPreviewHTML = useMemo(() => {
     return (htmlContent: string) => {
-      // Fix broken image URLs and use the exact same HTML as full preview, just add scaling
-      let processedContent = htmlContent
-        .replace(/https?:\/\/[^\s"']*FFFFFF\?[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
-        .replace(/https?:\/\/[^\s"']*placehold\.co\/[^"'\s]*FFFFFF[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
-        .replace(/src="[^"]*FFFFFF[^"]*"/g, 'src="https://placehold.co/600x400?text=Image"')
-        .replace(/src='[^']*FFFFFF[^']*'/g, "src='https://placehold.co/600x400?text=Image'")
-      
-      // Wrap in basic HTML structure with Tailwind CDN
-      const wrappedContent = `<!DOCTYPE html>
+      const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(htmlContent);
+      const processed = hasRealImages
+        ? htmlContent
+            .replace(/\s+onerror="[^"]*"/gi, '')
+            .replace(/\s+onerror='[^']*'/gi, '')
+            .replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+              const lower = block.toLowerCase();
+              return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+                ? ''
+                : block;
+            })
+        : htmlContent;
+
+      // Just wrap in basic HTML structure with Tailwind -- do not replace or alter image URLs!
+      return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -38,29 +44,44 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
   <title>Template Preview</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  ${processedContent}
+<body style="transform: scale(0.3); transform-origin: top left; width: 333%; height: 333%; overflow: hidden;">
+  ${processed}
+  <script>
+    (function(){
+      function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }
+      function ph(img){ var alt=(img.getAttribute('alt')||'Image'); var text=encodeURIComponent(alt.replace(/[^a-zA-Z0-9\\s]/g,'').substring(0,20)||'Image'); return 'https://placehold.co/600x400?text='+text; }
+      function apply(img){
+        if (isTrusted(img.src)) { img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); }; return; }
+        if (!img.complete || img.naturalWidth === 0) { img.src = ph(img); }
+        img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); };
+      }
+      function run(){ document.querySelectorAll('img').forEach(apply); }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+      setTimeout(run, 800);
+    })();
+  </script>
 </body>
-</html>`
-      
-      return wrappedContent.replace(
-        /<body([^>]*)>/i,
-        '<body$1 style="transform: scale(0.3); transform-origin: top left; width: 333%; height: 333%; overflow: hidden;">'  
-      )
+</html>`;
     }
-  }, [])
+  }, []);
 
   const createFullPreviewHTML = useMemo(() => {
     return (htmlContent: string) => {
-      // Use the same logic as small preview but without scaling - just full size
-      let processedContent = htmlContent
-        .replace(/https?:\/\/[^\s"']*FFFFFF\?[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
-        .replace(/https?:\/\/[^\s"']*placehold\.co\/[^"'\s]*FFFFFF[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
-        .replace(/src="[^"]*FFFFFF[^"]*"/g, 'src="https://placehold.co/600x400?text=Image"')
-        .replace(/src='[^']*FFFFFF[^']*'/g, "src='https://placehold.co/600x400?text=Image'")
-      
-      // Wrap in basic HTML structure with Tailwind CDN - same as small preview but no scaling
-      const wrappedContent = `<!DOCTYPE html>
+      const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(htmlContent);
+      const processed = hasRealImages
+        ? htmlContent
+            .replace(/\s+onerror="[^"]*"/gi, '')
+            .replace(/\s+onerror='[^']*'/gi, '')
+            .replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+              const lower = block.toLowerCase();
+              return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+                ? ''
+                : block;
+            })
+        : htmlContent;
+
+      // Just wrap in basic HTML structure (no .replace)
+      return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -82,28 +103,25 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
   </style>
 </head>
 <body>
-  ${processedContent}
+  ${processed}
   <script>
-    document.addEventListener('click', function(e) {
-      const target = e.target.closest('a, button, [onclick]');
-      if (target) {
-        e.preventDefault();
-        e.stopPropagation();
+    (function(){
+      function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }
+      function ph(img){ var alt=(img.getAttribute('alt')||'Image'); var text=encodeURIComponent(alt.replace(/[^a-zA-Z0-9\\s]/g,'').substring(0,20)||'Image'); return 'https://placehold.co/600x400?text='+text; }
+      function apply(img){
+        if (isTrusted(img.src)) { img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); }; return; }
+        if (!img.complete || img.naturalWidth === 0) { img.src = ph(img); }
+        img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); };
       }
-    });
-    
-    document.addEventListener('submit', function(e) {
-      e.preventDefault();
-    });
-    
-    window.parent.postMessage('iframe-ready', '*');
+      function run(){ document.querySelectorAll('img').forEach(apply); }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+      setTimeout(run, 800);
+    })();
   </script>
 </body>
-</html>`
-      
-      return wrappedContent
+</html>`;
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     const iframe = iframeRef.current

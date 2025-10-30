@@ -99,38 +99,23 @@ export default function ResultsGalleryPage() {
   // Helper function to generate thumbnail from HTML
   const generateThumbnail = (html: string): string => {
     try {
-      // Use same image replacement logic as create page
-      let processedContent = html
-        .replace(/https?:\/\/[^\s"']*FFFFFF\?[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
-        .replace(/https?:\/\/[^\s"']*placehold\.co\/[^"'\s]*FFFFFF[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
-        .replace(/src="[^"]*FFFFFF[^"]*"/g, 'src="https://placehold.co/600x400?text=Image"')
-        .replace(/src='[^']*FFFFFF[^']*'/g, "src='https://placehold.co/600x400?text=Image'")
-
-      const imgMatch = processedContent.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i)
+      const imgMatch = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
       if (imgMatch) {
-        return imgMatch[1]
+        return imgMatch[1];
       }
-      return 'https://placehold.co/600x400?text=Template+Preview'
+      return 'https://placehold.co/600x400?text=Template+Preview';
     } catch (error) {
-      console.error('Error generating thumbnail:', error)
-      return 'https://placehold.co/600x400?text=Template+Preview'
+      console.error('Error generating thumbnail:', error);
+      return 'https://placehold.co/600x400?text=Template+Preview';
     }
-  }
+  };
 
   // Use same HTML rendering approach as results page - no extra wrapping
   const createSmallPreviewHTML = useMemo(() => {
     return (htmlContent: string) => {
-      // Fix broken image URLs - same as results page
-      let processedContent = htmlContent
-        .replace(/https?:\/\/[^\s"']*FFFFFF\?[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
-        .replace(/https?:\/\/[^\s"']*placehold\.co\/[^"'\s]*FFFFFF[^"'\s]*/g, 'https://placehold.co/600x400?text=Image')
-        .replace(/src="[^"]*FFFFFF[^"]*"/g, 'src="https://placehold.co/600x400?text=Image"')
-        .replace(/src='[^']*FFFFFF[^']*'/g, "src='https://placehold.co/600x400?text=Image'")
-
-      // Return the HTML content directly - same as results page TemplateGrid
-      return processedContent
-    }
-  }, [])
+      return htmlContent;
+    };
+  }, []);
 
   const loadAllGalleryData = async () => {
     setIsLoading(true)
@@ -615,12 +600,40 @@ export default function ResultsGalleryPage() {
                       <script src="https://cdn.tailwindcss.com"></script>
                     </head>
                     <body>
-                      ${selectedTemplate.html}
+                      ${(() => {
+                        const raw = selectedTemplate.html;
+                        const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(raw);
+                        if (!hasRealImages) return raw;
+                        const noOnError = raw
+                          .replace(/\s+onerror=\"[^\"]*\"/gi, '')
+                          .replace(/\s+onerror='[^']*'/gi, '');
+                        const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+                          const lower = block.toLowerCase();
+                          return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+                            ? ''
+                            : block;
+                        });
+                        return stripFallbackScripts;
+                      })()}
+                      <script>
+                        (function(){
+                          function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }
+                          function ph(img){ var alt=(img.getAttribute('alt')||'Image'); var text=encodeURIComponent(alt.replace(/[^a-zA-Z0-9\s]/g,'').substring(0,20)||'Image'); return 'https://placehold.co/600x400?text='+text; }
+                          function apply(img){
+                            if (isTrusted(img.src)) { img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); }; return; }
+                            if (!img.complete || img.naturalWidth === 0) { img.src = ph(img); }
+                            img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); };
+                          }
+                          function run(){ document.querySelectorAll('img').forEach(apply); }
+                          if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+                          setTimeout(run, 800);
+                        })();
+                      </script>
                     </body>
                     </html>
                   `}
                   className="w-full h-full"
-                  sandbox="allow-same-origin allow-scripts"
+                  sandbox="allow-scripts"
                 />
               </div>
             </div>
