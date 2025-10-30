@@ -204,7 +204,7 @@ export class DeepCopyStack extends Stack {
           platform: Platform.LINUX_AMD64,
         }
       ),
-      timeout: Duration.seconds(120),
+      timeout: Duration.seconds(600),
       memorySize: 3008, // 3GB for Playwright + OpenAI
       architecture: lambda.Architecture.X86_64,
       environment: {
@@ -315,6 +315,33 @@ export class DeepCopyStack extends Stack {
       deployOptions: {
         stageName: 'prod',
       },
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigw.Cors.ALL_ORIGINS,
+        allowMethods: apigw.Cors.ALL_METHODS,
+        allowHeaders: ['*'],
+      },
+    });
+
+    const corsHeaders: { [header: string]: string } = {
+      'Access-Control-Allow-Origin': "'*'",
+      'Access-Control-Allow-Headers': "'*'",
+      'Access-Control-Allow-Methods': "'*'",
+    };
+    api.addGatewayResponse('Default4xxWithCors', {
+      type: apigw.ResponseType.DEFAULT_4XX,
+      responseHeaders: corsHeaders,
+    });
+    api.addGatewayResponse('Default5xxWithCors', {
+      type: apigw.ResponseType.DEFAULT_5XX,
+      responseHeaders: corsHeaders,
+    });
+    api.addGatewayResponse('UnauthorizedWithCors', {
+      type: apigw.ResponseType.UNAUTHORIZED,
+      responseHeaders: corsHeaders,
+    });
+    api.addGatewayResponse('AccessDeniedWithCors', {
+      type: apigw.ResponseType.ACCESS_DENIED,
+      responseHeaders: corsHeaders,
     });
 
     const cognitoAuthorizer = new apigw.CognitoUserPoolsAuthorizer(this, 'CognitoAuthorizer', {

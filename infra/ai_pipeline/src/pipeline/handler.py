@@ -655,6 +655,8 @@ class DeepCopy:
             prompt = f"""
             Please analyze the following swipe file and provide a detailed analysis of the content and style used in this marketing document: {advertorial_type}:
             
+            This analysis should be very detailed and should be used to rewrite different swipe files with the same style and tone.
+            
             Swipe file HTML:
             {swipe_file_html}
             """
@@ -671,7 +673,7 @@ class DeepCopy:
             logger.error(f"Error analyzing swipe file: {e}")
             raise
     
-    def rewrite_swipe_files(self, angles, avatar_sheet, summary, swipe_file_analysis, advertorial_type: Literal["Advertorial", "Listicle"], model: BaseModel):
+    def rewrite_swipe_files(self, angles, avatar_sheet, summary, swipe_file_analysis, swipe_file_html, advertorial_type: Literal["Advertorial", "Listicle"], model: BaseModel):
         """Rewrite swipe files for each marketing angle"""
         try:
 
@@ -680,8 +682,12 @@ class DeepCopy:
                 prompt = f"""
                 Great, now I want you to please rewrite this {advertorial_type} but using all of the information around products stated below. 
                 I want you to specifically focus on the first marketing angle from the avatar sheet: {angle}. 
-                Please rewrite the {advertorial_type} with the new content, adhere to the style and tone used in the swipe file analysis and output it in provided format. 
+                Please rewrite the {advertorial_type} with the new content, adhere to the style and tone used in the swipe file analysis and original swipe file html and output it in provided format. 
                 
+                For example:
+                if the original swipe file has a title that includes: "12 reasons why...", you should rewrite the {advertorial_type} title in the same format.
+                
+                            
                 Avatar sheet:
                 {avatar_sheet}
                 
@@ -690,13 +696,17 @@ class DeepCopy:
                 
                 Swipe file analysis:
                 {swipe_file_analysis}
+                
+                Original swipe file html:
+                {swipe_file_html}
+                
                 """
 
                 logger.info(f"Calling GPT-5 API to rewrite swipe file for angle: {angle}")
                 
                 try:
                     response = self.client.responses.parse(
-                        model="gpt-5-mini",
+                        model="gpt-5",
                         input=[{
                             "role": "user", 
                             "content": [{"type": "input_text", "text": prompt}]
@@ -894,14 +904,10 @@ def run_pipeline(event, context):
             # load both the html as the json file
             # Try both spellings: "original" and "orginal" (typo in some files)
             s3_key_html_correct = f"content_library/{swipe_file_id}_original.html"
-            s3_key_html_typo = f"content_library/{swipe_file_id}_orginal.html"
             s3_key_json = f"content_library/{swipe_file_id}.json"
             
             # Try the correct spelling first, then the typo
-            try:
-                obj_html = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_html_correct)
-            except Exception:
-                obj_html = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_html_typo)
+            obj_html = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_html_correct)
             
             html_bytes = obj_html["Body"].read()
             swipe_file_html = html_bytes.decode("utf-8")
@@ -964,12 +970,11 @@ def run_pipeline(event, context):
         
         # Step 2: Analyze research documents
         logger.info("Step 2: Analyzing research documents")
-        doc1_analysis = generator.analyze_research_document(
-            f"{content_dir}research_doc1_content.txt", "Research Doc 1"
-        )
-        doc2_analysis = generator.analyze_research_document(
-            f"{content_dir}research_doc2_content.txt", "Research Doc 2"
-        )
+        
+        
+        doc1_analysis = open(f"{content_dir}doc1_analysis.txt", "r").read()
+        doc2_analysis = open(f"{content_dir}doc2_analysis.txt", "r").read()
+
         
         # Step 3: Create deep research prompt
         logger.info("Step 3: Creating deep research prompt")
@@ -1002,6 +1007,7 @@ def run_pipeline(event, context):
             avatar_sheet, offer_brief, deep_research_output, marketing_philosophy_analysis
         )
         
+        
         # Step 9: Analyse the swipe file
         logger.info("Step 9: Analyzing swipe file")
         swipe_file_analysis = generator.analyze_swipe_file(swipe_file_html, advertorial_type)
@@ -1009,8 +1015,9 @@ def run_pipeline(event, context):
         # Step 10: Rewrite swipe files
         logger.info("Step 9: Rewriting swipe files")
         
+        
         swipe_results = generator.rewrite_swipe_files(
-            angles, avatar_sheet, summary, swipe_file_analysis, advertorial_type, swipe_file_model
+            angles, avatar_sheet, summary, swipe_file_analysis, swipe_file_html, advertorial_type, swipe_file_model
         )
         
         # Step 10: Save all results

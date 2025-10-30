@@ -139,6 +139,7 @@ def lambda_handler(event, context):
             'timestamp_iso': datetime.now(timezone.utc).isoformat(),
             'avatars': [avatar.model_dump() for avatar in avatars.avatars]
         }
+        print(results)
         
         # Save to S3
         s3_key = save_results_to_s3(job_id, results)
@@ -162,6 +163,6 @@ if __name__ == "__main__":
     os.environ['RESULTS_BUCKET'] = 'deepcopystack-resultsbucketa95a2103-zhwjflrlpfih'
     test_event = {
         "job_id": "test-job-123",
-        "url": "https://hypowered.nl/en"
+        "url": "https://naxir.co/products/footrevive?srsltid=AfmBOopi0uyM4_XKmqAgzsZUQf9Q4PcN1lGdnj-rPmrhF0l0GZO_v8rA"
     }
-    logger.info(lambda_handler(test_event, {}))
+    print(lambda_handler(test_event, {}))

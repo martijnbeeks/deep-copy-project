@@ -3,6 +3,7 @@ Avatar extraction module for AWS Lambda.
 Extracts customer avatars from product pages using OpenAI vision.
 """
 import base64
+import os
 import logging
 import time
 from typing import List
@@ -57,22 +58,118 @@ def capture_page_as_image_bytes(url: str) -> bytes:
 
         browser_start = time.time()
         browser = p.chromium.launch(**launch_args)
-        page = browser.new_page()
+        # Use a realistic desktop UA and a browser context for better compatibility
+        context = browser.new_context(
+            user_agent=(
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/118.0.0.0 Safari/537.36"
+            ),
+            viewport={"width": 1366, "height": 900},
+        )
+        page = context.new_page()
         print(f"Browser launch took {time.time() - browser_start:.2f}s")
 
         # Load the page
         logger.info(f"Loading page: {url}")
         page_load_start = time.time()
-        page.goto(url, wait_until="networkidle", timeout=30000)
+        # Many modern sites keep long-lived network connections which prevents
+        # the "networkidle" state from ever being reached. Prefer a faster,
+        # reliable load signal and then allow the page to settle briefly.
+        page.set_default_navigation_timeout(45000)
+        page.goto(url, wait_until="domcontentloaded", timeout=45000)
+        try:
+            page.wait_for_load_state("networkidle", timeout=5000)
+        except Exception:
+            pass
+        page.wait_for_timeout(1500)
+
+        # --- New Part: Dismiss modals/popups ---
+        # 1. Press ESC to close generic overlays
+        try:
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(400)
+        except Exception:
+            pass  # keyboard may not be attached; continue
+
+        # 2. Try clicking common close/exit selectors
+        selectors = [
+            "[data-dismiss]",
+            ".close",
+            ".modal-close",
+            ".popup-close",
+            "[aria-label='Close']",
+            "button[aria-label='Close']",
+            "button[aria-label='close']"
+        ]
+        for sel in selectors:
+            try:
+                btn = page.query_selector(sel)
+                if btn:
+                    btn.click()
+                    page.wait_for_timeout(400)
+            except Exception:
+                continue
+
+        # --- New Part: Scroll the page to the bottom, pausing to trigger lazy loads ---
+        try:
+            scroll_script = """
+                let totalHeight = 0;
+                const distance = 600;
+                let lastHeight = 0;
+                return new Promise(res => {
+                    let interval = setInterval(() => {
+                        window.scrollBy(0, distance);
+                        let scrollHeight = document.body.scrollHeight;
+                        if (scrollHeight > lastHeight) {
+                            lastHeight = scrollHeight;
+                        } else {
+                            clearInterval(interval);
+                            window.scrollTo(0, 0);
+                            setTimeout(res, 600);
+                        }
+                        if ((window.innerHeight + window.scrollY) >= scrollHeight) {
+                            clearInterval(interval);
+                            setTimeout(res, 600);
+                        }
+                    }, 380);
+                });
+            """
+            page.evaluate(scroll_script)
+        except Exception:
+            pass
+
+        # --- Screenshot mode config ---
+        screenshot_mode = os.environ.get("SCREENSHOT_MODE", "full").lower()
+        full_page = screenshot_mode != "viewport"
+
+        screenshot_bytes = page.screenshot(full_page=full_page)
+        save_path = os.environ.get("SAVE_SCREENSHOT_PATH", "page_screenshot.png")
+        if save_path:
+            try:
+                with open(save_path, "wb") as f:
+                    f.write(screenshot_bytes)
+                logger.info(f"Saved screenshot to {save_path}")
+            except Exception as write_err:
+                logger.warning(f"Failed to save screenshot to {save_path}: {write_err}")
         print(f"Page load took {time.time() - page_load_start:.2f}s")
 
         # Take a full-page screenshot and return bytes
         logger.info("Capturing screenshot")
         screenshot_start = time.time()
-        screenshot_bytes = page.screenshot(full_page=True)
+        # Optionally store locally for debugging when running outside Lambda
+        # save_path = "page_screenshot.png"
+        # if save_path:
+        #     try:
+        #         with open(save_path, "wb") as f:
+        #             f.write(screenshot_bytes)
+        #         logger.info(f"Saved screenshot to {save_path}")
+        #     except Exception as write_err:
+        #         logger.warning(f"Failed to save screenshot to {save_path}: {write_err}")
         print(f"Screenshot capture took {time.time() - screenshot_start:.2f}s")
         
         page.close()
+        context.close()
         browser.close()
         
         total_time = time.time() - start_time

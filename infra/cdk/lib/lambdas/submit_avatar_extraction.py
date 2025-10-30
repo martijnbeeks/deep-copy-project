@@ -36,7 +36,7 @@ def handler(event, _context):
         except json.JSONDecodeError:
             return {
                 "statusCode": 400,
-                "headers": {"content-type": "application/json"},
+                "headers": {"content-type": "application/json", "Access-Control-Allow-Origin": "*"},
                 "body": json.dumps({"error": "Invalid JSON body"}),
             }
     elif not isinstance(body, dict) or body is None:
@@ -47,7 +47,7 @@ def handler(event, _context):
     if not url:
         return {
             "statusCode": 400,
-            "headers": {"content-type": "application/json"},
+            "headers": {"content-type": "application/json", "Access-Control-Allow-Origin": "*"},
             "body": json.dumps({
                 "error": "Missing required parameter: url",
                 "example": {"url": "https://example.com/product"}
@@ -58,7 +58,7 @@ def handler(event, _context):
     if not url.startswith(('http://', 'https://')):
         return {
             "statusCode": 400,
-            "headers": {"content-type": "application/json"},
+            "headers": {"content-type": "application/json", "Access-Control-Allow-Origin": "*"},
             "body": json.dumps({
                 "error": "Invalid URL format. URL must start with http:// or https://"
             }),
@@ -82,7 +82,7 @@ def handler(event, _context):
     except ClientError as e:
         return {
             "statusCode": 500,
-            "headers": {"content-type": "application/json"},
+            "headers": {"content-type": "application/json", "Access-Control-Allow-Origin": "*"},
             "body": json.dumps({
                 "error": f"DynamoDB error: {e.response['Error'].get('Message', str(e))}"
             }),
@@ -117,7 +117,7 @@ def handler(event, _context):
         
         return {
             "statusCode": 500,
-            "headers": {"content-type": "application/json"},
+            "headers": {"content-type": "application/json", "Access-Control-Allow-Origin": "*"},
             "body": json.dumps({
                 "error": f"Failed to start processing: {e.response['Error'].get('Message', str(e))}"
             }),
@@ -125,7 +125,7 @@ def handler(event, _context):
 
     return {
         "statusCode": 202,
-        "headers": {"content-type": "application/json"},
+        "headers": {"content-type": "application/json", "Access-Control-Allow-Origin": "*"},
         "body": json.dumps({
             "jobId": job_id,
             "status": "SUBMITTED"

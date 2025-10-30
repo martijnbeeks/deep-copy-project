@@ -33,7 +33,7 @@ def handler(event, _context):
         except json.JSONDecodeError:
             return {
                 "statusCode": 400,
-                "headers": {"content-type": "application/json"},
+                "headers": {"content-type": "application/json", "Access-Control-Allow-Origin": "*"},
                 "body": json.dumps({"error": "Invalid JSON body"}),
             }
     elif not isinstance(body, dict) or body is None:
@@ -57,7 +57,7 @@ def handler(event, _context):
     except ClientError as e:
         return {
             "statusCode": 500,
-            "headers": {"content-type": "application/json"},
+            "headers": {"content-type": "application/json", "Access-Control-Allow-Origin": "*"},
             "body": json.dumps({"error": f"DynamoDB error: {e.response['Error'].get('Message', str(e))}"}),
         }
 
@@ -105,7 +105,7 @@ def handler(event, _context):
     except ClientError as e:
         return {
             "statusCode": 500,
-            "headers": {"content-type": "application/json"},
+            "headers": {"content-type": "application/json", "Access-Control-Allow-Origin": "*"},
             "body": json.dumps({"error": f"ECS error: {e.response['Error'].get('Message', str(e))}"}),
         }
 
@@ -116,7 +116,7 @@ def handler(event, _context):
 
     return {
         "statusCode": 202,
-        "headers": {"content-type": "application/json"},
+        "headers": {"content-type": "application/json", "Access-Control-Allow-Origin": "*"},
         "body": json.dumps({"jobId": job_id, "taskArn": task_arn, "status": "SUBMITTED"}),
     }
 

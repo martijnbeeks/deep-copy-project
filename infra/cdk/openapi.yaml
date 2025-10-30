@@ -50,6 +50,15 @@ security:
   - cognitoOAuth2: [ ]
 paths:
   /jobs:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
     post:
       summary: Submit a new job
       operationId: submitJob
@@ -134,6 +143,15 @@ paths:
               }' \
               "${API_URL}jobs"
   /jobs/{id}:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
     get:
       summary: Get job status
       operationId: getJob
@@ -173,6 +191,15 @@ paths:
             API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
             curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID"
   /jobs/{id}/result:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
     get:
       summary: Get job result
       operationId: getJobResult
@@ -215,6 +242,15 @@ paths:
             API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
             curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID/result"
   /avatars/extract:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
     post:
       summary: Submit an avatar extraction job
       operationId: submitAvatarExtraction
@@ -273,6 +309,15 @@ paths:
               -d '{"url": "https://www.sciatiease.com/sciatiease.php"}' \
               "${API_URL}avatars/extract"
   /avatars/{id}:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
     get:
       summary: Get avatar extraction job status
       operationId: getAvatarExtractionStatus
@@ -313,6 +358,15 @@ paths:
             API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
             curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}avatars/YOUR_JOB_ID"
   /avatars/{id}/result:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
     get:
       summary: Get avatar extraction results
       operationId: getAvatarExtractionResult
@@ -609,3 +663,19 @@ components:
         key_buying_motivation:
           type: string
           description: What drives them to purchase this product
+  headers:
+    AccessControlAllowOrigin:
+      schema:
+        type: string
+        example: "*"
+      description: CORS allow origin
+    AccessControlAllowHeaders:
+      schema:
+        type: string
+        example: "*"
+      description: CORS allow headers
+    AccessControlAllowMethods:
+      schema:
+        type: string
+        example: "*"
+      description: CORS allow methods

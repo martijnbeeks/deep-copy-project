@@ -12,9 +12,9 @@ _RESULTS_BUCKET = os.environ.get("RESULTS_BUCKET")
 def _response(status_code: int, body: dict | str):
     if isinstance(body, dict):
         body = json.dumps(body)
-        headers = {"content-type": "application/json"}
+        headers = {"content-type": "application/json", "Access-Control-Allow-Origin": "*"}
     else:
-        headers = {"content-type": "text/plain"}
+        headers = {"content-type": "text/plain", "Access-Control-Allow-Origin": "*"}
     return {"statusCode": status_code, "headers": headers, "body": body}
 
 
@@ -49,3 +49,5 @@ def handler(event, _context):
             return _response(404, "Result not available")
         return _response(500, f"S3 error: {e.response['Error'].get('Message', str(e))}")
 
+if __name__ == "__main__":
+    print(handler({"pathParameters": {"id": "a81aa659-4924-4765-92b6-3e862d140d6a"}}, {}))

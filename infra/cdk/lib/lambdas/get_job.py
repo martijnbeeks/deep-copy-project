@@ -12,9 +12,9 @@ _JOBS_TABLE_NAME = os.environ.get("JOBS_TABLE_NAME")
 def _response(status_code: int, body: dict | str):
     if isinstance(body, dict):
         body = json.dumps(body)
-        headers = {"content-type": "application/json"}
+        headers = {"content-type": "application/json", "Access-Control-Allow-Origin": "*"}
     else:
-        headers = {"content-type": "text/plain"}
+        headers = {"content-type": "text/plain", "Access-Control-Allow-Origin": "*"}
     return {"statusCode": status_code, "headers": headers, "body": body}
 
 

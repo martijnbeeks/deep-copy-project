@@ -34,7 +34,7 @@ curl -sS -X POST "${API_URL}jobs" \
   curl -X POST "https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/extract" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://www.sciatiease.com/sciatiease.php"}' | jq '.'
+  -d '{"url": "https://naxir.co/products/footrevive?srsltid=AfmBOopi0uyM4_XKmqAgzsZUQf9Q4PcN1lGdnj-rPmrhF0l0GZO_v8rA"}' | jq '.'
 
 # GET /jobs/{id} (uses read)
 curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID"
