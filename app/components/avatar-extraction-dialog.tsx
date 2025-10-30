@@ -43,6 +43,8 @@ export function AvatarExtractionDialog({
   const [selectedAvatars, setSelectedAvatars] = useState<Set<number>>(new Set())
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [accessToken, setAccessToken] = useState<string | null>(null)
+  const [tokenExpiresAt, setTokenExpiresAt] = useState<number>(0)
 
   useEffect(() => {
     if (isOpen && salesPageUrl) {
@@ -54,13 +56,44 @@ export function AvatarExtractionDialog({
     }
   }, [isOpen, salesPageUrl])
 
+  const ensureToken = async () => {
+    const now = Date.now()
+    if (accessToken && tokenExpiresAt && now < tokenExpiresAt) {
+      return accessToken
+    }
+    const res = await fetch('/api/avatars/token', { cache: 'no-store' })
+    if (!res.ok) throw new Error('Failed to get access token')
+    const data = await res.json()
+    const expiresAt = Date.now() + Math.max(0, (data.expires_in - 30)) * 1000
+    setAccessToken(data.access_token)
+    setTokenExpiresAt(expiresAt)
+    return data.access_token as string
+  }
+
+  const fetchWithAuth = async (url: string, init: RequestInit = {}, retryOnAuthError = true) => {
+    const token = await ensureToken()
+    const headers = {
+      ...(init.headers || {}),
+      'Authorization': `Bearer ${token}`
+    } as Record<string, string>
+    const resp = await fetch(url, { ...init, headers, cache: 'no-store' })
+    if ((resp.status === 401 || resp.status === 403) && retryOnAuthError) {
+      setAccessToken(null)
+      setTokenExpiresAt(0)
+      const fresh = await ensureToken()
+      const retryHeaders = { ...(init.headers || {}), 'Authorization': `Bearer ${fresh}` } as Record<string, string>
+      return fetch(url, { ...init, headers: retryHeaders, cache: 'no-store' })
+    }
+    return resp
+  }
+
   const extractAvatars = async () => {
     setIsAnalyzing(true)
     setError(null)
 
     try {
-      // Step 1: Submit avatar extraction job
-      const response = await fetch('/api/avatars/extract', {
+      // Step 1: Submit avatar extraction job to AWS
+      const response = await fetchWithAuth(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/extract?t=${Date.now()}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -68,8 +101,7 @@ export function AvatarExtractionDialog({
           'Pragma': 'no-cache',
           'Expires': '0'
         },
-        body: JSON.stringify({ url: salesPageUrl }),
-        cache: 'no-store'
+        body: JSON.stringify({ url: salesPageUrl })
       })
 
       if (!response.ok) {
@@ -78,12 +110,13 @@ export function AvatarExtractionDialog({
 
       const data = await response.json()
 
-      if (!data.jobId) {
+      const jobId = data.jobId || data.job_id
+      if (!jobId) {
         throw new Error('No job ID received from avatar extraction service')
       }
 
       // Step 2: Poll for status and results
-      await pollAvatarExtractionStatus(data.jobId)
+      await pollAvatarExtractionStatus(jobId)
 
     } catch (err) {
       console.error('Avatar extraction error:', err)
@@ -99,9 +132,9 @@ export function AvatarExtractionDialog({
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        // Check status with cache-busting
-        const statusResponse = await fetch(`/api/avatars/${jobId}?t=${Date.now()}`, {
-          cache: 'no-store',
+        // Check status with cache-busting (AWS jobs)
+        const statusResponse = await fetchWithAuth(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/jobs/${jobId}?t=${Date.now()}`, {
+          method: 'GET',
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
@@ -116,9 +149,9 @@ export function AvatarExtractionDialog({
         const statusData = await statusResponse.json()
 
         if (statusData.status === 'SUCCEEDED') {
-          // Get results with cache-busting
-          const resultResponse = await fetch(`/api/avatars/${jobId}/result?t=${Date.now()}`, {
-            cache: 'no-store',
+          // Get results with cache-busting (AWS avatars result)
+          const resultResponse = await fetchWithAuth(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/${jobId}/result?t=${Date.now()}`, {
+            method: 'GET',
             headers: {
               'Cache-Control': 'no-cache, no-store, must-revalidate',
               'Pragma': 'no-cache',
@@ -145,14 +178,14 @@ export function AvatarExtractionDialog({
         // Check if results are available even if status is still RUNNING
         // (Sometimes results are available before status is updated)
         try {
-          const resultResponse = await fetch(`/api/avatars/${jobId}/result?t=${Date.now()}`, {
-            cache: 'no-store',
+          const resultResponse = await fetchWithAuth(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/${jobId}/result?t=${Date.now()}`, {
+            method: 'GET',
             headers: {
               'Cache-Control': 'no-cache, no-store, must-revalidate',
               'Pragma': 'no-cache',
               'Expires': '0'
             }
-          })
+          }, false)
 
           if (resultResponse.ok) {
             const resultData = await resultResponse.json()
@@ -276,15 +309,14 @@ export function AvatarExtractionDialog({
             <Accordion type="single" collapsible className="w-full space-y-3">
               {avatars.map((avatar, index) => {
                 const isSelected = selectedAvatars.has(index)
-                
+
                 return (
                   <AccordionItem key={index} value={`avatar-${index}`} className="border-none">
-                    <Card 
-                      className={`transition-all cursor-pointer hover:shadow-md ${
-                        isSelected 
-                          ? 'border-2 border-primary bg-primary/10' 
-                          : 'border border-border hover:border-primary/50'
-                      }`}
+                    <Card
+                      className={`transition-all cursor-pointer hover:shadow-md ${isSelected
+                        ? 'border-2 border-primary bg-primary/10'
+                        : 'border border-border hover:border-primary/50'
+                        }`}
                       onClick={() => handleAvatarToggle(index)}
                     >
                       <div className="p-4">
