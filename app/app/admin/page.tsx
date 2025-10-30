@@ -1130,7 +1130,33 @@ export default function AdminPage() {
             {(previewTemplate || previewInjectableTemplate) && (
               <div className="space-y-4">
                 <iframe
-                  srcDoc={(previewTemplate?.html_content || previewInjectableTemplate?.html_content) || ''}
+                  srcDoc={`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Template Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  ${(() => {
+    const raw = (previewTemplate?.html_content || previewInjectableTemplate?.html_content) || '';
+    const name = (previewTemplate?.name || previewInjectableTemplate?.name) || '';
+    const isJavvy = /javvy/i.test(name) || /\bL00002\b/i.test(name) || /javvy/i.test(raw) || /\bL00002\b/i.test(raw);
+    if (!isJavvy) return raw;
+    const noOnError = raw
+      .replace(/\s+onerror="[^"]*"/gi, '')
+      .replace(/\s+onerror='[^']*'/gi, '');
+    const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+      const lower = block.toLowerCase();
+      return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+        ? ''
+        : block;
+    });
+    return stripFallbackScripts;
+  })()}
+</body>
+</html>`}
                   className="w-full h-[70vh] border rounded-lg"
                   title={`Preview of ${previewTemplate?.name || previewInjectableTemplate?.name}`}
                 />

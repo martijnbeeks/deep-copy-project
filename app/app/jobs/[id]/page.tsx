@@ -298,12 +298,12 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
             </div>
 
             {/* What's happening section */}
-            <div className="space-y-4">
+          {/*<div className="space-y-4">
               <h2 className="text-lg font-semibold">What's happening?</h2>
               <p className="text-sm text-muted-foreground">
                 Our AI is analyzing your product page, researching your market, and crafting compelling copy tailored to your specific audience. This process typically takes 3-5 minutes. You can safely leave this page - we'll save your progress and you can return anytime.
               </p>
-            </div>
+            </div> */}
           </div>
         </div>
       </main>
