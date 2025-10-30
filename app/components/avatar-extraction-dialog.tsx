@@ -45,6 +45,7 @@ export function AvatarExtractionDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [tokenExpiresAt, setTokenExpiresAt] = useState<number>(0)
+  const [openItem, setOpenItem] = useState<string | undefined>(undefined)
 
   useEffect(() => {
     if (isOpen && salesPageUrl) {
@@ -124,8 +125,8 @@ export function AvatarExtractionDialog({
   }
 
   const pollAvatarExtractionStatus = async (jobId: string) => {
-    const maxAttempts = 20 // 20 attempts * 3 seconds = 60 seconds max
-    const pollInterval = 3000 // Poll every 3 seconds (since it finishes in 20-30 seconds)
+    const maxAttempts = 50 // ~100 seconds max (20 * 5s)
+    const pollInterval = 10000 // Poll every 5 seconds
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
@@ -141,7 +142,7 @@ export function AvatarExtractionDialog({
         const statusData = await statusResponse.json()
 
         if (statusData.status === 'SUCCEEDED') {
-          // Get results (exact cURL equivalent)
+          // Only fetch results after SUCCEEDED
           const resultResponse = await fetchWithAuth(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/${jobId}/result`, {
             method: 'GET'
           })
@@ -160,25 +161,6 @@ export function AvatarExtractionDialog({
           }
         } else if (statusData.status === 'FAILED') {
           throw new Error('Avatar extraction job failed')
-        }
-
-        // Check if results are available even if status is still RUNNING
-        // (Sometimes results are available before status is updated)
-        try {
-          const resultResponse = await fetchWithAuth(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/${jobId}/result`, {
-            method: 'GET'
-          }, false)
-
-          if (resultResponse.ok) {
-            const resultData = await resultResponse.json()
-
-            if (resultData.success && resultData.avatars && resultData.avatars.length > 0) {
-              setAvatars(resultData.avatars)
-              return // Success! Results available even though status is RUNNING
-            }
-          }
-        } catch (resultError) {
-          // Ignore result check errors, continue polling
         }
 
         // If still processing, wait and try again
@@ -288,18 +270,22 @@ export function AvatarExtractionDialog({
               </p>
             </div>
 
-            <Accordion type="single" collapsible className="w-full space-y-3">
+            <Accordion type="single" collapsible value={openItem} onValueChange={setOpenItem} className="w-full space-y-3">
               {avatars.map((avatar, index) => {
                 const isSelected = selectedAvatars.has(index)
+                const itemValue = `avatar-${index}`
 
                 return (
-                  <AccordionItem key={index} value={`avatar-${index}`} className="border-none">
+                  <AccordionItem key={index} value={itemValue} className="border-none">
                     <Card
                       className={`transition-all cursor-pointer hover:shadow-md ${isSelected
                         ? 'border-2 border-primary bg-primary/10'
                         : 'border border-border hover:border-primary/50'
                         }`}
-                      onClick={() => handleAvatarToggle(index)}
+                      onClick={() => {
+                        handleAvatarToggle(index)
+                        setOpenItem(prev => (prev === itemValue ? undefined : itemValue))
+                      }}
                     >
                       <div className="p-4">
                         <div className="flex items-center justify-between">
