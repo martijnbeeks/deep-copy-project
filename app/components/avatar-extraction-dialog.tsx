@@ -24,7 +24,7 @@ interface ExtractedAvatar {
 interface AvatarExtractionDialogProps {
   isOpen: boolean
   onClose: () => void
-  onAvatarsSelected: (avatars: ExtractedAvatar[]) => void
+  onAvatarsSelected: (selected: ExtractedAvatar[], all: ExtractedAvatar[]) => void
   salesPageUrl: string
   formData: any
   isLoading?: boolean
@@ -49,11 +49,31 @@ export function AvatarExtractionDialog({
 
   useEffect(() => {
     if (isOpen && salesPageUrl) {
-      // Reset state when dialog opens
-      setAvatars([])
-      setSelectedAvatars(new Set())
       setError(null)
-      extractAvatars()
+
+      // If avatars were previously extracted, reuse them instead of calling the API again
+      if (Array.isArray(formData?.extracted_avatars) && formData.extracted_avatars.length > 0) {
+        setIsAnalyzing(false)
+        const extracted = formData.extracted_avatars as ExtractedAvatar[]
+        setAvatars(extracted)
+
+        // If there was a previously selected avatar, preselect the matching one by persona_name (or none if not found)
+        const previouslySelected = Array.isArray(formData?.customer_avatars) && formData.customer_avatars.length > 0
+          ? formData.customer_avatars[0]
+          : undefined
+
+        if (previouslySelected) {
+          const matchIndex = extracted.findIndex(a => a.persona_name === previouslySelected.persona_name)
+          setSelectedAvatars(new Set(matchIndex >= 0 ? [matchIndex] : []))
+        } else {
+          setSelectedAvatars(new Set())
+        }
+      } else {
+        // Fresh extraction flow
+        setAvatars([])
+        setSelectedAvatars(new Set())
+        extractAvatars()
+      }
     }
   }, [isOpen, salesPageUrl])
 
@@ -198,7 +218,7 @@ export function AvatarExtractionDialog({
 
     try {
       const selectedAvatarData = Array.from(selectedAvatars).map(index => avatars[index])
-      onAvatarsSelected(selectedAvatarData)
+      onAvatarsSelected(selectedAvatarData, avatars)
     } catch (err) {
       console.error('Submit error:', err)
       setError('Failed to create job. Please try again.')

@@ -48,9 +48,9 @@ export async function POST(request: NextRequest) {
       gender 
     } = await request.json()
 
-    if (!title || !brand_info || !advertorial_type) {
+    if (!title || !advertorial_type) {
       return NextResponse.json(
-        { error: 'Title, brand info, and advertorial type are required' },
+        { error: 'Title and advertorial type are required' },
         { status: 400 }
       )
     }
@@ -142,10 +142,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Create job in database with the DeepCopy job ID as the primary ID
+    const brandInfoSafe = typeof brand_info === 'string' ? brand_info : ''
     const job = await createJob({
       user_id: user.id,
       title,
-      brand_info,
+      brand_info: brandInfoSafe,
       sales_page_url,
       template_id,
       advertorial_type,

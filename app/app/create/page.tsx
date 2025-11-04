@@ -40,6 +40,7 @@ interface PipelineFormData {
   advertorial_type: string
   target_approach?: string
   customer_avatars?: CustomerAvatar[]
+  extracted_avatars?: CustomerAvatar[]
   // Deprecated fields for backward compatibility
   persona?: string
   age_range?: string
@@ -66,6 +67,7 @@ export default function CreatePage() {
     advertorial_type: "",
     target_approach: "explore",
     customer_avatars: [],
+    extracted_avatars: [],
     // Deprecated fields for backward compatibility
     persona: "",
     age_range: "",
@@ -147,8 +149,8 @@ export default function CreatePage() {
     }
     
     if (validateStep(currentStep)) {
-      // If user selected "explore new avatars", show the extraction dialog
-      if (formData.target_approach === 'explore') {
+      // If user selected "explore new avatars" but hasn't selected any yet, show the extraction dialog
+      if (formData.target_approach === 'explore' && (formData.customer_avatars?.length ?? 0) === 0) {
         setShowAvatarDialog(true)
         return
       }
@@ -230,12 +232,13 @@ export default function CreatePage() {
     }
   }
 
-  const handleAvatarsSelected = async (selectedAvatars: any[]) => {
+  const handleAvatarsSelected = async (selectedAvatars: any[], allAvatars: any[]) => {
     try {
       // Update form data with selected avatars
       setFormData(prev => ({
         ...prev,
-        customer_avatars: selectedAvatars
+        customer_avatars: selectedAvatars,
+        extracted_avatars: allAvatars
       }))
 
       // Close the dialog
@@ -588,6 +591,22 @@ export default function CreatePage() {
                                   <span>Avatars will be extracted after you submit the form</span>
                                 </div>
                               </div>
+
+                              {(formData.customer_avatars?.length ?? 0) > 0 && (
+                                <div className="flex items-center justify-between p-4 border rounded-lg">
+                                  <div className="text-sm text-muted-foreground">
+                                    {formData.customer_avatars?.length} avatar{(formData.customer_avatars?.length || 0) > 1 ? 's' : ''} selected
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowAvatarDialog(true)}
+                                    className="h-9"
+                                  >
+                                    Update Avatars
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                           )}
 
@@ -923,7 +942,7 @@ export default function CreatePage() {
       <AvatarExtractionDialog
         isOpen={showAvatarDialog}
         onClose={() => setShowAvatarDialog(false)}
-        onAvatarsSelected={handleAvatarsSelected}
+    onAvatarsSelected={handleAvatarsSelected}
         salesPageUrl={formData.sales_page_url}
         formData={formData}
         isLoading={isLoading}
