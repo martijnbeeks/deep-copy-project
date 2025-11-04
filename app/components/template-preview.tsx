@@ -18,6 +18,8 @@ interface TemplatePreviewProps {
 
 export function TemplatePreview({ template, isSelected, onClick }: TemplatePreviewProps) {
   const [isLoaded, setIsLoaded] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isDialogClosing, setIsDialogClosing] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   const createSmallPreviewHTML = useMemo(() => {
@@ -143,7 +145,19 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
           ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
           : 'border-border bg-card'
       }`}
-      onClick={onClick}
+      onClick={(e) => {
+        // Don't navigate if:
+        // 1. Dialog is currently open or closing
+        // 2. Click is on a button (like "Full Preview")
+        // 3. Click is inside dialog content
+        const target = e.target as HTMLElement
+        const isButton = target.closest('button') !== null
+        const isDialogContent = target.closest('[role="dialog"]') !== null
+        
+        if (!isDialogOpen && !isDialogClosing && !isButton && !isDialogContent) {
+          onClick()
+        }
+      }}
     >
       {/* Template Header */}
       <div className="flex items-start justify-between mb-2 md:mb-3 gap-2">
@@ -180,18 +194,43 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
 
       {/* Action Buttons */}
       <div className="flex items-center justify-between mt-3">
-        <Dialog>
+        <Dialog 
+          open={isDialogOpen} 
+          onOpenChange={(open) => {
+            setIsDialogOpen(open)
+            if (!open) {
+              // Set closing flag to prevent navigation
+              setIsDialogClosing(true)
+              setTimeout(() => {
+                setIsDialogClosing(false)
+              }, 100)
+            }
+          }}
+        >
           <DialogTrigger asChild>
             <button
               type="button"
               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary hover:text-primary/80 hover:bg-primary/10 rounded-md transition-colors cursor-pointer"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsDialogOpen(true)
+              }}
             >
               <Eye className="h-4 w-4" />
               Full Preview
             </button>
           </DialogTrigger>
-          <DialogContent className="!max-w-[98vw] !max-h-[98vh] !w-[98vw] !h-[98vh] overflow-hidden">
+          <DialogContent 
+            className="!max-w-[98vw] !max-h-[98vh] !w-[98vw] !h-[98vh] overflow-hidden"
+            onInteractOutside={(e) => {
+              // Prevent the click from bubbling to parent onClick
+              e.stopPropagation()
+            }}
+            onPointerDownOutside={(e) => {
+              // Prevent pointer events from bubbling when closing dialog
+              e.stopPropagation()
+            }}
+          >
             <div className="p-4 pb-0">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold">Template Preview: {template.name}</DialogTitle>

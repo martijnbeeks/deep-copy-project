@@ -3,17 +3,21 @@
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/stores/auth-store"
-import { LayoutDashboard, LogOut, PenTool, Loader2, Grid3X3 } from "lucide-react"
-import Link from "next/link"
+import { useTemplatesStore } from "@/stores/templates-store"
+import { LayoutDashboard, LogOut, PenTool, Loader2, FileText } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useSidebar } from "@/contexts/sidebar-context"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { TemplatePreview } from "@/components/template-preview"
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
+import { Separator } from "@/components/ui/separator"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Create", href: "/create", icon: PenTool },
-  { name: "Gallery", href: "/gallery", icon: Grid3X3 },
+  /*{ name: "Gallery", href: "/gallery", icon: Grid3X3 }*/
+  { name: "Templates", href: "/templates", icon: FileText },
 ]
 
 export function Sidebar() {
@@ -22,6 +26,37 @@ export function Sidebar() {
   const router = useRouter()
   const { isCollapsed, setIsCollapsed } = useSidebar()
   const [loadingItem, setLoadingItem] = useState<string | null>(null)
+
+  // Template display state - Same source as create page
+  const { templates, fetchTemplates, isLoading: templatesLoading, preloadTemplates } = useTemplatesStore()
+  const [currentPage, setCurrentPage] = useState(1)
+  const templatesPerPage = 4 // Same as create page
+
+  // Preload templates early for better UX - Same as create page
+  useEffect(() => {
+    preloadTemplates()
+  }, [preloadTemplates])
+
+  // Fetch templates - Same as create page
+  useEffect(() => {
+    if (!isCollapsed) {
+      fetchTemplates()
+    }
+  }, [isCollapsed, fetchTemplates])
+
+  // Pagination logic
+  const totalPages = Math.ceil(templates.length / templatesPerPage)
+  const startIndex = (currentPage - 1) * templatesPerPage
+  const endIndex = startIndex + templatesPerPage
+  const currentTemplates = templates.slice(startIndex, endIndex)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  const handleTemplateClick = (templateId: string) => {
+    router.push(`/create?template=${templateId}`)
+  }
 
   const handleNavigation = async (href: string) => {
     if (href === pathname) return
@@ -68,7 +103,7 @@ export function Sidebar() {
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1 px-3 py-4">
+        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
           {navigation.map((item) => {
             const isActive = pathname === item.href
             const isLoading = loadingItem === item.href
@@ -112,6 +147,79 @@ export function Sidebar() {
               </button>
             )
           })}
+
+          {/* Templates Section - Only show when not collapsed */}
+          {!isCollapsed && (
+            <>
+              <Separator className="my-4" />
+              <div className="space-y-6 px-3">
+                <div className="text-center space-y-2">
+                  <h3 className="text-xl font-semibold text-sidebar-foreground">Available Templates</h3>
+                  <p className="text-sm text-sidebar-foreground/60">Click on any template to preview and select it</p>
+                </div>
+
+                {templatesLoading ? (
+                  <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="h-[350px] md:h-[400px] bg-sidebar-accent/20 rounded-xl animate-pulse" />
+                    ))}
+                  </div>
+                ) : templates.length > 0 ? (
+                  <>
+                    <div id="template-section" className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                      {currentTemplates.map((template) => (
+                        <TemplatePreview
+                          key={template.id}
+                          template={template}
+                          isSelected={false}
+                          onClick={() => handleTemplateClick(template.id)}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Pagination - Same as create page */}
+                    {totalPages > 1 && (
+                      <div className="flex justify-center">
+                        <Pagination>
+                          <PaginationContent>
+                            <PaginationItem>
+                              <PaginationPrevious
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                              />
+                            </PaginationItem>
+
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                              <PaginationItem key={page}>
+                                <PaginationLink
+                                  onClick={() => handlePageChange(page)}
+                                  isActive={currentPage === page}
+                                  className="cursor-pointer"
+                                >
+                                  {page}
+                                </PaginationLink>
+                              </PaginationItem>
+                            ))}
+
+                            <PaginationItem>
+                              <PaginationNext
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                              />
+                            </PaginationItem>
+                          </PaginationContent>
+                        </Pagination>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-xs text-sidebar-foreground/60 text-center py-4">
+                    No templates available
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </nav>
 
         <div className="border-t border-sidebar-border p-4">
