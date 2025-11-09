@@ -325,13 +325,13 @@ export default function ResultsGalleryPage() {
                     <CardHeader className="pb-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="space-y-2 flex-1 min-w-0">
-                          <CardTitle className="text-lg font-semibold line-clamp-2 text-foreground leading-tight">
+                          <CardTitle className="text-lg font-semibold break-words text-foreground leading-tight">
                             {template.jobTitle}
                           </CardTitle>
                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm text-muted-foreground">
-                            <span className="truncate">{template.templateName}</span>
+                            <span className="break-words">{template.templateName}</span>
                             <span className="text-muted-foreground/50 hidden sm:inline">•</span>
-                            <span className="line-clamp-2 sm:line-clamp-1">{template.angle}</span>
+                            <span className="break-words">{template.angle}</span>
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-2 flex-shrink-0">

@@ -162,8 +162,8 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
       {/* Template Header */}
       <div className="flex items-start justify-between mb-2 md:mb-3 gap-2">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-base md:text-lg text-foreground truncate">{template.name}</h3>
-          <p className="text-xs md:text-sm text-muted-foreground truncate">{template.description || 'No description available'}</p>
+          <h3 className="font-semibold text-base md:text-lg text-foreground break-words">{template.name}</h3>
+          <p className="text-xs md:text-sm text-muted-foreground break-words">{template.description || 'No description available'}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="px-2 py-1 text-xs font-medium bg-secondary text-secondary-foreground rounded-full">

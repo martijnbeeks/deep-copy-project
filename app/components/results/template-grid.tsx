@@ -174,7 +174,7 @@ export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
                         <CardContent className="p-6">
                             <div className="space-y-4">
                                 <div>
-                                    <h4 className="font-semibold text-foreground mb-1 line-clamp-2">
+                                    <h4 className="font-semibold text-foreground mb-1 break-words">
                                         {template.angle || template.name}
                                     </h4>
                                     <p className="text-sm text-muted-foreground">
@@ -200,20 +200,20 @@ export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
 </head>
 <body>
   ${(() => {
-    const raw = template.html;
-    const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(raw);
-    if (!hasRealImages) return raw;
-    const noOnError = raw
-      .replace(/\s+onerror="[^"]*"/gi, '')
-      .replace(/\s+onerror='[^']*'/gi, '');
-    const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
-      const lower = block.toLowerCase();
-      return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
-        ? ''
-        : block;
-    });
-    return stripFallbackScripts;
-  })()}
+                                                    const raw = template.html;
+                                                    const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(raw);
+                                                    if (!hasRealImages) return raw;
+                                                    const noOnError = raw
+                                                        .replace(/\s+onerror="[^"]*"/gi, '')
+                                                        .replace(/\s+onerror='[^']*'/gi, '');
+                                                    const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+                                                        const lower = block.toLowerCase();
+                                                        return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+                                                            ? ''
+                                                            : block;
+                                                    });
+                                                    return stripFallbackScripts;
+                                                })()}
   <script>
     (function(){
       function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }
@@ -284,20 +284,20 @@ export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
 </head>
 <body>
   ${(() => {
-    const raw = template.html;
-    const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(raw);
-    if (!hasRealImages) return raw;
-    const noOnError = raw
-      .replace(/\s+onerror="[^"]*"/gi, '')
-      .replace(/\s+onerror='[^']*'/gi, '');
-    const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
-      const lower = block.toLowerCase();
-      return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
-        ? ''
-        : block;
-    });
-    return stripFallbackScripts;
-  })()}
+                                                            const raw = template.html;
+                                                            const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(raw);
+                                                            if (!hasRealImages) return raw;
+                                                            const noOnError = raw
+                                                                .replace(/\s+onerror="[^"]*"/gi, '')
+                                                                .replace(/\s+onerror='[^']*'/gi, '');
+                                                            const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+                                                                const lower = block.toLowerCase();
+                                                                return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+                                                                    ? ''
+                                                                    : block;
+                                                            });
+                                                            return stripFallbackScripts;
+                                                        })()}
   <script>
     (function(){
       function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }

@@ -371,45 +371,45 @@ export default function DashboardPage() {
                         />
                       </div>
                     ) : (
-                       <div className="space-y-3">
-                         {filteredJobs.map((job: any) => (
-                           <div
-                             key={job.id}
-                             className="p-4 rounded-lg border border-border/50 hover:border-border hover:shadow-elegant transition-all cursor-pointer group bg-card/50"
-                             onClick={() => router.push(`/jobs/${job.id}`)}
-                           >
-                             <div className="flex items-center justify-between">
-                               <div className="flex-1 min-w-0">
-                                 <div className="flex items-center gap-3 mb-2">
-                                   <h3 className="font-semibold text-foreground truncate">{job.title}</h3>
-                                   {getStatusBadge(job.status)}
-                                 </div>
-                                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                                   <span className="capitalize">{job.template?.name || 'AI Generated'}</span>
-                                   <span>•</span>
-                                   <span>{new Date(job.created_at).toLocaleDateString()}</span>
-                                 </div>
-                                 {job.sales_page_url && (
-                                   <a
-                                     href={job.sales_page_url}
-                                     target="_blank"
-                                     rel="noopener noreferrer"
-                                     onClick={(e) => e.stopPropagation()}
-                                     className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-md text-sm font-medium text-primary hover:text-primary/90 transition-colors group/link"
-                                     title={job.sales_page_url}
-                                   >
-                                     <ExternalLink className="h-4 w-4 flex-shrink-0 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
-                                     <span className="truncate max-w-[250px]">{job.sales_page_url}</span>
-                                   </a>
-                                 )}
-                               </div>
-                               <div className="w-8 h-8 bg-gradient-accent/20 rounded-lg flex items-center justify-center group-hover:bg-gradient-accent/30 transition-colors">
-                                 <Eye className="h-4 w-4 text-accent" />
-                               </div>
-                             </div>
-                           </div>
-                         ))}
-                       </div>
+                      <div className="space-y-3">
+                        {filteredJobs.map((job: any) => (
+                          <div
+                            key={job.id}
+                            className="p-4 rounded-lg border border-border/50 hover:border-border hover:shadow-elegant transition-all cursor-pointer group bg-card/50"
+                            onClick={() => router.push(`/jobs/${job.id}`)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <h3 className="font-semibold text-foreground break-words">{job.title}</h3>
+                                  {getStatusBadge(job.status)}
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                                  <span className="capitalize">{job.template?.name || 'AI Generated'}</span>
+                                  <span>•</span>
+                                  <span>{new Date(job.created_at).toLocaleDateString()}</span>
+                                </div>
+                                {job.sales_page_url && (
+                                  <a
+                                    href={job.sales_page_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-md text-sm font-medium text-primary hover:text-primary/90 transition-colors group/link"
+                                    title={job.sales_page_url}
+                                  >
+                                    <ExternalLink className="h-4 w-4 flex-shrink-0 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
+                                    <span className="break-all">{job.sales_page_url}</span>
+                                  </a>
+                                )}
+                              </div>
+                              <div className="w-8 h-8 bg-gradient-accent/20 rounded-lg flex items-center justify-center group-hover:bg-gradient-accent/30 transition-colors">
+                                <Eye className="h-4 w-4 text-accent" />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -442,47 +442,47 @@ export default function DashboardPage() {
                         />
                       </div>
                     ) : (
-                       <div className="space-y-3">
-                         {completedJobs.slice(0, 8).map((job: any) => (
-                           <div
-                             key={job.id}
-                             className="p-4 rounded-lg border border-border/50 hover:border-border hover:shadow-elegant transition-all cursor-pointer group bg-card/50"
-                             onClick={() => router.push(`/results/${job.id}`)}
-                           >
-                             <div className="flex items-center justify-between">
-                               <div className="flex-1 min-w-0">
-                                 <div className="flex items-center gap-3 mb-2">
-                                   <h4 className="font-semibold text-foreground truncate">{job.title}</h4>
-                                   <Badge variant="default" className="text-xs bg-gradient-primary text-primary-foreground">
-                                     completed
-                                   </Badge>
-                                 </div>
-                                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                                   <span className="capitalize">{job.template?.name || 'AI Generated'}</span>
-                                   <span>•</span>
-                                   <span>{new Date(job.created_at).toLocaleDateString()}</span>
-                                 </div>
-                                 {job.sales_page_url && (
-                                   <a
-                                     href={job.sales_page_url}
-                                     target="_blank"
-                                     rel="noopener noreferrer"
-                                     onClick={(e) => e.stopPropagation()}
-                                     className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-md text-sm font-medium text-primary hover:text-primary/90 transition-colors group/link"
-                                     title={job.sales_page_url}
-                                   >
-                                     <ExternalLink className="h-4 w-4 flex-shrink-0 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
-                                     <span className="truncate max-w-[250px]">{job.sales_page_url}</span>
-                                   </a>
-                                 )}
-                               </div>
-                               <div className="w-8 h-8 bg-gradient-primary/20 rounded-lg flex items-center justify-center group-hover:bg-gradient-primary/30 transition-colors">
-                                 <Eye className="h-4 w-4 text-primary" />
-                               </div>
-                             </div>
-                           </div>
-                         ))}
-                       </div>
+                      <div className="space-y-3">
+                        {completedJobs.slice(0, 8).map((job: any) => (
+                          <div
+                            key={job.id}
+                            className="p-4 rounded-lg border border-border/50 hover:border-border hover:shadow-elegant transition-all cursor-pointer group bg-card/50"
+                            onClick={() => router.push(`/results/${job.id}`)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <h4 className="font-semibold text-foreground break-words">{job.title}</h4>
+                                  <Badge variant="default" className="text-xs bg-gradient-primary text-primary-foreground">
+                                    completed
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                                  <span className="capitalize">{job.template?.name || 'AI Generated'}</span>
+                                  <span>•</span>
+                                  <span>{new Date(job.created_at).toLocaleDateString()}</span>
+                                </div>
+                                {job.sales_page_url && (
+                                  <a
+                                    href={job.sales_page_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-md text-sm font-medium text-primary hover:text-primary/90 transition-colors group/link"
+                                    title={job.sales_page_url}
+                                  >
+                                    <ExternalLink className="h-4 w-4 flex-shrink-0 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
+                                    <span className="break-all">{job.sales_page_url}</span>
+                                  </a>
+                                )}
+                              </div>
+                              <div className="w-8 h-8 bg-gradient-primary/20 rounded-lg flex items-center justify-center group-hover:bg-gradient-primary/30 transition-colors">
+                                <Eye className="h-4 w-4 text-primary" />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </CardContent>
                 </Card>

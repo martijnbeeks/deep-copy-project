@@ -472,7 +472,7 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
                                                 {painPoint.bullets?.slice(0, 2).map((bullet: string, bulletIndex: number) => (
                                                   <li key={bulletIndex} className="text-sm text-muted-foreground flex items-start gap-1">
                                                     <span className="text-destructive mt-0.5">•</span>
-                                                    <span className="line-clamp-2">{bullet}</span>
+                                                    <span className="break-words">{bullet}</span>
                                                   </li>
                                                 ))}
                                               </ul>
@@ -496,7 +496,7 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
                                               {avatarData.goals.short_term?.slice(0, 2).map((goal: string, index: number) => (
                                                 <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
                                                   <span className="text-primary mt-0.5">✓</span>
-                                                  <span className="line-clamp-2">{goal}</span>
+                                                  <span className="break-words">{goal}</span>
                                                 </li>
                                               ))}
                                             </ul>
@@ -507,7 +507,7 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
                                               {avatarData.goals.long_term?.slice(0, 2).map((goal: string, index: number) => (
                                                 <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
                                                   <span className="text-primary mt-0.5">✓</span>
-                                                  <span className="line-clamp-2">{goal}</span>
+                                                  <span className="break-words">{goal}</span>
                                                 </li>
                                               ))}
                                             </ul>

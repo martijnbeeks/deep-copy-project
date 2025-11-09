@@ -259,16 +259,16 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                       {currentJob.result.metadata.full_result.results.research_page_analysis && (
                         <div>
                           <p className="text-sm font-medium text-muted-foreground mb-2">Page Analysis</p>
-                          <p className="text-sm line-clamp-3 text-card-foreground">
-                            {currentJob.result.metadata.full_result.results.research_page_analysis.substring(0, 200)}...
+                          <p className="text-sm break-words text-card-foreground">
+                            {currentJob.result.metadata.full_result.results.research_page_analysis}
                           </p>
                         </div>
                       )}
                       {currentJob.result.metadata.full_result.results.doc1_analysis && (
                         <div>
                           <p className="text-sm font-medium text-muted-foreground mb-2">Document Analysis 1</p>
-                          <p className="text-sm line-clamp-3 text-card-foreground">
-                            {currentJob.result.metadata.full_result.results.doc1_analysis.substring(0, 200)}...
+                          <p className="text-sm break-words text-card-foreground">
+                            {currentJob.result.metadata.full_result.results.doc1_analysis}
                           </p>
                         </div>
                       )}
