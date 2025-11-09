@@ -9,6 +9,7 @@ import sys
 import logging
 from datetime import datetime, timezone
 import uuid
+import anthropic
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional, Literal, Any, Dict, Union
@@ -16,6 +17,28 @@ from pydantic import BaseModel, Field, ConfigDict, create_model
 
 
 from playwright.sync_api import sync_playwright
+from pipeline.test_anthropic import (
+    make_streaming_request_with_retry,
+    make_structured_request_with_retry,
+    prepare_schema_for_tool_use,
+    load_pdf_file,
+)
+
+# Import extract_clean_text_from_html from test_anthropic since utils.py was removed
+def extract_clean_text_from_html(html_file_path: str) -> str:
+    """Extract clean text from an HTML file by removing scripts, styles, and extra whitespace."""
+    from bs4 import BeautifulSoup
+    with open(html_file_path, 'r', encoding='utf-8') as f:
+        html = f.read()
+    soup = BeautifulSoup(html, 'html.parser')
+    for script in soup(["script", "style"]):
+        script.decompose()
+    text = soup.get_text()
+    lines = (line.strip() for line in text.splitlines())
+    chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+    clean_text = '\n'.join(chunk for chunk in chunks if chunk)
+    return clean_text
+
 
 # Configure logging
 logger = logging.getLogger()
@@ -325,6 +348,7 @@ def load_schema_as_model(schema: str) -> type[BaseModel]:
     return create_model_from_schema(model_name, schema, definitions)
 
 
+
 class DeepCopy:
     def __init__(self):
         # Resolve secret id/name/arn and region from environment for ECS flexibility
@@ -333,6 +357,7 @@ class DeepCopy:
         self.openai_model = "gpt-5-mini"
         self.secrets = self.get_secrets(secret_id)
         self.client = OpenAI(api_key=self.secrets["OPENAI_API_KEY"]) 
+        self.anthropic_client = anthropic.Anthropic(api_key=self.secrets["ANTHROPIC_API_KEY"])
         aws_region = os.environ.get('AWS_REGION') or os.environ.get('AWS_DEFAULT_REGION') or 'eu-west-1'
         self.s3_client = boto3.client('s3', region_name=aws_region)
         self.s3_bucket = "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih"
@@ -446,13 +471,16 @@ class DeepCopy:
             logger.error(f"Error analyzing research document {doc_name}: {e}")
             raise
     
-    def create_deep_research_prompt(self, sales_page_url, research_page_analysis, doc1_analysis, doc2_analysis):
+    def create_deep_research_prompt(self, sales_page_url, research_page_analysis, doc1_analysis, doc2_analysis, avatar):
         """Create a comprehensive research prompt"""
         try:
             prompt = f"""
             Now that you understand how to conduct research, create a full, best-practice prompt for Deep Research tool to research products from {sales_page_url} according to the sections below. 
             Please only return the actual prompt that directly can be used in the Deep Research tool, no other text or return questions.
             Do not ask to add any appendices, everything should be text and in a single document.
+            
+            Avatar:
+            {avatar}
 
             Research Page analysis:
             {research_page_analysis}
@@ -648,102 +676,191 @@ class DeepCopy:
         except Exception as e:
             logger.error(f"Error creating summary: {e}")
             raise
-        
-    def analyze_swipe_file(self, swipe_file_html, advertorial_type: Literal["Advertorial", "Listicle"]):
-        """Analyze the swipe file"""
-        try:
-            prompt = f"""
-            Please analyze the following swipe file and provide a detailed analysis of the content and style used in this marketing document: {advertorial_type}:
-            
-            This analysis should be very detailed and should be used to rewrite different swipe files with the same style and tone.
-            
-            Swipe file HTML:
-            {swipe_file_html}
-            """
-            
-            response = self.client.responses.create(
-                model="gpt-5",
-                input=[{
-                    "role": "user", 
-                    "content": [{"type": "input_text", "text": prompt}]
-                }]
-            )            
-            return response.output_text
-        except Exception as e:
-            logger.error(f"Error analyzing swipe file: {e}")
-            raise
     
-    def rewrite_swipe_files(self, angles, avatar_sheet, summary, swipe_file_analysis, swipe_file_html, advertorial_type: Literal["Advertorial", "Listicle"], model: BaseModel):
-        """Rewrite swipe files for each marketing angle"""
-        try:
-
-            
-            def _rewrite_for_angle(angle: str):
-                prompt = f"""
-                Great, now I want you to please rewrite this {advertorial_type} but using all of the information around products stated below. 
-                I want you to specifically focus on the first marketing angle from the avatar sheet: {angle}. 
-                Please rewrite the {advertorial_type} with the new content, adhere to the style and tone used in the swipe file analysis and original swipe file html and output it in provided format. 
-                
-                For example:
-                if the original swipe file has a title that includes: "12 reasons why...", you should rewrite the {advertorial_type} title in the same format.
-                
-                            
-                Avatar sheet:
+    def rewrite_swipe_file(
+        self,
+        angle: str,
+        avatar_sheet: str,
+        deep_research_output: str,
+        offer_brief: str,
+        necessary_beliefs: str,
+        schema_json: str,
+        original_swipe_file_path_html: str,
+        original_swipe_file_path_pdf: str
+    ):  
+        # Model configuration
+        MODEL = "claude-sonnet-4-5"
+        MAX_TOKENS = 15000
+        
+        # Extract clean text from HTML swipe file
+        raw_swipe_file_text = extract_clean_text_from_html(original_swipe_file_path_html)
+        
+        # Build messages list manually - we'll append to this for each turn
+        messages: List[Dict[str, Any]] = []
+        
+        # ============================================================
+        # Turn 1: Familiarize with documents
+        # ============================================================
+        logger.info("Turn 1: Familiarizing with documents")
+        field_prompt = f"""Hey, Claude, I want you to please analyze the four documents that I've attached to this message. I've done a significant amount of research of a product that I'm going to be selling, and it's your role as my direct response copywriter to understand this research, the avatar document, the offer brief, and the necessary beliefs document to an extremely high degree. So please familiarize yourself with these documents before we proceed with writing anything.
+        """
+        system_prompt = [{
+                "type": "text",
+                "text": f"""
+                Docs:
                 {avatar_sheet}
-                
-                Content for the {advertorial_type}:
-                {summary}
-                
-                Swipe file analysis:
-                {swipe_file_analysis}
-                
-                Original swipe file html:
-                {swipe_file_html}
-                
-                """
+                {deep_research_output}
+                {offer_brief}
+                {necessary_beliefs}
+                """,
+                "cache_control": {"type": "ephemeral"}
+        }]
+        
+        # Add first user message
+        messages.append({
+            "role": "user",
+            "content": field_prompt
+        })
+        
+        # Get first response using streaming
+        first_response_text, first_usage = make_streaming_request_with_retry(
+            messages=messages,
+            max_tokens=MAX_TOKENS,
+            model=MODEL,
+            anthropic_client=self.anthropic_client,
+            system_prompt=system_prompt
+        )
+        
+        # Add assistant response to messages
+        messages.append({
+            "role": "assistant",
+            "content": first_response_text
+        })
+        
+        logger.info(f"Turn 1 completed. Response length: {len(first_response_text)} chars")
+        logger.info(f"Turn 1 usage: {first_usage}")
+        
+        # ============================================================
+        # Turn 2: Analyze competitor advertorial with PDF
+        # ============================================================
+        logger.info("Turn 2: Analyzing competitor advertorial with PDF")
+        generate_content_prompt = f"""Excellent work. Now we're going to be writing an advertorial, which is a type of pre-sales page designed to nurture customers before they actually see the main product offer page. I'm going to send you an indirect competitor with a very successful advertorial, and I want you to please analyze this advertorial and let me know your thoughts
+        Raw text from the pdf advertorial:
+        {raw_swipe_file_text}
+        """
+        
+        # Load PDF file and create content with PDF
+        pdf_file_data = load_pdf_file(original_swipe_file_path_pdf)
+        user_content_with_pdf = [
+            {"type": "text", "text": generate_content_prompt},
+            {
+                "type": "document",
+                "source": {
+                    "type": "base64",
+                    "media_type": "application/pdf",
+                    "data": pdf_file_data
+                }
+            }
+        ]
+        
+        # Add second user message with PDF
+        messages.append({
+            "role": "user",
+            "content": user_content_with_pdf
+        })
+        
+        # Get second response using streaming
+        second_response_text, second_usage = make_streaming_request_with_retry(
+            messages=messages,
+            max_tokens=MAX_TOKENS,
+            model=MODEL,
+            anthropic_client=self.anthropic_client,
+            system_prompt=system_prompt
+        )
+        
+        # Add assistant response to messages
+        messages.append({
+            "role": "assistant",
+            "content": second_response_text
+        })
+        
+        logger.info(f"Turn 2 completed. Response length: {len(second_response_text)} chars")
+        logger.info(f"Turn 2 usage: {second_usage}")
+        # ============================================================
+        # Turn 3: Write advertorial with structured output
+        # ============================================================
+        logger.info("Turn 3: Writing advertorial with structured output")
+        third_query_prompt = f"""You are an expert copywriter creating a complete, polished advertorial for the NewAura Seborrheic Dermatitis & Psoriasis Cream.
 
-                logger.info(f"Calling GPT-5 API to rewrite swipe file for angle: {angle}")
-                
-                try:
-                    response = self.client.responses.parse(
-                        model="gpt-5",
-                        input=[{
-                            "role": "user", 
-                            "content": [{"type": "input_text", "text": prompt}]
-                        }],
-                        text_format=model,
-                    )
-                    logger.info(f"GPT-5 API call completed for swipe file rewrite (angle: {angle})")
-                    return {"angle": angle, "content": response.output_text}
-                except Exception as e:
-                    logger.error(f"Error in GPT-5 API call for swipe file rewrite (angle: {angle}): {e}")
-                    return {}
+        Your task:
+        1. Rewrite the advertorial using ALL the relevant information about the new product.  
+        2. Focus specifically on the marketing angle: {angle}.  
+        3. Generate **a full and complete output** following the schema provided below.  
+        4. DO NOT skip or leave out any fields — every field in the schema must be filled.  
+        5. If any data is missing, intelligently infer or create realistic content that fits the schema.  
+        6. Write fluently and naturally, with complete sentences. Do not stop mid-thought or end with ellipses (“...”).  
+        7. At the end, verify your own output is **100% complete** — all schema fields filled.
 
-            # Run API calls in parallel while preserving the original order
-            results_by_index = [None] * len(angles)
-            if not angles:
-                return results_by_index
-
-            max_workers = min(1, len(angles))
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                future_to_index = {}
-                for idx, angle in enumerate(angles):
-                    future = executor.submit(_rewrite_for_angle, angle)
-                    future_to_index[future] = idx
-                for future in as_completed(future_to_index):
-                    idx = future_to_index[future]
-                    # Propagate exceptions if any to maintain previous failure semantics
-                    results_by_index[idx] = future.result()
-                    
-            # If all results are empty dictionaries, raise an error
-            if all(result == {} for result in results_by_index):
-                raise Exception("All swipe file rewrites failed")
-
-            return results_by_index
-            
-        except Exception as e:
-            logger.error(f"Error rewriting swipe files: {e}")
-            raise
+        When ready, output ONLY the completed schema with all fields filled in. Do not include explanations or notes.
+        """
+        # Add third user message
+        messages.append({
+            "role": "user",
+            "content": third_query_prompt
+        })
+        
+        # Prepare schema for tool use
+        tool_name, tool_description, tool_schema = prepare_schema_for_tool_use(schema_json)
+        
+        # Get structured response
+        full_advertorial, third_usage = make_structured_request_with_retry(
+            messages=messages,
+            tool_name=tool_name,
+            tool_description=tool_description,
+            tool_schema=tool_schema,
+            max_tokens=25000,
+            model=MODEL,
+            anthropic_client=self.anthropic_client,
+            system_prompt=system_prompt
+        )
+        
+        logger.info(f"Turn 3 completed. Received {len(full_advertorial) if isinstance(full_advertorial, dict) else 0} fields in structured output")
+        logger.info(f"Turn 3 usage: {third_usage}")
+        # Check if enough fields are present, else retry
+        if len(full_advertorial) < 10:
+            logger.info(f"Less then 10 fields, rerunning...")
+            return self.rewrite_swipe_file(angle, avatar_sheet, deep_research_output, offer_brief, necessary_beliefs, schema_json, original_swipe_file_path_html, original_swipe_file_path_pdf)
+        # ============================================================
+        # Turn 4: Quality check (commented out for now)
+        # ============================================================
+        # fifth_query_prompt = f"""Amazing! I'm going to send you the full advertorial that I just completed. I want you to please analyze it and let me know your thoughts. I would specifically analyze how in line all of the copy is in relation to all the research amongst the avatar, the competitors, the research, necessary beliefs, levels of consciousness, the objections, etc., that you did earlier.
+        #
+        # Please include the deep research output such that you can verify whether all factual information is used.
+        #
+        # Rate the advertorial and provide me with a quality metrics.
+        #
+        # Find all research content can be found above and verify whether all factual information is used.
+        #
+        # Here is the full advertorial:
+        #
+        # {full_advertorial}"""
+        # 
+        # # Use only the first turn for quality check (reset messages to first turn only)
+        # first_turn_messages = [
+        #     messages[0],  # First user message
+        #     messages[1],  # First assistant response
+        #     {"role": "user", "content": fifth_query_prompt}
+        # ]
+        # 
+        # quality_report, quality_usage = make_streaming_request_with_retry(
+        #     messages=first_turn_messages,
+        #     max_tokens=MAX_TOKENS,
+        #     model=MODEL,
+        #     anthropic_client=self.anthropic_client
+        # )
+        
+        return full_advertorial, None
+    
     
     def save_results_to_s3(self, results, s3_bucket, project_name, job_id):
         """Save all results to S3"""
@@ -905,120 +1022,121 @@ def run_pipeline(event, context):
             # Try both spellings: "original" and "orginal" (typo in some files)
             s3_key_html_correct = f"content_library/{swipe_file_id}_original.html"
             s3_key_json = f"content_library/{swipe_file_id}.json"
+            s3_key_pdf = f"content_library/{swipe_file_id}.pdf"
             
             # Try the correct spelling first, then the typo
             obj_html = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_html_correct)
             
             html_bytes = obj_html["Body"].read()
-            swipe_file_html = html_bytes.decode("utf-8")
+            # save to local file and pass path to rewrite method. Check if directory exists, if not create it.
+            if not os.path.exists("content"):
+                os.makedirs("content")
+            original_swipe_file_path_html = f"content/{swipe_file_id}_original.html"
+            with open(original_swipe_file_path_html, "wb") as f:
+                f.write(html_bytes)
             
             obj_json = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_json)
             json_bytes = obj_json["Body"].read()
-            json_text = json_bytes.decode("utf-8")
-            swipe_file_model = load_schema_as_model(json_text)
+            swipe_file_model = json_bytes.decode("utf-8")
+            
+            obj_pdf = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_pdf)
+            pdf_bytes = obj_pdf["Body"].read()
+            # save to local file and pass path to rewrite method. Check if directory exists, if not create it.
+            if not os.path.exists("content"):
+                os.makedirs("content")
+            original_swipe_file_path_pdf = f"content/{swipe_file_id}.pdf"
+            with open(original_swipe_file_path_pdf, "wb") as f:
+                f.write(pdf_bytes)
             
         except Exception as e:
             # Check if it's a file not found error (NoSuchKey)
-            if hasattr(e, 'response') and e.response.get('Error', {}).get('Code') == 'NoSuchKey':
-                # Get list of available swipe files from S3
-                available_files_list = generator.get_available_swipe_files(s3_bucket)
-                
-                if available_files_list:
-                    error_msg = (
-                        f"Error: The swipe file '{swipe_file_id}' is not available in the library. "
-                        f"Available swipe files: {', '.join(available_files_list)}. "
-                        f"Please select one of the available files."
-                    )
-                else:
-                    error_msg = (
-                        f"Error: The swipe file '{swipe_file_id}' is not available in the library. "
-                        f"No swipe files found in content_library folder."
-                    )
-                
-                logger.error(error_msg)
-                try:
-                    generator.update_job_status(job_id, "FAILED", {"error": error_msg})
-                except Exception:
-                    pass
-                return {
-                    "statusCode": 404,
-                    "body": {
-                        "error": error_msg,
-                        "available_files": available_files_list
-                    }
-                }
-            else:
-                # It's a different error (JSON parsing, schema validation, etc.)
-                error_msg = f"Error loading swipe file '{swipe_file_id}': {str(e)}"
-                logger.error(error_msg)
-                try:
-                    generator.update_job_status(job_id, "FAILED", {"error": error_msg})
-                except Exception:
-                    pass
-                return {
-                    "statusCode": 500,
-                    "body": {
-                        "error": error_msg,
-                        "message": "Failed to load or parse swipe file"
-                    }
-                }
-        # Get customer avatars from event
-        customer_avatars = event.get("customer_avatars", [])
-        # Step 1: Analyze research page
-        logger.info("Step 1: Analyzing research page")
-        research_page_analysis = generator.analyze_research_page(sales_page_url, customer_avatars)
-        
-        # Step 2: Analyze research documents
-        logger.info("Step 2: Analyzing research documents")
+            raise e
         
         
-        doc1_analysis = open(f"{content_dir}doc1_analysis.txt", "r").read()
-        doc2_analysis = open(f"{content_dir}doc2_analysis.txt", "r").read()
+        
+        # Load pre-computed results from comprehensive_results JSON file
+        logger.info("Loading pre-computed results from JSON file")
+        comprehensive_results_path = f"{content_dir}test_results.json"
+        
+        with open(comprehensive_results_path, "r") as f:
+            comprehensive_data = json.load(f)
+            results = comprehensive_data.get("results", {})
+        
+        # Extract all variables from the JSON
+        research_page_analysis = results.get("research_page_analysis")
+        doc1_analysis = results.get("doc1_analysis")
+        doc2_analysis = results.get("doc2_analysis")
+        deep_research_prompt = results.get("deep_research_prompt")
+        deep_research_output = results.get("deep_research_output")
+        avatar_sheet = results.get("avatar_sheet")
+        offer_brief = results.get("offer_brief")
+        marketing_philosophy_analysis = results.get("marketing_philosophy_analysis")
+        summary = results.get("summary")
+        swipe_file_analysis = results.get("swipe_file_analysis")
+        angles = results.get("marketing_angles", [])
+        
+        # # Get customer avatars from event
+        # customer_avatars = event.get("customer_avatars", [])
+        # # Step 1: Analyze research page
+        # logger.info("Step 1: Analyzing research page")
+        # research_page_analysis = generator.analyze_research_page(sales_page_url, customer_avatars)
+        
+        # # Step 2: Analyze research documents
+        # logger.info("Step 2: Analyzing research documents")
+        
+        
+        # doc1_analysis = open(f"{content_dir}doc1_analysis.txt", "r").read()
+        # doc2_analysis = open(f"{content_dir}doc2_analysis.txt", "r").read()
 
         
-        # Step 3: Create deep research prompt
-        logger.info("Step 3: Creating deep research prompt")
-        deep_research_prompt = generator.create_deep_research_prompt(
-            sales_page_url, research_page_analysis, doc1_analysis, doc2_analysis
-        )
+        # # Step 3: Create deep research prompt
+        # logger.info("Step 3: Creating deep research prompt")
+        # deep_research_prompt = generator.create_deep_research_prompt(
+        #     sales_page_url, research_page_analysis, doc1_analysis, doc2_analysis, customer_avatars
+        # )
         
-        # Step 4: Execute deep research
-        logger.info("Step 4: Executing deep research")
-        deep_research_output = generator.execute_deep_research(deep_research_prompt)
+        # # Step 4: Execute deep research
+        # logger.info("Step 4: Executing deep research")
+        # deep_research_output = generator.execute_deep_research(deep_research_prompt)
         
-        # Step 5: Complete avatar sheet
-        logger.info("Step 5: Completing avatar sheet")
-        avatar_parsed, avatar_sheet = generator.complete_avatar_sheet(deep_research_output)
-        angles = avatar_parsed.marketing_angles
+        # # Step 5: Complete avatar sheet
+        # logger.info("Step 5: Completing avatar sheet")
+        # avatar_parsed, avatar_sheet = generator.complete_avatar_sheet(deep_research_output)
+        # angles = avatar_parsed.marketing_angles
         
-        # Step 6: Complete offer brief
-        logger.info("Step 6: Completing offer brief")
-        offer_brief = generator.complete_offer_brief(deep_research_output)
+        # # Step 6: Complete offer brief
+        # logger.info("Step 6: Completing offer brief")
+        # offer_brief = generator.complete_offer_brief(deep_research_output)
         
-        # Step 7: Analyze marketing philosophy
-        logger.info("Step 7: Analyzing marketing philosophy")
-        marketing_philosophy_analysis = generator.analyze_marketing_philosophy(
-            avatar_sheet, offer_brief, deep_research_output
-        )
+        # # Step 7: Analyze marketing philosophy
+        # logger.info("Step 7: Analyzing marketing philosophy")
+        # marketing_philosophy_analysis = generator.analyze_marketing_philosophy(
+        #     avatar_sheet, offer_brief, deep_research_output
+        # )
         
-        # Step 8: Create summary
-        logger.info("Step 8: Creating summary")
-        summary = generator.create_summary(
-            avatar_sheet, offer_brief, deep_research_output, marketing_philosophy_analysis
-        )
-        
-        
-        # Step 9: Analyse the swipe file
-        logger.info("Step 9: Analyzing swipe file")
-        swipe_file_analysis = generator.analyze_swipe_file(swipe_file_html, advertorial_type)
-        
-        # Step 10: Rewrite swipe files
-        logger.info("Step 9: Rewriting swipe files")
+        # # Step 8: Create summary
+        # logger.info("Step 8: Creating summary")
+        # summary = generator.create_summary(
+        #     avatar_sheet, offer_brief, deep_research_output, marketing_philosophy_analysis
+        # )
         
         
-        swipe_results = generator.rewrite_swipe_files(
-            angles, avatar_sheet, summary, swipe_file_analysis, swipe_file_html, advertorial_type, swipe_file_model
-        )
+        # # Step 9: Analyse the swipe file
+        # logger.info("Step 9: Analyzing swipe file")
+        # swipe_file_analysis = generator.analyze_swipe_file(swipe_file_html, advertorial_type)
+        
+        # # Step 10: Rewrite swipe files
+        # logger.info("Step 9: Rewriting swipe files")
+        # # use max 3 angles for now.
+        angles = angles[:1]
+        swipe_results = []
+        for angle in angles:
+            full_advertorial, quality_report = generator.rewrite_swipe_file(
+                angle, avatar_sheet, deep_research_output, offer_brief, marketing_philosophy_analysis, swipe_file_model, original_swipe_file_path_html, original_swipe_file_path_pdf
+            )
+            swipe_results.append({"angle": angle, "content": json.dumps(full_advertorial)})
+            
+        logger.info(f"Swipe results: {swipe_results}")
         
         # Step 10: Save all results
         logger.info("Step 10: Saving results")
@@ -1089,3 +1207,6 @@ if __name__ == "__main__":
     event["job_id"] = os.environ.get("JOB_ID") or event.get("job_id") or str(uuid.uuid4())
     result = run_pipeline(event, None)
     
+
+# Add pdfs for swipe files
+# change to better models

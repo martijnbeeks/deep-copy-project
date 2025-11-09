@@ -125,7 +125,7 @@ def lambda_handler(event, context):
             raise RuntimeError(error_msg)
         
         # Get model from environment or use default
-        model = "gpt-5"
+        model = "gpt-4.1-mini"
         
         # Extract avatars using OpenAI
         logger.info(f'Processing avatar extraction for job {job_id}, URL: {url}')

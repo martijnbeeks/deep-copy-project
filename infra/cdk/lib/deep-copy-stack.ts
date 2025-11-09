@@ -65,8 +65,9 @@ export class DeepCopyStack extends Stack {
     const cluster = new ecs.Cluster(this, 'Cluster', { vpc });
 
     // Build Docker image from ai_pipeline
+    // Use path.resolve to ensure correct path resolution regardless of how CDK is executed
     const dockerImage = ecs.ContainerImage.fromAsset(
-      path.join(__dirname, '../../ai_pipeline'),
+      path.resolve(__dirname, '../../ai_pipeline'),
       {
         platform: ecrAssets.Platform.LINUX_ARM64,
       },

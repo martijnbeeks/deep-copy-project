@@ -20,6 +20,9 @@ dependencies = [
     "playwright>=1.40.0",
     "boto3>=1.40.16",
     "pip>=25.2",
+    "anthropic>=0.72.0",
+    "beautifulsoup4>=4.12.0",
+    "pdf2image>=1.17.0",
 ]
 
 [project.scripts]
