@@ -37,11 +37,11 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
   }, [fetchJob, params.id])
 
   // Use client-side polling for job status updates
-  const { 
-    jobStatus, 
-    isPolling, 
-    attempts, 
-    maxAttempts 
+  const {
+    jobStatus,
+    isPolling,
+    attempts,
+    maxAttempts
   } = useJobPolling({
     jobId: params.id,
     enabled: currentJob?.status === 'processing' || currentJob?.status === 'pending',
@@ -153,7 +153,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
               </Button>
             </div>
           </div>
-          
+
           <div className="flex items-center justify-end mb-4">
             <div className="flex items-center gap-2">
               {isPolling && (
@@ -192,8 +192,8 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
             </TabsList>
 
             <TabsContent value="content">
-              <DeepCopyResults 
-                result={currentJob.result} 
+              <DeepCopyResults
+                result={currentJob.result}
                 jobTitle={currentJob.title}
                 advertorialType={currentJob.advertorial_type}
                 templateId={currentJob.template_id}
@@ -276,7 +276,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                         <div>
                           <p className="text-sm font-medium text-muted-foreground mb-2">HTML Templates</p>
                           <p className="text-sm text-card-foreground">
-                            {Array.isArray(currentJob.result.metadata.full_result.results.html_templates) 
+                            {Array.isArray(currentJob.result.metadata.full_result.results.html_templates)
                               ? `${currentJob.result.metadata.full_result.results.html_templates.length} template(s) generated`
                               : '1 template generated'
                             }

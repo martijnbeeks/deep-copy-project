@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 
 interface SidebarContextType {
   isCollapsed: boolean
@@ -9,8 +9,24 @@ interface SidebarContextType {
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined)
 
+const SIDEBAR_STORAGE_KEY = "sidebar-collapsed"
+
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const [isCollapsed, setIsCollapsed] = useState(true)
+  // Initialize from localStorage or default to false (expanded)
+  const [isCollapsed, setIsCollapsedState] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false
+    const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY)
+    return stored ? JSON.parse(stored) : false
+  })
+
+  // Persist to localStorage whenever state changes
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_STORAGE_KEY, JSON.stringify(isCollapsed))
+  }, [isCollapsed])
+
+  const setIsCollapsed = (collapsed: boolean) => {
+    setIsCollapsedState(collapsed)
+  }
 
   return (
     <SidebarContext.Provider value={{ isCollapsed, setIsCollapsed }}>

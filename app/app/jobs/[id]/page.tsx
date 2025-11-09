@@ -1,6 +1,6 @@
 "use client"
 
-import { Sidebar } from "@/components/dashboard/sidebar"
+import { Sidebar, SidebarTrigger } from "@/components/dashboard/sidebar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useRouter } from "next/navigation"
@@ -19,7 +19,6 @@ import { useToast } from "@/hooks/use-toast"
 
 export default function JobDetailPage({ params }: { params: { id: string } }) {
   const { user, isAuthenticated } = useAuthStore()
-  const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -32,11 +31,11 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
   const { processingJobsCount } = useAutoPolling()
 
   // Use client-side polling for job status updates
-  const { 
-    jobStatus, 
-    isPolling, 
-    attempts, 
-    maxAttempts 
+  const {
+    jobStatus,
+    isPolling,
+    attempts,
+    maxAttempts
   } = useJobPolling({
     jobId: params.id,
     enabled: currentJob?.status === 'processing' || currentJob?.status === 'pending',
@@ -138,50 +137,28 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
       <Sidebar />
       <main className="flex-1 overflow-auto md:ml-0">
         <div className="p-4 md:p-6">
-          <div className="flex items-start justify-between mb-4 md:mb-6 gap-4">
-            <div className="flex items-center gap-4">
-              <Link href="/dashboard">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">← Back to Jobs</span>
-                  <span className="sm:hidden">Back</span>
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-xl md:text-2xl font-bold">
-                  {currentJob.status === 'completed' ? 'Completed' : 'Processing Your Request'}
-                </h1>
-                <p className="text-sm md:text-base text-muted-foreground">
-                  {currentJob.status === 'completed' 
-                    ? 'Your AI content has been generated successfully!' 
-                    : 'Job submitted, waiting to start...'}
-                </p>
+          <div className="flex items-center justify-between mb-4 md:mb-6 gap-4">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger />
+              <div className="flex items-center gap-4">
+                <Link href="/dashboard">
+                  <Button variant="ghost" size="sm">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    <span className="hidden sm:inline">Back to Jobs</span>
+                    <span className="sm:hidden">Back</span>
+                  </Button>
+                </Link>
+                <div>
+                  <h1 className="text-xl md:text-2xl font-bold">
+                    {currentJob.status === 'completed' ? 'Completed' : 'Processing Your Request'}
+                  </h1>
+                  <p className="text-sm md:text-base text-muted-foreground">
+                    {currentJob.status === 'completed'
+                      ? 'Your AI content has been generated successfully!'
+                      : 'Job submitted, waiting to start...'}
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex gap-2">
-              {/* Mobile menu button */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsCollapsed(!isCollapsed)}
-                className="h-8 w-8 p-0 md:hidden"
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
-              
-              {/* Desktop collapse button */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsCollapsed(!isCollapsed)}
-                className="h-8 w-8 p-0 hidden md:flex"
-              >
-                {isCollapsed ? (
-                  <ChevronRight className="h-4 w-4" />
-                ) : (
-                  <ChevronLeft className="h-4 w-4" />
-                )}
-              </Button>
             </div>
           </div>
 
@@ -189,14 +166,14 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
           {currentJob && (
             <div className="mb-6">
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+                <div
                   className="bg-primary h-2 rounded-full transition-all duration-500 ease-out"
                   style={{ width: `${getProgressPercentage()}%` }}
                 ></div>
               </div>
             </div>
           )}
-          
+
           <div className="flex items-center justify-end mb-4">
             <div className="flex items-center gap-2">
               {isPolling && (
@@ -224,7 +201,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
                   </Button>
                 </>
               )}
-              
+
               {/* Delete Button */}
               <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <DialogTrigger asChild>
@@ -271,9 +248,9 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
                 <div className="flex items-center gap-3">
                   <Globe className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Product Page:</span>
-                  <a 
-                    href={currentJob.sales_page_url} 
-                    target="_blank" 
+                  <a
+                    href={currentJob.sales_page_url}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-blue-600 hover:text-blue-800 underline"
                   >
@@ -298,7 +275,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
             </div>
 
             {/* What's happening section */}
-          {/*<div className="space-y-4">
+            {/*<div className="space-y-4">
               <h2 className="text-lg font-semibold">What's happening?</h2>
               <p className="text-sm text-muted-foreground">
                 Our AI is analyzing your product page, researching your market, and crafting compelling copy tailored to your specific audience. This process typically takes 3-5 minutes. You can safely leave this page - we'll save your progress and you can return anytime.

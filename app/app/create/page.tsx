@@ -16,7 +16,7 @@ import { useTemplatesStore } from "@/stores/templates-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useAuthStore } from "@/stores/auth-store"
 import { useRouter } from "next/navigation"
-import { Sidebar } from "@/components/dashboard/sidebar"
+import { Sidebar, SidebarTrigger } from "@/components/dashboard/sidebar"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { TemplatePreview } from "@/components/template-preview"
 import { useSidebar } from "@/contexts/sidebar-context"
@@ -51,7 +51,6 @@ export default function CreatePage() {
   const { templates, fetchTemplates, selectedTemplate, setSelectedTemplate, isLoading: templatesLoading, preloadTemplates } = useTemplatesStore()
   const { createJob } = useJobsStore()
   const { user, isAuthenticated } = useAuthStore()
-  const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
 
   // Use auto-polling for processing jobs (hits DeepCopy API directly)
@@ -361,35 +360,13 @@ export default function CreatePage() {
         <main className="flex-1 overflow-hidden md:ml-0">
           <div className="p-4 md:p-6 overflow-y-auto h-full">
             <div className="mb-4 md:mb-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">Create New Content</h1>
-                  <p className="text-sm md:text-base text-muted-foreground mt-1">Choose a template and generate AI-powered marketing content</p>
-                </div>
-                <div className="flex gap-2">
-                  {/* Mobile menu button */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="h-8 w-8 p-0 md:hidden"
-                  >
-                    <Menu className="h-4 w-4" />
-                  </Button>
-
-                  {/* Desktop collapse button */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="h-8 w-8 p-0 hidden md:flex"
-                  >
-                    {isCollapsed ? (
-                      <ChevronRight className="h-4 w-4" />
-                    ) : (
-                      <ChevronLeft className="h-4 w-4" />
-                    )}
-                  </Button>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <SidebarTrigger />
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-2xl md:text-3xl font-bold text-foreground">Create New Content</h1>
+                    <p className="text-sm md:text-base text-muted-foreground mt-1">Choose a template and generate AI-powered marketing content</p>
+                  </div>
                 </div>
               </div>
 
@@ -841,7 +818,7 @@ export default function CreatePage() {
                         <p className="text-sm text-muted-foreground">Click on any template to preview and select it</p>
                       </div>
 
-                      <div id="template-section" className={`grid gap-6 ${isCollapsed ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2'}`}>
+                      <div id="template-section" className="grid gap-6 grid-cols-1 md:grid-cols-2">
                         {currentTemplates.map((template) => (
                           <TemplatePreview
                             key={template.id}

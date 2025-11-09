@@ -7,7 +7,7 @@ import { useJobs, useInvalidateJobs } from "@/lib/hooks/use-jobs"
 import { useAutoPolling } from "@/hooks/use-auto-polling"
 import { useSimplePolling } from "@/hooks/use-simple-polling"
 import { Job } from "@/lib/db/types"
-import { Sidebar } from "@/components/dashboard/sidebar"
+import { Sidebar, SidebarTrigger } from "@/components/dashboard/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -25,7 +25,6 @@ import Link from "next/link"
 
 export default function JobsPage() {
   const { user } = useAuthStore()
-  const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -212,29 +211,7 @@ export default function JobsPage() {
                   </Button>
                 </Link>
 
-                {/* Mobile menu button */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsCollapsed(!isCollapsed)}
-                  className="h-8 w-8 p-0 md:hidden"
-                >
-                  <Menu className="h-4 w-4" />
-                </Button>
-
-                {/* Desktop collapse button */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsCollapsed(!isCollapsed)}
-                  className="h-8 w-8 p-0 hidden md:flex"
-                >
-                  {isCollapsed ? (
-                    <ChevronRight className="h-4 w-4" />
-                  ) : (
-                    <ChevronLeft className="h-4 w-4" />
-                  )}
-                </Button>
+                <SidebarTrigger />
               </div>
             </div>
 

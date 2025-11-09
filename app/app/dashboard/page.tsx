@@ -1,6 +1,6 @@
 "use client"
 
-import { Sidebar } from "@/components/dashboard/sidebar"
+import { Sidebar, SidebarTrigger } from "@/components/dashboard/sidebar"
 import { PipelineForm } from "@/components/dashboard/pipeline-form"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -25,7 +25,6 @@ import { Job } from "@/lib/db/types"
 
 export default function DashboardPage() {
   const { user, isAuthenticated } = useAuthStore()
-  const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
@@ -206,20 +205,7 @@ export default function DashboardPage() {
             <div className="mb-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  {/* Sidebar toggle button - moved to left */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="h-8 w-8 p-0 border-border/50 hover:border-border hover:bg-muted/50"
-                  >
-                    {isCollapsed ? (
-                      <ChevronRight className="h-4 w-4" />
-                    ) : (
-                      <ChevronLeft className="h-4 w-4" />
-                    )}
-                  </Button>
-
+                  <SidebarTrigger />
                   <div className="flex-1 min-w-0">
                     <h1 className="text-2xl md:text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">Dashboard</h1>
                     <p className="text-sm text-muted-foreground">Welcome back, {user.name}!</p>

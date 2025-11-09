@@ -3,7 +3,7 @@
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useSidebar } from "@/contexts/sidebar-context"
-import { Sidebar } from "@/components/dashboard/sidebar"
+import { Sidebar, SidebarTrigger } from "@/components/dashboard/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -22,7 +22,6 @@ import Link from "next/link"
 export default function ResultsPage() {
   const { user } = useAuthStore()
   const { jobs, isLoading, error, fetchJobs } = useJobsStore()
-  const { isCollapsed, setIsCollapsed } = useSidebar()
   const router = useRouter()
   const [filteredResults, setFilteredResults] = useState(jobs.filter(job => job.status === 'completed'))
   const [searchTerm, setSearchTerm] = useState("")
@@ -224,29 +223,7 @@ export default function ResultsPage() {
                   </Button>
                 </Link>
 
-                {/* Mobile menu button */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsCollapsed(!isCollapsed)}
-                  className="h-8 w-8 p-0 md:hidden"
-                >
-                  <Menu className="h-4 w-4" />
-                </Button>
-
-                {/* Desktop collapse button */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsCollapsed(!isCollapsed)}
-                  className="h-8 w-8 p-0 hidden md:flex"
-                >
-                  {isCollapsed ? (
-                    <ChevronRight className="h-4 w-4" />
-                  ) : (
-                    <ChevronLeft className="h-4 w-4" />
-                  )}
-                </Button>
+                <SidebarTrigger />
               </div>
             </div>
 
