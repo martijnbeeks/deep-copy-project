@@ -19,13 +19,7 @@ function sanitizeTextContent(text: string, maxLength?: number): string {
   // Escape HTML characters
   let sanitized = escapeHtml(text)
 
-  // Truncate if too long (preserve word boundaries)
-  if (maxLength && sanitized.length > maxLength) {
-    const truncated = sanitized.substring(0, maxLength)
-    const lastSpace = truncated.lastIndexOf(' ')
-    sanitized = lastSpace > maxLength * 0.8 ? truncated.substring(0, lastSpace) + '...' : truncated + '...'
-  }
-
+  // Truncation removed - display full content
   return sanitized
 }
 
