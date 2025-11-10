@@ -180,6 +180,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
               jobTitle={currentJob.title}
               advertorialType={currentJob.advertorial_type}
               templateId={currentJob.template_id}
+              customerAvatars={currentJob.customer_avatars}
             />
           </div>
         </main>

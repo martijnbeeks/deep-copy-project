@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, AlertCircle, Eye, ChevronRight, ChevronLeft, Menu } from "lucide-react"
+import { Loader2, AlertCircle, Eye, ChevronRight, ChevronLeft, Menu, Info } from "lucide-react"
 import { useTemplatesStore } from "@/stores/templates-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useAuthStore } from "@/stores/auth-store"
@@ -82,6 +82,21 @@ export default function CreatePage() {
 
   // Avatar extraction dialog state
   const [showAvatarDialog, setShowAvatarDialog] = useState(false)
+  
+  // URL popup state
+  const [showUrlPopup, setShowUrlPopup] = useState(false)
+  const [hasSeenUrlPopup, setHasSeenUrlPopup] = useState(false)
+  
+  // URL validation function
+  const isValidUrl = (url: string): boolean => {
+    if (!url || url.trim().length === 0) return false
+    try {
+      const urlObj = new URL(url)
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:'
+    } catch {
+      return false
+    }
+  }
 
   // Preload templates early for better UX
   useEffect(() => {
@@ -131,15 +146,6 @@ export default function CreatePage() {
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
-  }
-
-  const isValidUrl = (url: string): boolean => {
-    try {
-      new URL(url)
-      return true
-    } catch {
-      return false
-    }
   }
 
   const handleNext = (e?: React.FormEvent) => {
@@ -469,7 +475,16 @@ export default function CreatePage() {
                             id="sales_page_url"
                             placeholder="https://example.com/current-page"
                             value={formData.sales_page_url}
-                            onChange={(e) => setFormData((prev) => ({ ...prev, sales_page_url: e.target.value }))}
+                            onChange={(e) => {
+                              const newUrl = e.target.value
+                              setFormData((prev) => ({ ...prev, sales_page_url: newUrl }))
+                              
+                              // Show popup when valid URL is entered (only once)
+                              if (!hasSeenUrlPopup && isValidUrl(newUrl)) {
+                                setShowUrlPopup(true)
+                                setHasSeenUrlPopup(true)
+                              }
+                            }}
                             disabled={isLoading}
                             className={`h-12 text-base ${errors.sales_page_url ? "border-destructive focus-visible:ring-destructive" : "border-input focus-visible:ring-primary"}`}
                           />
@@ -924,6 +939,35 @@ export default function CreatePage() {
         formData={formData}
         isLoading={isLoading}
       />
+
+      {/* URL Popup Dialog */}
+      <Dialog open={showUrlPopup} onOpenChange={setShowUrlPopup}>
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3 text-left text-base font-semibold text-foreground">
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                <Info className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <span className="flex-1">
+                Important: <span className="font-normal text-foreground">Product URL</span>
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-2">
+            <p className="text-foreground text-sm leading-relaxed">
+              Make sure to enter the URL of the product, service or offer you want to sell - not your general business URL.
+            </p>
+          </div>
+          <div className="flex justify-end mt-6">
+            <Button
+              onClick={() => setShowUrlPopup(false)}
+              className="bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-700 text-white px-6 font-normal"
+            >
+              Got it
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </ErrorBoundary>
   )
 }

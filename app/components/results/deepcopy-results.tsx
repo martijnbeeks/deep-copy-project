@@ -32,11 +32,15 @@ interface DeepCopyResultsProps {
   jobTitle: string
   advertorialType?: string
   templateId?: string
+  customerAvatars?: Array<{ persona_name: string; description?: string; age_range?: string; gender?: string; key_buying_motivation?: string }>
 }
 
-export function DeepCopyResults({ result, jobTitle, advertorialType, templateId }: DeepCopyResultsProps) {
+export function DeepCopyResults({ result, jobTitle, advertorialType, templateId, customerAvatars }: DeepCopyResultsProps) {
   const [templates, setTemplates] = useState<Array<{ name: string, type: string, html: string, angle?: string, timestamp?: string }>>([])
   const [templatesLoading, setTemplatesLoading] = useState(true)
+  const [selectedTemplate, setSelectedTemplate] = useState<{ name: string; html_content: string; description?: string; category?: string } | null>(null)
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
+  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
 
   const fullResult = result.metadata?.full_result
 
@@ -274,7 +278,47 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
                         <FileText className="w-4 h-4 text-accent" />
                         <span className="text-sm font-medium text-foreground">Template Used</span>
                       </div>
-                      <p className="text-sm text-muted-foreground">L00005 (DeepCopy)</p>
+                      {templateId ? (
+                        <button
+                          type="button"
+                          onClick={async (e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+
+                            setIsLoadingTemplate(true)
+                            try {
+                              const response = await fetch(`/api/templates`)
+                              if (response.ok) {
+                                const data = await response.json()
+                                const templateData = data.templates?.find((t: any) => t.id === templateId)
+                                if (templateData?.html_content) {
+                                  setSelectedTemplate({
+                                    name: templateData.name,
+                                    html_content: templateData.html_content,
+                                    description: templateData.description,
+                                    category: templateData.category
+                                  })
+                                  setIsTemplateModalOpen(true)
+                                } else {
+                                  console.warn('Template not found or has no html_content')
+                                }
+                              }
+                            } catch (error) {
+                              console.error('Error fetching template:', error)
+                            } finally {
+                              setIsLoadingTemplate(false)
+                            }
+                          }}
+                          disabled={isLoadingTemplate}
+                          className="text-sm text-primary hover:underline cursor-pointer text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isLoadingTemplate ? 'Loading...' : result.metadata?.template_used || 'L00005 (DeepCopy)'}
+                        </button>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          {result.metadata?.template_used || 'L00005 (DeepCopy)'}
+                        </p>
+                      )}
                     </div>
                     {fullResult?.project_name && (
                       <div className="bg-muted/50 p-4 rounded-lg">
@@ -390,132 +434,160 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {fullResult?.results?.avatar_sheet && (
                         <div className="space-y-4">
-                          <h4 className="text-lg font-semibold mb-4">Customer Avatar</h4>
+                          <h4 className="text-lg font-semibold mb-4">
+                            {customerAvatars?.[0]?.persona_name || 'Customer Avatar'}
+                          </h4>
                           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-4 border border-blue-200/50 dark:border-blue-800/50">
                             {(() => {
                               try {
                                 const avatarData = JSON.parse(fullResult.results.avatar_sheet)
                                 return (
-                                  <div className="space-y-4">
+                                  <Accordion type="multiple" className="w-full">
                                     {/* Demographics */}
-                                    <div>
-                                      <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-sm">
-                                        <Users className="h-4 w-4 text-primary" />
-                                        Demographics
-                                      </h5>
-                                      <div className="grid grid-cols-2 gap-3 text-sm">
-                                        <div>
-                                          <p className="text-muted-foreground text-xs">Age</p>
-                                          <p className="font-medium text-foreground">{avatarData.demographics?.age_range || 'N/A'}</p>
+                                    <AccordionItem value="demographics" className="border-none">
+                                      <AccordionTrigger className="py-2 hover:no-underline">
+                                        <div className="flex items-center gap-2">
+                                          <Users className="h-4 w-4 text-primary" />
+                                          <span className="font-semibold text-foreground text-sm">Demographics</span>
                                         </div>
-                                        <div>
-                                          <p className="text-muted-foreground text-xs">Gender</p>
-                                          <p className="font-medium text-foreground">
-                                            {avatarData.demographics?.gender?.join(', ') || 'N/A'}
-                                          </p>
+                                      </AccordionTrigger>
+                                      <AccordionContent className="pt-2">
+                                        <div className="space-y-3">
+                                          <div className="grid grid-cols-2 gap-3 text-sm">
+                                            <div>
+                                              <p className="text-muted-foreground text-xs">Age</p>
+                                              <p className="font-medium text-foreground">{avatarData.demographics?.age_range || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                              <p className="text-muted-foreground text-xs">Gender</p>
+                                              <p className="font-medium text-foreground">
+                                                {avatarData.demographics?.gender?.join(', ') || 'N/A'}
+                                              </p>
+                                            </div>
+                                          </div>
+                                          <div>
+                                            <p className="text-muted-foreground text-xs mb-1">Locations</p>
+                                            <div className="flex flex-wrap gap-1">
+                                              {avatarData.demographics?.locations?.map((location: string, index: number) => (
+                                                <Badge key={index} variant="secondary" className="text-xs px-2 py-0.5">
+                                                  {location}
+                                                </Badge>
+                                              ))}
+                                            </div>
+                                          </div>
                                         </div>
-                                      </div>
-                                      <div className="mt-2">
-                                        <p className="text-muted-foreground text-xs mb-1">Locations</p>
-                                        <div className="flex flex-wrap gap-1">
-                                          {avatarData.demographics?.locations?.map((location: string, index: number) => (
-                                            <Badge key={index} variant="secondary" className="text-xs px-2 py-0.5">
-                                              {location}
-                                            </Badge>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    </div>
+                                      </AccordionContent>
+                                    </AccordionItem>
 
-                                    {/* Professional Background & Identities */}
-                                    <div className="grid grid-cols-1 gap-3">
-                                      <div>
-                                        <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-sm">
-                                          <Briefcase className="h-4 w-4 text-accent" />
-                                          Professional Background
-                                        </h5>
-                                        <div className="flex flex-wrap gap-1">
-                                          {avatarData.demographics?.professional_backgrounds?.map((bg: string, index: number) => (
-                                            <Badge key={index} variant="outline" className="text-sm px-2 py-0.5">
-                                              {bg}
-                                            </Badge>
-                                          ))}
-                                        </div>
-                                      </div>
-                                      <div>
-                                        <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-sm">
-                                          <Sparkles className="h-4 w-4 text-accent" />
-                                          Identities
-                                        </h5>
-                                        <div className="flex flex-wrap gap-1">
-                                          {avatarData.demographics?.typical_identities?.map((identity: string, index: number) => (
-                                            <Badge key={index} variant="secondary" className="text-sm px-2 py-0.5">
-                                              {identity}
-                                            </Badge>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    </div>
+                                    {/* Professional Background */}
+                                    {avatarData.demographics?.professional_backgrounds && (
+                                      <AccordionItem value="professional-background" className="border-none">
+                                        <AccordionTrigger className="py-2 hover:no-underline">
+                                          <div className="flex items-center gap-2">
+                                            <Briefcase className="h-4 w-4 text-accent" />
+                                            <span className="font-semibold text-foreground text-sm">Professional Background</span>
+                                          </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-2">
+                                          <div className="flex flex-wrap gap-1">
+                                            {avatarData.demographics.professional_backgrounds.map((bg: string, index: number) => (
+                                              <Badge key={index} variant="outline" className="text-sm px-2 py-0.5">
+                                                {bg}
+                                              </Badge>
+                                            ))}
+                                          </div>
+                                        </AccordionContent>
+                                      </AccordionItem>
+                                    )}
 
-                                    {/* Pain Points - Compact */}
+                                    {/* Identities */}
+                                    {avatarData.demographics?.typical_identities && (
+                                      <AccordionItem value="identities" className="border-none">
+                                        <AccordionTrigger className="py-2 hover:no-underline">
+                                          <div className="flex items-center gap-2">
+                                            <Sparkles className="h-4 w-4 text-accent" />
+                                            <span className="font-semibold text-foreground text-sm">Identities</span>
+                                          </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-2">
+                                          <div className="flex flex-wrap gap-1">
+                                            {avatarData.demographics.typical_identities.map((identity: string, index: number) => (
+                                              <Badge key={index} variant="secondary" className="text-sm px-2 py-0.5">
+                                                {identity}
+                                              </Badge>
+                                            ))}
+                                          </div>
+                                        </AccordionContent>
+                                      </AccordionItem>
+                                    )}
+
+                                    {/* Pain Points */}
                                     {avatarData.pain_points && (
-                                      <div>
-                                        <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-sm">
-                                          <AlertTriangle className="h-4 w-4 text-destructive" />
-                                          Pain Points
-                                        </h5>
-                                        <div className="space-y-2">
-                                          {avatarData.pain_points.slice(0, 3).map((painPoint: any, index: number) => (
-                                            <div key={index} className="bg-destructive/5 border border-destructive/20 p-2 rounded-lg">
-                                              <h6 className="font-medium text-foreground text-sm mb-1">{painPoint.title}</h6>
+                                      <AccordionItem value="pain-points" className="border-none">
+                                        <AccordionTrigger className="py-2 hover:no-underline">
+                                          <div className="flex items-center gap-2">
+                                            <AlertTriangle className="h-4 w-4 text-destructive" />
+                                            <span className="font-semibold text-foreground text-sm">Pain Points</span>
+                                          </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-2">
+                                          <div className="space-y-2">
+                                            {avatarData.pain_points.slice(0, 3).map((painPoint: any, index: number) => (
+                                              <div key={index} className="bg-destructive/5 border border-destructive/20 p-2 rounded-lg">
+                                                <h6 className="font-medium text-foreground text-sm mb-1">{painPoint.title}</h6>
+                                                <ul className="space-y-0.5">
+                                                  {painPoint.bullets?.slice(0, 2).map((bullet: string, bulletIndex: number) => (
+                                                    <li key={bulletIndex} className="text-sm text-muted-foreground flex items-start gap-1">
+                                                      <span className="text-destructive mt-0.5">•</span>
+                                                      <span className="break-words">{bullet}</span>
+                                                    </li>
+                                                  ))}
+                                                </ul>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </AccordionContent>
+                                      </AccordionItem>
+                                    )}
+
+                                    {/* Goals */}
+                                    {avatarData.goals && (
+                                      <AccordionItem value="goals" className="border-none">
+                                        <AccordionTrigger className="py-2 hover:no-underline">
+                                          <div className="flex items-center gap-2">
+                                            <Star className="h-4 w-4 text-primary" />
+                                            <span className="font-semibold text-foreground text-sm">Goals</span>
+                                          </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-2">
+                                          <div className="grid grid-cols-1 gap-2">
+                                            <div>
+                                              <h6 className="font-medium text-foreground text-sm mb-1">Short Term</h6>
                                               <ul className="space-y-0.5">
-                                                {painPoint.bullets?.slice(0, 2).map((bullet: string, bulletIndex: number) => (
-                                                  <li key={bulletIndex} className="text-sm text-muted-foreground flex items-start gap-1">
-                                                    <span className="text-destructive mt-0.5">•</span>
-                                                    <span className="break-words">{bullet}</span>
+                                                {avatarData.goals.short_term?.slice(0, 2).map((goal: string, index: number) => (
+                                                  <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
+                                                    <span className="text-primary mt-0.5">✓</span>
+                                                    <span className="break-words">{goal}</span>
                                                   </li>
                                                 ))}
                                               </ul>
                                             </div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {/* Goals - Compact */}
-                                    {avatarData.goals && (
-                                      <div>
-                                        <h5 className="font-semibold text-foreground mb-2 flex items-center gap-2 text-sm">
-                                          <Star className="h-4 w-4 text-primary" />
-                                          Goals
-                                        </h5>
-                                        <div className="grid grid-cols-1 gap-2">
-                                          <div>
-                                            <h6 className="font-medium text-foreground text-sm mb-1">Short Term</h6>
-                                            <ul className="space-y-0.5">
-                                              {avatarData.goals.short_term?.slice(0, 2).map((goal: string, index: number) => (
-                                                <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
-                                                  <span className="text-primary mt-0.5">✓</span>
-                                                  <span className="break-words">{goal}</span>
-                                                </li>
-                                              ))}
-                                            </ul>
+                                            <div>
+                                              <h6 className="font-medium text-foreground text-sm mb-1">Long Term</h6>
+                                              <ul className="space-y-0.5">
+                                                {avatarData.goals.long_term?.slice(0, 2).map((goal: string, index: number) => (
+                                                  <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
+                                                    <span className="text-primary mt-0.5">✓</span>
+                                                    <span className="break-words">{goal}</span>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            </div>
                                           </div>
-                                          <div>
-                                            <h6 className="font-medium text-foreground text-sm mb-1">Long Term</h6>
-                                            <ul className="space-y-0.5">
-                                              {avatarData.goals.long_term?.slice(0, 2).map((goal: string, index: number) => (
-                                                <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
-                                                  <span className="text-primary mt-0.5">✓</span>
-                                                  <span className="break-words">{goal}</span>
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        </div>
-                                      </div>
+                                        </AccordionContent>
+                                      </AccordionItem>
                                     )}
-                                  </div>
+                                  </Accordion>
                                 )
                               } catch (error) {
                                 return (
@@ -584,6 +656,53 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId 
           </AccordionItem>
         </Accordion>
       </div>
+
+      {/* Template Preview Modal */}
+      <Dialog open={isTemplateModalOpen} onOpenChange={setIsTemplateModalOpen}>
+        <DialogContent className="w-[95vw] max-h-[95vh] overflow-hidden !max-w-none sm:!max-w-[95vw]">
+          <DialogHeader>
+            <DialogTitle>
+              Template: {selectedTemplate?.name || 'Template Preview'}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedTemplate?.description || 'Preview of the template used for this content'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto border-t bg-white dark:bg-gray-900 mt-4">
+            {selectedTemplate && (
+              <iframe
+                srcDoc={`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Template Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { 
+      margin: 0; 
+      padding: 10px; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.4;
+      color: #333;
+      background: #fff;
+    }
+    * { box-sizing: border-box; }
+    img { max-width: 100%; height: auto; }
+    .container { max-width: 95vw; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  ${selectedTemplate.html_content}
+</body>
+</html>`}
+                className="w-full h-[70vh] border rounded-lg"
+                title={`Preview of ${selectedTemplate.name}`}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
     </div>
   )

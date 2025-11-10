@@ -362,7 +362,7 @@ export default function DashboardPage() {
                           <div
                             key={job.id}
                             className="p-4 rounded-lg border border-border/50 hover:border-border hover:shadow-elegant transition-all cursor-pointer group bg-card/50"
-                            onClick={() => router.push(`/jobs/${job.id}`)}
+                            onClick={() => router.push(`/results/${job.id}`)}
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex-1 min-w-0">

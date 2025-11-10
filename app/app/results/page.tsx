@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Eye, Search, Filter, Download, BarChart3, FileText, Calendar, Menu, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function ResultsPage() {
   const { user } = useAuthStore()
@@ -27,6 +28,9 @@ export default function ResultsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [contentTypeFilter, setContentTypeFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [selectedTemplate, setSelectedTemplate] = useState<{ name: string; html_content: string; description?: string; category?: string } | null>(null)
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
+  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
   useEffect(() => {
     if (!user) {
       router.push("/login")
@@ -350,7 +354,59 @@ export default function ResultsPage() {
                             {getStatusBadge(job.status)}
                           </div>
                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs md:text-sm text-muted-foreground">
-                            <span className="capitalize">{job.template?.name || 'AI Generated'}</span>
+                            {job.template ? (
+                              <button
+                                type="button"
+                                onClick={async (e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+
+                                  // If template already has html_content, use it
+                                  if (job.template?.html_content) {
+                                    setSelectedTemplate({
+                                      name: job.template.name,
+                                      html_content: job.template.html_content,
+                                      description: job.template.description,
+                                      category: job.template.category
+                                    })
+                                    setIsTemplateModalOpen(true)
+                                  } else if (job.template_id) {
+                                    // Fetch template if html_content is missing
+                                    setIsLoadingTemplate(true)
+                                    try {
+                                      const response = await fetch(`/api/templates`)
+                                      if (response.ok) {
+                                        const data = await response.json()
+                                        const templateData = data.templates?.find((t: any) => t.id === job.template_id)
+                                        if (templateData?.html_content && job.template) {
+                                          setSelectedTemplate({
+                                            name: templateData.name || job.template.name,
+                                            html_content: templateData.html_content,
+                                            description: templateData.description || job.template.description,
+                                            category: templateData.category || job.template.category
+                                          })
+                                          setIsTemplateModalOpen(true)
+                                        } else {
+                                          console.warn('Template not found or has no html_content')
+                                        }
+                                      }
+                                    } catch (error) {
+                                      console.error('Error fetching template:', error)
+                                    } finally {
+                                      setIsLoadingTemplate(false)
+                                    }
+                                  } else {
+                                    console.warn('No template_id available')
+                                  }
+                                }}
+                                disabled={isLoadingTemplate}
+                                className="capitalize text-primary hover:underline cursor-pointer text-left hover:text-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {isLoadingTemplate ? 'Loading...' : job.template.name}
+                              </button>
+                            ) : (
+                              <span className="capitalize">AI Generated</span>
+                            )}
                             <span className="hidden sm:inline">•</span>
                             <span>{new Date(job.created_at).toLocaleDateString()}</span>
                             <span className="hidden sm:inline">•</span>
@@ -382,6 +438,53 @@ export default function ResultsPage() {
           </div>
         </main>
       </div>
+
+      {/* Template Preview Modal */}
+      <Dialog open={isTemplateModalOpen} onOpenChange={setIsTemplateModalOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>
+              Template: {selectedTemplate?.name || 'Template Preview'}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedTemplate?.description || 'Preview of the template used for this content'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto border-t bg-white dark:bg-gray-900 mt-4">
+            {selectedTemplate && (
+              <iframe
+                srcDoc={`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Template Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { 
+      margin: 0; 
+      padding: 10px; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.4;
+      color: #333;
+      background: #fff;
+    }
+    * { box-sizing: border-box; }
+    img { max-width: 100%; height: auto; }
+    .container { max-width: 1200px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  ${selectedTemplate.html_content}
+</body>
+</html>`}
+                className="w-full h-[70vh] border rounded-lg"
+                title={`Preview of ${selectedTemplate.name}`}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </ErrorBoundary>
   )
 }

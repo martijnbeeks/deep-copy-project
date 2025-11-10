@@ -12,17 +12,29 @@ const SidebarContext = createContext<SidebarContextType | undefined>(undefined)
 const SIDEBAR_STORAGE_KEY = "sidebar-collapsed"
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  // Initialize from localStorage or default to false (expanded)
-  const [isCollapsed, setIsCollapsedState] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false
-    const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY)
-    return stored ? JSON.parse(stored) : false
-  })
+  // Always initialize to false on server to prevent hydration mismatch
+  const [isCollapsed, setIsCollapsedState] = useState<boolean>(false)
+  const [isMounted, setIsMounted] = useState(false)
 
-  // Persist to localStorage whenever state changes
+  // Sync with localStorage after hydration
   useEffect(() => {
-    localStorage.setItem(SIDEBAR_STORAGE_KEY, JSON.stringify(isCollapsed))
-  }, [isCollapsed])
+    setIsMounted(true)
+    const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY)
+    if (stored) {
+      try {
+        setIsCollapsedState(JSON.parse(stored))
+      } catch {
+        // Invalid stored value, use default
+      }
+    }
+  }, [])
+
+  // Persist to localStorage whenever state changes (only after mount)
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, JSON.stringify(isCollapsed))
+    }
+  }, [isCollapsed, isMounted])
 
   const setIsCollapsed = (collapsed: boolean) => {
     setIsCollapsedState(collapsed)
