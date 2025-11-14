@@ -30,7 +30,6 @@ info:
       -d '{
         "sales_page_url": "https://try.meritrelief.com/",
         "project_name": "meritrelief",
-        "swipe_file_id": "L00005",
         "advertorial_type": "Listicle",
         "persona": "Health-conscious professionals",
         "age_range": "30-45",
@@ -80,7 +79,6 @@ paths:
                 value:
                   sales_page_url: "https://try.meritrelief.com/"
                   project_name: "meritrelief"
-                  swipe_file_id: "L00005"
                   advertorial_type: "Listicle"
                   customer_avatars:
                     - persona_name: "Active Senior"
@@ -88,11 +86,33 @@ paths:
                       age_range: "60-75"
                       gender: "both"
                       key_buying_motivation: "Seeking non-invasive pain relief to maintain active lifestyle"
+                      pain_point: "Chronic sciatic pain prevents them from enjoying favorite activities like gardening"
+                      emotion: "Frustrated and limited, feeling their independence slipping away"
+                      desire: "A natural solution that allows them to stay active without relying on prescription painkillers"
+                      objections:
+                        - "Will this actually work for chronic pain?"
+                        - "Is it safe for someone my age?"
+                        - "Can I afford another wellness product?"
+                      failed_alternatives:
+                        - "Prescription pain medication with unwanted side effects"
+                        - "Physical therapy that didn't provide lasting relief"
+                        - "Over-the-counter pain relievers that only work temporarily"
                     - persona_name: "Desk-Bound Professional"
                       description: "Office worker sitting 8+ hours daily experiencing lower back pain"
                       age_range: "30-45"
                       gender: "both"
                       key_buying_motivation: "Quick relief from work-related pain"
+                      pain_point: "Stands all day at work (nurses, retail staff, warehouse workers). Feet ache, swell, and feel heavy every evening."
+                      emotion: "Feels drained and defeated when coming home, wants relief to enjoy family time instead of collapsing on the couch."
+                      desire: "Quick daily solution that soothes feet and restores energy without expensive spa visits."
+                      objections:
+                        - "Will this actually help after a long shift?"
+                        - "Can I afford another wellness expense?"
+                        - "Do I have time to use this daily?"
+                      failed_alternatives:
+                        - "Compression socks that don't provide enough relief"
+                        - "Soaking feet in warm water (temporary relief only)"
+                        - "Pain medication with unwanted side effects"
       responses:
         '202':
           description: Job accepted
@@ -129,7 +149,6 @@ paths:
               -d '{
                 "sales_page_url": "https://try.meritrelief.com/",
                 "project_name": "meritrelief",
-                "swipe_file_id": "L00005",
                 "advertorial_type": "Listicle",
                 "customer_avatars": [
                   {
@@ -406,6 +425,178 @@ paths:
           source: |-
             API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
             curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}avatars/YOUR_JOB_ID/result"
+  /swipe-files/generate:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    post:
+      summary: Submit a swipe file generation job
+      operationId: submitSwipeFileGeneration
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [original_job_id, select_angle]
+              properties:
+                original_job_id:
+                  type: string
+                  format: uuid
+                  description: The job ID of the original comprehensive analysis job
+                select_angle:
+                  type: string
+                  description: The marketing angle to focus on for the swipe files
+            examples:
+              example:
+                summary: Generate swipe files for a marketing angle
+                value:
+                  original_job_id: "03479dbf-bc4c-4472-80ff-b11b561b8777"
+                  select_angle: "Embarrassment & Professional Confidence: 'Restore the beard you earned—no flakes in meetings.'"
+      responses:
+        '202':
+          description: Swipe file generation job accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitSwipeFileResponse'
+              examples:
+                accepted:
+                  value:
+                    jobId: "03479dbf-bc4c-4472-80ff-b11b561b8777-swipe"
+                    status: "SUBMITTED"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-codeSamples:
+        - lang: bash
+          label: curl (submit swipe file generation)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -X POST \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "content-type: application/json" \
+              -d '{
+                "original_job_id": "03479dbf-bc4c-4472-80ff-b11b561b8777",
+                "select_angle": "Embarrassment & Professional Confidence: '\''Restore the beard you earned—no flakes in meetings.'\''"
+              }' \
+              "${API_URL}swipe-files/generate"
+  /swipe-files/{id}:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get swipe file generation job status
+      operationId: getSwipeFileGenerationStatus
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Swipe file generation job ID
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatusResponse'
+        '404':
+          description: Job not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Not found"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (get status)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}swipe-files/YOUR_JOB_ID"
+  /swipe-files/{id}/result:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get swipe file generation results
+      operationId: getSwipeFileGenerationResult
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Swipe file generation job ID
+      responses:
+        '200':
+          description: Swipe file generation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SwipeFileGenerationResponse'
+        '404':
+          description: Result not available
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Result not available"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (get result)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}swipe-files/YOUR_JOB_ID/result"
 components:
   securitySchemes:
     cognitoOAuth2:
@@ -430,9 +621,6 @@ components:
           description: URL to the sales page to analyze
         project_name:
           type: string
-        swipe_file_id:
-          type: string
-          description: S3 key under content_library/ or other identifier
         advertorial_type:
           type: string
         customer_avatars:
@@ -455,7 +643,6 @@ components:
       example:
         sales_page_url: "https://try.meritrelief.com/"
         project_name: "meritrelief"
-        swipe_file_id: "L00005"
         advertorial_type: "Listicle"
         customer_avatars:
           - persona_name: "Active Senior"
@@ -463,11 +650,33 @@ components:
             age_range: "60-75"
             gender: "both"
             key_buying_motivation: "Seeking non-invasive pain relief to maintain active lifestyle"
+            pain_point: "Chronic sciatic pain prevents them from enjoying favorite activities like gardening"
+            emotion: "Frustrated and limited, feeling their independence slipping away"
+            desire: "A natural solution that allows them to stay active without relying on prescription painkillers"
+            objections:
+              - "Will this actually work for chronic pain?"
+              - "Is it safe for someone my age?"
+              - "Can I afford another wellness product?"
+            failed_alternatives:
+              - "Prescription pain medication with unwanted side effects"
+              - "Physical therapy that didn't provide lasting relief"
+              - "Over-the-counter pain relievers that only work temporarily"
           - persona_name: "Desk-Bound Professional"
             description: "Office worker sitting 8+ hours daily experiencing lower back pain"
             age_range: "30-45"
             gender: "both"
             key_buying_motivation: "Quick relief from work-related pain"
+            pain_point: "Stands all day at work (nurses, retail staff, warehouse workers). Feet ache, swell, and feel heavy every evening."
+            emotion: "Feels drained and defeated when coming home, wants relief to enjoy family time instead of collapsing on the couch."
+            desire: "Quick daily solution that soothes feet and restores energy without expensive spa visits."
+            objections:
+              - "Will this actually help after a long shift?"
+              - "Can I afford another wellness expense?"
+              - "Do I have time to use this daily?"
+            failed_alternatives:
+              - "Compression socks that don't provide enough relief"
+              - "Soaking feet in warm water (temporary relief only)"
+              - "Pain medication with unwanted side effects"
     SubmitJobResponse:
       type: object
       required: [jobId, status]
@@ -517,9 +726,9 @@ components:
             deep_research_output:
               type: string
             avatar_sheet:
-              type: string
+              $ref: '#/components/schemas/Avatar'
             offer_brief:
-              type: string
+              $ref: '#/components/schemas/OfferBrief'
             marketing_philosophy_analysis:
               type: string
             summary:
@@ -531,7 +740,7 @@ components:
             marketing_angles:
               type: array
               items:
-                type: string
+                $ref: '#/components/schemas/Angle'
       required: [project_name, timestamp_iso, results, job_id]
     SwipeResult:
       type: object
@@ -644,9 +853,180 @@ components:
           description: List of extracted customer avatars
           items:
             $ref: '#/components/schemas/CustomerAvatar'
+    SubmitSwipeFileResponse:
+      type: object
+      required: [jobId, status]
+      properties:
+        jobId:
+          type: string
+          format: uuid
+          description: Swipe file generation job ID
+        status:
+          type: string
+          enum: [SUBMITTED]
+          description: Job status
+    SwipeFileGenerationResponse:
+      type: object
+      description: Swipe file generation results containing rewritten advertorial content
+      additionalProperties: true
+      properties:
+        L00001:
+          type: object
+          description: Generated swipe file for template L00001
+          additionalProperties: true
+        A00003:
+          type: object
+          description: Generated swipe file for template A00003
+          additionalProperties: true
+      example:
+        L00001:
+          full_advertorial:
+            title: "Example Title"
+            subtitle: "Example Subtitle"
+        A00003:
+          full_advertorial:
+            title: "Example Title"
+            subtitle: "Example Subtitle"
+    Demographics:
+      type: object
+      properties:
+        age_range:
+          type: integer
+          nullable: true
+          description: "Inclusive min/max age in years, e.g. (28, 45)"
+        gender:
+          type: array
+          nullable: true
+          description: "Gender distribution labels, e.g. ['male', 'female', 'non-binary']"
+          items:
+            type: string
+        locations:
+          type: array
+          nullable: true
+          description: "Primary regions/countries where the segment is concentrated"
+          items:
+            type: string
+        monthly_revenue:
+          type: integer
+          nullable: true
+          description: "Typical monthly revenue range (min, max) in your chosen currency"
+        professional_backgrounds:
+          type: array
+          description: "Typical professional backgrounds (e.g., 'founder', 'marketing lead')"
+          items:
+            type: string
+        typical_identities:
+          type: array
+          description: "Typical identities/lifestyles/roles (e.g., 'bootstrapped founder')"
+          items:
+            type: string
+    PainPointGroup:
+      type: object
+      required: [title, bullets]
+      properties:
+        title:
+          type: string
+          description: "Name of the pain point theme, e.g., 'Lead Generation'"
+        bullets:
+          type: array
+          minItems: 1
+          description: "Concrete challenges/concerns under this theme"
+          items:
+            type: string
+    Goals:
+      type: object
+      properties:
+        short_term:
+          type: array
+          description: "Short-term goals (weeks/months)"
+          items:
+            type: string
+        long_term:
+          type: array
+          description: "Long-term aspirations (quarters/years)"
+          items:
+            type: string
+    Quotes:
+      type: object
+      properties:
+        general_client:
+          type: array
+          description: "General direct client quotes, e.g., \"I just need consistent leads.\""
+          items:
+            type: string
+        pain_frustrations:
+          type: array
+          description: "Quotes that express pains/frustrations"
+          items:
+            type: string
+        mindset:
+          type: array
+          description: "Quotes that capture mindset, e.g., principles or mottos"
+          items:
+            type: string
+        emotional_state_drivers:
+          type: array
+          description: "Quotes about emotional state/personal drivers"
+          items:
+            type: string
+    EmotionalJourney:
+      type: object
+      required: [awareness, frustration, seeking_solutions, relief_commitment]
+      properties:
+        awareness:
+          type: string
+          description: "Initial awareness stage (problem/status quo)"
+        frustration:
+          type: string
+          description: "Frustration stage (failed attempts/costs of inaction)"
+        seeking_solutions:
+          type: string
+          description: "Desperation & seeking solutions stage (research/criteria)"
+        relief_commitment:
+          type: string
+          description: "Relief & commitment stage (decision/outcome)"
+    Angle:
+      type: object
+      required: [angle, title]
+      properties:
+        angle:
+          type: string
+          description: "The marketing angle for the product"
+        title:
+          type: string
+          description: "The title of the marketing angle"
+    Avatar:
+      type: object
+      description: "Marketing Avatar sheet for product–market fit & messaging research"
+      required: [demographics, pain_points, goals, quotes, emotional_journey]
+      properties:
+        demographics:
+          $ref: '#/components/schemas/Demographics'
+        pain_points:
+          type: array
+          minItems: 1
+          description: "List of pain point themes, each with concrete challenges"
+          items:
+            $ref: '#/components/schemas/PainPointGroup'
+        goals:
+          $ref: '#/components/schemas/Goals'
+        emotional_drivers:
+          type: array
+          description: "Emotional drivers & psychological insights"
+          items:
+            type: string
+        quotes:
+          $ref: '#/components/schemas/Quotes'
+        emotional_journey:
+          $ref: '#/components/schemas/EmotionalJourney'
+        marketing_angles:
+          type: array
+          description: "Main marketing angles to test or use"
+          items:
+            $ref: '#/components/schemas/Angle'
     CustomerAvatar:
       type: object
-      required: [persona_name, description, age_range, gender, key_buying_motivation]
+      required: [persona_name, description, age_range, gender, key_buying_motivation, pain_point, emotion, desire, objections, failed_alternatives]
       properties:
         persona_name:
           type: string
@@ -663,6 +1043,186 @@ components:
         key_buying_motivation:
           type: string
           description: What drives them to purchase this product
+        pain_point:
+          type: string
+          description: Specific problem or challenge the customer faces
+        emotion:
+          type: string
+          description: Emotion they feel related to the pain point
+        desire:
+          type: string
+          description: What they desire as a solution to their pain point
+        objections:
+          type: array
+          description: List of objections or concerns they might have
+          items:
+            type: string
+        failed_alternatives:
+          type: array
+          description: List of alternatives they've tried that didn't work
+          items:
+            type: string
+        is_broad_avatar:
+          type: boolean
+          description: Whether this avatar represents the overall customer base
+    ConsciousnessLevel:
+      type: string
+      enum: [low, high]
+      description: How self-aware and change-ready the prospect is
+    AwarenessLevel:
+      type: string
+      enum: [unaware, problem_aware, solution_aware, product_aware, most_aware]
+      description: Prospect's awareness per Schwartz's stages
+    SophisticationLevel:
+      type: string
+      enum: [level_1, level_2, level_3, level_4, level_5]
+      description: Market sophistication level (make claims → mechanisms → advanced strategies)
+    StageOfSophistication:
+      type: object
+      required: [level]
+      properties:
+        level:
+          $ref: '#/components/schemas/SophisticationLevel'
+        rationale:
+          type: string
+          nullable: true
+          description: Why this level fits (signals from ads, competitors, buyer skepticism)
+    HeadlineIdea:
+      type: object
+      required: [headline]
+      properties:
+        headline:
+          type: string
+          description: Punchy primary promise or hook
+        subheadline:
+          type: string
+          nullable: true
+          description: Clarifies/grounds the headline with specifics, mechanism, or outcome
+    BeliefChain:
+      type: object
+      required: [outcome, steps]
+      properties:
+        outcome:
+          type: string
+          description: What the buyer must feel confident about (e.g., 'This can work for me')
+        steps:
+          type: array
+          description: Ordered micro-beliefs (e.g., problem is real → solution type works → this product's mechanism works → I can use it)
+          items:
+            type: string
+    SwipeExample:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          description: Short label for the swipe (publisher, creator, or concept)
+        url:
+          type: string
+          format: uri
+          nullable: true
+          description: Link to the asset if available
+        notes:
+          type: string
+          nullable: true
+          description: "What to model: headline structure, proof style, funnel flow, etc."
+    ProductInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          description: Working name of the product/offer
+        description:
+          type: string
+          nullable: true
+          description: What it is, who it's for, core outcomes/benefits
+        details:
+          type: string
+          nullable: true
+          description: Format, modules, deliverables, bonuses, guarantees, price points, terms
+    OfferBrief:
+      type: object
+      description: Structured brief to guide AI when generating copy, concepts, and funnel assets
+      properties:
+        potential_product_names:
+          type: array
+          description: Brainstormed product/offer name options
+          items:
+            type: string
+        level_of_consciousness:
+          $ref: '#/components/schemas/ConsciousnessLevel'
+          description: Prospect's general self-awareness/readiness to change
+        level_of_awareness:
+          $ref: '#/components/schemas/AwarenessLevel'
+          description: Prospect's current awareness of problem/solution/product
+        stage_of_sophistication:
+          $ref: '#/components/schemas/StageOfSophistication'
+          description: Market sophistication selection with reasoning
+        big_idea:
+          type: string
+          nullable: true
+          description: Single, transformative central idea that unifies the campaign
+        metaphors:
+          type: array
+          description: Images/analogies to make the big idea and mechanism vivid
+          items:
+            type: string
+        potential_ump:
+          type: array
+          description: "Unique Mechanism of the Problem: counterintuitive reason the problem persists"
+          items:
+            type: string
+        potential_ums:
+          type: array
+          description: "Unique Mechanism of the Solution: how THIS solution uniquely works"
+          items:
+            type: string
+        guru:
+          type: string
+          nullable: true
+          description: Authority or spokesperson (real or archetype) associated with the offer
+        discovery_story:
+          type: string
+          nullable: true
+          description: "Origin narrative: aha moment, failed attempts, breakthrough mechanism"
+        product:
+          $ref: '#/components/schemas/ProductInfo'
+          description: Core product details to anchor claims and copy
+        headline_ideas:
+          type: array
+          description: Potential headline/subheadline pairs for ads, LPs, emails
+          items:
+            $ref: '#/components/schemas/HeadlineIdea'
+        objections:
+          type: array
+          description: All likely objections (price, time, credibility, fit, complexity, risk)
+          items:
+            type: string
+        belief_chains:
+          type: array
+          description: Required belief paths the buyer must traverse to purchase
+          items:
+            $ref: '#/components/schemas/BeliefChain'
+        funnel_architecture:
+          type: array
+          description: High-level funnel steps in order (e.g., 'Ad → Lead Magnet → Nurture → VSL → Checkout → Upsell')
+          items:
+            type: string
+        potential_domains:
+          type: array
+          description: Available or desired domains/URLs for the offer
+          items:
+            type: string
+        examples_swipes:
+          type: array
+          description: Reference campaigns, pages, or ads to emulate
+          items:
+            $ref: '#/components/schemas/SwipeExample'
+        other_notes:
+          type: string
+          nullable: true
+          description: "Anything else helpful: compliance constraints, must-include proof, JTBD, ICP nuances"
   headers:
     AccessControlAllowOrigin:
       schema:

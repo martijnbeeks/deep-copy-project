@@ -42,19 +42,16 @@ if not logger.handlers:
 
 
 
-def extract_clean_text_from_html(html_file_path: str) -> str:
+def extract_clean_text_from_html(html: str) -> str:
     """
-    Extract clean text from an HTML file by removing scripts, styles, and extra whitespace.
+    Extract clean text from an HTML string by removing scripts, styles, and extra whitespace.
 
     Args:
-        html_file_path: Path to the HTML file.
+        html: HTML content as a string.
 
     Returns:
         Cleaned text as a string.
     """
-    with open(html_file_path, 'r', encoding='utf-8') as f:
-        html = f.read()
-
     soup = BeautifulSoup(html, 'html.parser')
 
     # Remove script and style elements
@@ -232,14 +229,13 @@ def log_usage_stats(usage_data, query_number: int, is_structured: bool = False):
     logger.info("----------------------------------")
 
 
-def prepare_schema_for_tool_use(schema_json: str) -> tuple[str, str, Dict[str, Any]]:
+def prepare_schema_for_tool_use(schema: dict[str, Any]) -> tuple[str, str, dict[str, Any]]:
     """
     Prepare JSON schema for tool use.
     
     Returns:
         Tuple of (tool_name, tool_description, tool_schema)
     """
-    schema = json.loads(schema_json)
     tool_name = schema.get("title", "generate_content").lower().replace(" ", "_")
     tool_description = schema.get("description", "Generate structured content")
     tool_schema = {k: v for k, v in schema.items() 
@@ -376,69 +372,197 @@ def make_streaming_request_with_retry(
     return response_text, usage_data
 
 
-def send_query_with_conversation_history(
-    conversation_history: List[Dict[str, Any]],
-    new_query: Union[str, List[Dict[str, Any]]],
-    query_number: int,
-    model: str,
+
+def rewrite_swipe_file(
+    angle: str,
+    avatar_sheet: str,
+    deep_research_output: str,
+    offer_brief: str,
+    marketing_philosophy_analysis: str,
+    swipe_file_config: dict[str, dict[str, Any]],
     anthropic_client: anthropic.Anthropic,
-    pdf_file_path: Optional[str] = None,
-    max_tokens: int = 10000,
-    schema_json: Optional[str] = None,
+    model: str = "claude-haiku-4-5-20251001",
+    max_tokens: int = 10000) -> dict[str, dict[str, Any]]:  
+    # Model configuration
     
-) -> Union[str, Dict[str, Any]]:
-    """
-    Send a query with full conversation history.
+    for swipe_file_id, swipe_file_data in swipe_file_config.items():
+        raw_swipe_file_text = extract_clean_text_from_html(swipe_file_data["html"])
+        swipe_file_config[swipe_file_id]["raw_text"] = raw_swipe_file_text
     
-    Args:
-        conversation_history: List of previous conversation turns
-        new_query: The new query content (can be string or already formatted list with PDF)
-        query_number: The query number (for logging)
-        pdf_file_path: Optional path to PDF file to include with the query (only if new_query is string)
-        max_tokens: Maximum tokens for response
-        schema_json: Optional JSON schema string for structured output. If provided, returns structured dict instead of text.
-        
-    Returns:
-        Response text from the API (if schema_json is None) or structured dict (if schema_json is provided)
+    
+    # Build messages list manually - we'll append to this for each turn
+    messages: List[Dict[str, Any]] = []
+    
+    # ============================================================
+    # Turn 1: Familiarize with documents
+    # ============================================================
+    logger.info("Turn 1: Familiarizing with documents")
+    field_prompt = f"""Hey, Claude, I want you to please analyze system prompt above. I've done a significant amount of research of a product that I'm going to be selling, and it's your role as my direct response copywriter to understand this research, the avatar document, the offer brief, and the necessary beliefs document to an extremely high degree. So please familiarize yourself with these documents before we proceed with writing anything.
     """
-    try:
-        # Build the new query content (only if not already formatted)
-        if pdf_file_path and isinstance(new_query, str):
-            file_data = load_pdf_file(pdf_file_path)
-            new_query_content = [
-                {"type": "text", "text": new_query},
-                {
-                    "type": "document",
-                    "source": {
-                        "type": "base64",
-                        "media_type": "application/pdf",
-                        "data": file_data
-                    }
-                }
-            ]
-        else:
-            # new_query is already formatted or is a simple string
-            new_query_content = new_query
+    system_prompt = [{
+            "type": "text",
+            "text": f"""
+            Text that need to be analyzed:
+            Avatar sheet:
+            {avatar_sheet}
+            - Deep research output:
+            {deep_research_output}
+            - Offer brief:
+            {offer_brief}
+            - Marketing philosophy analysis:
+            {marketing_philosophy_analysis}
+            """,
+            "cache_control": {"type": "ephemeral"}
+    }]
+    
+    # Add first user message
+    messages.append({
+        "role": "user",
+        "content": field_prompt
+    })
+    
+    # Get first response using streaming
+    first_response_text, first_usage = make_streaming_request_with_retry(
+        messages=messages,
+        max_tokens=max_tokens,
+        model=model,
+        anthropic_client=anthropic_client,
+        system_prompt=system_prompt
+    )
+    
+    # Add assistant response to messages
+    messages.append({
+        "role": "assistant",
+        "content": first_response_text
+    })
+    
+    logger.info(f"Turn 1 completed. Response length: {len(first_response_text)} chars")
+    logger.info(f"Turn 1 usage: {first_usage}")
+    
+    # After this step, it is specific to the swipe file template that was selected
+    logger.info("Turn 2: Make it specific to the swipe file template")
+    
+    swipe_file_results = {}
+    for swipe_file_id, swipe_file_data in swipe_file_config.items():
+        # Create an own messages list for the specific swipe file template
+        message_swipe = messages.copy()
         
-        # Add the new query to conversation history
-        temp_history = conversation_history.copy()
-        temp_history.append({"role": "user", "content": new_query_content})
-        messages = temp_history
+        # Pepare Step 2
+        raw_swipe_file_text = swipe_file_data["raw_text"]
         
-        # If schema_json is provided, use structured output (tool use)
-        if schema_json:
-            tool_name, tool_description, tool_schema = prepare_schema_for_tool_use(schema_json)
-            structured_result, usage_data = make_structured_request_with_retry(
-                messages, tool_name, tool_description, tool_schema, max_tokens, model, anthropic_client
-            )
-            log_usage_stats(usage_data, query_number, is_structured=True)
-            return structured_result
+        generate_content_prompt = f"""Excellent work. Now we're going to be writing an advertorial, which is a type of pre-sales page designed to nurture customers before they actually see the main product offer page. I'm going to send you an indirect competitor with a very successful advertorial, and I want you to please analyze this advertorial and let me know your thoughts
+        Raw text from the pdf advertorial:
+        {raw_swipe_file_text}
+        """
+        user_content_with_pdf = [
+            {"type": "text", "text": generate_content_prompt},
+        ]
+
+    
+        # Add second user message with PDF
+        message_swipe.append({
+            "role": "user",
+            "content": user_content_with_pdf
+        })
+    
+        # Get second response using streaming
+        second_response_text, second_usage = make_streaming_request_with_retry(
+            messages=message_swipe,
+            max_tokens=max_tokens,
+            model=model,
+            anthropic_client=anthropic_client,
+            system_prompt=system_prompt
+        )
         
-        # Otherwise, use streaming text output
-        response_text, usage_data = make_streaming_request_with_retry(messages, max_tokens, model, anthropic_client)
-        log_usage_stats(usage_data, query_number, is_structured=False)
-        return response_text
+        # Add assistant response to messages
+        message_swipe.append({
+            "role": "assistant",
+            "content": second_response_text
+        })
+    
+        logger.info(f"Turn 2 completed for {swipe_file_id}. Response length: {len(second_response_text)} chars")
+        logger.info(f"Turn 2 usage for {swipe_file_id}: {second_usage}")
+
+        logger.info("Turn 3: Writing advertorial with structured output")
+        third_query_prompt = f"""You are an expert copywriter creating a complete, polished advertorial for the NewAura Seborrheic Dermatitis & Psoriasis Cream.
+
+        Your task:
+        1. Rewrite the advertorial using ALL the relevant information about the new product.  
+        2. Focus specifically on the marketing angle: {angle}.  
+        3. Generate **a full and complete output** following the schema provided below.  
+        4. DO NOT skip or leave out any fields — every field in the schema must be filled.  
+        5. Please make sure that the length of each field matches the length of the description of the field.
+        6. If any data is missing, intelligently infer or create realistic content that fits the schema.  
+        7. Write fluently and naturally, with complete sentences. Do not stop mid-thought or end with ellipses (“...”).  
+        8. At the end, verify your own output is **100% complete** — all schema fields filled.
+
+        When ready, output ONLY the completed schema with all fields filled in. Do not include explanations or notes.
+        """
+        # Add third user message
+        message_swipe.append({
+            "role": "user",
+            "content": third_query_prompt
+        })
+    
+        # Prepare schema for tool use
+        # Use JSON schema from config (already parsed as dict)
+        schema = swipe_file_data.get("json")
+        if not schema:
+            raise ValueError(f"Missing JSON schema for swipe file {swipe_file_id}")
         
-    except Exception as e:
-        logger.error(f"Error calling Claude API: {e}")
-        raise
+        tool_name, tool_description, tool_schema = prepare_schema_for_tool_use(schema)
+    
+        # Get structured response
+        full_advertorial, third_usage = make_structured_request_with_retry(
+            messages=message_swipe,
+            tool_name=tool_name,
+            tool_description=tool_description,
+            tool_schema=tool_schema,
+            max_tokens=25000,
+            model=model,
+            anthropic_client=anthropic_client,
+            system_prompt=system_prompt
+        )
+        
+        # save the full_advertorial to the swipe_file_results
+        swipe_file_results[swipe_file_id] = {
+            "full_advertorial": full_advertorial
+        }
+        
+    
+        logger.info(f"Turn 3 completed. Received {len(full_advertorial) if isinstance(full_advertorial, dict) else 0} fields in structured output")
+        logger.info(f"Turn 3 usage: {third_usage}")
+        # Check if enough fields are present, else retry
+        if len(full_advertorial) < 10:
+            logger.error(f"Less then 10 fields, rerunning...")
+            # return rewrite_swipe_file(angle, avatar_sheet, deep_research_output, offer_brief, marketing_philosophy_analysis, swipe_file_config, anthropic_client, model, max_tokens)
+    # ============================================================
+    # Turn 4: Quality check (commented out for now)
+    # ============================================================
+    # fifth_query_prompt = f"""Amazing! I'm going to send you the full advertorial that I just completed. I want you to please analyze it and let me know your thoughts. I would specifically analyze how in line all of the copy is in relation to all the research amongst the avatar, the competitors, the research, necessary beliefs, levels of consciousness, the objections, etc., that you did earlier.
+    #
+    # Please include the deep research output such that you can verify whether all factual information is used.
+    #
+    # Rate the advertorial and provide me with a quality metrics.
+    #
+    # Find all research content can be found above and verify whether all factual information is used.
+    #
+    # Here is the full advertorial:
+    #
+    # {full_advertorial}"""
+    # 
+    # # Use only the first turn for quality check (reset messages to first turn only)
+    # first_turn_messages = [
+    #     messages[0],  # First user message
+    #     messages[1],  # First assistant response
+    #     {"role": "user", "content": fifth_query_prompt}
+    # ]
+    # 
+    # quality_report, quality_usage = make_streaming_request_with_retry(
+    #     messages=first_turn_messages,
+    #     max_tokens=MAX_TOKENS,
+    #     model=MODEL,
+    #     anthropic_client=self.anthropic_client
+    # )
+    
+    return swipe_file_results

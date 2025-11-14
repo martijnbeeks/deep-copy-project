@@ -21,11 +21,17 @@ class CustomerAvatar(BaseModel):
     age_range: str = Field(..., description="Approximate age bracket (e.g., 25-34)")
     gender: str = Field(..., description="male, female, or both")
     key_buying_motivation: str = Field(..., description="What drives them to purchase this product")
+    pain_point: str = Field(..., description="Specific problem or challenge the customer faces")
+    emotion: str = Field(..., description="Emotion they feel related to the pain point")
+    desire: str = Field(..., description="What they desire as a solution to their pain point")
+    objections: List[str] = Field(..., description="List of objections or concerns they might have")
+    failed_alternatives: List[str] = Field(..., description="List of alternatives they've tried that didn't work")
+    is_broad_avatar: bool = Field(..., description="Whether this avatar represents the overall customer base")
 
 
 class AvatarCollection(BaseModel):
     """Collection of customer avatars for a product"""
-    avatars: List[CustomerAvatar] = Field(..., min_items=3, description="At least 3 distinct customer avatars")
+    avatars: List[CustomerAvatar] = Field(..., min_items=5, description="At least 5 distinct customer avatars")
 
 
 def capture_page_as_image_bytes(url: str) -> bytes:
@@ -233,8 +239,13 @@ For each avatar, include:
 - Age range: approximate age bracket (e.g., 25–34).
 - Gender: male, female, or both.
 - Key buying motivation: what drives them to purchase this product.
+- Pain point: specific problem or challenge the customer faces.
+- Emotion: emotion they feel related to the pain point.
+- Desire: what they desire as a solution to their pain point.
+- Objections: list of objections or concerns they might have.
+- Failed alternatives: list of alternatives they've tried that didn't work.
 
-Provide at least 5 avatars that represent distinct customer segments."""
+Provide at least 5 avatars that represent distinct customer segments. Please also provide a general avatar that represents the overall customer base. Always return this one as the first avatar."""
 
         # Call OpenAI API with structured output
         logger.info(f"Calling OpenAI API ({model}) to extract avatars")

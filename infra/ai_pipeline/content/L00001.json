@@ -1,0 +1,592 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BlissyListicleContent",
+  "description": "Complete content schema for the Blissy listicle-style advertorial template. This template presents 12 numbered reasons/benefits in an editorial format with testimonials and CTAs.",
+  "type": "object",
+  "required": [
+    "hero",
+    "author",
+    "topbar",
+    "section1",
+    "section2",
+    "section3",
+    "section4",
+    "section5",
+    "section6",
+    "section7",
+    "section8",
+    "section9",
+    "section10",
+    "section11",
+    "section12",
+    "brands",
+    "cta",
+    "reactions",
+    "alert",
+    "sidebar",
+    "breadcrumbs",
+    "footer",
+    "assurances",
+    "story"
+  ],
+  "properties": {
+    "hero": {
+      "type": "object",
+      "description": "Hero section content - the first thing visitors see. Should grab attention and communicate the main value proposition.",
+      "required": ["headline", "subheadline"],
+      "properties": {
+        "headline": {
+          "type": "string",
+          "description": "Main hero headline. Should be attention-grabbing, benefit-focused, and emotionally compelling. Typically 5-15 words. Examples: 'Finally — real relief for nerve pain' or '12 Reasons Experts Say This Silk Pillowcase Changed Their Sleep Forever'. Use powerful words and focus on the transformation or outcome.",
+          "minLength": 10,
+          "maxLength": 200
+        },
+        "subheadline": {
+          "type": "string",
+          "description": "Supporting subheadline that adds credibility, urgency, or additional benefits. Should complement the headline and provide more context. Typically 10-30 words. Can mention guarantees, scientific backing, or social proof. Example: 'Backed by dermatologists and recommended by over 50,000 satisfied customers. Try risk-free for 60 days.'",
+          "minLength": 20,
+          "maxLength": 300
+        }
+      }
+    },
+    "author": {
+      "type": "object",
+      "description": "Author/byline information to establish credibility and trust. Use a realistic author persona.",
+      "required": ["name", "date", "image"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Author name. Should sound credible and professional. Can include credentials or title if relevant. Examples: 'Dr. Sarah Johnson', 'Emily Roberts, Wellness Editor', 'James Mitchell, Product Reviewer'",
+          "minLength": 3,
+          "maxLength": 100
+        },
+        "date": {
+          "type": "string",
+          "description": "Last updated date to show freshness and relevance. Use recent dates. Format examples: 'December 2024', 'January 15, 2025', 'Updated: Jan 2025'",
+          "minLength": 5,
+          "maxLength": 50
+        },
+        "image": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to author headshot image. Should be a professional, trustworthy photo. Placeholder acceptable: 'https://placehold.co/96x96?text=Author'",
+          "minLength": 10,
+          "maxLength": 500
+        }
+      }
+    },
+    "topbar": {
+      "type": "object",
+      "description": "Sticky topbar with promotional message or limited-time offer.",
+      "required": ["label"],
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Topbar promotional text. Should create urgency or highlight a special offer. Keep brief and impactful. Examples: '🔥 Limited Time: 50% Off + Free Shipping', '⚡ FLASH SALE: Extra 25% Off Ends Tonight', '🎁 Special Offer: Buy 2 Get 1 Free'",
+          "minLength": 10,
+          "maxLength": 150
+        }
+      }
+    },
+    "section1": {
+      "type": "object",
+      "description": "First numbered reason/benefit section. This is reason #1 of 12. Should be the strongest, most compelling benefit. Also used in the editorial trust section at the top.",
+      "required": ["title", "body", "image", "imageAlt"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title for reason #1. Should be clear, benefit-driven, and specific. Format as a complete statement or numbered reason. Examples: 'Reduces Wrinkles and Fine Lines While You Sleep', 'Clinically Proven to Improve Sleep Quality by 67%', 'Hypoallergenic Material Perfect for Sensitive Skin'",
+          "minLength": 10,
+          "maxLength": 200
+        },
+        "body": {
+          "type": "string",
+          "description": "Detailed explanation for reason #1. Should provide evidence, benefits, and emotional appeal. Include specific details, statistics, or stories. 2-4 sentences recommended. Make it credible and compelling.",
+          "minLength": 50,
+          "maxLength": 1000
+        },
+        "image": {
+          "type": "string",
+          "format": "uri",
+          "description": "Image URL for reason #1. Should visually represent the benefit. Use high-quality product images or lifestyle photos. Placeholder: 'https://placehold.co/600x400?text=Reason+1'",
+          "minLength": 10,
+          "maxLength": 500
+        },
+        "imageAlt": {
+          "type": "string",
+          "description": "Alt text for reason #1 image. Describe what's in the image for accessibility and SEO. Example: 'Woman sleeping peacefully on silk pillowcase', 'Close-up of premium mulberry silk fabric'",
+          "minLength": 10,
+          "maxLength": 200
+        }
+      }
+    },
+    "section2": {
+      "type": "object",
+      "description": "Second numbered reason/benefit section (reason #2 of 12). Should present another strong, complementary benefit.",
+      "required": ["title", "body", "image", "imageAlt"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title for reason #2. Different benefit from reason #1. Examples: 'Temperature Regulating for All-Season Comfort', 'Reduces Hair Breakage and Frizz by 43%', 'Stays Cool All Night Long'",
+          "minLength": 10,
+          "maxLength": 200
+        },
+        "body": {
+          "type": "string",
+          "description": "Detailed explanation for reason #2. Provide evidence, mechanisms, or testimonials. 2-4 sentences. Make it scientific or emotionally compelling.",
+          "minLength": 50,
+          "maxLength": 1000
+        },
+        "image": {
+          "type": "string",
+          "format": "uri",
+          "description": "Image URL for reason #2. Placeholder: 'https://placehold.co/600x400?text=Reason+2'",
+          "minLength": 10,
+          "maxLength": 500
+        },
+        "imageAlt": {
+          "type": "string",
+          "description": "Alt text for reason #2 image describing the visual content.",
+          "minLength": 10,
+          "maxLength": 200
+        }
+      }
+    },
+    "section3": {
+      "type": "object",
+      "description": "Third numbered reason/benefit section (reason #3 of 12).",
+      "required": ["title", "body", "image", "imageAlt"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title for reason #3. Another distinct benefit or feature.",
+          "minLength": 10,
+          "maxLength": 200
+        },
+        "body": {
+          "type": "string",
+          "description": "Detailed explanation for reason #3. 2-4 sentences with specifics and benefits.",
+          "minLength": 50,
+          "maxLength": 1000
+        },
+        "image": {
+          "type": "string",
+          "format": "uri",
+          "description": "Image URL for reason #3. Placeholder: 'https://placehold.co/600x400?text=Reason+3'",
+          "minLength": 10,
+          "maxLength": 500
+        },
+        "imageAlt": {
+          "type": "string",
+          "description": "Alt text for reason #3 image.",
+          "minLength": 10,
+          "maxLength": 200
+        }
+      }
+    },
+    "section4": {
+      "type": "object",
+      "description": "Fourth numbered reason/benefit section (reason #4 of 12).",
+      "required": ["title", "body", "image", "imageAlt"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title for reason #4. Continue building the case with another benefit.",
+          "minLength": 10,
+          "maxLength": 200
+        },
+        "body": {
+          "type": "string",
+          "description": "Detailed explanation for reason #4. 2-4 sentences.",
+          "minLength": 50,
+          "maxLength": 1000
+        },
+        "image": {
+          "type": "string",
+          "format": "uri",
+          "description": "Image URL for reason #4. Placeholder: 'https://placehold.co/600x400?text=Reason+4'",
+          "minLength": 10,
+          "maxLength": 500
+        },
+        "imageAlt": {
+          "type": "string",
+          "description": "Alt text for reason #4 image.",
+          "minLength": 10,
+          "maxLength": 200
+        }
+      }
+    },
+    "section5": {
+      "type": "object",
+      "description": "Fifth numbered reason/benefit section (reason #5 of 12).",
+      "required": ["title", "body", "image", "imageAlt"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title for reason #5. Halfway through the list - make it strong.",
+          "minLength": 10,
+          "maxLength": 200
+        },
+        "body": {
+          "type": "string",
+          "description": "Detailed explanation for reason #5. 2-4 sentences.",
+          "minLength": 50,
+          "maxLength": 1000
+        },
+        "image": {
+          "type": "string",
+          "format": "uri",
+          "description": "Image URL for reason #5. Placeholder: 'https://placehold.co/600x400?text=Reason+5'",
+          "minLength": 10,
+          "maxLength": 500
+        },
+        "imageAlt": {
+          "type": "string",
+          "description": "Alt text for reason #5 image.",
+          "minLength": 10,
+          "maxLength": 200
+        }
+      }
+    },
+    "section6": {
+      "type": "object",
+      "description": "Sixth numbered reason/benefit section (reason #6 of 12). Note: This section reuses section1.image for the visual.",
+      "required": ["title", "body"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title for reason #6. Another distinct benefit.",
+          "minLength": 10,
+          "maxLength": 200
+        },
+        "body": {
+          "type": "string",
+          "description": "Detailed explanation for reason #6. 2-4 sentences.",
+          "minLength": 50,
+          "maxLength": 1000
+        }
+      }
+    },
+    "section7": {
+      "type": "object",
+      "description": "Mid-page CTA section content. This appears after reason #6 as a conversion point. Should re-emphasize value and create urgency.",
+      "required": ["title", "body"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "CTA section headline. Should be compelling and action-oriented. Examples: 'Transform Your Sleep Tonight', 'Join 50,000+ Happy Customers', 'Experience the Difference Risk-Free'",
+          "minLength": 10,
+          "maxLength": 200
+        },
+        "body": {
+          "type": "string",
+          "description": "CTA supporting text. Reinforce value, mention guarantee, create urgency. 1-2 sentences. Example: 'Order now and get 50% off plus free shipping. Every purchase backed by our 60-night money-back guarantee.'",
+          "minLength": 20,
+          "maxLength": 300
+        }
+      }
+    },
+    "section8": {
+      "type": "object",
+      "description": "Seventh numbered reason/benefit section (reason #7 of 12, displayed after mid-page CTA).",
+      "required": ["title", "body"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title for reason #7. Re-engage readers after CTA with another benefit.",
+          "minLength": 10,
+          "maxLength": 200
+        },
+        "body": {
+          "type": "string",
+          "description": "Detailed explanation for reason #7. 2-4 sentences.",
+          "minLength": 50,
+          "maxLength": 1000
+        }
+      }
+    },
+    "section9": {
+      "type": "object",
+      "description": "Eighth numbered reason/benefit section (reason #8 of 12).",
+      "required": ["title", "body"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title for reason #8. Continue building comprehensive case.",
+          "minLength": 10,
+          "maxLength": 200
+        },
+        "body": {
+          "type": "string",
+          "description": "Detailed explanation for reason #8. 2-4 sentences.",
+          "minLength": 50,
+          "maxLength": 1000
+        }
+      }
+    },
+    "section10": {
+      "type": "object",
+      "description": "Ninth numbered reason/benefit section (reason #9 of 12).",
+      "required": ["title", "body"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title for reason #9. Approaching the end - make benefits tangible.",
+          "minLength": 10,
+          "maxLength": 200
+        },
+        "body": {
+          "type": "string",
+          "description": "Detailed explanation for reason #9. 2-4 sentences.",
+          "minLength": 50,
+          "maxLength": 1000
+        }
+      }
+    },
+    "section11": {
+      "type": "object",
+      "description": "Tenth numbered reason/benefit section (reason #10 of 12).",
+      "required": ["title", "body"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title for reason #10. Strong penultimate benefit.",
+          "minLength": 10,
+          "maxLength": 200
+        },
+        "body": {
+          "type": "string",
+          "description": "Detailed explanation for reason #10. 2-4 sentences.",
+          "minLength": 50,
+          "maxLength": 1000
+        }
+      }
+    },
+    "section12": {
+      "type": "object",
+      "description": "Eleventh numbered reason/benefit section (reason #11 of 12). Note: title comes from assurances.blurb and body from story.intro for this section.",
+      "required": ["title", "body"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title for reason #11. Second-to-last benefit - make it memorable.",
+          "minLength": 10,
+          "maxLength": 200
+        },
+        "body": {
+          "type": "string",
+          "description": "Detailed explanation for reason #11. 2-4 sentences.",
+          "minLength": 50,
+          "maxLength": 1000
+        }
+      }
+    },
+    "brands": {
+      "type": "object",
+      "description": "Brand information used in the editorial trust section and throughout the page.",
+      "required": ["brand1"],
+      "properties": {
+        "brand1": {
+          "type": "object",
+          "description": "Primary brand/publication logo for editorial credibility.",
+          "required": ["logo", "name"],
+          "properties": {
+            "logo": {
+              "type": "string",
+              "format": "uri",
+              "description": "URL to brand/publication logo. Should look credible and professional. Placeholder: 'https://placehold.co/120x40?text=Brand+Logo'",
+              "minLength": 10,
+              "maxLength": 500
+            },
+            "name": {
+              "type": "string",
+              "description": "Brand/publication name for alt text. Examples: 'Forbes', 'Health Magazine', 'Sleep Foundation', 'Consumer Reports'",
+              "minLength": 2,
+              "maxLength": 100
+            }
+          }
+        }
+      }
+    },
+    "cta": {
+      "type": "object",
+      "description": "Call-to-action button text used throughout the page.",
+      "required": ["primary", "secondary"],
+      "properties": {
+        "primary": {
+          "type": "string",
+          "description": "Primary CTA button text. Should be action-oriented and benefit-focused. Examples: 'Claim My 50% Discount Now', 'Get Started Risk-Free', 'Shop Now - Limited Time Offer', 'Try It Risk-Free for 60 Days'",
+          "minLength": 5,
+          "maxLength": 100
+        },
+        "secondary": {
+          "type": "string",
+          "description": "Secondary CTA button text (used in footer). Can be similar or emphasize guarantee. Examples: 'Order Now - 60 Day Guarantee', 'Get Yours Today', 'Claim Your Discount'",
+          "minLength": 5,
+          "maxLength": 100
+        }
+      }
+    },
+    "reactions": {
+      "type": "object",
+      "description": "Customer testimonials/reactions section with social proof.",
+      "required": ["title", "r1", "r2", "r3"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Testimonials section heading. Examples: 'What Our Customers Are Saying', 'Real Results from Real People', 'Verified Customer Reviews', 'Hear From Happy Customers'",
+          "minLength": 10,
+          "maxLength": 100
+        },
+        "r1": {
+          "type": "object",
+          "description": "First customer testimonial/reaction.",
+          "required": ["text", "name"],
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "Customer quote/testimonial. Should be specific, emotional, and credible. Include before/after or specific results. 1-3 sentences. Example: 'I've struggled with sleep for years, but this changed everything. Within a week, I was sleeping through the night and waking up refreshed. Absolutely life-changing!'",
+              "minLength": 30,
+              "maxLength": 500
+            },
+            "name": {
+              "type": "string",
+              "description": "Customer name. Use realistic, relatable names. Examples: 'Sarah M.', 'Jennifer K. from California', 'Mike R., verified buyer'",
+              "minLength": 3,
+              "maxLength": 100
+            }
+          }
+        },
+        "r2": {
+          "type": "object",
+          "description": "Second customer testimonial/reaction.",
+          "required": ["text", "name"],
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "Second customer quote. Different angle than r1 - maybe focus on different benefit. 1-3 sentences.",
+              "minLength": 30,
+              "maxLength": 500
+            },
+            "name": {
+              "type": "string",
+              "description": "Second customer name. Use different style than r1 for variety.",
+              "minLength": 3,
+              "maxLength": 100
+            }
+          }
+        },
+        "r3": {
+          "type": "object",
+          "description": "Third customer testimonial/reaction.",
+          "required": ["text", "name"],
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "Third customer quote. Another unique perspective or benefit. 1-3 sentences.",
+              "minLength": 30,
+              "maxLength": 500
+            },
+            "name": {
+              "type": "string",
+              "description": "Third customer name.",
+              "minLength": 3,
+              "maxLength": 100
+            }
+          }
+        }
+      }
+    },
+    "alert": {
+      "type": "object",
+      "description": "Scrolling alert banner content.",
+      "required": ["banner"],
+      "properties": {
+        "banner": {
+          "type": "string",
+          "description": "Scrolling banner text. Should create urgency or highlight special offer. Keep punchy and repeatable. Examples: '⚡ LIMITED TIME: 50% OFF + FREE SHIPPING ⚡', '🔥 SALE ENDS TONIGHT - DON'T MISS OUT 🔥', '✨ EXCLUSIVE OFFER: BUY 2 GET 1 FREE ✨'",
+          "minLength": 10,
+          "maxLength": 150
+        }
+      }
+    },
+    "sidebar": {
+      "type": "object",
+      "description": "Product section sidebar/CTA content.",
+      "required": ["ctaHeadline", "ctaButton"],
+      "properties": {
+        "ctaHeadline": {
+          "type": "string",
+          "description": "Product section headline. Should highlight the product name or main benefit. Examples: 'Premium Mulberry Silk Pillowcase', 'The #1 Doctor-Recommended Sleep Solution', 'Award-Winning Comfort & Quality'",
+          "minLength": 10,
+          "maxLength": 150
+        },
+        "ctaButton": {
+          "type": "string",
+          "description": "Product section CTA button text. Action-oriented. Examples: 'Add to Cart', 'Shop Now', 'Get Mine Today', 'Order Risk-Free'",
+          "minLength": 5,
+          "maxLength": 100
+        }
+      }
+    },
+    "breadcrumbs": {
+      "type": "object",
+      "description": "Product description or additional context text.",
+      "required": ["text"],
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Product description or feature overview. Summarize key features and benefits. 2-3 sentences. Example: 'Made from 100% pure 22-momme mulberry silk with hidden zipper closure. Hypoallergenic, temperature-regulating, and gentle on skin and hair. Available in 6 luxurious colors to match any bedroom decor.'",
+          "minLength": 30,
+          "maxLength": 500
+        }
+      }
+    },
+    "footer": {
+      "type": "object",
+      "description": "Footer content including legal and confidence builders.",
+      "required": ["disclaimer", "copyright"],
+      "properties": {
+        "disclaimer": {
+          "type": "string",
+          "description": "Footer section headline/title. Often emphasizes guarantees or confidence. Examples: 'Order With Complete Confidence', 'Why Choose Us', 'Your Satisfaction Guaranteed', 'Risk-Free Promise'",
+          "minLength": 10,
+          "maxLength": 150
+        },
+        "copyright": {
+          "type": "string",
+          "description": "Copyright notice. Should be current year. Examples: '© 2025 Blissy. All rights reserved.', 'Copyright 2025 - All Rights Reserved', '© 2025 YourBrand LLC'",
+          "minLength": 10,
+          "maxLength": 150
+        }
+      }
+    },
+    "assurances": {
+      "type": "object",
+      "description": "Trust and assurance messaging. Note: blurb is used as the title for section 12 (reason #11).",
+      "required": ["blurb"],
+      "properties": {
+        "blurb": {
+          "type": "string",
+          "description": "Assurance or trust statement. Will be used as title for reason #11. Examples: 'Backed by Science and Loved by Thousands', 'Trusted by Leading Dermatologists', 'Award-Winning Quality Since 2018', 'Certified Organic and Ethically Sourced'",
+          "minLength": 10,
+          "maxLength": 200
+        }
+      }
+    },
+    "story": {
+      "type": "object",
+      "description": "Story or narrative element. Note: intro is used as the body text for section 12 (reason #11).",
+      "required": ["intro"],
+      "properties": {
+        "intro": {
+          "type": "string",
+          "description": "Story introduction or narrative element. Will be used as body for reason #11. Should connect emotionally or provide origin story. 2-4 sentences. Example: 'Founded by a sleep-deprived mother who tried everything, we've spent years perfecting the ultimate sleep solution. Every product is rigorously tested and backed by our satisfaction guarantee. Join the thousands who've transformed their sleep and their lives.'",
+          "minLength": 50,
+          "maxLength": 1000
+        }
+      }
+    }
+  }
+}
+

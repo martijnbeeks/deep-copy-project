@@ -254,6 +254,63 @@ export class DeepCopyStack extends Stack {
     });
     resultsBucket.grantRead(getAvatarResultLambda);
 
+    // Swipe file generation - Processing Lambda (Docker-based)
+    const processSwipeFileLambda = new lambda.DockerImageFunction(this, 'ProcessSwipeFileLambda', {
+      code: lambda.DockerImageCode.fromImageAsset(
+        path.join(__dirname, 'lambdas', 'write_swipe'),
+        {
+          platform: Platform.LINUX_AMD64,
+        }
+      ),
+      timeout: Duration.seconds(600),
+      memorySize: 3008, // 3GB for Anthropic + processing
+      architecture: lambda.Architecture.X86_64,
+      environment: {
+        JOBS_TABLE_NAME: jobsTable.tableName,
+        RESULTS_BUCKET: resultsBucket.bucketName,
+      },
+    });
+
+    // Grant access to the same secret as the ECS pipeline
+    processSwipeFileLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['secretsmanager:GetSecretValue'],
+        resources: [secretArn],
+      }),
+    );
+    jobsTable.grantReadWriteData(processSwipeFileLambda);
+    resultsBucket.grantPut(processSwipeFileLambda);
+    resultsBucket.grantRead(processSwipeFileLambda, 'content_library/*');
+    resultsBucket.grantRead(processSwipeFileLambda, 'results/*');
+
+    // Swipe file generation - Submit Lambda (Python)
+    const submitSwipeFileLambda = new lambda.Function(this, 'SubmitSwipeFileLambda', {
+      runtime: lambda.Runtime.PYTHON_3_11,
+      timeout: Duration.seconds(10),
+      memorySize: 256,
+      handler: 'submit_swipe_file.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
+      environment: {
+        JOBS_TABLE_NAME: jobsTable.tableName,
+        PROCESS_LAMBDA_NAME: processSwipeFileLambda.functionName,
+      },
+    });
+    jobsTable.grantReadWriteData(submitSwipeFileLambda);
+    processSwipeFileLambda.grantInvoke(submitSwipeFileLambda);
+
+    // Swipe file generation - Get Result Lambda (Python)
+    const getSwipeFileResultLambda = new lambda.Function(this, 'GetSwipeFileResultLambda', {
+      runtime: lambda.Runtime.PYTHON_3_11,
+      timeout: Duration.seconds(10),
+      memorySize: 256,
+      handler: 'get_swipe_file_result.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
+      environment: {
+        RESULTS_BUCKET: resultsBucket.bucketName,
+      },
+    });
+    resultsBucket.grantRead(getSwipeFileResultLambda);
+
     // Cognito User Pool for API auth
     const userPool = new cognito.UserPool(this, 'UserPool', {
       signInAliases: { email: true },
@@ -395,11 +452,35 @@ export class DeepCopyStack extends Stack {
       authorizationScopes: ['https://deep-copy.api/read'],
     });
 
+    // Swipe file generation endpoints
+    const swipeFilesRes = api.root.addResource('swipe-files');
+    const generateRes = swipeFilesRes.addResource('generate');
+    generateRes.addMethod('POST', new apigw.LambdaIntegration(submitSwipeFileLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/write'],
+    });
+
+    const swipeFileIdRes = swipeFilesRes.addResource('{id}');
+    swipeFileIdRes.addMethod('GET', new apigw.LambdaIntegration(getJobLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/read'],
+    });
+
+    const swipeFileResultRes = swipeFileIdRes.addResource('result');
+    swipeFileResultRes.addMethod('GET', new apigw.LambdaIntegration(getSwipeFileResultLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/read'],
+    });
+
     // Optional: EventBridge to mark RUNNING when task starts and final status on stop
     // You can also have the container call DynamoDB directly at the end, which the Python already supports
 
     new CfnOutput(this, 'ApiUrl', { value: api.url });
     new CfnOutput(this, 'AvatarsSubmitEndpoint', { value: `${api.url}avatars/extract` });
+    new CfnOutput(this, 'SwipeFilesSubmitEndpoint', { value: `${api.url}swipe-files/generate` });
     new CfnOutput(this, 'ResultsBucketName', { value: resultsBucket.bucketName });
     new CfnOutput(this, 'JobsTableName', { value: jobsTable.tableName });
     new CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });

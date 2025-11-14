@@ -40,6 +40,21 @@ curl -sS -X POST "${API_URL}jobs" \
 curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID"
 curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID/result"
 
+# POST /swipe-files/generate (uses write) - Submit swipe file generation job
+curl -sS -X POST "${API_URL}swipe-files/generate" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "original_job_id": "03479dbf-bc4c-4472-80ff-b11b561b8777",
+    "select_angle": "Embarrassment & Professional Confidence: '\''Restore the beard you earned—no flakes in meetings.'\''"
+  }' | jq '.'
+
+# GET /swipe-files/{id} (uses read) - Get swipe file generation job status
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}swipe-files/YOUR_JOB_ID-swipe" | jq '.'
+
+# GET /swipe-files/{id}/result (uses read) - Get swipe file generation results
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}swipe-files/YOUR_JOB_ID-swipe/result" | jq '.'
+
 AWS_PROFILE=personal-cdk-dev npx cdk deploy
 
 2a122590-f4a3-4770-a275-81e7cc5d8062

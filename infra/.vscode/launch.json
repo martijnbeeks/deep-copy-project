@@ -47,7 +47,22 @@
             "cwd": "${workspaceFolder}/ai_pipeline",
             "env": {
                 "AWS_PROFILE": "personal-cdk-dev",
-                "JOB_EVENT_JSON": "{\"sales_page_url\": \"https://www.sciatiease.com/sciatiease.php\", \"project_name\": \"meritrelief\", \"swipe_file_id\": \"A00002\", \"advertorial_type\": \"Advertorial\", \"customer_avatars\": [{\"persona_name\": \"Active Senior\", \"description\": \"Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain\", \"age_range\": \"60-75\", \"gender\": \"both\", \"key_buying_motivation\": \"Seeking non-invasive pain relief to maintain active lifestyle\"}, {\"persona_name\": \"Desk-Bound Professional\", \"description\": \"Office worker sitting 8+ hours daily experiencing lower back pain\", \"age_range\": \"30-45\", \"gender\": \"both\", \"key_buying_motivation\": \"Quick relief from work-related pain\"}]}"
+                "JOB_EVENT_JSON": "{\"sales_page_url\": \"https://www.sciatiease.com/sciatiease.php\", \"project_name\": \"meritrelief\", \"swipe_file_id\": \"L00002\", \"advertorial_type\": \"Advertorial\", \"customer_avatars\": [{\"persona_name\": \"Active Senior\", \"description\": \"Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain\", \"age_range\": \"60-75\", \"gender\": \"both\", \"key_buying_motivation\": \"Seeking non-invasive pain relief to maintain active lifestyle\"}, {\"persona_name\": \"Desk-Bound Professional\", \"description\": \"Office worker sitting 8+ hours daily experiencing lower back pain\", \"age_range\": \"30-45\", \"gender\": \"both\", \"key_buying_motivation\": \"Quick relief from work-related pain\"}]}"
+            }
+        },
+
+        {
+            "name": "Debug swipe",
+            "type": "python",
+            "python": "${workspaceFolder}/ai_pipeline/.venv/bin/python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cdk/lib/lambdas/write_swipe/handler.py",
+            "args": ["run"],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}/ai_pipeline",
+            "env": {
+                "AWS_PROFILE": "personal-cdk-dev",
             }
         },
     ]

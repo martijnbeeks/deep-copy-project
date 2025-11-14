@@ -24,6 +24,8 @@ from pipeline.test_anthropic import (
     load_pdf_file,
 )
 
+from pipeline.data_models import Avatar, OfferBrief
+
 # Import extract_clean_text_from_html from test_anthropic since utils.py was removed
 def extract_clean_text_from_html(html_file_path: str) -> str:
     """Extract clean text from an HTML file by removing scripts, styles, and extra whitespace."""
@@ -62,92 +64,6 @@ else:
             _h.setLevel(_log_level)
         except Exception:
             pass
-
-class Demographics(BaseModel):
-    """Demographic & general information about the avatar."""
-    age_range: Optional[int] = Field(
-        None, description="Inclusive min/max age in years, e.g. (28, 45)."
-    )
-    gender: Optional[List[str]] = Field(
-        None, description="Gender distribution labels, e.g. ['male', 'female', 'non-binary']."
-    )
-    locations: Optional[List[str]] = Field(
-        None, description="Primary regions/countries where the segment is concentrated."
-    )
-    monthly_revenue: Optional[int] = Field(
-        None, description="Typical monthly revenue range (min, max) in your chosen currency."
-    )
-    professional_backgrounds: List[str] = Field(
-        default_factory=list, description="Typical professional backgrounds (e.g., 'founder', 'marketing lead')."
-    )
-    typical_identities: List[str] = Field(
-        default_factory=list, description="Typical identities/lifestyles/roles (e.g., 'bootstrapped founder')."
-    )
-
-class PainPointGroup(BaseModel):
-    """A themed set of related challenges/concerns."""
-    title: str = Field(..., description="Name of the pain point theme, e.g., 'Lead Generation'.")
-    bullets: List[str] = Field(
-        ..., min_items=1, description="Concrete challenges/concerns under this theme."
-    )
-
-class Goals(BaseModel):
-    """Outcomes the avatar wants."""
-    short_term: List[str] = Field(
-        default_factory=list, description="Short-term goals (weeks/months)."
-    )
-    long_term: List[str] = Field(
-        default_factory=list, description="Long-term aspirations (quarters/years)."
-    )
-
-class Quotes(BaseModel):
-    """Verbatim quotes used for messaging and copy."""
-    general_client: List[str] = Field(
-        default_factory=list, description='General direct client quotes, e.g., "I just need consistent leads."'
-    )
-    pain_frustrations: List[str] = Field(
-        default_factory=list, description='Quotes that express pains/frustrations.'
-    )
-    mindset: List[str] = Field(
-        default_factory=list, description='Quotes that capture mindset, e.g., principles or mottos.'
-    )
-    emotional_state_drivers: List[str] = Field(
-        default_factory=list, description='Quotes about emotional state/personal drivers.'
-    )
-
-class EmotionalJourney(BaseModel):
-    """Narrative progression through the buying journey."""
-    awareness: str = Field(..., description="Initial awareness stage (problem/status quo).")
-    frustration: str = Field(..., description="Frustration stage (failed attempts/costs of inaction).")
-    seeking_solutions: str = Field(..., description="Desperation & seeking solutions stage (research/criteria).")
-    relief_commitment: str = Field(..., description="Relief & commitment stage (decision/outcome).")
-
-class Avatar(BaseModel):
-    """
-    Marketing Avatar sheet for product–market fit & messaging research.
-    Use this to standardize ICP/persona data for campaigns, ads, and positioning.
-    """
-    model_config = ConfigDict(
-        title="Marketing Avatar",
-        description="Structured avatar sheet capturing demographics, pains, goals, psychology, quotes, journey, and angles.",
-        extra="forbid",
-    )
-
-    demographics: Demographics = Field(..., description="Demographic & general information.")
-    pain_points: List[PainPointGroup] = Field(
-        ..., min_items=1, description="List of pain point themes, each with concrete challenges."
-    )
-    goals: Goals = Field(..., description="Short-term goals and long-term aspirations.")
-    emotional_drivers: List[str] = Field(
-        default_factory=list, description="Emotional drivers & psychological insights."
-    )
-    quotes: Quotes = Field(..., description="Verbatim quotes for copy and creative.")
-    emotional_journey: EmotionalJourney = Field(
-        ..., description="Typical emotional journey from awareness to commitment."
-    )
-    marketing_angles: List[str] = Field(
-        default_factory=list, description="Main marketing angles to test or use."
-    )
 
 
 def save_fullpage_png(url: str, out_file: str = "page.png"):
@@ -573,30 +489,25 @@ class DeepCopy:
     def complete_offer_brief(self, deep_research_output):
         """Complete the offer brief using the research output"""
         try:
-            with open("src/pipeline/content/offer_brief_template.txt", "r", encoding="utf-8") as f:
-                offer_brief_template = f.read()
-            
             prompt = f"""
             Amazing work! Now that you have properly completed the research portion, I want you to please complete this Offer brief template using the deep research output:
-            
-            Offer brief template:
-            {offer_brief_template}
             
             Deep research output:
             {deep_research_output}
             """
 
             logger.info("Calling GPT-5 API to complete offer brief")
-            response = self.client.responses.create(
+            response = self.client.responses.parse(
                 model=self.openai_model,
                 input=[{
                     "role": "user", 
                     "content": [{"type": "input_text", "text": prompt}]
-                }]
+                }],
+                text_format=OfferBrief,
             )
             logger.info("GPT-5 API call completed for offer brief completion")
             
-            return response.output_text
+            return response.output_parsed, response.output_text
             
         except Exception as e:
             logger.error(f"Error completing offer brief: {e}")
@@ -685,12 +596,10 @@ class DeepCopy:
         offer_brief: str,
         necessary_beliefs: str,
         schema_json: str,
-        original_swipe_file_path_html: str,
-        original_swipe_file_path_pdf: str
-    ):  
+        original_swipe_file_path_html: str    ):  
         # Model configuration
-        MODEL = "claude-sonnet-4-5"
-        MAX_TOKENS = 15000
+        MODEL = "claude-haiku-4-5-20251001"
+        MAX_TOKENS = 10000
         
         # Extract clean text from HTML swipe file
         raw_swipe_file_text = extract_clean_text_from_html(original_swipe_file_path_html)
@@ -750,17 +659,17 @@ class DeepCopy:
         """
         
         # Load PDF file and create content with PDF
-        pdf_file_data = load_pdf_file(original_swipe_file_path_pdf)
+        # pdf_file_data = load_pdf_file(original_swipe_file_path_pdf)
         user_content_with_pdf = [
             {"type": "text", "text": generate_content_prompt},
-            {
-                "type": "document",
-                "source": {
-                    "type": "base64",
-                    "media_type": "application/pdf",
-                    "data": pdf_file_data
-                }
-            }
+            # {
+            #     "type": "document",
+            #     "source": {
+            #         "type": "base64",
+            #         "media_type": "application/pdf",
+            #         "data": pdf_file_data
+            #     }
+            # }
         ]
         
         # Add second user message with PDF
@@ -797,9 +706,10 @@ class DeepCopy:
         2. Focus specifically on the marketing angle: {angle}.  
         3. Generate **a full and complete output** following the schema provided below.  
         4. DO NOT skip or leave out any fields — every field in the schema must be filled.  
-        5. If any data is missing, intelligently infer or create realistic content that fits the schema.  
-        6. Write fluently and naturally, with complete sentences. Do not stop mid-thought or end with ellipses (“...”).  
-        7. At the end, verify your own output is **100% complete** — all schema fields filled.
+        5. Please make sure that the length of each field matches the length of the description of the field.
+        6. If any data is missing, intelligently infer or create realistic content that fits the schema.  
+        7. Write fluently and naturally, with complete sentences. Do not stop mid-thought or end with ellipses (“...”).  
+        8. At the end, verify your own output is **100% complete** — all schema fields filled.
 
         When ready, output ONLY the completed schema with all fields filled in. Do not include explanations or notes.
         """
@@ -829,7 +739,7 @@ class DeepCopy:
         # Check if enough fields are present, else retry
         if len(full_advertorial) < 10:
             logger.info(f"Less then 10 fields, rerunning...")
-            return self.rewrite_swipe_file(angle, avatar_sheet, deep_research_output, offer_brief, necessary_beliefs, schema_json, original_swipe_file_path_html, original_swipe_file_path_pdf)
+            return self.rewrite_swipe_file(angle, avatar_sheet, deep_research_output, offer_brief, necessary_beliefs, schema_json, original_swipe_file_path_html)
         # ============================================================
         # Turn 4: Quality check (commented out for now)
         # ============================================================
@@ -993,64 +903,51 @@ def run_pipeline(event, context):
         sales_page_url = event.get("sales_page_url") or os.environ.get("SALES_PAGE_URL")
         s3_bucket = event.get("s3_bucket", generator.s3_bucket)
         project_name = event.get("project_name") or os.environ.get("PROJECT_NAME") or "default-project"
-        swipe_file_id = event.get("swipe_file_id") or os.environ.get("SWIPE_FILE_ID")
-        advertorial_type = event.get("advertorial_type")
-        persona = event.get("persona")
-        age_range = event.get("age_range")
-        gender = event.get("gender")
         content_dir = event.get("content_dir", "src/pipeline/content/")
-        logger.info(
-            f"Pipeline inputs: project_name={project_name}, sales_page_url={sales_page_url}, "
-            f"swipe_file_id={swipe_file_id}, content_dir={content_dir}"
-        )
+        # swipe_file_id = event.get("swipe_file_id")
+        # logger.info(
+        #     f"Pipeline inputs: project_name={project_name}, sales_page_url={sales_page_url}, "
+        #     f"swipe_file_id={swipe_file_id}, content_dir={content_dir}"
+        # )
 
-        # Require swipe_file_id when not provided return 400
-        if not swipe_file_id:
-            error_msg = "Missing required input: swipe_file_id"
-            logger.error(error_msg)
-            try:
-                generator.update_job_status(job_id, "FAILED", {"error": error_msg})
-            except Exception:
-                pass
-            return {
-                "statusCode": 400,
-                "body": {"error": error_msg}
-            }
+        # # Require swipe_file_id when not provided return 400
+        # if not swipe_file_id:
+        #     error_msg = "Missing required input: swipe_file_id"
+        #     logger.error(error_msg)
+        #     try:
+        #         generator.update_job_status(job_id, "FAILED", {"error": error_msg})
+        #     except Exception:
+        #         pass
+        #     return {
+        #         "statusCode": 400,
+        #         "body": {"error": error_msg}
+        #     }
 
-        try:
+        # try:
             # load both the html as the json file
             # Try both spellings: "original" and "orginal" (typo in some files)
-            s3_key_html_correct = f"content_library/{swipe_file_id}_original.html"
-            s3_key_json = f"content_library/{swipe_file_id}.json"
-            s3_key_pdf = f"content_library/{swipe_file_id}.pdf"
+            # s3_key_html_correct = f"content_library/{swipe_file_id}_original.html"
+            # s3_key_json = f"content_library/{swipe_file_id}.json"
             
             # Try the correct spelling first, then the typo
-            obj_html = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_html_correct)
+            # obj_html = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_html_correct)
             
-            html_bytes = obj_html["Body"].read()
+            # html_bytes = obj_html["Body"].read()
             # save to local file and pass path to rewrite method. Check if directory exists, if not create it.
-            if not os.path.exists("content"):
-                os.makedirs("content")
-            original_swipe_file_path_html = f"content/{swipe_file_id}_original.html"
-            with open(original_swipe_file_path_html, "wb") as f:
-                f.write(html_bytes)
+            # if not os.path.exists("content"):
+            #     os.makedirs("content")
+            # original_swipe_file_path_html = f"content/{swipe_file_id}_original.html"
+            # with open(original_swipe_file_path_html, "wb") as f:
+            #     f.write(html_bytes)
             
-            obj_json = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_json)
-            json_bytes = obj_json["Body"].read()
-            swipe_file_model = json_bytes.decode("utf-8")
+            # obj_json = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_json)
+            # json_bytes = obj_json["Body"].read()
+            # swipe_file_model = json_bytes.decode("utf-8")
             
-            obj_pdf = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_pdf)
-            pdf_bytes = obj_pdf["Body"].read()
-            # save to local file and pass path to rewrite method. Check if directory exists, if not create it.
-            if not os.path.exists("content"):
-                os.makedirs("content")
-            original_swipe_file_path_pdf = f"content/{swipe_file_id}.pdf"
-            with open(original_swipe_file_path_pdf, "wb") as f:
-                f.write(pdf_bytes)
             
-        except Exception as e:
-            # Check if it's a file not found error (NoSuchKey)
-            raise e
+        # except Exception as e:
+        #     # Check if it's a file not found error (NoSuchKey)
+        #     raise e
         
         
         
@@ -1072,7 +969,6 @@ def run_pipeline(event, context):
         offer_brief = results.get("offer_brief")
         marketing_philosophy_analysis = results.get("marketing_philosophy_analysis")
         summary = results.get("summary")
-        swipe_file_analysis = results.get("swipe_file_analysis")
         angles = results.get("marketing_angles", [])
         
         # # Get customer avatars from event
@@ -1106,7 +1002,7 @@ def run_pipeline(event, context):
         
         # # Step 6: Complete offer brief
         # logger.info("Step 6: Completing offer brief")
-        # offer_brief = generator.complete_offer_brief(deep_research_output)
+        offer_brief_parsed, offer_brief = generator.complete_offer_brief(deep_research_output)
         
         # # Step 7: Analyze marketing philosophy
         # logger.info("Step 7: Analyzing marketing philosophy")
@@ -1119,24 +1015,19 @@ def run_pipeline(event, context):
         # summary = generator.create_summary(
         #     avatar_sheet, offer_brief, deep_research_output, marketing_philosophy_analysis
         # )
-        
-        
-        # # Step 9: Analyse the swipe file
-        # logger.info("Step 9: Analyzing swipe file")
-        # swipe_file_analysis = generator.analyze_swipe_file(swipe_file_html, advertorial_type)
+    
         
         # # Step 10: Rewrite swipe files
         # logger.info("Step 9: Rewriting swipe files")
         # # use max 3 angles for now.
-        angles = angles[:1]
-        swipe_results = []
-        for angle in angles:
-            full_advertorial, quality_report = generator.rewrite_swipe_file(
-                angle, avatar_sheet, deep_research_output, offer_brief, marketing_philosophy_analysis, swipe_file_model, original_swipe_file_path_html, original_swipe_file_path_pdf
-            )
-            swipe_results.append({"angle": angle, "content": json.dumps(full_advertorial)})
-            
-        logger.info(f"Swipe results: {swipe_results}")
+        # angles = angles[:1]
+        # swipe_results = []
+        # for angle in angles:
+        #     full_advertorial, quality_report = generator.rewrite_swipe_file(
+        #         angle, avatar_sheet, deep_research_output, offer_brief, marketing_philosophy_analysis, swipe_file_model, original_swipe_file_path_html
+        #     )
+        #     swipe_results.append({"angle": angle, "content": json.dumps(full_advertorial)})
+
         
         # Step 10: Save all results
         logger.info("Step 10: Saving results")
@@ -1147,11 +1038,10 @@ def run_pipeline(event, context):
             "deep_research_prompt": deep_research_prompt,
             "deep_research_output": deep_research_output,
             "avatar_sheet": avatar_sheet,
-            "offer_brief": offer_brief,
+            "offer_brief": offer_brief_parsed.model_dump() if hasattr(offer_brief_parsed, 'model_dump') else offer_brief,
             "marketing_philosophy_analysis": marketing_philosophy_analysis,
             "summary": summary,
-            "swipe_file_id": swipe_file_id,
-            "swipe_results": swipe_results,
+            # "swipe_results": swipe_results,
             "marketing_angles": angles
         }
         
@@ -1165,7 +1055,7 @@ def run_pipeline(event, context):
                 "project_name": project_name,
                 "s3_bucket": s3_bucket,
                 "marketing_angles_count": len(angles),
-                "swipe_files_generated": len(swipe_results),
+                # "swipe_files_generated": len(swipe_results),
                 "results_location": f"s3://{s3_bucket}/projects/{project_name}/",
                 "job_results_location": f"s3://{s3_bucket}/results/{job_id}/",
                 "job_id": job_id
