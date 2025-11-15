@@ -79,18 +79,23 @@ export function useJobPolling({
         onStatusChange(newStatus.status, newStatus.progress)
       }
 
-      // Check if job is complete
-      if (newStatus.status === 'completed') {
+      // Check if job is complete (handle both 'completed' and 'COMPLETED')
+      const statusLower = newStatus.status?.toLowerCase()
+      if (statusLower === 'completed' || statusLower === 'succeeded') {
         
         setIsPolling(false)
         if (intervalRef.current) {
           clearInterval(intervalRef.current)
           intervalRef.current = null
         }
-        if (onComplete && newStatus.result) {
-          onComplete(newStatus.result)
+        // Always call onStatusChange and onComplete to trigger UI updates
+        if (onStatusChange) {
+          onStatusChange(newStatus.status, newStatus.progress)
         }
-      } else if (newStatus.status === 'failed') {
+        if (onComplete) {
+          onComplete(newStatus.result || { status: newStatus.status })
+        }
+      } else if (statusLower === 'failed' || statusLower === 'failure') {
         
         setIsPolling(false)
         if (intervalRef.current) {

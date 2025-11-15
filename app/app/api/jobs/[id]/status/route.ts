@@ -434,10 +434,17 @@ async function generateAndStoreInjectedTemplates(jobId: string, result: any) {
     }
     
     if (!swipeResults || !Array.isArray(swipeResults) || swipeResults.length === 0) {
-      console.error('❌ No swipe_results found for job:', jobId)
-      console.error('❌ Available keys in result:', Object.keys(result))
-      console.error('❌ Available keys in apiResult:', Object.keys(apiResult))
-      return { success: false, error: 'No swipe_results found in API response' }
+      console.log('ℹ️ No swipe_results found for job:', jobId, '- This is expected. Swipe files are generated separately via /swipe-files/generate endpoint.')
+      console.log('ℹ️ Available keys in apiResult:', Object.keys(apiResult))
+      // Don't fail - swipe_results are generated separately after angle selection
+      // The job is still considered successful even without swipe_results
+      return { 
+        success: true, 
+        generated: 0, 
+        total: 0, 
+        errors: 0,
+        message: 'Job completed successfully. Swipe files can be generated separately by selecting a marketing angle.' 
+      }
     }
     
     // Extract angles from swipe results
