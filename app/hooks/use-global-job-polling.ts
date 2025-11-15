@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { deepCopyClient } from '@/lib/api/deepcopy-client'
 
 interface GlobalJobPollingOptions {
   interval?: number
@@ -45,84 +44,16 @@ export function useGlobalJobPolling({
     })
   }, [])
 
-  // Check a single job status - DISABLED: Now using server-side polling to avoid CORS
-  const checkJobStatus = useCallback(async (job: PollingJob) => {
-    console.log('⚠️ Client-side polling is disabled. Use server-side polling instead.')
-    return
-    try {
-      console.log(`🔍 Global polling: Checking DeepCopy API for job ${job.id}`)
-      
-      // Hit DeepCopy API directly for status
-      const data = await deepCopyClient.getJobStatus(job.id)
-      
-      console.log(`📊 DeepCopy API response for job ${job.id}:`, data.status, data.progress ? `(${data.progress}%)` : '')
+  // Note: Client-side polling is disabled. Use server-side polling via /api/poll-jobs instead.
+  // This hook now only manages the polling job list, actual polling happens server-side.
 
-      // Update job in polling list
-      setPollingJobs(prev => {
-        const newMap = new Map(prev)
-        const existingJob = newMap.get(job.id)
-        if (existingJob) {
-          newMap.set(job.id, {
-            ...existingJob,
-            status: data.status,
-            progress: data.progress || 0,
-            lastChecked: Date.now()
-          })
-        }
-        return newMap
-      })
-
-      // Call callbacks
-      if (onJobUpdate) {
-        onJobUpdate(job.id, data.status, data.progress)
-      }
-
-      // If job completed, remove from polling and call completion callback
-      if (data.status === 'completed') {
-        console.log(`✅ Global polling: Job ${job.id} completed via DeepCopy API`)
-        removeJobFromPolling(job.id)
-        if (onJobComplete) {
-          onJobComplete(job.id, data)
-        }
-      } else if (data.status === 'failed') {
-        console.log(`❌ Global polling: Job ${job.id} failed via DeepCopy API`)
-        removeJobFromPolling(job.id)
-      }
-      
-    } catch (error) {
-      console.error(`❌ Global polling error for job ${job.id}:`, error)
-      // Don't remove job from polling on error, just log it
-    }
-  }, [onJobUpdate, onJobComplete, removeJobFromPolling])
-
-  // Start global polling
+  // Start global polling (now just manages state, actual polling happens server-side)
   const startPolling = useCallback(() => {
     if (isPolling) return
-
-    
     setIsPolling(true)
-
-    intervalRef.current = setInterval(() => {
-      if (isMountedRef.current && pollingJobs.size > 0) {
-        
-        
-        // Check all jobs in parallel (but limit concurrency)
-        const jobs = Array.from(pollingJobs.values())
-        const batchSize = 3
-        
-        for (let i = 0; i < jobs.length; i += batchSize) {
-          const batch = jobs.slice(i, i + batchSize)
-          batch.forEach(job => {
-            // Only check jobs that haven't been checked recently
-            if (Date.now() - job.lastChecked > 5000) { // 5 second minimum between checks
-              checkJobStatus(job)
-            }
-          })
-        }
-      }
-    }, interval)
-
-  }, [isPolling, pollingJobs, interval, checkJobStatus])
+    // Note: Actual polling is handled server-side via /api/poll-jobs
+    // This hook now only manages the job list state
+  }, [isPolling])
 
   // Stop global polling
   const stopPolling = useCallback(() => {

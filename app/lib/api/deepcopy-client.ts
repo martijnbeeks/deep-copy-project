@@ -42,6 +42,11 @@ interface JobStatusResponse {
   status: string
 }
 
+interface Angle {
+  angle: string
+  title: string
+}
+
 interface JobResult {
   project_name: string
   timestamp_iso: string
@@ -53,11 +58,11 @@ interface JobResult {
       deep_research_prompt?: string
       deep_research_output?: string
       avatar_sheet?: string
-      offer_brief?: string
+      offer_brief?: string | object
       marketing_philosophy_analysis?: string
       summary?: string
       swipe_results?: SwipeResult[]
-      marketing_angles?: string[]
+      marketing_angles?: (string | Angle)[] // Support both old (string) and new (Angle) formats
   }
 }
 
@@ -210,6 +215,24 @@ class DeepCopyClient {
           signal: AbortSignal.timeout(30000) // 30 second timeout
       })
   }
+
+  async generateSwipeFiles(originalJobId: string, selectAngle: string): Promise<SubmitJobResponse> {
+      return this.makeRequest('swipe-files/generate', {
+          method: 'POST',
+          body: JSON.stringify({
+              original_job_id: originalJobId,
+              select_angle: selectAngle
+          })
+      })
+  }
+
+  async getSwipeFileStatus(swipeFileJobId: string): Promise<JobStatusResponse> {
+      return this.makeRequest<JobStatusResponse>(`swipe-files/${swipeFileJobId}`)
+  }
+
+  async getSwipeFileResult(swipeFileJobId: string): Promise<any> {
+      return this.makeRequest(`swipe-files/${swipeFileJobId}/result`)
+  }
 }
 
 // Create a singleton instance with production configuration
@@ -220,4 +243,4 @@ export const deepCopyClient = new DeepCopyClient({
   clientSecret: process.env.DEEPCOPY_CLIENT_SECRET || '1msm19oltu7241134t5vujtldr4uvum7hvn6cj7n1s3tg1ar02k5'
 })
 
-export type { SubmitJobRequest, SubmitJobResponse, JobStatusResponse, JobResult, SwipeResult, Listicle, ListicleItem, Advertorial, CustomerAvatar, AvatarExtractionRequest, AvatarExtractionResponse }
+export type { SubmitJobRequest, SubmitJobResponse, JobStatusResponse, JobResult, SwipeResult, Listicle, ListicleItem, Advertorial, CustomerAvatar, AvatarExtractionRequest, AvatarExtractionResponse, Angle }

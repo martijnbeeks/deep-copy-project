@@ -12,13 +12,32 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#39;')
 }
 
-// Sanitize text content for layout safety
+// Sanitize text content for layout safety (escapes all HTML)
 function sanitizeTextContent(text: string, maxLength?: number): string {
   if (!text) return ''
 
   // Escape HTML characters
   let sanitized = escapeHtml(text)
 
+  // Truncation removed - display full content
+  return sanitized
+}
+
+// Sanitize body content - allows safe HTML tags like <br>, <p>, <ul>, <li>, <strong>, <em>
+function sanitizeBodyContent(text: string, maxLength?: number): string {
+  if (!text) return ''
+
+  // Allow safe HTML tags: <br>, <br/>, <p>, </p>, <ul>, </ul>, <li>, </li>, <strong>, </strong>, <em>, </em>, <b>, </b>, <i>, </i>
+  // Escape only dangerous tags like <script>, <iframe>, etc.
+  let sanitized = text
+    // First, escape script tags and other dangerous content
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '') // Remove event handlers
+    .replace(/javascript:/gi, '') // Remove javascript: protocol
+    // Keep safe HTML tags as-is
+    // The safe tags (<br>, <p>, <ul>, <li>, <strong>, <em>, <b>, <i>) are already in the text
+  
   // Truncation removed - display full content
   return sanitized
 }
@@ -263,77 +282,77 @@ export function extractContentFromAngle(results: any, swipe: any, angleIndex: nu
       text: sanitizeTextContent('Home > Health > Products > Featured', 100)
     },
     story: {
-      intro: sanitizeTextContent(results.summary?.substring(0, 200) + '...' || 'Here\'s what happened when I tried this revolutionary product...', 300)
+      intro: sanitizeBodyContent(results.summary?.substring(0, 200) + '...' || 'Here\'s what happened when I tried this revolutionary product...', 300)
     },
     section1: {
       title: sanitizeTextContent(listicles[0]?.title || 'Reason #1: Revolutionary Technology', 100),
-      body: sanitizeTextContent(listicles[0]?.description || 'This breakthrough technology has been proven to work...', 500),
+      body: sanitizeBodyContent(listicles[0]?.description || 'This breakthrough technology has been proven to work...', 500),
       image: sanitizeUrl('https://placehold.co/600x400?text=Product+Image'),
       imageAlt: sanitizeTextContent('Product demonstration', 50)
     },
     section2: {
       title: sanitizeTextContent(listicles[1]?.title || 'Reason #2: Scientifically Proven', 100),
-      body: sanitizeTextContent(listicles[1]?.description || 'Clinical studies show amazing results...', 500),
+      body: sanitizeBodyContent(listicles[1]?.description || 'Clinical studies show amazing results...', 500),
       image: sanitizeUrl('https://placehold.co/600x400?text=Product+Image'),
       imageAlt: sanitizeTextContent('Scientific proof', 50)
     },
     section3: {
       title: sanitizeTextContent(listicles[2]?.title || 'Reason #3: Easy to Use', 100),
-      body: sanitizeTextContent(listicles[2]?.description || 'Simply follow these easy steps...', 500),
+      body: sanitizeBodyContent(listicles[2]?.description || 'Simply follow these easy steps...', 500),
       image: sanitizeUrl('https://placehold.co/600x400?text=Product+Image'),
       imageAlt: sanitizeTextContent('Easy usage', 50)
     },
     section4: {
       title: sanitizeTextContent(listicles[3]?.title || 'Reason #4: Money Back Guarantee', 100),
-      body: sanitizeTextContent(listicles[3]?.description || 'We\'re so confident you\'ll love it...', 500),
+      body: sanitizeBodyContent(listicles[3]?.description || 'We\'re so confident you\'ll love it...', 500),
       image: sanitizeUrl('https://placehold.co/600x400?text=Product+Image'),
       imageAlt: sanitizeTextContent('Guarantee badge', 50)
     },
     section5: {
       title: sanitizeTextContent(listicles[4]?.title || 'Reason #5: Thousands of Happy Customers', 100),
-      body: sanitizeTextContent(listicles[4]?.description || 'See what our customers are saying...', 500),
+      body: sanitizeBodyContent(listicles[4]?.description || 'See what our customers are saying...', 500),
       image: sanitizeUrl('https://placehold.co/600x400?text=Product+Image'),
       imageAlt: sanitizeTextContent('Happy customers', 50)
     },
     section6: {
       title: sanitizeTextContent(listicles[5]?.title || swipeContent.section6_title || 'Reason #6: Limited Time Offer', 100),
-      body: sanitizeTextContent(listicles[5]?.description || swipeContent.section6_body || 'Don\'t miss out on this special deal...', 500),
+      body: sanitizeBodyContent(listicles[5]?.description || swipeContent.section6_body || 'Don\'t miss out on this special deal...', 500),
       image: sanitizeUrl('https://placehold.co/600x400?text=Product+Image'),
       imageAlt: sanitizeTextContent('Limited offer', 50)
     },
     section7: {
       title: sanitizeTextContent(listicles[6]?.title || swipeContent.section7_title || 'Reason #7: Free Shipping', 100),
-      body: sanitizeTextContent(listicles[6]?.description || swipeContent.section7_body || 'Get it delivered right to your door...', 500),
+      body: sanitizeBodyContent(listicles[6]?.description || swipeContent.section7_body || 'Get it delivered right to your door...', 500),
       image: sanitizeUrl('https://placehold.co/600x400?text=Product+Image'),
       imageAlt: sanitizeTextContent('Free shipping', 50)
     },
     section8: {
       title: sanitizeTextContent(listicles[7]?.title || swipeContent.section8_title || 'Reason #8: Premium Quality', 100),
-      body: sanitizeTextContent(listicles[7]?.description || swipeContent.section8_body || 'Made with the finest materials...', 500),
+      body: sanitizeBodyContent(listicles[7]?.description || swipeContent.section8_body || 'Made with the finest materials...', 500),
       image: sanitizeUrl('https://placehold.co/600x400?text=Product+Image'),
       imageAlt: sanitizeTextContent('Premium quality', 50)
     },
     section9: {
       title: sanitizeTextContent(listicles[8]?.title || swipeContent.section9_title || 'Reason #9: Doctor Recommended', 100),
-      body: sanitizeTextContent(listicles[8]?.description || swipeContent.section9_body || 'Trusted by healthcare professionals...', 500),
+      body: sanitizeBodyContent(listicles[8]?.description || swipeContent.section9_body || 'Trusted by healthcare professionals...', 500),
       image: sanitizeUrl('https://placehold.co/600x400?text=Product+Image'),
       imageAlt: sanitizeTextContent('Doctor recommendation', 50)
     },
     section10: {
       title: sanitizeTextContent(listicles[9]?.title || swipeContent.section10_title || 'Reason #10: Risk-Free Trial', 100),
-      body: sanitizeTextContent(listicles[9]?.description || swipeContent.section10_body || 'Try it for 30 days, no questions asked...', 500),
+      body: sanitizeBodyContent(listicles[9]?.description || swipeContent.section10_body || 'Try it for 30 days, no questions asked...', 500),
       image: sanitizeUrl('https://placehold.co/600x400?text=Product+Image'),
       imageAlt: sanitizeTextContent('Risk-free trial', 50)
     },
     section11: {
       title: sanitizeTextContent(swipeContent.section11_title || 'Expert Recommendation', 100),
-      body: sanitizeTextContent(swipeContent.section11_body || 'Leading experts recommend this product...', 500),
+      body: sanitizeBodyContent(swipeContent.section11_body || 'Leading experts recommend this product...', 500),
       image: sanitizeUrl('https://placehold.co/600x400?text=Expert+Image'),
       imageAlt: sanitizeTextContent('Expert recommendation', 50)
     },
     section12: {
       title: sanitizeTextContent(swipeContent.section12_title || 'Final Call to Action', 100),
-      body: sanitizeTextContent(swipeContent.section12_body || 'Order now and start your journey to better health...', 500),
+      body: sanitizeBodyContent(swipeContent.section12_body || 'Order now and start your journey to better health...', 500),
       image: sanitizeUrl('https://placehold.co/600x400?text=CTA+Image'),
       imageAlt: sanitizeTextContent('Call to action', 50)
     },
@@ -430,21 +449,55 @@ export function extractContentFromAngle(results: any, swipe: any, angleIndex: nu
 // Extract content data from individual swipe result - EXACT field mapping
 export function extractContentFromSwipeResult(swipeResult: any, templateType: 'listicle' | 'advertorial'): ContentData {
   // Parse the swipe result content - this contains the rich JSON data for this specific angle
-  const swipeContent = swipeResult.content ? JSON.parse(swipeResult.content) : {}
+  // Handle both formats: string (old) or object (new from swipe-files endpoint)
+  let swipeContent = {}
+  if (swipeResult.content) {
+    if (typeof swipeResult.content === 'string') {
+      try {
+        swipeContent = JSON.parse(swipeResult.content)
+      } catch (e) {
+        console.warn('Failed to parse swipe content as JSON:', e)
+        swipeContent = {}
+      }
+    } else {
+      // Already an object (Listicle or Advertorial)
+      swipeContent = swipeResult.content
+    }
+  }
+
+  // Check if this is a Listicle or Advertorial structure (from swipe-files endpoint)
+  const isListicle = swipeContent.title && swipeContent.listicles && Array.isArray(swipeContent.listicles)
+  const isAdvertorial = swipeContent.title && swipeContent.subtitle && swipeContent.body
 
   // Create content data using EXACT field names from API - NO DUPLICATES
   const content: ContentData = {
-    // Hero section - exact field mapping with fallback images
+    // Hero section - handle both old format and Listicle/Advertorial format
     hero: {
-      headline: sanitizeTextContent(swipeContent.hero?.headline || 'Transform Your Daily Routine', 100),
-      subheadline: sanitizeTextContent(swipeContent.hero?.subheadline || 'Discover the solution that thousands are already using', 200),
+      headline: sanitizeTextContent(
+        swipeContent.hero?.headline || 
+        swipeContent.title || 
+        'Transform Your Daily Routine', 
+        100
+      ),
+      subheadline: sanitizeTextContent(
+        swipeContent.hero?.subheadline || 
+        (isListicle ? swipeContent.summary : null) ||
+        (isAdvertorial ? swipeContent.subtitle : null) ||
+        'Discover the solution that thousands are already using', 
+        200
+      ),
       image: sanitizeUrl(swipeContent.hero?.image || 'https://placehold.co/600x400?text=Hero+Image'),
       imageAlt: sanitizeTextContent(swipeContent.hero?.imageAlt || 'Hero Image', 50)
     },
 
-    // Author section - exact field mapping with fallback images
+    // Author section - handle both formats
     author: {
-      name: sanitizeTextContent(swipeContent.author?.name || 'Health Expert', 50),
+      name: sanitizeTextContent(
+        swipeContent.author?.name || 
+        (isListicle ? swipeContent.author : null) ||
+        'Health Expert', 
+        50
+      ),
       image: sanitizeUrl(swipeContent.author?.image || 'https://placehold.co/100x100?text=Author'),
       date: new Date().toLocaleDateString(),
       verifiedIcon: sanitizeUrl('https://placehold.co/20x20?text=✓') // Not in API, keep default
@@ -466,88 +519,260 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
       text: sanitizeTextContent(swipeContent.breadcrumbs?.text || 'Home > Health > Products', 100)
     },
 
-    // Story intro - exact field mapping
+    // Story intro - handle both formats
     story: {
-      intro: sanitizeTextContent(swipeContent.story?.intro || 'Here\'s what you need to know about this breakthrough solution...', 300)
+      intro: sanitizeBodyContent(
+        swipeContent.story?.intro || 
+        (isListicle ? swipeContent.summary : null) ||
+        (isAdvertorial ? swipeContent.body?.substring(0, 300) : null) ||
+        'Here\'s what you need to know about this breakthrough solution...', 
+        300
+      )
     },
 
-    // Sections 1-12 - use real API data, only fallback to meaningful content
+    // Sections 1-12 - use real API data, handle Listicle format (listicles array)
     section1: {
-      title: sanitizeTextContent(swipeContent.section1?.title || swipeContent.section1?.headline || 'The Problem You Face', 100),
-      body: sanitizeTextContent(swipeContent.section1?.body || swipeContent.section1?.description || 'Many people struggle with this issue daily, affecting their quality of life.', 500),
+      title: sanitizeTextContent(
+        swipeContent.section1?.title || 
+        swipeContent.section1?.headline || 
+        (isListicle && swipeContent.listicles?.[0] ? swipeContent.listicles[0].title : null) ||
+        'The Problem You Face', 
+        100
+      ),
+      body: sanitizeBodyContent(
+        swipeContent.section1?.body || 
+        swipeContent.section1?.description || 
+        (isListicle && swipeContent.listicles?.[0] ? swipeContent.listicles[0].description : null) ||
+        (isAdvertorial ? swipeContent.body?.substring(0, 500) : null) ||
+        'Many people struggle with this issue daily, affecting their quality of life.', 
+        500
+      ),
       image: sanitizeUrl(swipeContent.section1?.image || 'https://placehold.co/600x400?text=Problem+Image'),
       imageAlt: sanitizeTextContent(swipeContent.section1?.imageAlt || 'Problem illustration', 50)
     },
     section2: {
-      title: sanitizeTextContent(swipeContent.section2?.title || swipeContent.section2?.headline || 'The Science Behind It', 100),
-      body: sanitizeTextContent(swipeContent.section2?.body || swipeContent.section2?.description || 'Research shows that this approach has been proven effective in clinical studies.', 500),
+      title: sanitizeTextContent(
+        swipeContent.section2?.title || 
+        swipeContent.section2?.headline || 
+        (isListicle && swipeContent.listicles?.[1] ? swipeContent.listicles[1].title : null) ||
+        'The Science Behind It', 
+        100
+      ),
+      body: sanitizeBodyContent(
+        swipeContent.section2?.body || 
+        swipeContent.section2?.description || 
+        (isListicle && swipeContent.listicles?.[1] ? swipeContent.listicles[1].description : null) ||
+        (isAdvertorial ? swipeContent.body?.substring(500, 1000) : null) ||
+        'Research shows that this approach has been proven effective in clinical studies.', 
+        500
+      ),
       image: sanitizeUrl(swipeContent.section2?.image || 'https://placehold.co/600x400?text=Science+Image'),
       imageAlt: sanitizeTextContent(swipeContent.section2?.imageAlt || 'Scientific research', 50)
     },
     section3: {
-      title: sanitizeTextContent(swipeContent.section3?.title || swipeContent.section3?.headline || 'How It Works', 100),
-      body: sanitizeTextContent(swipeContent.section3?.body || swipeContent.section3?.description || 'Our solution works by targeting the root cause of the problem.', 500),
+      title: sanitizeTextContent(
+        swipeContent.section3?.title || 
+        swipeContent.section3?.headline || 
+        (isListicle && swipeContent.listicles?.[2] ? swipeContent.listicles[2].title : null) ||
+        'How It Works', 
+        100
+      ),
+      body: sanitizeBodyContent(
+        swipeContent.section3?.body || 
+        swipeContent.section3?.description || 
+        (isListicle && swipeContent.listicles?.[2] ? swipeContent.listicles[2].description : null) ||
+        (isAdvertorial ? swipeContent.body?.substring(1000, 1500) : null) ||
+        'Our solution works by targeting the root cause of the problem.', 
+        500
+      ),
       image: sanitizeUrl(swipeContent.section3?.image || 'https://placehold.co/600x400?text=How+It+Works'),
       imageAlt: sanitizeTextContent(swipeContent.section3?.imageAlt || 'Process illustration', 50)
     },
     section4: {
-      title: sanitizeTextContent(swipeContent.section4?.title || swipeContent.section4?.headline || 'Real Results', 100),
-      body: sanitizeTextContent(swipeContent.section4?.body || swipeContent.section4?.description || 'Thousands of users have experienced significant improvements.', 500),
+      title: sanitizeTextContent(
+        swipeContent.section4?.title || 
+        swipeContent.section4?.headline || 
+        (isListicle && swipeContent.listicles?.[3] ? swipeContent.listicles[3].title : null) ||
+        'Real Results', 
+        100
+      ),
+      body: sanitizeBodyContent(
+        swipeContent.section4?.body || 
+        swipeContent.section4?.description || 
+        (isListicle && swipeContent.listicles?.[3] ? swipeContent.listicles[3].description : null) ||
+        (isAdvertorial ? swipeContent.body?.substring(1500, 2000) : null) ||
+        'Thousands of users have experienced significant improvements.', 
+        500
+      ),
       image: sanitizeUrl(swipeContent.section4?.image || 'https://placehold.co/600x400?text=Results+Image'),
       imageAlt: sanitizeTextContent(swipeContent.section4?.imageAlt || 'Success results', 50)
     },
     section5: {
-      title: sanitizeTextContent(swipeContent.section5?.title || swipeContent.section5?.headline || 'What Makes Us Different', 100),
-      body: sanitizeTextContent(swipeContent.section5?.body || swipeContent.section5?.description || 'Our unique approach sets us apart from other solutions.', 500),
+      title: sanitizeTextContent(
+        swipeContent.section5?.title || 
+        swipeContent.section5?.headline || 
+        (isListicle && swipeContent.listicles?.[4] ? swipeContent.listicles[4].title : null) ||
+        'What Makes Us Different', 
+        100
+      ),
+      body: sanitizeBodyContent(
+        swipeContent.section5?.body || 
+        swipeContent.section5?.description || 
+        (isListicle && swipeContent.listicles?.[4] ? swipeContent.listicles[4].description : null) ||
+        (isAdvertorial ? swipeContent.body?.substring(2000, 2500) : null) ||
+        'Our unique approach sets us apart from other solutions.', 
+        500
+      ),
       image: sanitizeUrl(swipeContent.section5?.image || 'https://placehold.co/600x400?text=Difference+Image'),
       imageAlt: sanitizeTextContent(swipeContent.section5?.imageAlt || 'Unique features', 50)
     },
     section6: {
-      title: sanitizeTextContent(swipeContent.section6?.title || swipeContent.section6?.headline || 'Easy to Use', 100),
-      body: sanitizeTextContent(swipeContent.section6?.body || swipeContent.section6?.description || 'Simple application process that fits into your daily routine.', 500),
+      title: sanitizeTextContent(
+        swipeContent.section6?.title || 
+        swipeContent.section6?.headline || 
+        (isListicle && swipeContent.listicles?.[5] ? swipeContent.listicles[5].title : null) ||
+        'Easy to Use', 
+        100
+      ),
+      body: sanitizeBodyContent(
+        swipeContent.section6?.body || 
+        swipeContent.section6?.description || 
+        (isListicle && swipeContent.listicles?.[5] ? swipeContent.listicles[5].description : null) ||
+        (isAdvertorial ? swipeContent.body?.substring(2500, 3000) : null) ||
+        'Simple application process that fits into your daily routine.', 
+        500
+      ),
       image: sanitizeUrl(swipeContent.section6?.image || 'https://placehold.co/600x400?text=Easy+Use'),
       imageAlt: sanitizeTextContent(swipeContent.section6?.imageAlt || 'Easy application', 50)
     },
     section7: {
-      title: sanitizeTextContent(swipeContent.section7?.title || swipeContent.section7?.headline || 'Safety First', 100),
-      body: sanitizeTextContent(swipeContent.section7?.body || swipeContent.section7?.description || 'Made with high-quality, safe ingredients you can trust.', 500),
+      title: sanitizeTextContent(
+        swipeContent.section7?.title || 
+        swipeContent.section7?.headline || 
+        (isListicle && swipeContent.listicles?.[6] ? swipeContent.listicles[6].title : null) ||
+        'Safety First', 
+        100
+      ),
+      body: sanitizeBodyContent(
+        swipeContent.section7?.body || 
+        swipeContent.section7?.description || 
+        (isListicle && swipeContent.listicles?.[6] ? swipeContent.listicles[6].description : null) ||
+        (isAdvertorial ? swipeContent.body?.substring(3000, 3500) : null) ||
+        'Made with high-quality, safe ingredients you can trust.', 
+        500
+      ),
       image: sanitizeUrl(swipeContent.section7?.image || 'https://placehold.co/600x400?text=Safety+Image'),
       imageAlt: sanitizeTextContent(swipeContent.section7?.imageAlt || 'Safety assurance', 50)
     },
     section8: {
-      title: sanitizeTextContent(swipeContent.section8?.title || swipeContent.section8?.headline || 'Customer Stories', 100),
-      body: sanitizeTextContent(swipeContent.section8?.body || swipeContent.section8?.description || 'Hear from real customers who have transformed their lives.', 500),
+      title: sanitizeTextContent(
+        swipeContent.section8?.title || 
+        swipeContent.section8?.headline || 
+        (isListicle && swipeContent.listicles?.[7] ? swipeContent.listicles[7].title : null) ||
+        'Customer Stories', 
+        100
+      ),
+      body: sanitizeBodyContent(
+        swipeContent.section8?.body || 
+        swipeContent.section8?.description || 
+        (isListicle && swipeContent.listicles?.[7] ? swipeContent.listicles[7].description : null) ||
+        (isAdvertorial ? swipeContent.body?.substring(3500, 4000) : null) ||
+        'Hear from real customers who have transformed their lives.', 
+        500
+      ),
       image: sanitizeUrl(swipeContent.section8?.image || 'https://placehold.co/600x400?text=Testimonials'),
       imageAlt: sanitizeTextContent(swipeContent.section8?.imageAlt || 'Customer testimonials', 50)
     },
     section9: {
-      title: sanitizeTextContent(swipeContent.section9?.title || swipeContent.section9?.headline || 'Expert Endorsement', 100),
-      body: sanitizeTextContent(swipeContent.section9?.body || swipeContent.section9?.description || 'Recommended by healthcare professionals and experts.', 500),
+      title: sanitizeTextContent(
+        swipeContent.section9?.title || 
+        swipeContent.section9?.headline || 
+        (isListicle && swipeContent.listicles?.[8] ? swipeContent.listicles[8].title : null) ||
+        'Expert Endorsement', 
+        100
+      ),
+      body: sanitizeBodyContent(
+        swipeContent.section9?.body || 
+        swipeContent.section9?.description || 
+        (isListicle && swipeContent.listicles?.[8] ? swipeContent.listicles[8].description : null) ||
+        (isAdvertorial ? swipeContent.body?.substring(4000, 4500) : null) ||
+        'Recommended by healthcare professionals and experts.', 
+        500
+      ),
       image: sanitizeUrl(swipeContent.section9?.image || 'https://placehold.co/600x400?text=Expert+Endorsement'),
       imageAlt: sanitizeTextContent(swipeContent.section9?.imageAlt || 'Expert recommendation', 50)
     },
     section10: {
-      title: sanitizeTextContent(swipeContent.section10?.title || swipeContent.section10?.headline || 'Risk-Free Trial', 100),
-      body: sanitizeTextContent(swipeContent.section10?.body || swipeContent.section10?.description || 'Try it risk-free with our satisfaction guarantee.', 500),
+      title: sanitizeTextContent(
+        swipeContent.section10?.title || 
+        swipeContent.section10?.headline || 
+        (isListicle && swipeContent.listicles?.[9] ? swipeContent.listicles[9].title : null) ||
+        'Risk-Free Trial', 
+        100
+      ),
+      body: sanitizeBodyContent(
+        swipeContent.section10?.body || 
+        swipeContent.section10?.description || 
+        (isListicle && swipeContent.listicles?.[9] ? swipeContent.listicles[9].description : null) ||
+        (isAdvertorial ? swipeContent.body?.substring(4500, 5000) : null) ||
+        'Try it risk-free with our satisfaction guarantee.', 
+        500
+      ),
       image: sanitizeUrl(swipeContent.section10?.image || 'https://placehold.co/600x400?text=Risk+Free'),
       imageAlt: sanitizeTextContent(swipeContent.section10?.imageAlt || 'Risk-free guarantee', 50)
     },
     section11: {
-      title: sanitizeTextContent(swipeContent.section11?.title || swipeContent.section11?.headline || 'Limited Time Offer', 100),
-      body: sanitizeTextContent(swipeContent.section11?.body || swipeContent.section11?.description || 'Special pricing available for a limited time only.', 500),
+      title: sanitizeTextContent(
+        swipeContent.section11?.title || 
+        swipeContent.section11?.headline || 
+        (isListicle && swipeContent.listicles?.[10] ? swipeContent.listicles[10].title : null) ||
+        'Limited Time Offer', 
+        100
+      ),
+      body: sanitizeBodyContent(
+        swipeContent.section11?.body || 
+        swipeContent.section11?.description || 
+        (isListicle && swipeContent.listicles?.[10] ? swipeContent.listicles[10].description : null) ||
+        (isAdvertorial ? swipeContent.body?.substring(5000, 5500) : null) ||
+        'Special pricing available for a limited time only.', 
+        500
+      ),
       image: sanitizeUrl(swipeContent.section11?.image || 'https://placehold.co/600x400?text=Special+Offer'),
       imageAlt: sanitizeTextContent(swipeContent.section11?.imageAlt || 'Special offer', 50)
     },
     section12: {
-      title: sanitizeTextContent(swipeContent.section12?.title || swipeContent.section12?.headline || 'Get Started Today', 100),
-      body: sanitizeTextContent(swipeContent.section12?.body || swipeContent.section12?.description || 'Don\'t wait - start your journey to better health today.', 500),
+      title: sanitizeTextContent(
+        swipeContent.section12?.title || 
+        swipeContent.section12?.headline || 
+        (isListicle && swipeContent.listicles?.[11] ? swipeContent.listicles[11].title : null) ||
+        (isListicle && swipeContent.conclusion ? 'Conclusion' : null) ||
+        'Get Started Today', 
+        100
+      ),
+      body: sanitizeBodyContent(
+        swipeContent.section12?.body || 
+        swipeContent.section12?.description || 
+        (isListicle && swipeContent.listicles?.[11] ? swipeContent.listicles[11].description : null) ||
+        (isListicle && swipeContent.conclusion ? swipeContent.conclusion : null) ||
+        (isAdvertorial ? swipeContent.body?.substring(5500) : null) ||
+        'Don\'t wait - start your journey to better health today.', 
+        500
+      ),
       image: sanitizeUrl(swipeContent.section12?.image || 'https://placehold.co/600x400?text=Get+Started'),
       imageAlt: sanitizeTextContent(swipeContent.section12?.imageAlt || 'Call to action', 50)
     },
 
-    // CTA section - exact field mapping
+    // CTA section - handle both formats
     cta: {
-      primary: sanitizeTextContent(swipeContent.cta?.primary || swipeContent.cta || swipeContent.hero?.cta || 'Get Started Now', 100),
+      primary: sanitizeTextContent(
+        swipeContent.cta?.primary || 
+        swipeContent.cta || 
+        swipeContent.hero?.cta || 
+        (isListicle ? swipeContent.cta : null) ||
+        (isAdvertorial ? swipeContent.cta : null) ||
+        'Get Started Now', 
+        100
+      ),
       primaryUrl: '#order',
       secondary: sanitizeTextContent(swipeContent.cta?.secondary || 'Learn More', 100),
       secondaryUrl: '#learn'
