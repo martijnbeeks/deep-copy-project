@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { MarkdownContent } from "@/components/results/markdown-content"
 import { TemplateGrid } from "@/components/results/template-grid"
-import { FileText, BarChart3, Code, BookOpen, User, Target, Calendar, Clock, Users, MapPin, DollarSign, Briefcase, Sparkles, AlertTriangle, Star } from "lucide-react"
+import { FileText, BarChart3, Code, BookOpen, User, Target, Calendar, Clock, Users, MapPin, DollarSign, Briefcase, Sparkles, AlertTriangle, Star, Eye, TrendingUp, Brain, Loader2, CheckCircle2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { extractContentFromSwipeResult, injectContentIntoTemplate } from "@/lib/utils/template-injection"
@@ -41,8 +41,97 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
   const [selectedTemplate, setSelectedTemplate] = useState<{ name: string; html_content: string; description?: string; category?: string } | null>(null)
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
+  
+  // Swipe file generation state
+  const [selectedAngle, setSelectedAngle] = useState<string | null>(null)
+  const [swipeFileJobId, setSwipeFileJobId] = useState<string | null>(null)
+  const [swipeFileStatus, setSwipeFileStatus] = useState<string>('')
+  const [isGeneratingSwipeFiles, setIsGeneratingSwipeFiles] = useState(false)
+  const [swipeFileResults, setSwipeFileResults] = useState<any>(null)
 
   const fullResult = result.metadata?.full_result
+  const originalJobId = result.metadata?.deepcopy_job_id
+
+  // Poll swipe file status
+  const pollSwipeFileStatus = async (jobId: string) => {
+    const maxAttempts = 60 // 5 minutes max (60 * 5s)
+    const pollInterval = 5000 // Poll every 5 seconds
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        await new Promise(resolve => setTimeout(resolve, pollInterval))
+
+        const response = await fetch(`/api/swipe-files/${jobId}`)
+        if (!response.ok) {
+          throw new Error(`Status check failed: ${response.status}`)
+        }
+
+        const statusData = await response.json()
+        setSwipeFileStatus(statusData.status)
+
+        if (statusData.status === 'SUCCEEDED') {
+          // Fetch results
+          const resultResponse = await fetch(`/api/swipe-files/${jobId}/result`)
+          if (!resultResponse.ok) {
+            throw new Error(`Result fetch failed: ${resultResponse.status}`)
+          }
+
+          const resultData = await resultResponse.json()
+          setSwipeFileResults(resultData)
+          setIsGeneratingSwipeFiles(false)
+
+          // Update fullResult with swipe results and reload templates
+          if (fullResult && fullResult.results) {
+            // Convert swipe file results to swipe_results format
+            // SwipeFileGenerationResponse has keys like L00001, A00003, etc.
+            // Each key contains an object with full_advertorial property
+            const swipeResults: any[] = []
+            Object.keys(resultData).forEach((key) => {
+              // Template IDs like L00001, A00003, etc.
+              if (key.match(/^[LA]\d+$/)) {
+                const templateData = resultData[key]
+                if (templateData && templateData.full_advertorial) {
+                  // full_advertorial is already an object (Listicle or Advertorial)
+                  // Store it as-is (object format) - extractContentFromSwipeResult will handle it
+                  swipeResults.push({
+                    angle: selectedAngle || key,
+                    content: templateData.full_advertorial
+                  })
+                }
+              }
+            })
+            
+            // Update the results with swipe_results
+            if (swipeResults.length > 0) {
+              fullResult.results.swipe_results = swipeResults
+              // Force a re-render by updating the result object
+              result.metadata = {
+                ...result.metadata,
+                full_result: fullResult
+              }
+            }
+          }
+
+          // Reload templates to show the new swipe files
+          const extractedTemplates = await extractHTMLTemplates()
+          setTemplates(extractedTemplates)
+          setTemplatesLoading(false)
+          return
+        } else if (statusData.status === 'FAILED') {
+          throw new Error('Swipe file generation job failed')
+        }
+      } catch (err) {
+        if (attempt === maxAttempts) {
+          console.error('Swipe file polling error:', err)
+          setIsGeneratingSwipeFiles(false)
+          setSwipeFileStatus('FAILED')
+        }
+      }
+    }
+
+    setIsGeneratingSwipeFiles(false)
+    setSwipeFileStatus('TIMEOUT')
+  }
 
   const extractHTMLTemplates = async () => {
     const templates: Array<{ name: string, type: string, html: string, angle?: string, timestamp?: string }> = []
@@ -82,14 +171,17 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
             // Process each swipe result
             swipeResults.forEach((swipeResult, index) => {
               try {
-                // Extract content from the individual swipe result
+                // extractContentFromSwipeResult now handles both string and object formats
+                // Pass the swipeResult as-is
                 const contentData = extractContentFromSwipeResult(swipeResult, templateType)
 
                 // Inject content into the injectable template
                 const renderedHtml = injectContentIntoTemplate(injectableTemplate, contentData)
 
                 templates.push({
-                  name: `Angle ${index + 1}`,
+                  name: typeof swipeResult.angle === 'string' && swipeResult.angle.includes(':') 
+                    ? swipeResult.angle.split(':')[0].trim() 
+                    : `Angle ${index + 1}`,
                   type: 'Marketing Angle',
                   html: renderedHtml,
                   angle: swipeResult.angle,
@@ -229,7 +321,7 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
 
     // Always try to load templates, whether we have processed content or raw results
     loadTemplates()
-  }, [result, jobTitle])
+  }, [result, jobTitle, swipeFileResults])
 
   const formatAnalysis = (analysis: string) => {
     const paragraphs = analysis.split('\n\n').filter(p => p.trim())
@@ -346,68 +438,6 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
         </Accordion>
       </div>
 
-      {/* Page Analysis */}
-      {fullResult?.results?.research_page_analysis && (
-        <div className="mb-12">
-          <Accordion type="single" collapsible>
-            <AccordionItem value="page-analysis">
-              <Card className="bg-card/80 border-border/50">
-                <AccordionTrigger className="p-8 hover:no-underline">
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-accent rounded-lg flex items-center justify-center">
-                        <BarChart3 className="w-5 h-5 text-accent-foreground" />
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-foreground">Page Analysis</h2>
-                        <p className="text-sm text-muted-foreground">Detailed analysis of the target page</p>
-                      </div>
-                    </div>
-                  </div>
-                </AccordionTrigger>
-
-                <AccordionContent>
-                  <div className="px-8 pb-8 border-t border-border/50 pt-6">
-                    <MarkdownContent content={fullResult.results.research_page_analysis} />
-                  </div>
-                </AccordionContent>
-              </Card>
-            </AccordionItem>
-          </Accordion>
-        </div>
-      )}
-
-
-      {/* Research Output */}
-      {fullResult?.results?.deep_research_output && (
-        <div className="mb-12">
-          <Accordion type="single" collapsible>
-            <AccordionItem value="research-output">
-              <Card className="bg-card/80 border-border/50">
-                <AccordionTrigger className="p-8 hover:no-underline">
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-accent rounded-lg flex items-center justify-center">
-                        <BookOpen className="w-5 h-5 text-accent-foreground" />
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-foreground">Research Output</h2>
-                        <p className="text-sm text-muted-foreground">Comprehensive research findings and recommendations</p>
-                      </div>
-                    </div>
-                  </div>
-                </AccordionTrigger>
-
-                <AccordionContent>
-                  <div className="px-8 pb-8 border-t border-border/50 pt-6">
-                    <MarkdownContent content={fullResult.results.deep_research_output} />
-                  </div>
-                </AccordionContent>
-              </Card>
-            </AccordionItem>
-          </Accordion>
-        </div>
-      )}
 
       {/* Avatar & Marketing */}
       {(fullResult?.results?.avatar_sheet || fullResult?.results?.marketing_angles) && (
@@ -606,16 +636,27 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
                         <div className="space-y-4">
                           <h4 className="text-lg font-semibold mb-4">Marketing Angles</h4>
                           <div className="grid grid-cols-1 gap-3">
-                            {fullResult.results.marketing_angles.map((angle, index) => (
-                              <div key={index} className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg p-3 border border-purple-200/50 dark:border-purple-800/50 hover:shadow-md transition-shadow">
-                                <div className="flex items-start gap-2">
-                                  <div className="bg-primary/10 rounded-full p-1.5 flex-shrink-0">
-                                    <Target className="h-3 w-3 text-primary" />
+                            {fullResult.results.marketing_angles.map((angle, index) => {
+                              // Handle both old format (string) and new format (object with angle and title)
+                              const angleTitle = typeof angle === 'object' ? angle.title : null;
+                              const angleDescription = typeof angle === 'object' ? angle.angle : angle;
+                              
+                              return (
+                                <div key={index} className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg p-3 border border-purple-200/50 dark:border-purple-800/50 hover:shadow-md transition-shadow">
+                                  <div className="flex items-start gap-2">
+                                    <div className="bg-primary/10 rounded-full p-1.5 flex-shrink-0">
+                                      <Target className="h-3 w-3 text-primary" />
+                                    </div>
+                                    <div className="flex-1">
+                                      {angleTitle && (
+                                        <h5 className="text-sm font-bold text-foreground mb-1">{angleTitle}</h5>
+                                      )}
+                                      <p className="text-sm text-foreground font-medium leading-relaxed break-words">{angleDescription}</p>
+                                    </div>
                                   </div>
-                                  <p className="text-sm text-foreground font-medium leading-relaxed break-words">{angle}</p>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -625,6 +666,425 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
               </Card>
             </AccordionItem>
           </Accordion>
+        </div>
+      )}
+
+      {/* Offer Brief */}
+      {fullResult?.results?.offer_brief && (
+        <div className="mb-12">
+          <Accordion type="single" collapsible>
+            <AccordionItem value="offer-brief">
+              <Card className="bg-card/80 border-border/50">
+                <AccordionTrigger className="p-8 hover:no-underline">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
+                        <Briefcase className="w-5 h-5 text-primary-foreground" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-foreground">Offer Brief</h2>
+                        <p className="text-sm text-muted-foreground">Key elements of your marketing strategy</p>
+                      </div>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+
+                <AccordionContent>
+                  <div className="px-8 pb-8 space-y-6 border-t border-border/50 pt-6">
+                    {(() => {
+                      try {
+                        // Parse offer_brief - it might be a string or already an object
+                        const offerBrief = typeof fullResult.results.offer_brief === 'string' 
+                          ? JSON.parse(fullResult.results.offer_brief) 
+                          : fullResult.results.offer_brief;
+
+                        return (
+                          <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              {offerBrief.potential_product_names && offerBrief.potential_product_names.length > 0 && (
+                                <div className="bg-muted/50 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-primary" />
+                                    Potential Product Names
+                                  </h4>
+                                  <div className="flex flex-wrap gap-1">
+                                    {offerBrief.potential_product_names.map((name: string, idx: number) => (
+                                      <Badge key={idx} variant="secondary" className="text-xs">
+                                        {name}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {offerBrief.level_of_consciousness && (
+                                <div className="bg-muted/50 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                                    <Brain className="w-4 h-4 text-accent" />
+                                    Level of Consciousness
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground capitalize">{offerBrief.level_of_consciousness}</p>
+                                </div>
+                              )}
+
+                              {offerBrief.level_of_awareness && (
+                                <div className="bg-muted/50 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                                    <Eye className="w-4 h-4 text-primary" />
+                                    Level of Awareness
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground capitalize">{offerBrief.level_of_awareness.replace(/_/g, ' ')}</p>
+                                </div>
+                              )}
+
+                              {offerBrief.stage_of_sophistication && (
+                                <div className="bg-muted/50 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                                    <TrendingUp className="w-4 h-4 text-accent" />
+                                    Stage of Sophistication
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground capitalize">
+                                    {offerBrief.stage_of_sophistication.level?.replace(/_/g, ' ') || 'N/A'}
+                                  </p>
+                                  {offerBrief.stage_of_sophistication.rationale && (
+                                    <p className="text-xs text-muted-foreground mt-1">{offerBrief.stage_of_sophistication.rationale}</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="space-y-4">
+                              {offerBrief.big_idea && (
+                                <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2">Big Idea</h4>
+                                  <p className="text-sm text-muted-foreground">{offerBrief.big_idea}</p>
+                                </div>
+                              )}
+
+                              {offerBrief.metaphors && offerBrief.metaphors.length > 0 && (
+                                <div className="bg-accent/5 border border-accent/20 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2">Metaphors</h4>
+                                  <div className="space-y-1">
+                                    {offerBrief.metaphors.map((metaphor: string, idx: number) => (
+                                      <p key={idx} className="text-sm text-muted-foreground">"{metaphor}"</p>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {(offerBrief.potential_ump || offerBrief.potential_ums) && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {offerBrief.potential_ump && offerBrief.potential_ump.length > 0 && (
+                                    <div className="bg-muted/50 p-4 rounded-lg">
+                                      <h4 className="font-medium text-foreground mb-2">Unique Mechanism (Problem)</h4>
+                                      <ul className="space-y-1">
+                                        {offerBrief.potential_ump.map((ump: string, idx: number) => (
+                                          <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                                            <span className="text-destructive mt-0.5">•</span>
+                                            <span>{ump}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {offerBrief.potential_ums && offerBrief.potential_ums.length > 0 && (
+                                    <div className="bg-muted/50 p-4 rounded-lg">
+                                      <h4 className="font-medium text-foreground mb-2">Unique Mechanism (Solution)</h4>
+                                      <ul className="space-y-1">
+                                        {offerBrief.potential_ums.map((ums: string, idx: number) => (
+                                          <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                                            <span className="text-primary mt-0.5">•</span>
+                                            <span>{ums}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {offerBrief.guru && (
+                                <div className="bg-muted/50 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2">Guru / Discovery Story</h4>
+                                  <p className="text-sm text-muted-foreground">{offerBrief.guru}</p>
+                                </div>
+                              )}
+
+                              {offerBrief.discovery_story && (
+                                <div className="bg-muted/50 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2">Discovery Story</h4>
+                                  <p className="text-sm text-muted-foreground">{offerBrief.discovery_story}</p>
+                                </div>
+                              )}
+
+                              {offerBrief.headline_ideas && offerBrief.headline_ideas.length > 0 && (
+                                <div className="bg-muted/50 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2">Potential Headline/Subheadline Ideas</h4>
+                                  <div className="space-y-2">
+                                    {offerBrief.headline_ideas.map((headline: any, idx: number) => (
+                                      <div key={idx} className="text-sm text-muted-foreground">
+                                        {headline.headline && (
+                                          <p className="mb-1"><strong>H1:</strong> "{headline.headline}"</p>
+                                        )}
+                                        {headline.subheadline && (
+                                          <p><strong>H2:</strong> "{headline.subheadline}"</p>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {offerBrief.objections && offerBrief.objections.length > 0 && (
+                                <div className="bg-destructive/5 border border-destructive/20 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2">Key Objections</h4>
+                                  <ul className="space-y-1">
+                                    {offerBrief.objections.map((objection: string, idx: number) => (
+                                      <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                                        <span className="text-destructive">•</span>
+                                        <span>{objection}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              {offerBrief.belief_chains && offerBrief.belief_chains.length > 0 && (
+                                <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2">Belief Chains</h4>
+                                  <div className="space-y-3">
+                                    {offerBrief.belief_chains.map((chain: any, idx: number) => (
+                                      <div key={idx} className="bg-background/50 p-3 rounded border border-primary/10">
+                                        <p className="text-sm font-medium text-foreground mb-2">{chain.outcome}</p>
+                                        <ul className="space-y-1">
+                                          {chain.steps?.map((step: string, stepIdx: number) => (
+                                            <li key={stepIdx} className="text-xs text-muted-foreground flex items-start gap-2">
+                                              <span className="text-primary mt-0.5">✓</span>
+                                              <span>{step}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {offerBrief.funnel_architecture && offerBrief.funnel_architecture.length > 0 && (
+                                <div className="bg-muted/50 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2">Funnel Architecture</h4>
+                                  <p className="text-sm text-muted-foreground">{offerBrief.funnel_architecture.join(' → ')}</p>
+                                </div>
+                              )}
+
+                              {offerBrief.potential_domains && offerBrief.potential_domains.length > 0 && (
+                                <div className="bg-muted/50 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2">Potential Domains</h4>
+                                  <div className="flex flex-wrap gap-1">
+                                    {offerBrief.potential_domains.map((domain: string, idx: number) => (
+                                      <Badge key={idx} variant="outline" className="text-xs">
+                                        {domain}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {offerBrief.product && (
+                                <div className="bg-muted/50 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2">Product Information</h4>
+                                  {offerBrief.product.name && (
+                                    <p className="text-sm text-muted-foreground mb-1"><strong>Name:</strong> {offerBrief.product.name}</p>
+                                  )}
+                                  {offerBrief.product.description && (
+                                    <p className="text-sm text-muted-foreground mb-1"><strong>Description:</strong> {offerBrief.product.description}</p>
+                                  )}
+                                  {offerBrief.product.details && (
+                                    <p className="text-sm text-muted-foreground"><strong>Details:</strong> {offerBrief.product.details}</p>
+                                  )}
+                                </div>
+                              )}
+
+                              {offerBrief.examples_swipes && offerBrief.examples_swipes.length > 0 && (
+                                <div className="bg-muted/50 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2">Example Swipes</h4>
+                                  <div className="space-y-2">
+                                    {offerBrief.examples_swipes.map((swipe: any, idx: number) => (
+                                      <div key={idx} className="text-sm text-muted-foreground">
+                                        <p className="font-medium text-foreground">{swipe.title}</p>
+                                        {swipe.url && (
+                                          <a href={swipe.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs">
+                                            {swipe.url}
+                                          </a>
+                                        )}
+                                        {swipe.notes && (
+                                          <p className="text-xs mt-1">{swipe.notes}</p>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {offerBrief.other_notes && (
+                                <div className="bg-muted/50 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2">Other Notes</h4>
+                                  <p className="text-sm text-muted-foreground">{offerBrief.other_notes}</p>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        );
+                      } catch (error) {
+                        // Fallback if parsing fails
+                        return (
+                          <div className="bg-muted rounded-lg p-4">
+                            <pre className="text-sm whitespace-pre-wrap text-foreground">
+                              {typeof fullResult.results.offer_brief === 'string' 
+                                ? fullResult.results.offer_brief 
+                                : JSON.stringify(fullResult.results.offer_brief, null, 2)}
+                            </pre>
+                          </div>
+                        );
+                      }
+                    })()}
+                  </div>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      )}
+
+      {/* Angle Selection & Swipe File Generation */}
+      {/* Only show if we have marketing_angles but NO swipe_results yet */}
+      {fullResult?.results?.marketing_angles && 
+       fullResult.results.marketing_angles.length > 0 && 
+       (!fullResult.results.swipe_results || fullResult.results.swipe_results.length === 0) && (
+        <div className="mb-12">
+          <Card className="bg-card/80 border-border/50 p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-accent rounded-lg flex items-center justify-center">
+                <Target className="w-5 h-5 text-accent-foreground" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">Select Marketing Angle</h2>
+                <p className="text-sm text-muted-foreground">Choose an angle to generate swipe files</p>
+              </div>
+            </div>
+
+            {!swipeFileJobId && !swipeFileResults && (
+              <div className="space-y-3">
+                {fullResult.results.marketing_angles.map((angle, index) => {
+                  // Handle both old format (string) and new format (object with title and angle)
+                  const angleTitle = typeof angle === 'object' ? angle.title : null;
+                  const angleDescription = typeof angle === 'object' ? angle.angle : angle;
+                  // For select_angle, use the format: "Title: Description" or just the string
+                  const angleString = typeof angle === 'object' ? `${angle.title}: ${angle.angle}` : angle;
+                  
+                  return (
+                    <Card
+                      key={index}
+                      className={`cursor-pointer transition-all hover:shadow-md ${
+                        selectedAngle === angleString ? 'border-primary shadow-elegant bg-primary/5' : 'border-border/50'
+                      }`}
+                      onClick={() => setSelectedAngle(angleString)}
+                    >
+                      <div className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                              selectedAngle === angleString ? 'border-primary bg-primary' : 'border-muted-foreground'
+                            }`}>
+                              {selectedAngle === angleString && <CheckCircle2 className="w-3 h-3 text-primary-foreground" />}
+                            </div>
+                            <div className="flex-1">
+                              {angleTitle && (
+                                <h3 className="text-lg font-bold text-foreground mb-1">{angleTitle}</h3>
+                              )}
+                              <p className="text-sm text-muted-foreground">{angleDescription}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+
+                <div className="flex justify-end pt-4">
+                  <Button
+                    onClick={async () => {
+                      if (!selectedAngle || !originalJobId) return;
+                      
+                      setIsGeneratingSwipeFiles(true);
+                      try {
+                        const response = await fetch('/api/swipe-files/generate', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            original_job_id: originalJobId,
+                            select_angle: selectedAngle
+                          })
+                        });
+
+                        if (!response.ok) {
+                          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                          throw new Error(errorData.error || 'Failed to generate swipe files');
+                        }
+
+                        const data = await response.json();
+                        setSwipeFileJobId(data.jobId);
+                        setSwipeFileStatus('SUBMITTED');
+
+                        // Start polling
+                        pollSwipeFileStatus(data.jobId);
+                      } catch (error) {
+                        console.error('Error generating swipe files:', error);
+                        setIsGeneratingSwipeFiles(false);
+                        alert(error instanceof Error ? error.message : 'Failed to generate swipe files');
+                      }
+                    }}
+                    disabled={!selectedAngle || isGeneratingSwipeFiles}
+                    className="px-8"
+                  >
+                    {isGeneratingSwipeFiles ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      'Generate Swipe Files'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {swipeFileJobId && !swipeFileResults && (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Generating Swipe Files</h3>
+                <p className="text-muted-foreground text-center max-w-md mb-2">
+                  Status: {swipeFileStatus}
+                </p>
+                <p className="text-sm text-muted-foreground text-center max-w-md">
+                  Please wait while we generate your swipe files...
+                </p>
+              </div>
+            )}
+
+            {swipeFileResults && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span className="font-semibold">Swipe files generated successfully!</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Swipe files are now available below in the HTML Templates section.
+                </p>
+              </div>
+            )}
+          </Card>
         </div>
       )}
 
