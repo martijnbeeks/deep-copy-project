@@ -1,19 +1,47 @@
 import { Pool } from 'pg'
 
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'ai_copywriting',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'password',
-  ssl: process.env.DB_HOST?.includes('render.com') ? { rejectUnauthorized: false } : false,
-  max: 10, // Reduced from 20 to be more conservative
-  idleTimeoutMillis: 60000, // Increased to 60 seconds
-  connectionTimeoutMillis: 10000, // Increased to 10 seconds
-  acquireTimeoutMillis: 10000, // Add acquire timeout
-  keepAlive: true, // Enable keep-alive
-  keepAliveInitialDelayMillis: 10000, // Keep-alive interval
-})
+// Support both connection string (DATABASE_URL) and individual env vars
+// Neon DB requires SSL, so we enable it for Neon connections
+const getPoolConfig = () => {
+  // If DATABASE_URL is provided, use it directly (Neon provides this format)
+  if (process.env.DATABASE_URL) {
+    return {
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.DATABASE_URL.includes('neon.tech') 
+        ? { rejectUnauthorized: false } 
+        : process.env.DATABASE_URL.includes('render.com')
+        ? { rejectUnauthorized: false }
+        : false,
+      max: 10,
+      idleTimeoutMillis: 60000,
+      connectionTimeoutMillis: 10000,
+      acquireTimeoutMillis: 10000,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000,
+    }
+  }
+
+  // Fallback to individual env vars (for backward compatibility)
+  const isNeon = process.env.DB_HOST?.includes('neon.tech')
+  const isRender = process.env.DB_HOST?.includes('render.com')
+  
+  return {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432'),
+    database: process.env.DB_NAME || 'ai_copywriting',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || 'password',
+    ssl: isNeon || isRender ? { rejectUnauthorized: false } : false,
+    max: 10,
+    idleTimeoutMillis: 60000,
+    connectionTimeoutMillis: 10000,
+    acquireTimeoutMillis: 10000,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000,
+  }
+}
+
+const pool = new Pool(getPoolConfig())
 
 // Add connection event handlers for debugging
 pool.on('connect', (client) => {
