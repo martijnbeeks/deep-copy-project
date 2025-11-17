@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, AlertCircle, Eye, ChevronRight, ChevronLeft, Menu, Info } from "lucide-react"
+import { Loader2, AlertCircle, Eye, ChevronRight, ChevronLeft, Menu, Info, Zap, CheckCircle } from "lucide-react"
 import { useTemplatesStore } from "@/stores/templates-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useAuthStore } from "@/stores/auth-store"
@@ -86,6 +86,12 @@ export default function CreatePage() {
   // URL popup state
   const [showUrlPopup, setShowUrlPopup] = useState(false)
   const [hasSeenUrlPopup, setHasSeenUrlPopup] = useState(false)
+  
+  // Research generation loading state
+  const [showResearchLoading, setShowResearchLoading] = useState(false)
+  const [researchProgress, setResearchProgress] = useState(0)
+  const [researchStage, setResearchStage] = useState(0)
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null)
   
   // URL validation function
   const isValidUrl = (url: string): boolean => {
@@ -183,35 +189,151 @@ export default function CreatePage() {
       setIsLoading(true)
       const createdJob = await createJob(formData)
 
-      // Show success message
-      toast({
-        title: "Success!",
-        description: "Job created successfully! Redirecting to job details...",
-        variant: "default",
-      })
+      // Set job ID for polling
+      setCurrentJobId(createdJob.id)
+      
+      // Show research generation loading dialog
+      setShowResearchLoading(true)
+      setResearchProgress(0)
+      setResearchStage(0)
+      
+      // Start progress animation
+      const progressInterval = setInterval(() => {
+        setResearchProgress(prev => {
+          if (prev >= 90) {
+            return 90 // Keep at 90% until completion
+          }
+          return prev + 1
+        })
+      }, 200)
 
-      // Brief delay to show success message
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // Update stages based on progress (slower transitions)
+      setTimeout(() => setResearchStage(1), 5000)   // Stage 1 at 5s
+      setTimeout(() => setResearchStage(2), 10000)   // Stage 2 at 10s
+      setTimeout(() => setResearchStage(3), 15000)   // Stage 3 at 15s
+      setTimeout(() => setResearchStage(4), 20000)   // Stage 4 at 20s
 
-      setFormData({
-        title: "",
-        brand_info: "",
-        sales_page_url: "",
-        template_id: "",
-        advertorial_type: "",
-        target_approach: "explore",
-        customer_avatars: [],
-        // Deprecated fields for backward compatibility
-        persona: "",
-        age_range: "",
-        gender: "",
-      })
-      setSelectedTemplate(null)
-      setErrors({})
-      setGeneralError(null)
-      setCurrentStep(1)
+      // Poll for job status
+      const pollJobStatus = async () => {
+        const maxAttempts = 120 // Max 10 minutes (120 * 5s)
+        const pollInterval = 5000 // Poll every 5 seconds
 
-      router.push(`/jobs/${createdJob.id}`)
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          try {
+            const response = await fetch(`/api/jobs/${createdJob.id}/status`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              }
+            })
+
+            if (!response.ok) {
+              throw new Error(`Status check failed: ${response.status}`)
+            }
+
+            const data = await response.json()
+            const status = data.status?.toLowerCase()
+
+            // Update progress based on status
+            if (status === 'submitted') {
+              setResearchStage(1)
+              setResearchProgress(25)
+            } else if (status === 'running' || status === 'processing') {
+              setResearchStage(2)
+              setResearchProgress(50)
+            } else if (status === 'completed' || status === 'succeeded') {
+              clearInterval(progressInterval)
+              setResearchStage(4)
+              setResearchProgress(100)
+              
+              // Wait a moment then redirect to results
+              setTimeout(() => {
+                setShowResearchLoading(false)
+                setResearchProgress(0)
+                setResearchStage(0)
+                setCurrentJobId(null)
+                
+                // Reset form
+                setFormData({
+                  title: "",
+                  brand_info: "",
+                  sales_page_url: "",
+                  template_id: "",
+                  advertorial_type: "",
+                  target_approach: "explore",
+                  customer_avatars: [],
+                  persona: "",
+                  age_range: "",
+                  gender: "",
+                })
+                setSelectedTemplate(null)
+                setErrors({})
+                setGeneralError(null)
+                setCurrentStep(1)
+                
+                // Redirect to results page
+                router.push(`/results/${createdJob.id}`)
+              }, 1000)
+              return
+            } else if (status === 'failed' || status === 'failure') {
+              clearInterval(progressInterval)
+              setShowResearchLoading(false)
+              setResearchProgress(0)
+              setResearchStage(0)
+              setCurrentJobId(null)
+              
+              toast({
+                title: "Error",
+                description: "Job processing failed. Please try again.",
+                variant: "destructive",
+              })
+              return
+            }
+
+            // If still processing, wait and try again
+            if (attempt < maxAttempts) {
+              await new Promise(resolve => setTimeout(resolve, pollInterval))
+            }
+
+          } catch (err) {
+            if (attempt === maxAttempts) {
+              clearInterval(progressInterval)
+              setShowResearchLoading(false)
+              setResearchProgress(0)
+              setResearchStage(0)
+              setCurrentJobId(null)
+              
+              toast({
+                title: "Error",
+                description: "Failed to check job status. Please check your jobs page.",
+                variant: "destructive",
+              })
+              return
+            }
+            // Continue polling on intermediate errors
+            await new Promise(resolve => setTimeout(resolve, pollInterval))
+          }
+        }
+
+        // Timeout reached
+        clearInterval(progressInterval)
+        setShowResearchLoading(false)
+        setResearchProgress(0)
+        setResearchStage(0)
+        setCurrentJobId(null)
+        
+        toast({
+          title: "Timeout",
+          description: "Job is taking longer than expected. Please check your jobs page.",
+          variant: "default",
+        })
+      }
+
+      // Start polling
+      pollJobStatus()
+      
+      // Reset loading state (polling happens in background)
+      setIsLoading(false)
     } catch (error) {
       console.error('Job creation error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to create job'
@@ -232,7 +354,7 @@ export default function CreatePage() {
       } else {
         setGeneralError(errorMessage)
       }
-    } finally {
+      
       setIsLoading(false)
     }
   }
@@ -299,9 +421,9 @@ export default function CreatePage() {
 
   if (templatesLoading) {
     return (
-      <div className="flex h-screen bg-background overflow-x-hidden">
+      <div className="flex h-screen bg-background overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-hidden md:ml-0">
+        <main className="flex-1 overflow-auto ml-16">
           <div className="p-4 md:p-6 overflow-y-auto h-full">
             {/* Header skeleton */}
             <div className="mb-4 md:mb-6">
@@ -361,9 +483,9 @@ export default function CreatePage() {
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen bg-background overflow-x-hidden">
+      <div className="flex h-screen bg-background overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-hidden md:ml-0">
+        <main className="flex-1 overflow-auto ml-16">
           <div className="p-4 md:p-6 overflow-y-auto h-full">
             <div className="mb-4 md:mb-6">
               <div className="flex items-center justify-between gap-4">
@@ -378,7 +500,7 @@ export default function CreatePage() {
 
               <div className="flex items-center justify-center gap-6 mt-6">
                 <div className={`flex items-center gap-3 ${currentStep >= 1 ? 'text-primary' : 'text-muted-foreground'}`}>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${currentStep >= 1 ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted border-2 border-muted-foreground/20'
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${currentStep >= 1 ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted border-2 border-muted-foreground/20'
                     }`}>
                     1
                   </div>
@@ -386,7 +508,7 @@ export default function CreatePage() {
                 </div>
                 <div className={`w-8 h-px ${currentStep >= 2 ? 'bg-primary' : 'bg-muted-foreground/30'}`}></div>
                 <div className={`flex items-center gap-3 ${currentStep >= 2 ? 'text-primary' : 'text-muted-foreground'}`}>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${currentStep >= 2 ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted border-2 border-muted-foreground/20'
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${currentStep >= 2 ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted border-2 border-muted-foreground/20'
                     }`}>
                     2
                   </div>
@@ -405,7 +527,7 @@ export default function CreatePage() {
                   </div>
 
                   {/* Main Form */}
-                  <Card className="border-0 shadow-lg">
+                  <Card className="border-0 shadow-sm">
                     <CardContent className="p-8">
                       <form onSubmit={handleNext} className="space-y-8">
                         {/* Project Title Section */}
@@ -515,7 +637,7 @@ export default function CreatePage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div
                                 className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${formData.target_approach === 'explore'
-                                  ? 'border-primary bg-primary/5 shadow-lg'
+                                  ? 'border-primary bg-primary/5 shadow-sm'
                                   : 'border-border hover:border-primary/50 hover:bg-muted/50'
                                   }`}
                                 onClick={() => setFormData(prev => ({ ...prev, target_approach: 'explore', persona: '', age_range: '', gender: '' }))}
@@ -541,7 +663,7 @@ export default function CreatePage() {
 
                               <div
                                 className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${formData.target_approach === 'known'
-                                  ? 'border-primary bg-primary/5 shadow-lg'
+                                  ? 'border-primary bg-primary/5 shadow-sm'
                                   : 'border-border hover:border-primary/50 hover:bg-muted/50'
                                   }`}
                                 onClick={() => setFormData(prev => ({ ...prev, target_approach: 'known', persona: '', age_range: '', gender: '' }))}
@@ -939,6 +1061,92 @@ export default function CreatePage() {
         formData={formData}
         isLoading={isLoading}
       />
+
+      {/* Research Generation Loading Dialog */}
+      <Dialog open={showResearchLoading} onOpenChange={(open) => {
+        if (!open) {
+          setShowResearchLoading(false)
+        }
+      }}>
+        <DialogContent className="max-w-lg border-border">
+          <div className="flex flex-col items-center justify-center py-10 space-y-6">
+            {/* Animated Icon */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping"></div>
+              <div className="relative w-20 h-20 bg-primary rounded-full flex items-center justify-center">
+                <Zap className="w-10 h-10 text-primary-foreground animate-pulse" />
+              </div>
+            </div>
+
+            {/* Title - Changes based on stage */}
+            <h3 className="text-2xl font-bold text-foreground text-center animate-fade-in">
+              {researchStage === 0 && "Scanning Market Sources"}
+              {researchStage === 1 && "Analyzing Customer Reviews"}
+              {researchStage === 2 && "Evaluating Competitors"}
+              {researchStage === 3 && "Mining Reddit & Forums"}
+              {researchStage === 4 && "Generating Copy Angles"}
+            </h3>
+
+            {/* Stage-specific messages */}
+            <div className="space-y-3 w-full animate-fade-in">
+              {researchStage === 0 && (
+                <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-muted-foreground">
+                    Checking Amazon reviews, industry publications, and market databases...
+                  </p>
+                </div>
+              )}
+              
+              {researchStage === 1 && (
+                <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-muted-foreground">
+                    Analyzing customer feedback, pain points, and satisfaction patterns...
+                  </p>
+                </div>
+              )}
+
+              {researchStage === 2 && (
+                <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-muted-foreground">
+                    Scanning competitor landing pages and dissecting their messaging strategies...
+                  </p>
+                </div>
+              )}
+
+              {researchStage === 3 && (
+                <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-muted-foreground">
+                    Extracting insights from Reddit discussions, forums, and community feedback...
+                  </p>
+                </div>
+              )}
+
+              {researchStage === 4 && (
+                <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <CheckCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-muted-foreground">
+                    Creating compelling marketing angles and high-converting copy variations...
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center">
+              Deep-diving into market research and competitive analysis
+            </p>
+            
+            <div className="mt-4 p-3 bg-muted/50 rounded-lg border border-border">
+              <p className="text-sm text-muted-foreground text-center">
+                💡 You can close this dialog and check your dashboard. We'll notify you when the research is complete.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* URL Popup Dialog */}
       <Dialog open={showUrlPopup} onOpenChange={setShowUrlPopup}>

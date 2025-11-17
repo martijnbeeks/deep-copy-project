@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { ArrowLeft, RefreshCw, Download, Eye, Menu, ChevronLeft, ChevronRight, Trash2, Globe, Sparkles, Users } from "lucide-react"
+import { ArrowLeft, RefreshCw, Download, Eye, Menu, ChevronLeft, ChevronRight, Trash2, Globe, Sparkles, Users, Zap, CheckCircle, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
@@ -23,6 +23,11 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const { toast } = useToast()
+  
+  // Research generation loading state
+  const [showResearchLoading, setShowResearchLoading] = useState(false)
+  const [researchProgress, setResearchProgress] = useState(0)
+  const [researchStage, setResearchStage] = useState(0)
 
   // Use TanStack Query for data fetching
   const { data: currentJob, isLoading, error, refetch } = useJob(params.id)
@@ -58,6 +63,62 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
       return
     }
   }, [isAuthenticated, user, router])
+
+  // Show research loading modal if job is processing
+  useEffect(() => {
+    if (currentJob && (currentJob.status === 'processing' || currentJob.status === 'pending')) {
+      setShowResearchLoading(true)
+      setResearchProgress(currentJob.progress || 0)
+      
+      // Determine stage based on progress
+      if (currentJob.progress) {
+        if (currentJob.progress < 25) {
+          setResearchStage(0)
+        } else if (currentJob.progress < 50) {
+          setResearchStage(1)
+        } else if (currentJob.progress < 75) {
+          setResearchStage(2)
+        } else if (currentJob.progress < 100) {
+          setResearchStage(3)
+        } else {
+          setResearchStage(4)
+        }
+      } else {
+        setResearchStage(0)
+      }
+    } else if (currentJob && currentJob.status === 'completed') {
+      setShowResearchLoading(false)
+    }
+  }, [currentJob])
+
+  // Update research stage based on job status changes
+  useEffect(() => {
+    if (jobStatus && showResearchLoading) {
+      const progress = jobStatus.progress || 0
+      setResearchProgress(progress)
+      
+      // Update stage based on progress
+      if (progress < 25) {
+        setResearchStage(0)
+      } else if (progress < 50) {
+        setResearchStage(1)
+      } else if (progress < 75) {
+        setResearchStage(2)
+      } else if (progress < 100) {
+        setResearchStage(3)
+      } else {
+        setResearchStage(4)
+      }
+      
+      // If job completed, close modal and redirect after a moment
+      if (jobStatus.status === 'completed' || jobStatus.status === 'succeeded') {
+        setTimeout(() => {
+          setShowResearchLoading(false)
+          router.push(`/results/${params.id}`)
+        }, 1000)
+      }
+    }
+  }, [jobStatus, showResearchLoading, router, params.id])
 
 
   const getProgressPercentage = () => {
@@ -106,9 +167,9 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
 
   if (!user || isLoading) {
     return (
-      <div className="flex h-screen bg-background">
+      <div className="flex h-screen bg-background overflow-hidden">
         <Sidebar />
-        <main className="flex-1 p-6">
+        <main className="flex-1 overflow-auto ml-16 p-6">
           <JobDetailsSkeleton />
         </main>
       </div>
@@ -133,9 +194,9 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-auto md:ml-0">
+      <main className="flex-1 overflow-auto ml-16">
         <div className="p-4 md:p-6">
           <div className="flex items-center justify-between mb-4 md:mb-6 gap-4">
             <div className="flex items-center gap-3">
@@ -284,6 +345,92 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
           </div>
         </div>
       </main>
+
+      {/* Research Generation Loading Dialog */}
+      <Dialog open={showResearchLoading} onOpenChange={(open) => {
+        if (!open) {
+          setShowResearchLoading(false)
+        }
+      }}>
+        <DialogContent className="max-w-lg border-border">
+          <div className="flex flex-col items-center justify-center py-10 space-y-6">
+            {/* Animated Icon */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping"></div>
+              <div className="relative w-20 h-20 bg-primary rounded-full flex items-center justify-center">
+                <Zap className="w-10 h-10 text-primary-foreground animate-pulse" />
+              </div>
+            </div>
+
+            {/* Title - Changes based on stage */}
+            <h3 className="text-2xl font-bold text-foreground text-center animate-fade-in">
+              {researchStage === 0 && "Scanning Market Sources"}
+              {researchStage === 1 && "Analyzing Customer Reviews"}
+              {researchStage === 2 && "Evaluating Competitors"}
+              {researchStage === 3 && "Mining Reddit & Forums"}
+              {researchStage === 4 && "Generating Copy Angles"}
+            </h3>
+
+            {/* Stage-specific messages */}
+            <div className="space-y-3 w-full animate-fade-in">
+              {researchStage === 0 && (
+                <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-muted-foreground">
+                    Checking Amazon reviews, industry publications, and market databases...
+                  </p>
+                </div>
+              )}
+              
+              {researchStage === 1 && (
+                <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-muted-foreground">
+                    Analyzing customer feedback, pain points, and satisfaction patterns...
+                  </p>
+                </div>
+              )}
+
+              {researchStage === 2 && (
+                <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-muted-foreground">
+                    Scanning competitor landing pages and dissecting their messaging strategies...
+                  </p>
+                </div>
+              )}
+
+              {researchStage === 3 && (
+                <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-muted-foreground">
+                    Extracting insights from Reddit discussions, forums, and community feedback...
+                  </p>
+                </div>
+              )}
+
+              {researchStage === 4 && (
+                <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <CheckCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-muted-foreground">
+                    Creating compelling marketing angles and high-converting copy variations...
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center">
+              Deep-diving into market research and competitive analysis
+            </p>
+            
+            <div className="mt-4 p-3 bg-muted/50 rounded-lg border border-border">
+              <p className="text-sm text-muted-foreground text-center">
+                💡 You can close this dialog and check your dashboard. We'll notify you when the research is complete.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

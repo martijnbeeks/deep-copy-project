@@ -88,7 +88,7 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
           variant="outline"
           size="sm"
           onClick={() => router.push('/dashboard')}
-          className="bg-white/90 backdrop-blur-sm shadow-lg"
+          className="bg-white/90 backdrop-blur-sm shadow-sm"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Dashboard
@@ -97,7 +97,7 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
           variant="outline"
           size="sm"
           onClick={handleCopyHTML}
-          className="bg-white/90 backdrop-blur-sm shadow-lg"
+          className="bg-white/90 backdrop-blur-sm shadow-sm"
         >
           {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
           {copied ? 'Copied!' : 'Copy HTML'}
@@ -106,7 +106,7 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
           variant="outline"
           size="sm"
           onClick={handleDownload}
-          className="bg-white/90 backdrop-blur-sm shadow-lg"
+          className="bg-white/90 backdrop-blur-sm shadow-sm"
         >
           <Download className="h-4 w-4 mr-2" />
           Download

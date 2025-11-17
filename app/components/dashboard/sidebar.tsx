@@ -1,14 +1,22 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/stores/auth-store"
-import { LayoutDashboard, LogOut, PenTool, Loader2, FileText, ChevronLeft, ChevronRight, X } from "lucide-react"
+import { LayoutDashboard, LogOut, PenTool, Loader2, FileText, Sun, Moon } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { useSidebar } from "@/contexts/sidebar-context"
-import { useState } from "react"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { useTheme } from "next-themes"
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import {
+  Sidebar as UISidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+} from "@/components/ui/sidebar"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -20,8 +28,14 @@ export function Sidebar() {
   const { user, logout } = useAuthStore()
   const pathname = usePathname()
   const router = useRouter()
-  const { isCollapsed, setIsCollapsed } = useSidebar()
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [loadingItem, setLoadingItem] = useState<string | null>(null)
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleNavigation = async (href: string) => {
     if (href === pathname) return
@@ -38,217 +52,113 @@ export function Sidebar() {
   }
 
   return (
-    <>
-      {/* Mobile overlay */}
-      {!isCollapsed && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
-          onClick={() => setIsCollapsed(true)}
-        />
-      )}
-
-      {/* Desktop Sidebar */}
-      <div className={cn(
-        "relative flex h-screen flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out z-50",
-        "hidden md:flex",
-        isCollapsed ? "w-20" : "w-80"
-      )}>
-        {/* Header */}
-        <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border bg-sidebar/95 backdrop-blur-sm">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-              <span className="text-primary-foreground font-bold text-sm">AI</span>
+    <div className="fixed left-0 top-0 h-screen z-50 w-16 hover:w-64 transition-all duration-300 group bg-sidebar border-r border-sidebar-border overflow-hidden">
+      <UISidebar className="h-full w-full bg-sidebar" collapsible="none">
+        <SidebarContent>
+          <Link href="/dashboard" className="p-4 flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-primary-foreground font-bold text-lg">DC</span>
             </div>
-            {!isCollapsed && (
-              <div className="min-w-0">
-                <span className="text-xl font-bold text-sidebar-foreground block truncate">DeepCopy</span>
-                <span className="text-xs text-sidebar-foreground/60">AI Content</span>
-              </div>
-            )}
-          </div>
-        </div>
+            <span className="text-xl font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
+              DeepCopy
+            </span>
+          </Link>
 
-        {/* Navigation */}
-        <ScrollArea className="flex-1">
-          <nav className="p-3 space-y-2">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href
-              const isLoading = loadingItem === item.href
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => handleNavigation(item.href)}
-                  disabled={isLoading}
-                  className={cn(
-                    "w-full group relative rounded-xl transition-all duration-200",
-                    "flex items-center gap-3 px-4 py-3 text-sm font-medium",
-                    isCollapsed ? "justify-center px-3" : "justify-start",
-                    isActive
-                      ? "bg-gradient-primary text-primary-foreground shadow-lg shadow-primary/20"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
-                    isLoading && "opacity-70 cursor-not-allowed"
-                  )}
-                  title={isCollapsed ? item.name : undefined}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin flex-shrink-0" />
-                  ) : (
-                    <item.icon className={cn(
-                      "h-5 w-5 flex-shrink-0 transition-transform",
-                      isActive && "scale-110"
-                    )} />
-                  )}
-                  {!isCollapsed && (
-                    <span className="truncate flex-1 text-left">{item.name}</span>
-                  )}
-                  {isActive && !isCollapsed && (
-                    <div className="absolute right-2 w-1.5 h-1.5 bg-primary-foreground rounded-full" />
-                  )}
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navigation.map((item) => {
+                  const isActive = pathname === item.href
+                  const isLoading = loadingItem === item.href
+
+                  return (
+                    <SidebarMenuItem key={item.name}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                      >
+                        <button
+                          onClick={() => handleNavigation(item.href)}
+                          disabled={isLoading}
+                          className={cn(
+                            "w-full flex items-center gap-3",
+                            isActive
+                              ? "!bg-primary !text-primary-foreground hover:!bg-primary hover:!text-primary-foreground"
+                              : "hover:bg-primary/50",
+                            isLoading && "opacity-70 cursor-not-allowed"
+                          )}
+                        >
+                          {isLoading ? (
+                            <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin" />
+                          ) : (
+                            <item.icon className="h-5 w-5 flex-shrink-0" />
+                          )}
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
+                            {item.name}
+                          </span>
+                        </button>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <button className="flex items-center gap-2 w-full cursor-pointer pl-0">
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold flex-shrink-0">
+                    {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
+                  </div>
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
+                    {user?.name || user?.email || "Account"}
+                  </span>
                 </button>
-              )
-            })}
-          </nav>
-        </ScrollArea>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
 
-        {/* Footer */}
-        <div className="border-t border-sidebar-border p-4 bg-sidebar/95 backdrop-blur-sm">
-          <div className={cn("flex items-center gap-3 mb-3", isCollapsed ? "justify-center" : "")}>
-            <div className="h-10 w-10 rounded-full bg-gradient-accent flex items-center justify-center shadow-lg flex-shrink-0">
-              <span className="text-sm font-semibold text-accent-foreground">
-                {user?.name?.charAt(0).toUpperCase() || "U"}
-              </span>
-            </div>
-            {!isCollapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.name || "User"}</p>
-                <p className="text-xs text-sidebar-foreground/60 truncate">{user?.email}</p>
-              </div>
-            )}
-          </div>
-          <div className={cn("flex items-center gap-2", isCollapsed ? "flex-col" : "")}>
-            <ThemeToggle />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={logout}
-              className={cn(
-                "text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors",
-                isCollapsed ? "w-full justify-center px-2" : "flex-1 justify-start gap-2"
-              )}
-              title={isCollapsed ? "Sign Out" : undefined}
-            >
-              <LogOut className="h-4 w-4" />
-              {!isCollapsed && "Sign Out"}
-            </Button>
-          </div>
-        </div>
-      </div>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => {
+                  if (mounted) {
+                    const newTheme = theme === "dark" ? "light" : "dark"
+                    setTheme(newTheme)
+                    // Also update localStorage to sync with ThemeToggle component
+                    localStorage.setItem("theme", newTheme)
+                  }
+                }}
+              >
+                {mounted && theme === "dark" ? (
+                  <Sun className="h-5 w-5 flex-shrink-0" />
+                ) : (
+                  <Moon className="h-5 w-5 flex-shrink-0" />
+                )}
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
+                  Theme
+                </span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
 
-      {/* Mobile Sidebar */}
-      <div className={cn(
-        "fixed inset-y-0 left-0 flex h-screen flex-col bg-sidebar border-r border-sidebar-border transition-transform duration-300 z-50",
-        "md:hidden",
-        isCollapsed ? "-translate-x-full" : "translate-x-0",
-        "w-80"
-      )}>
-        <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-primary-foreground font-bold text-sm">AI</span>
-            </div>
-            <div>
-              <span className="text-xl font-bold text-sidebar-foreground block">DeepCopy</span>
-              <span className="text-xs text-sidebar-foreground/60">AI Content</span>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsCollapsed(true)}
-            className="h-8 w-8 p-0"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <ScrollArea className="flex-1">
-          <nav className="p-3 space-y-2">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href
-              const isLoading = loadingItem === item.href
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => handleNavigation(item.href)}
-                  disabled={isLoading}
-                  className={cn(
-                    "w-full group relative rounded-xl transition-all duration-200",
-                    "flex items-center gap-3 px-4 py-3 text-sm font-medium justify-start",
-                    isActive
-                      ? "bg-gradient-primary text-primary-foreground shadow-lg shadow-primary/20"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent/50",
-                    isLoading && "opacity-70 cursor-not-allowed"
-                  )}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <item.icon className="h-5 w-5 flex-shrink-0" />
-                  )}
-                  <span className="truncate">{item.name}</span>
-                </button>
-              )
-            })}
-          </nav>
-        </ScrollArea>
-
-        <div className="border-t border-sidebar-border p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-10 w-10 rounded-full bg-gradient-accent flex items-center justify-center shadow-lg">
-              <span className="text-sm font-semibold text-accent-foreground">
-                {user?.name?.charAt(0).toUpperCase() || "U"}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.name || "User"}</p>
-              <p className="text-xs text-sidebar-foreground/60 truncate">{user?.email}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={logout}
-              className="flex-1 justify-start gap-2 text-sidebar-foreground hover:bg-sidebar-accent/50"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </div>
-    </>
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={logout}>
+                <LogOut className="h-5 w-5 flex-shrink-0" />
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
+                  Logout
+                </span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </UISidebar>
+    </div>
   )
 }
 
-// Sidebar Trigger Button Component
+// Sidebar Trigger Button Component - keeping the existing one but simplified
 export function SidebarTrigger() {
-  const { isCollapsed, setIsCollapsed } = useSidebar()
-
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => setIsCollapsed(!isCollapsed)}
-      className="h-9 w-9 p-0 border-border/50 hover:border-border hover:bg-muted/50 transition-all duration-200 shadow-sm hover:shadow-md"
-      title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-    >
-      {isCollapsed ? (
-        <ChevronRight className="h-4 w-4" />
-      ) : (
-        <ChevronLeft className="h-4 w-4" />
-      )}
-    </Button>
-  )
+  return null // Not needed with hover-based sidebar
 }

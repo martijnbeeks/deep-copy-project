@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { MarkdownContent } from "@/components/results/markdown-content"
 import { TemplateGrid } from "@/components/results/template-grid"
-import { FileText, BarChart3, Code, BookOpen, User, Target, Calendar, Clock, Users, MapPin, DollarSign, Briefcase, Sparkles, AlertTriangle, Star, Eye, TrendingUp, Brain, Loader2, CheckCircle2 } from "lucide-react"
+import { FileText, BarChart3, Code, BookOpen, User, Target, Calendar, Clock, Users, MapPin, DollarSign, Briefcase, Sparkles, AlertTriangle, Star, Eye, TrendingUp, Brain, Loader2, CheckCircle2, Download } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { extractContentFromSwipeResult, injectContentIntoTemplate } from "@/lib/utils/template-injection"
@@ -27,33 +27,36 @@ interface DeepCopyResultsProps {
       generated_at?: string
       word_count?: number
       template_used?: string
+      generated_angles?: string[]
     }
   }
   jobTitle: string
+  jobId?: string
   advertorialType?: string
   templateId?: string
   customerAvatars?: Array<{ persona_name: string; description?: string; age_range?: string; gender?: string; key_buying_motivation?: string }>
 }
 
-export function DeepCopyResults({ result, jobTitle, advertorialType, templateId, customerAvatars }: DeepCopyResultsProps) {
+export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, templateId, customerAvatars }: DeepCopyResultsProps) {
   const [templates, setTemplates] = useState<Array<{ name: string, type: string, html: string, angle?: string, timestamp?: string }>>([])
   const [templatesLoading, setTemplatesLoading] = useState(true)
   const [selectedTemplate, setSelectedTemplate] = useState<{ name: string; html_content: string; description?: string; category?: string } | null>(null)
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
-  
-  // Swipe file generation state
+
+  // Swipe file generation state - track multiple angles
   const [selectedAngle, setSelectedAngle] = useState<string | null>(null)
-  const [swipeFileJobId, setSwipeFileJobId] = useState<string | null>(null)
-  const [swipeFileStatus, setSwipeFileStatus] = useState<string>('')
+  const [generatedAngles, setGeneratedAngles] = useState<Set<string>>(new Set())
+  const [generatingAngles, setGeneratingAngles] = useState<Map<string, string>>(new Map()) // angle -> jobId
+  const [angleStatuses, setAngleStatuses] = useState<Map<string, string>>(new Map()) // angle -> status
   const [isGeneratingSwipeFiles, setIsGeneratingSwipeFiles] = useState(false)
   const [swipeFileResults, setSwipeFileResults] = useState<any>(null)
 
   const fullResult = result.metadata?.full_result
   const originalJobId = result.metadata?.deepcopy_job_id
 
-  // Poll swipe file status
-  const pollSwipeFileStatus = async (jobId: string) => {
+  // Poll swipe file status for a specific angle
+  const pollSwipeFileStatus = async (jobId: string, angle: string) => {
     const maxAttempts = 60 // 5 minutes max (60 * 5s)
     const pollInterval = 5000 // Poll every 5 seconds
 
@@ -67,7 +70,13 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
         }
 
         const statusData = await response.json()
-        setSwipeFileStatus(statusData.status)
+
+        // Update status for this specific angle
+        setAngleStatuses(prev => {
+          const newMap = new Map(prev)
+          newMap.set(angle, statusData.status)
+          return newMap
+        })
 
         if (statusData.status === 'SUCCEEDED') {
           // Fetch results
@@ -77,40 +86,68 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
           }
 
           const resultData = await resultResponse.json()
-          setSwipeFileResults(resultData)
-          setIsGeneratingSwipeFiles(false)
 
-          // Update fullResult with swipe results and reload templates
+          // Update fullResult with swipe results first
+          let swipeResults: any[] = []
           if (fullResult && fullResult.results) {
             // Convert swipe file results to swipe_results format
-            // SwipeFileGenerationResponse has keys like L00001, A00003, etc.
-            // Each key contains an object with full_advertorial property
-            const swipeResults: any[] = []
+            swipeResults = fullResult.results.swipe_results || []
             Object.keys(resultData).forEach((key) => {
               // Template IDs like L00001, A00003, etc.
               if (key.match(/^[LA]\d+$/)) {
                 const templateData = resultData[key]
                 if (templateData && templateData.full_advertorial) {
-                  // full_advertorial is already an object (Listicle or Advertorial)
-                  // Store it as-is (object format) - extractContentFromSwipeResult will handle it
-                  swipeResults.push({
-                    angle: selectedAngle || key,
-                    content: templateData.full_advertorial
-                  })
+                  // Check if this angle already exists, if so update it, otherwise add it
+                  const existingIndex = swipeResults.findIndex(sr => sr.angle === angle)
+                  if (existingIndex >= 0) {
+                    swipeResults[existingIndex] = {
+                      angle: angle,
+                      content: templateData.full_advertorial
+                    }
+                  } else {
+                    swipeResults.push({
+                      angle: angle,
+                      content: templateData.full_advertorial
+                    })
+                  }
                 }
               }
             })
-            
+
             // Update the results with swipe_results
-            if (swipeResults.length > 0) {
-              fullResult.results.swipe_results = swipeResults
-              // Force a re-render by updating the result object
-              result.metadata = {
-                ...result.metadata,
-                full_result: fullResult
-              }
+            fullResult.results.swipe_results = swipeResults
+            // Force a re-render by updating the result object
+            result.metadata = {
+              ...result.metadata,
+              full_result: fullResult
             }
           }
+
+          // Mark this angle as generated and persist to database
+          setGeneratedAngles(prev => {
+            const newSet = new Set(prev).add(angle)
+
+            // Persist to database
+            if (jobId) {
+              fetch(`/api/jobs/${jobId}/update-generated-angles`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  generatedAngles: Array.from(newSet),
+                  swipeResults: swipeResults
+                })
+              }).catch(err => console.error('Failed to persist generated angles:', err))
+            }
+
+            return newSet
+          })
+
+          // Remove from generating map
+          setGeneratingAngles(prev => {
+            const newMap = new Map(prev)
+            newMap.delete(angle)
+            return newMap
+          })
 
           // Reload templates to show the new swipe files
           const extractedTemplates = await extractHTMLTemplates()
@@ -118,19 +155,43 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
           setTemplatesLoading(false)
           return
         } else if (statusData.status === 'FAILED') {
+          // Remove from generating map on failure
+          setGeneratingAngles(prev => {
+            const newMap = new Map(prev)
+            newMap.delete(angle)
+            return newMap
+          })
           throw new Error('Swipe file generation job failed')
         }
       } catch (err) {
         if (attempt === maxAttempts) {
           console.error('Swipe file polling error:', err)
-          setIsGeneratingSwipeFiles(false)
-          setSwipeFileStatus('FAILED')
+          // Remove from generating map on timeout
+          setGeneratingAngles(prev => {
+            const newMap = new Map(prev)
+            newMap.delete(angle)
+            return newMap
+          })
+          setAngleStatuses(prev => {
+            const newMap = new Map(prev)
+            newMap.set(angle, 'FAILED')
+            return newMap
+          })
         }
       }
     }
 
-    setIsGeneratingSwipeFiles(false)
-    setSwipeFileStatus('TIMEOUT')
+    // Remove from generating map on timeout
+    setGeneratingAngles(prev => {
+      const newMap = new Map(prev)
+      newMap.delete(angle)
+      return newMap
+    })
+    setAngleStatuses(prev => {
+      const newMap = new Map(prev)
+      newMap.set(angle, 'TIMEOUT')
+      return newMap
+    })
   }
 
   const extractHTMLTemplates = async () => {
@@ -179,8 +240,8 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
                 const renderedHtml = injectContentIntoTemplate(injectableTemplate, contentData)
 
                 templates.push({
-                  name: typeof swipeResult.angle === 'string' && swipeResult.angle.includes(':') 
-                    ? swipeResult.angle.split(':')[0].trim() 
+                  name: typeof swipeResult.angle === 'string' && swipeResult.angle.includes(':')
+                    ? swipeResult.angle.split(':')[0].trim()
                     : `Angle ${index + 1}`,
                   type: 'Marketing Angle',
                   html: renderedHtml,
@@ -312,6 +373,27 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
       try {
         const extractedTemplates = await extractHTMLTemplates()
         setTemplates(extractedTemplates)
+
+        // Mark angles as generated if they have templates or from metadata
+        const generatedSet = new Set<string>()
+
+        // First, check metadata for persisted generated angles
+        if (result.metadata?.generated_angles && Array.isArray(result.metadata.generated_angles)) {
+          result.metadata.generated_angles.forEach((angle: string) => {
+            generatedSet.add(angle)
+          })
+        }
+
+        // Also check swipe_results for angles
+        if (fullResult?.results?.swipe_results && fullResult.results.swipe_results.length > 0) {
+          fullResult.results.swipe_results.forEach((sr: any) => {
+            if (sr.angle) {
+              generatedSet.add(sr.angle)
+            }
+          })
+        }
+
+        setGeneratedAngles(generatedSet)
       } catch (error) {
         console.error('Error loading templates:', error)
       } finally {
@@ -321,7 +403,7 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
 
     // Always try to load templates, whether we have processed content or raw results
     loadTemplates()
-  }, [result, jobTitle, swipeFileResults])
+  }, [result, jobTitle, swipeFileResults, fullResult])
 
   const formatAnalysis = (analysis: string) => {
     const paragraphs = analysis.split('\n\n').filter(p => p.trim())
@@ -336,106 +418,98 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
     <div className="space-y-8 min-h-full">
       {/* Project Overview */}
       <div className="mb-12">
-        <Accordion type="single" collapsible>
-          <AccordionItem value="project-overview">
-            <Card className="bg-card/80 border-border/50">
-              <AccordionTrigger className="p-8 hover:no-underline">
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-accent rounded-lg flex items-center justify-center">
-                      <Calendar className="w-5 h-5 text-accent-foreground" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-foreground">Project Overview</h2>
-                      <p className="text-sm text-muted-foreground">Job details and metadata</p>
-                    </div>
-                  </div>
-                </div>
-              </AccordionTrigger>
+        <Card className="bg-card/80 border-border/50">
+          <CardHeader className="p-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-accent rounded-lg flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-accent-foreground" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">Project Overview</h2>
+                <p className="text-sm text-muted-foreground">Job details and metadata</p>
+              </div>
+            </div>
+          </CardHeader>
 
-              <AccordionContent>
-                <div className="px-8 pb-8 space-y-6 border-t border-border/50 pt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="bg-muted/50 p-4 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Clock className="w-4 h-4 text-accent" />
-                        <span className="text-sm font-medium text-foreground">Generated At</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {result.metadata?.generated_at ? new Date(result.metadata.generated_at).toLocaleString() : 'Unknown'}
-                      </p>
-                    </div>
-                    <div className="bg-muted/50 p-4 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <FileText className="w-4 h-4 text-accent" />
-                        <span className="text-sm font-medium text-foreground">Template Used</span>
-                      </div>
-                      {templateId ? (
-                        <button
-                          type="button"
-                          onClick={async (e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-
-                            setIsLoadingTemplate(true)
-                            try {
-                              const response = await fetch(`/api/templates`)
-                              if (response.ok) {
-                                const data = await response.json()
-                                const templateData = data.templates?.find((t: any) => t.id === templateId)
-                                if (templateData?.html_content) {
-                                  setSelectedTemplate({
-                                    name: templateData.name,
-                                    html_content: templateData.html_content,
-                                    description: templateData.description,
-                                    category: templateData.category
-                                  })
-                                  setIsTemplateModalOpen(true)
-                                } else {
-                                  console.warn('Template not found or has no html_content')
-                                }
-                              }
-                            } catch (error) {
-                              console.error('Error fetching template:', error)
-                            } finally {
-                              setIsLoadingTemplate(false)
-                            }
-                          }}
-                          disabled={isLoadingTemplate}
-                          className="text-sm text-primary hover:underline cursor-pointer text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isLoadingTemplate ? 'Loading...' : result.metadata?.template_used || 'L00005 (DeepCopy)'}
-                        </button>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          {result.metadata?.template_used || 'L00005 (DeepCopy)'}
-                        </p>
-                      )}
-                    </div>
-                    {fullResult?.project_name && (
-                      <div className="bg-muted/50 p-4 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Target className="w-4 h-4 text-accent" />
-                          <span className="text-sm font-medium text-foreground">Project Name</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{fullResult.project_name}</p>
-                      </div>
-                    )}
-                    {result.metadata?.deepcopy_job_id && (
-                      <div className="bg-muted/50 p-4 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Code className="w-4 h-4 text-accent" />
-                          <span className="text-sm font-medium text-foreground">DeepCopy Job ID</span>
-                        </div>
-                        <p className="font-mono text-sm text-muted-foreground">{result.metadata.deepcopy_job_id}</p>
-                      </div>
-                    )}
-                  </div>
+          <CardContent className="px-8 pb-8 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="w-4 h-4 text-accent" />
+                  <span className="text-sm font-medium text-foreground">Generated At</span>
                 </div>
-              </AccordionContent>
-            </Card>
-          </AccordionItem>
-        </Accordion>
+                <p className="text-sm text-muted-foreground">
+                  {result.metadata?.generated_at ? new Date(result.metadata.generated_at).toLocaleString() : 'Unknown'}
+                </p>
+              </div>
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="w-4 h-4 text-accent" />
+                  <span className="text-sm font-medium text-foreground">Template Used</span>
+                </div>
+                {templateId ? (
+                  <button
+                    type="button"
+                    onClick={async (e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+
+                      setIsLoadingTemplate(true)
+                      try {
+                        const response = await fetch(`/api/templates`)
+                        if (response.ok) {
+                          const data = await response.json()
+                          const templateData = data.templates?.find((t: any) => t.id === templateId)
+                          if (templateData?.html_content) {
+                            setSelectedTemplate({
+                              name: templateData.name,
+                              html_content: templateData.html_content,
+                              description: templateData.description,
+                              category: templateData.category
+                            })
+                            setIsTemplateModalOpen(true)
+                          } else {
+                            console.warn('Template not found or has no html_content')
+                          }
+                        }
+                      } catch (error) {
+                        console.error('Error fetching template:', error)
+                      } finally {
+                        setIsLoadingTemplate(false)
+                      }
+                    }}
+                    disabled={isLoadingTemplate}
+                    className="text-sm text-primary hover:underline cursor-pointer text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoadingTemplate ? 'Loading...' : result.metadata?.template_used || 'L00005 (DeepCopy)'}
+                  </button>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {result.metadata?.template_used || 'L00005 (DeepCopy)'}
+                  </p>
+                )}
+              </div>
+              {fullResult?.project_name && (
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="w-4 h-4 text-accent" />
+                    <span className="text-sm font-medium text-foreground">Project Name</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{fullResult.project_name}</p>
+                </div>
+              )}
+              {result.metadata?.deepcopy_job_id && (
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Code className="w-4 h-4 text-accent" />
+                    <span className="text-sm font-medium text-foreground">DeepCopy Job ID</span>
+                  </div>
+                  <p className="font-mono text-sm text-muted-foreground">{result.metadata.deepcopy_job_id}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
 
@@ -640,9 +714,9 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
                               // Handle both old format (string) and new format (object with angle and title)
                               const angleTitle = typeof angle === 'object' ? angle.title : null;
                               const angleDescription = typeof angle === 'object' ? angle.angle : angle;
-                              
+
                               return (
-                                <div key={index} className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-lg p-3 border border-purple-200/50 dark:border-purple-800/50 hover:shadow-md transition-shadow">
+                                <div key={index} className="bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-950/20 dark:to-teal-950/20 rounded-lg p-3 border border-cyan-200/50 dark:border-cyan-800/50 hover:shadow-md transition-shadow">
                                   <div className="flex items-start gap-2">
                                     <div className="bg-primary/10 rounded-full p-1.5 flex-shrink-0">
                                       <Target className="h-3 w-3 text-primary" />
@@ -694,8 +768,8 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
                     {(() => {
                       try {
                         // Parse offer_brief - it might be a string or already an object
-                        const offerBrief = typeof fullResult.results.offer_brief === 'string' 
-                          ? JSON.parse(fullResult.results.offer_brief) 
+                        const offerBrief = typeof fullResult.results.offer_brief === 'string'
+                          ? JSON.parse(fullResult.results.offer_brief)
                           : fullResult.results.offer_brief;
 
                         return (
@@ -716,7 +790,7 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
                                   </div>
                                 </div>
                               )}
-                              
+
                               {offerBrief.level_of_consciousness && (
                                 <div className="bg-muted/50 p-4 rounded-lg">
                                   <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
@@ -940,8 +1014,8 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
                         return (
                           <div className="bg-muted rounded-lg p-4">
                             <pre className="text-sm whitespace-pre-wrap text-foreground">
-                              {typeof fullResult.results.offer_brief === 'string' 
-                                ? fullResult.results.offer_brief 
+                              {typeof fullResult.results.offer_brief === 'string'
+                                ? fullResult.results.offer_brief
                                 : JSON.stringify(fullResult.results.offer_brief, null, 2)}
                             </pre>
                           </div>
@@ -957,136 +1031,160 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
       )}
 
       {/* Angle Selection & Swipe File Generation */}
-      {/* Only show if we have marketing_angles but NO swipe_results yet */}
-      {fullResult?.results?.marketing_angles && 
-       fullResult.results.marketing_angles.length > 0 && 
-       (!fullResult.results.swipe_results || fullResult.results.swipe_results.length === 0) && (
-        <div className="mb-12">
-          <Card className="bg-card/80 border-border/50 p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-accent rounded-lg flex items-center justify-center">
-                <Target className="w-5 h-5 text-accent-foreground" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-foreground">Select Marketing Angle</h2>
-                <p className="text-sm text-muted-foreground">Choose an angle to generate swipe files</p>
-              </div>
-            </div>
-
-            {!swipeFileJobId && !swipeFileResults && (
-              <div className="space-y-3">
-                {fullResult.results.marketing_angles.map((angle, index) => {
-                  // Handle both old format (string) and new format (object with title and angle)
-                  const angleTitle = typeof angle === 'object' ? angle.title : null;
-                  const angleDescription = typeof angle === 'object' ? angle.angle : angle;
-                  // For select_angle, use the format: "Title: Description" or just the string
-                  const angleString = typeof angle === 'object' ? `${angle.title}: ${angle.angle}` : angle;
-                  
-                  return (
-                    <Card
-                      key={index}
-                      className={`cursor-pointer transition-all hover:shadow-md ${
-                        selectedAngle === angleString ? 'border-primary shadow-elegant bg-primary/5' : 'border-border/50'
-                      }`}
-                      onClick={() => setSelectedAngle(angleString)}
-                    >
-                      <div className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                              selectedAngle === angleString ? 'border-primary bg-primary' : 'border-muted-foreground'
-                            }`}>
-                              {selectedAngle === angleString && <CheckCircle2 className="w-3 h-3 text-primary-foreground" />}
-                            </div>
-                            <div className="flex-1">
-                              {angleTitle && (
-                                <h3 className="text-lg font-bold text-foreground mb-1">{angleTitle}</h3>
-                              )}
-                              <p className="text-sm text-muted-foreground">{angleDescription}</p>
-                            </div>
-                          </div>
+      {/* Always show if we have marketing_angles */}
+      {fullResult?.results?.marketing_angles &&
+        fullResult.results.marketing_angles.length > 0 && (
+          <div className="mb-12">
+            <Accordion type="single" collapsible>
+              <AccordionItem value="marketing-angle-selection">
+                <Card className="bg-card/80 border-border/50">
+                  <AccordionTrigger className="p-8 hover:no-underline">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-accent rounded-lg flex items-center justify-center">
+                          <Target className="w-5 h-5 text-accent-foreground" />
+                        </div>
+                        <div>
+                          <h2 className="text-2xl font-bold text-foreground">Select Marketing Angle</h2>
+                          <p className="text-sm text-muted-foreground">Choose an angle to generate swipe files</p>
                         </div>
                       </div>
-                    </Card>
-                  );
-                })}
+                    </div>
+                  </AccordionTrigger>
 
-                <div className="flex justify-end pt-4">
-                  <Button
-                    onClick={async () => {
-                      if (!selectedAngle || !originalJobId) return;
-                      
-                      setIsGeneratingSwipeFiles(true);
-                      try {
-                        const response = await fetch('/api/swipe-files/generate', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            original_job_id: originalJobId,
-                            select_angle: selectedAngle
-                          })
-                        });
+                  <AccordionContent>
+                    <div className="px-8 pb-8 space-y-3 border-t border-border/50 pt-6">
+                      {fullResult.results.marketing_angles.map((angle, index) => {
+                        // Handle both old format (string) and new format (object with title and angle)
+                        const angleTitle = typeof angle === 'object' ? angle.title : null;
+                        const angleDescription = typeof angle === 'object' ? angle.angle : angle;
+                        // For select_angle, use the format: "Title: Description" or just the string
+                        const angleString = typeof angle === 'object' ? `${angle.title}: ${angle.angle}` : angle;
+                        const isGenerated = generatedAngles.has(angleString);
+                        const isGenerating = generatingAngles.has(angleString);
+                        const status = angleStatuses.get(angleString);
 
-                        if (!response.ok) {
-                          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-                          throw new Error(errorData.error || 'Failed to generate swipe files');
-                        }
+                        return (
+                          <Card
+                            key={index}
+                            className={`transition-all hover:shadow-md ${selectedAngle === angleString && !isGenerated ? 'border-primary shadow-sm bg-primary/5' : 'border-border/50'
+                              } ${isGenerated ? 'bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800' : ''}`}
+                            onClick={() => !isGenerated && !isGenerating && setSelectedAngle(angleString)}
+                          >
+                            <div className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3 flex-1">
+                                  {isGenerated ? (
+                                    <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                                      <CheckCircle2 className="w-3 h-3 text-white" />
+                                    </div>
+                                  ) : isGenerating ? (
+                                    <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                                  ) : (
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedAngle === angleString ? 'border-primary bg-primary' : 'border-muted-foreground'
+                                      }`}>
+                                      {selectedAngle === angleString && <CheckCircle2 className="w-3 h-3 text-primary-foreground" />}
+                                    </div>
+                                  )}
+                                  <div className="flex-1">
+                                    {angleTitle && (
+                                      <h3 className="text-lg font-bold text-foreground mb-1">{angleTitle}</h3>
+                                    )}
+                                    <p className="text-sm text-muted-foreground">{angleDescription}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {isGenerated && (
+                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">
+                                      Generated
+                                    </Badge>
+                                  )}
+                                  {isGenerating && status && (
+                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
+                                      {status}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        );
+                      })}
 
-                        const data = await response.json();
-                        setSwipeFileJobId(data.jobId);
-                        setSwipeFileStatus('SUBMITTED');
+                      <div className="flex justify-end pt-4">
+                        <Button
+                          onClick={async () => {
+                            if (!selectedAngle || !originalJobId || generatedAngles.has(selectedAngle) || generatingAngles.has(selectedAngle)) return;
 
-                        // Start polling
-                        pollSwipeFileStatus(data.jobId);
-                      } catch (error) {
-                        console.error('Error generating swipe files:', error);
-                        setIsGeneratingSwipeFiles(false);
-                        alert(error instanceof Error ? error.message : 'Failed to generate swipe files');
-                      }
-                    }}
-                    disabled={!selectedAngle || isGeneratingSwipeFiles}
-                    className="px-8"
-                  >
-                    {isGeneratingSwipeFiles ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      'Generate Swipe Files'
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
+                            // Add to generating map
+                            setIsGeneratingSwipeFiles(true);
+                            try {
+                              const response = await fetch('/api/swipe-files/generate', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  original_job_id: originalJobId,
+                                  select_angle: selectedAngle
+                                })
+                              });
 
-            {swipeFileJobId && !swipeFileResults && (
-              <div className="flex flex-col items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Generating Swipe Files</h3>
-                <p className="text-muted-foreground text-center max-w-md mb-2">
-                  Status: {swipeFileStatus}
-                </p>
-                <p className="text-sm text-muted-foreground text-center max-w-md">
-                  Please wait while we generate your swipe files...
-                </p>
-              </div>
-            )}
+                              if (!response.ok) {
+                                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                                throw new Error(errorData.error || 'Failed to generate swipe files');
+                              }
 
-            {swipeFileResults && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-primary">
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span className="font-semibold">Swipe files generated successfully!</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Swipe files are now available below in the HTML Templates section.
-                </p>
-              </div>
-            )}
-          </Card>
-        </div>
-      )}
+                              const data = await response.json();
+
+                              // Track this angle as generating
+                              setGeneratingAngles(prev => {
+                                const newMap = new Map(prev)
+                                newMap.set(selectedAngle, data.jobId)
+                                return newMap
+                              })
+                              setAngleStatuses(prev => {
+                                const newMap = new Map(prev)
+                                newMap.set(selectedAngle, 'SUBMITTED')
+                                return newMap
+                              })
+
+                              // Start polling for this specific angle
+                              pollSwipeFileStatus(data.jobId, selectedAngle);
+
+                              // Clear selection
+                              setSelectedAngle(null);
+                            } catch (error) {
+                              console.error('Error generating swipe files:', error);
+                              // Remove from generating map on error
+                              setGeneratingAngles(prev => {
+                                const newMap = new Map(prev)
+                                newMap.delete(selectedAngle)
+                                return newMap
+                              })
+                              alert(error instanceof Error ? error.message : 'Failed to generate swipe files');
+                            } finally {
+                              setIsGeneratingSwipeFiles(false);
+                            }
+                          }}
+                          disabled={!selectedAngle || isGeneratingSwipeFiles || generatedAngles.has(selectedAngle || '') || generatingAngles.has(selectedAngle || '')}
+                          className="px-8"
+                        >
+                          {isGeneratingSwipeFiles ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            'Generate Swipe Files'
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </Card>
+              </AccordionItem>
+            </Accordion>
+          </div>
+        )}
 
       {/* HTML Templates */}
       <div className="mb-12">
@@ -1109,7 +1207,243 @@ export function DeepCopyResults({ result, jobTitle, advertorialType, templateId,
 
               <AccordionContent>
                 <div className="px-8 pb-8 border-t border-border/50 pt-6">
-                  <TemplateGrid templates={templates} isLoading={templatesLoading} />
+                  {templates.length === 0 && generatingAngles.size === 0 ? (
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        No templates generated yet. Select a marketing angle above to generate templates.
+                      </p>
+                      {fullResult?.results?.marketing_angles && fullResult.results.marketing_angles.length > 0 && (
+                        <div className="bg-muted/50 rounded-lg p-6">
+                          <h3 className="text-lg font-semibold mb-4 text-foreground">Available Marketing Angles</h3>
+                          <div className="space-y-3">
+                            {fullResult.results.marketing_angles.map((angle, index) => {
+                              const angleTitle = typeof angle === 'object' ? angle.title : null;
+                              const angleDescription = typeof angle === 'object' ? angle.angle : angle;
+                              const angleString = typeof angle === 'object' ? `${angle.title}: ${angle.angle}` : angle;
+                              const isGenerated = generatedAngles.has(angleString);
+
+                              return (
+                                <div key={index} className="border border-border rounded-lg p-4">
+                                  {angleTitle && (
+                                    <h4 className="font-semibold text-foreground mb-2">{angleTitle}</h4>
+                                  )}
+                                  <p className="text-sm text-muted-foreground">{angleDescription}</p>
+                                  {isGenerated && (
+                                    <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">
+                                      Generated
+                                    </Badge>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {generatingAngles.size > 0 && (
+                        <div className="text-center py-2">
+                          <p className="text-sm text-muted-foreground">
+                            Generating templates for {generatingAngles.size} angle{generatingAngles.size > 1 ? 's' : ''}...
+                          </p>
+                        </div>
+                      )}
+                      {templates.length > 0 && (
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold">HTML Templates</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {templates.length} template{templates.length !== 1 ? 's' : ''} generated
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* Existing templates */}
+                        {templates.map((template, index) => (
+                          <Card key={`template-${index}`} className="group hover:shadow-md transition-shadow">
+                            <CardContent className="p-6">
+                              <div className="space-y-4">
+                                <div>
+                                  <h4 className="font-semibold text-foreground mb-1 break-words">
+                                    {template.angle || template.name}
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {template.type}
+                                  </p>
+                                  {template.timestamp && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {new Date(template.timestamp).toLocaleDateString()}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div className="h-32 bg-white rounded-lg overflow-hidden border border-gray-200 relative">
+                                  <div className="absolute inset-0 overflow-hidden">
+                                    <iframe
+                                      srcDoc={`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Template Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  ${(() => {
+                                          const raw = template.html;
+                                          const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(raw);
+                                          if (!hasRealImages) return raw;
+                                          const noOnError = raw
+                                            .replace(/\s+onerror="[^"]*"/gi, '')
+                                            .replace(/\s+onerror='[^']*'/gi, '');
+                                          const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+                                            const lower = block.toLowerCase();
+                                            return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+                                              ? ''
+                                              : block;
+                                          });
+                                          return stripFallbackScripts;
+                                        })()}
+  <script>
+    (function(){
+      function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }
+      function ph(img){ var alt=(img.getAttribute('alt')||'Image'); var text=encodeURIComponent(alt.replace(/[^a-zA-Z0-9\s]/g,'').substring(0,20)||'Image'); return 'https://placehold.co/600x400?text='+text; }
+      function apply(img){
+        if (isTrusted(img.src)) { img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); }; return; }
+        if (!img.complete || img.naturalWidth === 0) { img.src = ph(img); }
+        img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); };
+      }
+      function run(){ document.querySelectorAll('img').forEach(apply); }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+      setTimeout(run, 800);
+    })();
+  </script>
+</body>
+</html>`}
+                                      className="w-full h-full"
+                                      style={{
+                                        border: 'none',
+                                        transform: 'scale(0.3)',
+                                        transformOrigin: 'top left',
+                                        width: '333.33%',
+                                        height: '333.33%',
+                                        pointerEvents: 'none'
+                                      }}
+                                      sandbox="allow-scripts"
+                                      title={`Preview of ${template.angle || template.name}`}
+                                    />
+                                  </div>
+                                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/20 pointer-events-none"></div>
+                                </div>
+
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const blob = new Blob([template.html], { type: 'text/html' })
+                                      const url = URL.createObjectURL(blob)
+                                      const a = document.createElement('a')
+                                      a.href = url
+                                      a.download = `${template.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`
+                                      document.body.appendChild(a)
+                                      a.click()
+                                      document.body.removeChild(a)
+                                      URL.revokeObjectURL(url)
+                                    }}
+                                    className="flex-1"
+                                  >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Download
+                                  </Button>
+                                  <Dialog>
+                                    <DialogTrigger asChild>
+                                      <Button className="flex-1" size="sm">
+                                        <Eye className="h-4 w-4 mr-2" />
+                                        Preview
+                                      </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="!max-w-[98vw] !max-h-[98vh] !w-[98vw] !h-[98vh] overflow-hidden p-2">
+                                      <DialogHeader className="pb-2">
+                                        <DialogTitle className="text-xl font-bold">
+                                          {template.angle || template.name}
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                          {template.type} • {template.timestamp ? new Date(template.timestamp).toLocaleString() : 'Generated'}
+                                        </DialogDescription>
+                                      </DialogHeader>
+                                      <div className="h-[calc(98vh-120px)] border rounded-lg bg-background overflow-auto">
+                                        <iframe
+                                          srcDoc={`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Template Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  ${(() => {
+                                              const raw = template.html;
+                                              const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(raw);
+                                              if (!hasRealImages) return raw;
+                                              const noOnError = raw
+                                                .replace(/\s+onerror="[^"]*"/gi, '')
+                                                .replace(/\s+onerror='[^']*'/gi, '');
+                                              const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+                                                const lower = block.toLowerCase();
+                                                return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+                                                  ? ''
+                                                  : block;
+                                              });
+                                              return stripFallbackScripts;
+                                            })()}
+  <script>
+    (function(){
+      function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }
+      function ph(img){ var alt=(img.getAttribute('alt')||'Image'); var text=encodeURIComponent(alt.replace(/[^a-zA-Z0-9\s]/g,'').substring(0,20)||'Image'); return 'https://placehold.co/600x400?text='+text; }
+      function apply(img){
+        if (isTrusted(img.src)) { img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); }; return; }
+        if (!img.complete || img.naturalWidth === 0) { img.src = ph(img); }
+        img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); };
+      }
+      function run(){ document.querySelectorAll('img').forEach(apply); }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+      setTimeout(run, 800);
+    })();
+  </script>
+</body>
+</html>`}
+                                          className="w-full h-full"
+                                          sandbox="allow-scripts"
+                                          style={{
+                                            border: 'none',
+                                            width: '100%',
+                                            height: '100%'
+                                          }}
+                                        />
+                                      </div>
+                                    </DialogContent>
+                                  </Dialog>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                        {/* Skeleton loaders for generating angles */}
+                        {Array.from({ length: generatingAngles.size }).map((_, i) => (
+                          <div key={`skeleton-${i}`} className="border border-border rounded-lg p-6 bg-card">
+                            <div className="h-6 w-3/4 bg-muted animate-pulse rounded-md mb-3" />
+                            <div className="h-4 w-full bg-muted animate-pulse rounded-md mb-2" />
+                            <div className="h-4 w-2/3 bg-muted animate-pulse rounded-md mb-4" />
+                            <div className="h-48 w-full bg-muted animate-pulse rounded-md" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </AccordionContent>
             </Card>

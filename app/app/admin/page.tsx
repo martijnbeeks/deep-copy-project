@@ -626,7 +626,7 @@ export default function AdminPage() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2">
-                    <Database className="h-8 w-8 text-purple-600" />
+                    <Database className="h-8 w-8 text-cyan-600" />
                     <div>
                       <p className="text-2xl font-bold">{stats.jobs}</p>
                       <p className="text-sm text-muted-foreground">Jobs</p>

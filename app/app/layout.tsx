@@ -3,11 +3,13 @@ import type { Metadata } from "next";
 import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/contexts/app-context";
-import { SidebarProvider } from "@/contexts/sidebar-context";
+import { SidebarProvider as CustomSidebarProvider } from "@/contexts/sidebar-context";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { QueryProvider } from "@/lib/providers/query-provider";
 import { GlobalPollingProvider } from "@/contexts/global-polling-context";
 import { Toaster } from "@/components/ui/toaster";
 import { PageTransition } from "@/components/ui/page-transition";
+import { ThemeProvider } from "next-themes";
 import "./globals";
 
 const inter = Inter({
@@ -71,18 +73,22 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`}
       >
-        <QueryProvider>
-          <AppProvider>
-            <SidebarProvider>
-              <GlobalPollingProvider>
-                <PageTransition>
-                  {children}
-                </PageTransition>
-                <Toaster />
-              </GlobalPollingProvider>
-            </SidebarProvider>
-          </AppProvider>
-        </QueryProvider>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          <QueryProvider>
+            <AppProvider>
+              <CustomSidebarProvider>
+                <SidebarProvider>
+                  <GlobalPollingProvider>
+                    <PageTransition>
+                      {children}
+                    </PageTransition>
+                    <Toaster />
+                  </GlobalPollingProvider>
+                </SidebarProvider>
+              </CustomSidebarProvider>
+            </AppProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -109,8 +109,8 @@ export default function DashboardPage() {
     } as const
 
     const statusColors = {
-      completed: "bg-gradient-primary text-primary-foreground",
-      processing: "bg-gradient-accent text-accent-foreground",
+      completed: "bg-primary text-primary-foreground",
+      processing: "bg-accent text-accent-foreground",
       pending: "bg-muted text-muted-foreground",
       failed: "bg-destructive text-destructive-foreground",
     }
@@ -197,17 +197,17 @@ export default function DashboardPage() {
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen bg-background">
+      <div className="flex h-screen bg-background overflow-hidden">
         <OfflineBanner />
         <Sidebar />
-        <main className="flex-1 overflow-auto md:ml-0">
+        <main className="flex-1 overflow-auto ml-16">
           <div className="p-4 md:p-6">
             <div className="mb-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <SidebarTrigger />
                   <div className="flex-1 min-w-0">
-                    <h1 className="text-2xl md:text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">Dashboard</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold text-foreground">Dashboard</h1>
                     <p className="text-sm text-muted-foreground">Welcome back, {user.name}!</p>
                   </div>
                 </div>
@@ -226,9 +226,9 @@ export default function DashboardPage() {
             </div>
 
             {/* Compact stats bar */}
-            <div className="flex items-center justify-center gap-6 py-4 px-6 bg-gradient-subtle rounded-xl border border-border/50 shadow-elegant mb-8">
+            <div className="flex items-center justify-center gap-6 py-4 px-6 bg-muted/30 rounded-xl border border-border/50 shadow-sm mb-8">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-gradient-accent rounded-lg flex items-center justify-center">
+                <div className="w-6 h-6 bg-accent rounded-lg flex items-center justify-center">
                   <Clock className="h-3 w-3 text-accent-foreground" />
                 </div>
                 <span className="text-sm font-medium text-foreground">
@@ -240,7 +240,7 @@ export default function DashboardPage() {
               </div>
               <div className="w-px h-4 bg-border"></div>
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-gradient-primary rounded-lg flex items-center justify-center">
+                <div className="w-6 h-6 bg-primary rounded-lg flex items-center justify-center">
                   <CheckCircle className="h-3 w-3 text-primary-foreground" />
                 </div>
                 <span className="text-sm font-medium text-foreground">
@@ -249,7 +249,7 @@ export default function DashboardPage() {
               </div>
               <div className="w-px h-4 bg-border"></div>
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-gradient-accent rounded-lg flex items-center justify-center">
+                <div className="w-6 h-6 bg-accent rounded-lg flex items-center justify-center">
                   <FileText className="h-3 w-3 text-accent-foreground" />
                 </div>
                 <span className="text-sm font-medium text-foreground">Total: {jobs.length}</span>
@@ -270,7 +270,7 @@ export default function DashboardPage() {
             {/* Hero CTA */}
             <div className="mb-8">
               <Link href="/create" className="block">
-                <div className="bg-gradient-primary hover:bg-gradient-primary/90 rounded-xl p-8 text-center shadow-elegant hover:shadow-glow transition-all duration-300 group">
+                <div className="bg-primary hover:bg-primary/90 rounded-xl p-8 text-center shadow-sm hover:shadow-md transition-all duration-300 group">
                   <div className="flex items-center justify-center gap-3 mb-2">
                     <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                       <Zap className="h-5 w-5 text-primary-foreground" />
@@ -284,15 +284,15 @@ export default function DashboardPage() {
 
             {/* Jobs and Results - Tabbed Layout */}
             <Tabs defaultValue="jobs" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6 bg-gradient-subtle border border-border/50 shadow-elegant">
-                <TabsTrigger value="jobs" className="flex items-center gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-primary-foreground">
-                  <div className="w-5 h-5 bg-gradient-accent rounded-md flex items-center justify-center">
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted/30 border border-border/50 shadow-sm">
+                <TabsTrigger value="jobs" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <div className="w-5 h-5 bg-accent rounded-md flex items-center justify-center">
                     <FileText className="h-3 w-3 text-accent-foreground" />
                   </div>
                   All Jobs
                 </TabsTrigger>
-                <TabsTrigger value="results" className="flex items-center gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-primary-foreground">
-                  <div className="w-5 h-5 bg-gradient-accent rounded-md flex items-center justify-center">
+                <TabsTrigger value="results" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <div className="w-5 h-5 bg-accent rounded-md flex items-center justify-center">
                     <BarChart3 className="h-3 w-3 text-accent-foreground" />
                   </div>
                   Recent Results
@@ -300,10 +300,10 @@ export default function DashboardPage() {
               </TabsList>
 
               <TabsContent value="jobs" className="space-y-4">
-                <Card className="bg-card/80 border-border/50 shadow-elegant">
+                <Card className="bg-card/80 border-border/50 shadow-sm">
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-accent rounded-lg flex items-center justify-center">
+                      <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
                         <FileText className="w-4 h-4 text-accent-foreground" />
                       </div>
                       <div>
@@ -361,7 +361,7 @@ export default function DashboardPage() {
                         {filteredJobs.map((job: any) => (
                           <div
                             key={job.id}
-                            className="p-4 rounded-lg border border-border/50 hover:border-border hover:shadow-elegant transition-all cursor-pointer group bg-card/50"
+                            className="p-4 rounded-lg border border-border/50 hover:border-border hover:shadow-sm transition-all cursor-pointer group bg-card/50"
                             onClick={() => router.push(`/results/${job.id}`)}
                           >
                             <div className="flex items-center justify-between">
@@ -389,7 +389,7 @@ export default function DashboardPage() {
                                   </a>
                                 )}
                               </div>
-                              <div className="w-8 h-8 bg-gradient-accent/20 rounded-lg flex items-center justify-center group-hover:bg-gradient-accent/30 transition-colors">
+                              <div className="w-8 h-8 bg-accent/20 rounded-lg flex items-center justify-center group-hover:bg-accent/30 transition-colors">
                                 <Eye className="h-4 w-4 text-accent" />
                               </div>
                             </div>
@@ -402,10 +402,10 @@ export default function DashboardPage() {
               </TabsContent>
 
               <TabsContent value="results" className="space-y-4">
-                <Card className="bg-card/80 border-border/50 shadow-elegant">
+                <Card className="bg-card/80 border-border/50 shadow-sm">
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+                      <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                         <BarChart3 className="w-4 h-4 text-primary-foreground" />
                       </div>
                       <div>
@@ -432,14 +432,14 @@ export default function DashboardPage() {
                         {completedJobs.slice(0, 8).map((job: any) => (
                           <div
                             key={job.id}
-                            className="p-4 rounded-lg border border-border/50 hover:border-border hover:shadow-elegant transition-all cursor-pointer group bg-card/50"
+                            className="p-4 rounded-lg border border-border/50 hover:border-border hover:shadow-sm transition-all cursor-pointer group bg-card/50"
                             onClick={() => router.push(`/results/${job.id}`)}
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-3 mb-2">
                                   <h4 className="font-semibold text-foreground break-words">{job.title}</h4>
-                                  <Badge variant="default" className="text-xs bg-gradient-primary text-primary-foreground">
+                                  <Badge variant="default" className="text-xs bg-primary text-primary-foreground">
                                     completed
                                   </Badge>
                                 </div>
@@ -462,7 +462,7 @@ export default function DashboardPage() {
                                   </a>
                                 )}
                               </div>
-                              <div className="w-8 h-8 bg-gradient-primary/20 rounded-lg flex items-center justify-center group-hover:bg-gradient-primary/30 transition-colors">
+                              <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center group-hover:bg-primary/30 transition-colors">
                                 <Eye className="h-4 w-4 text-primary" />
                               </div>
                             </div>

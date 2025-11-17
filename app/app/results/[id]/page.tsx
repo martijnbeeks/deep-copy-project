@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useCallback } from "react"
-import { RefreshCw, ExternalLink, Download, Share2, CheckCircle2 } from "lucide-react"
+import { RefreshCw, Download, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
@@ -65,9 +65,9 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
   // Show loading state instead of redirecting
   if (!isAuthenticated || !user) {
     return (
-      <div className="flex h-screen bg-gradient-subtle">
+      <div className="flex h-screen bg-background overflow-hidden">
         <Sidebar />
-        <main className="flex-1 p-6">
+        <main className="flex-1 overflow-auto ml-16 p-6">
           <ContentViewerSkeleton />
         </main>
       </div>
@@ -76,9 +76,9 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
 
   if (!user || isLoading) {
     return (
-      <div className="flex h-screen bg-gradient-subtle">
+      <div className="flex h-screen bg-background overflow-hidden">
         <Sidebar />
-        <main className="flex-1 p-6">
+        <main className="flex-1 overflow-auto ml-16 p-6">
           <ContentViewerSkeleton />
         </main>
       </div>
@@ -87,7 +87,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
 
   if (!currentJob || !currentJob.result) {
     return (
-      <div className="flex h-screen bg-gradient-subtle">
+      <div className="flex h-screen bg-background">
         <Sidebar />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -103,24 +103,20 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
   }
 
   return (
-    <div className="flex h-screen bg-gradient-subtle">
+    <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden ml-16">
         {/* Header */}
         <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
           <div className="px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <span className="text-primary-foreground font-bold">AI</span>
                 </div>
                 <span className="text-xl font-bold text-foreground">DeepCopy</span>
               </div>
               <div className="flex items-center gap-3">
-                <Button variant="outline" size="sm">
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Share
-                </Button>
                 <Link href="/dashboard">
                   <Button variant="ghost" asChild>
                     <span>← Back to Dashboard</span>
@@ -141,7 +137,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                 <span className="text-sm font-medium">Step 3: Content Generation Complete</span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
+              <h1 className="text-3xl sm:text-5xl font-bold mb-6 text-foreground">
                 Content Results
               </h1>
               <p className="text-lg sm:text-xl text-muted-foreground max-w-4xl mx-auto">
@@ -166,18 +162,13 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                   {currentJob.status}
                 </Badge>
-                <Link href={`/jobs/${currentJob.id}`}>
-                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Job Details
-                  </Button>
-                </Link>
               </div>
             </div>
 
             <DeepCopyResults
               result={currentJob.result}
               jobTitle={currentJob.title}
+              jobId={currentJob.id}
               advertorialType={currentJob.advertorial_type}
               templateId={currentJob.template_id}
               customerAvatars={currentJob.customer_avatars}

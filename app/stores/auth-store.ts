@@ -71,6 +71,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         user: state.user ? {
           id: state.user.id,
           email: state.user.email,
+          name: state.user.name,
           created_at: state.user.created_at,
           updated_at: state.user.updated_at,
           // Don't persist sensitive data

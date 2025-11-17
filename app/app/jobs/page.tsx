@@ -190,10 +190,10 @@ export default function JobsPage() {
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen bg-background">
+      <div className="flex h-screen bg-background overflow-hidden">
         <OfflineBanner />
         <Sidebar />
-        <main className="flex-1 overflow-auto md:ml-0">
+        <main className="flex-1 overflow-auto ml-16">
           <div className="p-4 md:p-6">
             <div className="flex items-start justify-between mb-4 md:mb-6 gap-4">
               <div className="flex-1 min-w-0">

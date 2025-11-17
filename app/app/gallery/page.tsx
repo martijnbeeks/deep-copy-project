@@ -248,14 +248,14 @@ export default function ResultsGalleryPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-hidden md:ml-0">
-        <div className="p-4 md:p-6 overflow-y-auto h-full">
+      <main className="flex-1 overflow-auto ml-16">
+        <div className="p-4 md:p-6">
           <div className="space-y-6">
             {/* Header */}
             <div className="space-y-2">
-              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+              <h1 className="text-3xl md:text-4xl font-bold text-foreground">
                 Results Gallery
               </h1>
               <p className="text-muted-foreground text-lg">
@@ -321,7 +321,7 @@ export default function ResultsGalleryPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {paginatedTemplates.map((template) => (
-                  <Card key={template.id} className="group hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 h-[420px] md:h-[460px] flex flex-col border-2 hover:border-primary/20">
+                  <Card key={template.id} className="group hover:shadow-md transition-all duration-300 h-[420px] md:h-[460px] flex flex-col border-2 hover:border-primary/20">
                     <CardHeader className="pb-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="space-y-2 flex-1 min-w-0">
@@ -352,7 +352,7 @@ export default function ResultsGalleryPage() {
                     </CardHeader>
                     <CardContent className="flex-1 flex flex-col space-y-4">
                       {/* Template Preview */}
-                      <div className="flex-1 relative bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
+                      <div className="flex-1 relative bg-muted rounded-xl overflow-hidden border-2 border-border">
                         {loadingTemplates.has(template.id) ? (
                           <div className="flex items-center justify-center h-full">
                             <div className="flex flex-col items-center gap-2">

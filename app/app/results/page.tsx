@@ -114,9 +114,9 @@ export default function ResultsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-background">
+      <div className="flex h-screen bg-background overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-auto md:ml-0">
+        <main className="flex-1 overflow-auto ml-16">
           <div className="p-4 md:p-6">
             {/* Header skeleton */}
             <div className="flex items-start justify-between mb-4 md:mb-6 gap-4">
