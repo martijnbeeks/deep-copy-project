@@ -38,8 +38,6 @@ export async function POST(request: NextRequest) {
       title, 
       brand_info, 
       sales_page_url, 
-      template_id, 
-      advertorial_type, 
       target_approach,
       customer_avatars,
       // Deprecated fields for backward compatibility
@@ -48,9 +46,9 @@ export async function POST(request: NextRequest) {
       gender 
     } = await request.json()
 
-    if (!title || !advertorial_type) {
+    if (!title) {
       return NextResponse.json(
-        { error: 'Title and advertorial type are required' },
+        { error: 'Title is required' },
         { status: 400 }
       )
     }
@@ -93,30 +91,12 @@ export async function POST(request: NextRequest) {
     // Use provided customer avatars (extracted from frontend dialog)
     const finalCustomerAvatars = customer_avatars || []
 
-    // Use the template_id directly as swipe_file_id for DeepCopy API
-    // Ensure we have valid template IDs: A00001-A00004 for advertorial, L00001-L00004 for listicle
-    const swipeFileId = template_id || (advertorial_type === 'listicle' ? 'L00001' : 'A00001')
-    
-    console.log(`🔍 Template Selection Debug:`)
-    console.log(`  - Advertorial Type: ${advertorial_type}`)
-    console.log(`  - Selected Template ID: ${template_id}`)
-    console.log(`  - Swipe File ID for DeepCopy: ${swipeFileId}`)
-    
-    if (!swipeFileId) {
-      return NextResponse.json(
-        { error: `No template ID provided for advertorial type: ${advertorial_type}` },
-        { status: 400 }
-      )
-    }
-
     // Submit job to DeepCopy API first to get the job ID
     let deepCopyJobId: string
     try {
       const jobPayload: any = {
         sales_page_url: sales_page_url || '',
-        project_name: title,
-        swipe_file_id: swipeFileId, 
-        advertorial_type
+        project_name: title
       }
 
       // Use new customer_avatars format if available, otherwise fall back to deprecated fields
@@ -148,8 +128,8 @@ export async function POST(request: NextRequest) {
       title,
       brand_info: brandInfoSafe,
       sales_page_url,
-      template_id,
-      advertorial_type,
+      template_id: null, // No template selection at creation
+      advertorial_type: 'advertorial', // Default type for database constraint, will be determined later from swipe results
       target_approach,
       customer_avatars: finalCustomerAvatars,
       // Deprecated fields for backward compatibility

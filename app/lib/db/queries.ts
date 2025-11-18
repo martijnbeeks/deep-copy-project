@@ -59,7 +59,7 @@ export const createJob = async (jobData: {
   brand_info: string
   sales_page_url?: string
   template_id?: string
-  advertorial_type: string
+  advertorial_type?: string
   target_approach?: string
   customer_avatars?: any[]
   // Deprecated fields for backward compatibility
@@ -426,4 +426,51 @@ export const updateJobResult = async (jobId: string, updates: { html_content?: s
     [jobId, ...values]
   )
   return result.rowCount > 0
+}
+
+// Injected templates queries
+export const createInjectedTemplate = async (
+  jobId: string,
+  angleName: string,
+  templateId: string,
+  htmlContent: string,
+  angleIndex?: number
+): Promise<any> => {
+  // Ensure injected_templates table exists
+  await query(`
+    CREATE TABLE IF NOT EXISTS injected_templates (
+      id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+      job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+      angle_index INTEGER NOT NULL DEFAULT 1,
+      angle_name VARCHAR(255) NOT NULL,
+      html_content TEXT NOT NULL,
+      template_id VARCHAR(255),
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `)
+  
+  // Use provided angleIndex or default to 1
+  const finalAngleIndex = angleIndex || 1
+  
+  const result = await query(
+    'INSERT INTO injected_templates (job_id, angle_index, angle_name, html_content, template_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    [jobId, finalAngleIndex, angleName, htmlContent, templateId]
+  )
+  return result.rows[0]
+}
+
+export const getInjectedTemplatesByJob = async (jobId: string): Promise<any[]> => {
+  const result = await query(
+    'SELECT * FROM injected_templates WHERE job_id = $1 ORDER BY angle_index, created_at',
+    [jobId]
+  )
+  return result.rows
+}
+
+export const getGeneratedAnglesForJob = async (jobId: string): Promise<string[]> => {
+  const result = await query(
+    'SELECT DISTINCT angle_name FROM injected_templates WHERE job_id = $1',
+    [jobId]
+  )
+  return result.rows.map(row => row.angle_name)
 }

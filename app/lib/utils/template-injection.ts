@@ -449,9 +449,24 @@ export function extractContentFromAngle(results: any, swipe: any, angleIndex: nu
 // Extract content data from individual swipe result - EXACT field mapping
 export function extractContentFromSwipeResult(swipeResult: any, templateType: 'listicle' | 'advertorial'): ContentData {
   // Parse the swipe result content - this contains the rich JSON data for this specific angle
-  // Handle both formats: string (old) or object (new from swipe-files endpoint)
+  // Handle multiple formats:
+  // 1. Wrapper with full_advertorial property (from swipe-files API: { full_advertorial: {...} })
+  // 2. Already the full_advertorial object itself (passed directly from process route)
+  // 3. Nested content property (old format: { content: {...} })
+  // 4. Already parsed content object
   let swipeContent = {}
-  if (swipeResult.content) {
+  
+  // Check if this is a wrapper with full_advertorial property
+  if (swipeResult.full_advertorial && typeof swipeResult.full_advertorial === 'object') {
+    swipeContent = swipeResult.full_advertorial
+  } 
+  // Check if this is already the full_advertorial object itself (has typical advertorial structure)
+  else if (swipeResult.hero || swipeResult.section1 || swipeResult.topbar || swipeResult.alert) {
+    // Already the content object itself (no nesting) - this is what we get from process route
+    swipeContent = swipeResult
+  } 
+  // Check for nested content property (old format)
+  else if (swipeResult.content) {
     if (typeof swipeResult.content === 'string') {
       try {
         swipeContent = JSON.parse(swipeResult.content)
@@ -463,6 +478,9 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
       // Already an object (Listicle or Advertorial)
       swipeContent = swipeResult.content
     }
+  } else {
+    // Fallback: use swipeResult as-is
+    swipeContent = swipeResult
   }
 
   // Check if this is a Listicle or Advertorial structure (from swipe-files endpoint)
@@ -514,9 +532,14 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
       banner: sanitizeTextContent(swipeContent.alert?.banner || 'Limited Time Offer', 150)
     },
 
-    // Breadcrumbs - exact field mapping
+    // Breadcrumbs - exact field mapping (handle both string and object formats)
     breadcrumbs: {
-      text: sanitizeTextContent(swipeContent.breadcrumbs?.text || 'Home > Health > Products', 100)
+      text: sanitizeTextContent(
+        typeof swipeContent.breadcrumbs === 'string' 
+          ? swipeContent.breadcrumbs 
+          : swipeContent.breadcrumbs?.text || 'Home > Health > Products', 
+        200
+      )
     },
 
     // Story intro - handle both formats
@@ -762,26 +785,32 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
       imageAlt: sanitizeTextContent(swipeContent.section12?.imageAlt || 'Call to action', 50)
     },
 
-    // CTA section - handle both formats
+    // CTA section - handle both formats (object with primary/secondary or direct string)
     cta: {
       primary: sanitizeTextContent(
         swipeContent.cta?.primary || 
-        swipeContent.cta || 
+        (typeof swipeContent.cta === 'string' ? swipeContent.cta : null) ||
         swipeContent.hero?.cta || 
         (isListicle ? swipeContent.cta : null) ||
         (isAdvertorial ? swipeContent.cta : null) ||
         'Get Started Now', 
-        100
+        200
       ),
       primaryUrl: '#order',
-      secondary: sanitizeTextContent(swipeContent.cta?.secondary || 'Learn More', 100),
+      secondary: sanitizeTextContent(
+        swipeContent.cta?.secondary || 
+        'Learn More', 
+        200
+      ),
       secondaryUrl: '#learn'
     },
 
     // Sidebar section - exact field mapping with comprehensive fallbacks
     sidebar: {
-      ctaHeadline: sanitizeTextContent(swipeContent.sidebar?.ctaHeadline || swipeContent.cta?.primary || 'Special Offer', 50),
-      ctaButton: sanitizeTextContent(swipeContent.sidebar?.ctaButton || swipeContent.cta?.primary || 'Get Started', 50),
+      title: sanitizeTextContent(swipeContent.sidebar?.title || swipeContent.sidebar?.ctaHeadline || 'Special Offer', 100),
+      subtitle: sanitizeTextContent(swipeContent.sidebar?.subtitle || 'Get Started Today', 100),
+      ctaHeadline: sanitizeTextContent(swipeContent.sidebar?.ctaHeadline || swipeContent.sidebar?.title || swipeContent.cta?.primary || 'Special Offer', 100),
+      ctaButton: sanitizeTextContent(swipeContent.sidebar?.ctaButton || swipeContent.cta?.primary || 'Get Started', 100),
       ctaUrl: '#order',
       productImage: sanitizeUrl(swipeContent.sidebar?.productImage || swipeContent.product?.image || 'https://placehold.co/300x300?text=Product+Image'),
       ratingImage: sanitizeUrl(swipeContent.sidebar?.ratingImage || 'https://placehold.co/20x20?text=★')
@@ -789,7 +818,13 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
 
     // Sticky CTA - use real data from API with comprehensive fallbacks
     sticky: {
-      cta: sanitizeTextContent(swipeContent.sticky?.cta || swipeContent.cta?.primary || swipeContent.cta || 'Get Started Now', 50),
+      cta: sanitizeTextContent(
+        swipeContent.sticky?.cta || 
+        swipeContent.cta?.primary || 
+        (typeof swipeContent.cta === 'string' ? swipeContent.cta : null) ||
+        'Get Started Now', 
+        200
+      ),
       ctaUrl: '#order'
     },
 
@@ -868,7 +903,7 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
 
     // Assurances section - use real API data with meaningful fallback
     assurances: {
-      blurb: sanitizeTextContent(swipeContent.assurances?.blurb || 'Backed by our satisfaction guarantee', 300)
+      blurb: sanitizeBodyContent(swipeContent.assurances?.blurb || 'Backed by our satisfaction guarantee', 1000)
     },
 
     // Shipping section - not in API, keep defaults
@@ -1233,6 +1268,7 @@ export function injectContentIntoTemplate(template: InjectableTemplate, content:
       return createFallbackTemplate(content)
     }
 
+
     // Replace all placeholders with actual content (content is already sanitized)
     const replacements: { [key: string]: string } = {
       '{{content.hero.headline}}': content.hero.headline,
@@ -1325,12 +1361,8 @@ export function injectContentIntoTemplate(template: InjectableTemplate, content:
     }
 
     // Apply all replacements
-    let replacementCount = 0
     for (const [placeholder, value] of Object.entries(replacements)) {
-      if (htmlContent.includes(placeholder)) {
-        htmlContent = htmlContent.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value)
-        replacementCount++
-      }
+      htmlContent = htmlContent.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value || '')
     }
 
     // Comprehensive deduplication - remove ALL duplicate content
