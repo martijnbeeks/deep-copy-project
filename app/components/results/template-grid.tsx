@@ -134,9 +134,9 @@ export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
         return (
             <div className="text-center py-12">
                 <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No HTML Templates</h3>
+                <h3 className="text-lg font-semibold mb-2">No Generated Prelanders</h3>
                 <p className="text-muted-foreground">
-                    No HTML templates were generated for this job.
+                    No prelanders were generated for this job.
                 </p>
             </div>
         )
@@ -146,7 +146,7 @@ export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h3 className="text-lg font-semibold">HTML Templates</h3>
+                    <h3 className="text-lg font-semibold">Generated Prelanders</h3>
                     <p className="text-sm text-muted-foreground">
                         {templates.length} template{templates.length !== 1 ? 's' : ''} generated
                     </p>

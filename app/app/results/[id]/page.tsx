@@ -172,6 +172,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
               advertorialType={currentJob.advertorial_type}
               templateId={currentJob.template_id}
               customerAvatars={currentJob.customer_avatars}
+              salesPageUrl={currentJob.sales_page_url}
             />
           </div>
         </main>

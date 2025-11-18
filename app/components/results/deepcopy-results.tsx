@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { MarkdownContent } from "@/components/results/markdown-content"
 import { TemplateGrid } from "@/components/results/template-grid"
-import { FileText, BarChart3, Code, BookOpen, User, Target, Calendar, Clock, Users, MapPin, DollarSign, Briefcase, Sparkles, AlertTriangle, Star, Eye, TrendingUp, Brain, Loader2, CheckCircle2, Download } from "lucide-react"
+import { FileText, BarChart3, Code, BookOpen, User, Target, Calendar, Clock, Users, MapPin, DollarSign, Briefcase, Sparkles, AlertTriangle, Star, Eye, TrendingUp, Brain, Loader2, CheckCircle2, Download, Globe } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { extractContentFromSwipeResult, injectContentIntoTemplate } from "@/lib/utils/template-injection"
@@ -35,9 +35,10 @@ interface DeepCopyResultsProps {
   advertorialType?: string
   templateId?: string
   customerAvatars?: Array<{ persona_name: string; description?: string; age_range?: string; gender?: string; key_buying_motivation?: string }>
+  salesPageUrl?: string
 }
 
-export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, templateId, customerAvatars }: DeepCopyResultsProps) {
+export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, templateId, customerAvatars, salesPageUrl }: DeepCopyResultsProps) {
   const [templates, setTemplates] = useState<Array<{ name: string, type: string, html: string, angle?: string, timestamp?: string }>>([])
   const [templatesLoading, setTemplatesLoading] = useState(true)
   const [selectedTemplate, setSelectedTemplate] = useState<{ name: string; html_content: string; description?: string; category?: string } | null>(null)
@@ -55,8 +56,62 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
   const fullResult = result.metadata?.full_result
   const originalJobId = result.metadata?.deepcopy_job_id
 
+  // Load generated angles and templates from database on mount
+  useEffect(() => {
+    const loadData = async () => {
+      if (jobId) {
+        try {
+          // Load generated angles from database
+          const anglesResponse = await fetch(`/api/jobs/${jobId}/generated-angles`)
+          if (anglesResponse.ok) {
+            const angles = await anglesResponse.json()
+            setGeneratedAngles(new Set(angles))
+          }
+          
+          // Load templates from database
+          const templatesResponse = await fetch(`/api/jobs/${jobId}/injected-templates`)
+          if (templatesResponse.ok) {
+            const injectedTemplates = await templatesResponse.json()
+            if (injectedTemplates && injectedTemplates.length > 0) {
+              const templates = injectedTemplates.map((injected: any) => ({
+                name: `${injected.template_id} - ${injected.angle_name}`,
+                type: 'Injected Template',
+                html: injected.html_content,
+                angle: injected.angle_name,
+                templateId: injected.template_id,
+                timestamp: injected.created_at
+              }))
+              
+              // Sort by angle name and template ID
+              templates.sort((a: any, b: any) => {
+                if (a.angle !== b.angle) {
+                  return (a.angle || '').localeCompare(b.angle || '')
+                }
+                return (a.templateId || '').localeCompare(b.templateId || '')
+              })
+              
+              setTemplates(templates)
+            }
+            // Always set loading to false after checking database
+            setTemplatesLoading(false)
+          } else {
+            // If API call fails, still set loading to false
+            setTemplatesLoading(false)
+          }
+        } catch (error) {
+          console.error('Error loading data from database:', error)
+          setTemplatesLoading(false)
+        }
+      } else {
+        // If no jobId, still set loading to false
+        setTemplatesLoading(false)
+      }
+    }
+    loadData()
+  }, [jobId])
+
   // Poll swipe file status for a specific angle
-  const pollSwipeFileStatus = async (jobId: string, angle: string) => {
+  const pollSwipeFileStatus = async (swipeFileJobId: string, angle: string) => {
     const maxAttempts = 60 // 5 minutes max (60 * 5s)
     const pollInterval = 5000 // Poll every 5 seconds
 
@@ -64,7 +119,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
       try {
         await new Promise(resolve => setTimeout(resolve, pollInterval))
 
-        const response = await fetch(`/api/swipe-files/${jobId}`)
+        const response = await fetch(`/api/swipe-files/${swipeFileJobId}`)
         if (!response.ok) {
           throw new Error(`Status check failed: ${response.status}`)
         }
@@ -80,79 +135,96 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
         if (statusData.status === 'SUCCEEDED') {
           // Fetch results
-          const resultResponse = await fetch(`/api/swipe-files/${jobId}/result`)
+          const resultResponse = await fetch(`/api/swipe-files/${swipeFileJobId}/result`)
           if (!resultResponse.ok) {
             throw new Error(`Result fetch failed: ${resultResponse.status}`)
           }
 
-          const resultData = await resultResponse.json()
+          const swipeFileResponse = await resultResponse.json()
 
-          // Update fullResult with swipe results first
-          let swipeResults: any[] = []
-          if (fullResult && fullResult.results) {
-            // Convert swipe file results to swipe_results format
-            swipeResults = fullResult.results.swipe_results || []
-            Object.keys(resultData).forEach((key) => {
-              // Template IDs like L00001, A00003, etc.
-              if (key.match(/^[LA]\d+$/)) {
-                const templateData = resultData[key]
-                if (templateData && templateData.full_advertorial) {
-                  // Check if this angle already exists, if so update it, otherwise add it
-                  const existingIndex = swipeResults.findIndex(sr => sr.angle === angle)
-                  if (existingIndex >= 0) {
-                    swipeResults[existingIndex] = {
-                      angle: angle,
-                      content: templateData.full_advertorial
-                    }
-                  } else {
-                    swipeResults.push({
-                      angle: angle,
-                      content: templateData.full_advertorial
-                    })
-                  }
-                }
-              }
+          // Process swipe file response - inject into templates and store
+          try {
+            const processResponse = await fetch('/api/swipe-files/process', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                jobId: jobId, // Use the local job ID from props
+                angle,
+                swipeFileResponse
+              })
             })
 
-            // Update the results with swipe_results
-            fullResult.results.swipe_results = swipeResults
-            // Force a re-render by updating the result object
-            result.metadata = {
-              ...result.metadata,
-              full_result: fullResult
+            if (!processResponse.ok) {
+              throw new Error('Failed to process swipe file response')
             }
+
+            const processResult = await processResponse.json()
+            console.log(`✅ Processed ${processResult.processed} templates for angle "${angle}"`)
+
+            // Mark this angle as generated
+            setGeneratedAngles(prev => {
+              const newSet = new Set(prev).add(angle)
+              return newSet
+            })
+
+            // Remove from generating map
+            setGeneratingAngles(prev => {
+              const newMap = new Map(prev)
+              newMap.delete(angle)
+              return newMap
+            })
+
+            // Reload templates and generated angles from database
+            try {
+              // Reload generated angles
+              const anglesResponse = await fetch(`/api/jobs/${jobId}/generated-angles`)
+              if (anglesResponse.ok) {
+                const angles = await anglesResponse.json()
+                setGeneratedAngles(new Set(angles))
+              }
+              
+              // Reload templates
+              const templatesResponse = await fetch(`/api/jobs/${jobId}/injected-templates`)
+              if (templatesResponse.ok) {
+                const injectedTemplates = await templatesResponse.json()
+                if (injectedTemplates && injectedTemplates.length > 0) {
+                  const templates = injectedTemplates.map((injected: any) => ({
+                    name: `${injected.template_id} - ${injected.angle_name}`,
+                    type: 'Injected Template',
+                    html: injected.html_content,
+                    angle: injected.angle_name,
+                    templateId: injected.template_id,
+                    timestamp: injected.created_at
+                  }))
+                  
+                  templates.sort((a: any, b: any) => {
+                    if (a.angle !== b.angle) {
+                      return (a.angle || '').localeCompare(b.angle || '')
+                    }
+                    return (a.templateId || '').localeCompare(b.templateId || '')
+                  })
+                  
+                  setTemplates(templates)
+                }
+              }
+            } catch (error) {
+              console.error('Error reloading templates:', error)
+            }
+            setTemplatesLoading(false)
+          } catch (processError) {
+            console.error('Error processing swipe file response:', processError)
+            // Still mark as generated to prevent retries, but show error
+            setGeneratedAngles(prev => {
+              const newSet = new Set(prev).add(angle)
+              return newSet
+            })
+            setGeneratingAngles(prev => {
+              const newMap = new Map(prev)
+              newMap.delete(angle)
+              return newMap
+            })
+            alert('Swipe files generated but failed to process. Please try refreshing the page.')
           }
-
-          // Mark this angle as generated and persist to database
-          setGeneratedAngles(prev => {
-            const newSet = new Set(prev).add(angle)
-
-            // Persist to database
-            if (jobId) {
-              fetch(`/api/jobs/${jobId}/update-generated-angles`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  generatedAngles: Array.from(newSet),
-                  swipeResults: swipeResults
-                })
-              }).catch(err => console.error('Failed to persist generated angles:', err))
-            }
-
-            return newSet
-          })
-
-          // Remove from generating map
-          setGeneratingAngles(prev => {
-            const newMap = new Map(prev)
-            newMap.delete(angle)
-            return newMap
-          })
-
-          // Reload templates to show the new swipe files
-          const extractedTemplates = await extractHTMLTemplates()
-          setTemplates(extractedTemplates)
-          setTemplatesLoading(false)
           return
         } else if (statusData.status === 'FAILED') {
           // Remove from generating map on failure
@@ -195,10 +267,45 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
   }
 
   const extractHTMLTemplates = async () => {
-    const templates: Array<{ name: string, type: string, html: string, angle?: string, timestamp?: string }> = []
+    const templates: Array<{ name: string, type: string, html: string, angle?: string, timestamp?: string, templateId?: string }> = []
 
     try {
-      // Check if we have full result data with swipe_results
+      // First, try to load injected templates from database
+      if (jobId) {
+        try {
+          const response = await fetch(`/api/jobs/${jobId}/injected-templates`)
+          if (response.ok) {
+            const injectedTemplates = await response.json()
+            
+            if (injectedTemplates && injectedTemplates.length > 0) {
+              injectedTemplates.forEach((injected: any) => {
+                templates.push({
+                  name: `${injected.template_id} - ${injected.angle_name}`,
+                  type: 'Injected Template',
+                  html: injected.html_content,
+                  angle: injected.angle_name,
+                  templateId: injected.template_id,
+                  timestamp: injected.created_at
+                })
+              })
+              
+              // Sort by angle name and template ID
+              templates.sort((a, b) => {
+                if (a.angle !== b.angle) {
+                  return (a.angle || '').localeCompare(b.angle || '')
+                }
+                return (a.templateId || '').localeCompare(b.templateId || '')
+              })
+              
+              return templates
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching injected templates from database:', error)
+        }
+      }
+
+      // Fallback: Check if we have full result data with swipe_results (old method)
       if (fullResult && fullResult.results?.swipe_results) {
         const swipeResults = fullResult.results.swipe_results
 
@@ -367,43 +474,30 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
     }
   }
 
+  // Load templates when result changes (fallback to old method if no database templates)
+  // This runs after the initial database load to handle old jobs
   useEffect(() => {
     const loadTemplates = async () => {
-      setTemplatesLoading(true)
-      try {
-        const extractedTemplates = await extractHTMLTemplates()
-        setTemplates(extractedTemplates)
-
-        // Mark angles as generated if they have templates or from metadata
-        const generatedSet = new Set<string>()
-
-        // First, check metadata for persisted generated angles
-        if (result.metadata?.generated_angles && Array.isArray(result.metadata.generated_angles)) {
-          result.metadata.generated_angles.forEach((angle: string) => {
-            generatedSet.add(angle)
-          })
+      // Only load if we don't already have templates from database and templatesLoading is true
+      if (templates.length === 0 && templatesLoading) {
+        try {
+          const extractedTemplates = await extractHTMLTemplates()
+          if (extractedTemplates.length > 0) {
+            setTemplates(extractedTemplates)
+            setTemplatesLoading(false)
+          } else {
+            setTemplatesLoading(false)
+          }
+        } catch (error) {
+          console.error('Error loading templates:', error)
+          setTemplatesLoading(false)
         }
-
-        // Also check swipe_results for angles
-        if (fullResult?.results?.swipe_results && fullResult.results.swipe_results.length > 0) {
-          fullResult.results.swipe_results.forEach((sr: any) => {
-            if (sr.angle) {
-              generatedSet.add(sr.angle)
-            }
-          })
-        }
-
-        setGeneratedAngles(generatedSet)
-      } catch (error) {
-        console.error('Error loading templates:', error)
-      } finally {
-        setTemplatesLoading(false)
       }
     }
 
-    // Always try to load templates, whether we have processed content or raw results
+    // Load templates as fallback if database doesn't have them (for old jobs)
     loadTemplates()
-  }, [result, jobTitle, swipeFileResults, fullResult])
+  }, [result, jobTitle, swipeFileResults, fullResult, templates.length, templatesLoading])
 
   const formatAnalysis = (analysis: string) => {
     const paragraphs = analysis.split('\n\n').filter(p => p.trim())
@@ -442,69 +536,49 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                   {result.metadata?.generated_at ? new Date(result.metadata.generated_at).toLocaleString() : 'Unknown'}
                 </p>
               </div>
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="w-4 h-4 text-accent" />
-                  <span className="text-sm font-medium text-foreground">Template Used</span>
-                </div>
-                {templateId ? (
-                  <button
-                    type="button"
-                    onClick={async (e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-
-                      setIsLoadingTemplate(true)
-                      try {
-                        const response = await fetch(`/api/templates`)
-                        if (response.ok) {
-                          const data = await response.json()
-                          const templateData = data.templates?.find((t: any) => t.id === templateId)
-                          if (templateData?.html_content) {
-                            setSelectedTemplate({
-                              name: templateData.name,
-                              html_content: templateData.html_content,
-                              description: templateData.description,
-                              category: templateData.category
-                            })
-                            setIsTemplateModalOpen(true)
-                          } else {
-                            console.warn('Template not found or has no html_content')
-                          }
-                        }
-                      } catch (error) {
-                        console.error('Error fetching template:', error)
-                      } finally {
-                        setIsLoadingTemplate(false)
-                      }
-                    }}
-                    disabled={isLoadingTemplate}
-                    className="text-sm text-primary hover:underline cursor-pointer text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoadingTemplate ? 'Loading...' : result.metadata?.template_used || 'L00005 (DeepCopy)'}
-                  </button>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    {result.metadata?.template_used || 'L00005 (DeepCopy)'}
-                  </p>
-                )}
-              </div>
               {fullResult?.project_name && (
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
                     <Target className="w-4 h-4 text-accent" />
                     <span className="text-sm font-medium text-foreground">Project Name</span>
                   </div>
                   <p className="text-sm text-muted-foreground">{fullResult.project_name}</p>
                 </div>
               )}
-              {result.metadata?.deepcopy_job_id && (
+              {customerAvatars && customerAvatars.length > 0 && (
                 <div className="bg-muted/50 p-4 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <Code className="w-4 h-4 text-accent" />
-                    <span className="text-sm font-medium text-foreground">DeepCopy Job ID</span>
+                    <Users className="w-4 h-4 text-accent" />
+                    <span className="text-sm font-medium text-foreground">Selected Avatar</span>
                   </div>
-                  <p className="font-mono text-sm text-muted-foreground">{result.metadata.deepcopy_job_id}</p>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">{customerAvatars[0].persona_name}</p>
+                    {customerAvatars[0].age_range && (
+                      <p className="text-xs text-muted-foreground">Age: {customerAvatars[0].age_range}</p>
+                    )}
+                    {customerAvatars[0].gender && (
+                      <p className="text-xs text-muted-foreground">Gender: {customerAvatars[0].gender}</p>
+                    )}
+                    {customerAvatars[0].key_buying_motivation && (
+                      <p className="text-xs text-muted-foreground mt-1">{customerAvatars[0].key_buying_motivation}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              {salesPageUrl && (
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Globe className="w-4 h-4 text-accent" />
+                    <span className="text-sm font-medium text-foreground">Sales Page URL</span>
+                  </div>
+                  <a 
+                    href={salesPageUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline break-all"
+                  >
+                    {salesPageUrl}
+                  </a>
                 </div>
               )}
             </div>
@@ -1041,8 +1115,8 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                   <AccordionTrigger className="p-8 hover:no-underline">
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-accent rounded-lg flex items-center justify-center">
-                          <Target className="w-5 h-5 text-accent-foreground" />
+                        <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
+                          <Target className="w-5 h-5 text-primary-foreground" />
                         </div>
                         <div>
                           <h2 className="text-2xl font-bold text-foreground">Select Marketing Angle</h2>
@@ -1160,7 +1234,22 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                 newMap.delete(selectedAngle)
                                 return newMap
                               })
-                              alert(error instanceof Error ? error.message : 'Failed to generate swipe files');
+                              
+                              // Show user-friendly error message
+                              const errorMessage = error instanceof Error 
+                                ? error.message 
+                                : 'Failed to generate swipe files. Please try again.';
+                              
+                              // Use toast if available, otherwise alert
+                              if (typeof window !== 'undefined' && (window as any).toast) {
+                                (window as any).toast({
+                                  title: "Error",
+                                  description: errorMessage,
+                                  variant: "destructive",
+                                });
+                              } else {
+                                alert(errorMessage);
+                              }
                             } finally {
                               setIsGeneratingSwipeFiles(false);
                             }
@@ -1186,7 +1275,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
           </div>
         )}
 
-      {/* HTML Templates */}
+      {/* Generated Prelanders */}
       <div className="mb-12">
         <Accordion type="single" collapsible>
           <AccordionItem value="html-templates">
@@ -1198,7 +1287,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                       <FileText className="w-5 h-5 text-primary-foreground" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-foreground">HTML Templates</h2>
+                      <h2 className="text-2xl font-bold text-foreground">Generated Prelanders</h2>
                       <p className="text-sm text-muted-foreground">Generated marketing templates and angles</p>
                     </div>
                   </div>
@@ -1252,7 +1341,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                       {templates.length > 0 && (
                         <div className="flex items-center justify-between mb-4">
                           <div>
-                            <h3 className="text-lg font-semibold">HTML Templates</h3>
+                            <h3 className="text-lg font-semibold">Generated Prelanders</h3>
                             <p className="text-sm text-muted-foreground">
                               {templates.length} template{templates.length !== 1 ? 's' : ''} generated
                             </p>
@@ -1269,9 +1358,16 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                   <h4 className="font-semibold text-foreground mb-1 break-words">
                                     {template.angle || template.name}
                                   </h4>
-                                  <p className="text-sm text-muted-foreground">
-                                    {template.type}
-                                  </p>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {template.templateId && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {template.templateId}
+                                      </Badge>
+                                    )}
+                                    <p className="text-sm text-muted-foreground">
+                                      {template.type}
+                                    </p>
+                                  </div>
                                   {template.timestamp && (
                                     <p className="text-xs text-muted-foreground mt-1">
                                       {new Date(template.timestamp).toLocaleDateString()}

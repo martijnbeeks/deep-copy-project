@@ -8,18 +8,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, AlertCircle, Eye, ChevronRight, ChevronLeft, Menu, Info, Zap, CheckCircle } from "lucide-react"
-import { useTemplatesStore } from "@/stores/templates-store"
+import { Loader2, AlertCircle, Info, Zap, CheckCircle } from "lucide-react"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useAuthStore } from "@/stores/auth-store"
 import { useRouter } from "next/navigation"
 import { Sidebar, SidebarTrigger } from "@/components/dashboard/sidebar"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
-import { TemplatePreview } from "@/components/template-preview"
-import { useSidebar } from "@/contexts/sidebar-context"
 import { AvatarExtractionDialog } from "@/components/avatar-extraction-dialog"
 import { useAutoPolling } from "@/hooks/use-auto-polling"
 import { useToast } from "@/hooks/use-toast"
@@ -36,8 +32,6 @@ interface PipelineFormData {
   title: string
   brand_info: string
   sales_page_url: string
-  template_id?: string
-  advertorial_type: string
   target_approach?: string
   customer_avatars?: CustomerAvatar[]
   extracted_avatars?: CustomerAvatar[]
@@ -48,7 +42,6 @@ interface PipelineFormData {
 }
 
 export default function CreatePage() {
-  const { templates, fetchTemplates, selectedTemplate, setSelectedTemplate, isLoading: templatesLoading, preloadTemplates } = useTemplatesStore()
   const { createJob } = useJobsStore()
   const { user, isAuthenticated } = useAuthStore()
   const router = useRouter()
@@ -57,13 +50,10 @@ export default function CreatePage() {
   const { processingJobsCount } = useAutoPolling()
   const { toast } = useToast()
 
-  const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState<PipelineFormData>({
     title: "",
     brand_info: "",
     sales_page_url: "",
-    template_id: "",
-    advertorial_type: "",
     target_approach: "explore",
     customer_avatars: [],
     extracted_avatars: [],
@@ -75,10 +65,6 @@ export default function CreatePage() {
   const [errors, setErrors] = useState<Partial<Record<keyof PipelineFormData, string>>>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1)
-  const templatesPerPage = 4
 
   // Avatar extraction dialog state
   const [showAvatarDialog, setShowAvatarDialog] = useState(false)
@@ -104,82 +90,54 @@ export default function CreatePage() {
     }
   }
 
-  // Preload templates early for better UX
-  useEffect(() => {
-    preloadTemplates()
-  }, [])
-
   useEffect(() => {
     if (!isAuthenticated || !user) {
       router.push("/login")
       return
     }
-    fetchTemplates()
   }, [isAuthenticated, user, router])
 
-  const validateStep = (step: number): boolean => {
+  const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof PipelineFormData, string>> = {}
 
-    if (step === 1) {
-      // Validate Step 1: Project Details
-      if (!formData.title.trim()) {
-        newErrors.title = "Project title is required"
-      }
-      // Brand info is optional - no validation needed
-      if (!formData.sales_page_url.trim()) {
-        newErrors.sales_page_url = "Sales page URL is required"
-      } else if (!isValidUrl(formData.sales_page_url)) {
-        newErrors.sales_page_url = "Please enter a valid URL"
-      }
-      if (!formData.target_approach) {
-        newErrors.target_approach = "Please select an approach"
-      }
-      // Note: For "explore" approach, avatars will be generated when button is clicked
-      // For "known" approach, avatars should already be provided
-      if (formData.target_approach === 'known' && formData.customer_avatars.length === 0) {
-        newErrors.customer_avatars = "Please provide customer avatar information"
-      }
-    } else if (step === 2) {
-      // Validate Step 2: Template Selection
-      if (!formData.template_id) {
-        newErrors.template_id = "Template selection is required"
-      }
-      // For "explore" approach, ensure avatars were generated and selected
-      if (formData.target_approach === 'explore' && formData.customer_avatars.length === 0) {
-        newErrors.customer_avatars = "Please generate and select avatars before proceeding"
-      }
+    // Validate Project Details
+    if (!formData.title.trim()) {
+      newErrors.title = "Project title is required"
+    }
+    // Brand info is optional - no validation needed
+    if (!formData.sales_page_url.trim()) {
+      newErrors.sales_page_url = "Sales page URL is required"
+    } else if (!isValidUrl(formData.sales_page_url)) {
+      newErrors.sales_page_url = "Please enter a valid URL"
+    }
+    if (!formData.target_approach) {
+      newErrors.target_approach = "Please select an approach"
+    }
+    // Note: For "explore" approach, avatars will be generated when button is clicked
+    // For "known" approach, avatars should already be provided
+    if (formData.target_approach === 'known' && formData.customer_avatars.length === 0) {
+      newErrors.customer_avatars = "Please provide customer avatar information"
+    }
+    // For "explore" approach, ensure avatars were generated and selected
+    if (formData.target_approach === 'explore' && formData.customer_avatars.length === 0) {
+      newErrors.customer_avatars = "Please generate and select avatars before proceeding"
     }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const handleNext = (e?: React.FormEvent) => {
-    if (e) {
-      e.preventDefault()
-    }
-    
-    if (validateStep(currentStep)) {
-      // If user selected "explore new avatars" but hasn't selected any yet, show the extraction dialog
-      if (formData.target_approach === 'explore' && (formData.customer_avatars?.length ?? 0) === 0) {
-        setShowAvatarDialog(true)
-        return
-      }
-      
-      // Otherwise, proceed to next step
-      setCurrentStep(2)
-    }
-  }
-
-  const handleBack = () => {
-    setCurrentStep(1)
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Validate both steps before submitting
-    if (!validateStep(1) || !validateStep(2)) return
+    // If user selected "explore new avatars" but hasn't selected any yet, show the extraction dialog
+    if (formData.target_approach === 'explore' && (formData.customer_avatars?.length ?? 0) === 0) {
+      setShowAvatarDialog(true)
+      return
+    }
+    
+    // Validate form before submitting
+    if (!validateForm()) return
 
     // Prevent duplicate submissions
     if (isLoading) return
@@ -258,18 +216,14 @@ export default function CreatePage() {
                   title: "",
                   brand_info: "",
                   sales_page_url: "",
-                  template_id: "",
-                  advertorial_type: "",
                   target_approach: "explore",
                   customer_avatars: [],
                   persona: "",
                   age_range: "",
                   gender: "",
                 })
-                setSelectedTemplate(null)
                 setErrors({})
                 setGeneralError(null)
-                setCurrentStep(1)
                 
                 // Redirect to results page
                 router.push(`/results/${createdJob.id}`)
@@ -370,9 +324,6 @@ export default function CreatePage() {
 
       // Close the dialog
       setShowAvatarDialog(false)
-
-      // Proceed to Step 2 (Template Selection)
-      setCurrentStep(2)
     } catch (error) {
       console.error('Error updating avatars:', error)
       toast({
@@ -380,34 +331,6 @@ export default function CreatePage() {
         description: "Failed to update avatar selection. Please try again.",
         variant: "destructive",
       })
-    }
-  }
-
-  const handleTemplateChange = (templateId: string) => {
-    const template = templates.find(t => t.id === templateId)
-    setFormData(prev => ({
-      ...prev,
-      template_id: templateId,
-      // Auto-select advertorial type based on template category
-      advertorial_type: template?.category === 'listicle' ? 'listicle' : 'advertorial'
-    }))
-    setSelectedTemplate(template || null)
-    if (errors.template_id) setErrors(prev => ({ ...prev, template_id: undefined }))
-    if (errors.advertorial_type) setErrors(prev => ({ ...prev, advertorial_type: undefined }))
-  }
-
-  // Pagination logic
-  const totalPages = Math.ceil(templates.length / templatesPerPage)
-  const startIndex = (currentPage - 1) * templatesPerPage
-  const endIndex = startIndex + templatesPerPage
-  const currentTemplates = templates.slice(startIndex, endIndex)
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-    // Scroll to top of template section when changing pages
-    const templateSection = document.getElementById('template-section')
-    if (templateSection) {
-      templateSection.scrollIntoView({ behavior: 'smooth' })
     }
   }
 
@@ -419,67 +342,6 @@ export default function CreatePage() {
     )
   }
 
-  if (templatesLoading) {
-    return (
-      <div className="flex h-screen bg-background overflow-hidden">
-        <Sidebar />
-        <main className="flex-1 overflow-auto ml-16">
-          <div className="p-4 md:p-6 overflow-y-auto h-full">
-            {/* Header skeleton */}
-            <div className="mb-4 md:mb-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="h-8 w-64 bg-muted animate-pulse-slow rounded-md" />
-                  <div className="h-4 w-80 bg-muted animate-pulse-slow rounded-md mt-1" />
-                </div>
-                <div className="flex gap-2">
-                  <div className="h-8 w-8 bg-muted animate-pulse-slow rounded-md" />
-                </div>
-              </div>
-
-              {/* Progress steps skeleton */}
-              <div className="flex items-center gap-2 md:gap-4 mt-3 md:mt-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-muted animate-pulse-slow rounded-full" />
-                  <div className="h-4 w-24 bg-muted animate-pulse-slow rounded-md" />
-                </div>
-                <div className="h-3 w-3 bg-muted animate-pulse-slow rounded-md" />
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-muted animate-pulse-slow rounded-full" />
-                  <div className="h-4 w-28 bg-muted animate-pulse-slow rounded-md" />
-                </div>
-              </div>
-            </div>
-
-            {/* Template selection skeleton */}
-            <div className="space-y-6">
-              <div className="border rounded-lg p-6">
-                <div className="h-6 w-48 bg-muted animate-pulse-slow rounded-md mb-2" />
-                <div className="h-4 w-96 bg-muted animate-pulse-slow rounded-md mb-6" />
-
-                {/* Template grid skeleton */}
-                <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="border rounded-lg p-4">
-                      <div className="h-6 w-3/4 bg-muted animate-pulse-slow rounded-md mb-2" />
-                      <div className="h-4 w-full bg-muted animate-pulse-slow rounded-md mb-2" />
-                      <div className="h-4 w-2/3 bg-muted animate-pulse-slow rounded-md mb-4" />
-                      <div className="h-32 w-full bg-muted animate-pulse-slow rounded-md" />
-                    </div>
-                  ))}
-                </div>
-
-                {/* Next button skeleton */}
-                <div className="flex justify-end mt-6">
-                  <div className="h-10 w-32 bg-muted animate-pulse-slow rounded-md" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    )
-  }
 
   return (
     <ErrorBoundary>
@@ -493,33 +355,15 @@ export default function CreatePage() {
                   <SidebarTrigger />
                   <div className="flex-1 min-w-0">
                     <h1 className="text-2xl md:text-3xl font-bold text-foreground">Create New Content</h1>
-                    <p className="text-sm md:text-base text-muted-foreground mt-1">Choose a template and generate AI-powered marketing content</p>
+                    <p className="text-sm md:text-base text-muted-foreground mt-1">Generate AI-powered marketing content from your sales page</p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-center gap-6 mt-6">
-                <div className={`flex items-center gap-3 ${currentStep >= 1 ? 'text-primary' : 'text-muted-foreground'}`}>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${currentStep >= 1 ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted border-2 border-muted-foreground/20'
-                    }`}>
-                    1
-                  </div>
-                  <span className="text-sm font-semibold">Project Details</span>
-                </div>
-                <div className={`w-8 h-px ${currentStep >= 2 ? 'bg-primary' : 'bg-muted-foreground/30'}`}></div>
-                <div className={`flex items-center gap-3 ${currentStep >= 2 ? 'text-primary' : 'text-muted-foreground'}`}>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${currentStep >= 2 ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted border-2 border-muted-foreground/20'
-                    }`}>
-                    2
-                  </div>
-                  <span className="text-sm font-semibold">Choose Template</span>
-                </div>
-              </div>
             </div>
 
-            {currentStep === 1 && (
-              <div className="max-w-4xl mx-auto">
-                <div className="space-y-8">
+            <div className="max-w-4xl mx-auto">
+              <div className="space-y-8">
                   {/* Header Section */}
                   <div className="text-center space-y-2">
                     <h2 className="text-3xl font-bold text-foreground">Project Details</h2>
@@ -529,7 +373,7 @@ export default function CreatePage() {
                   {/* Main Form */}
                   <Card className="border-0 shadow-sm">
                     <CardContent className="p-8">
-                      <form onSubmit={handleNext} className="space-y-8">
+                      <form onSubmit={handleSubmit} className="space-y-8">
                         {/* Project Title Section */}
                         <div className="space-y-4">
                           <div className="space-y-2">
@@ -914,21 +758,18 @@ export default function CreatePage() {
                         {/* Action Buttons */}
                         <div className="flex gap-4 pt-4">
                           <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleBack}
-                            className="flex-1 h-12 text-base font-medium"
-                          >
-                            <ChevronLeft className="h-4 w-4 mr-2" />
-                            Back to Project Details
-                          </Button>
-                          <Button
                             type="submit"
                             className="flex-1 h-12 text-base font-medium bg-primary hover:bg-primary/90"
                             disabled={isLoading}
                           >
-                            {formData.target_approach === 'explore' ? 'Generate Avatars' : 'Continue to Template Selection'}
-                            <ChevronRight className="h-4 w-4 ml-2" />
+                            {isLoading ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Creating Content...
+                              </>
+                            ) : (
+                              "Generate AI Content"
+                            )}
                           </Button>
                         </div>
                       </form>
@@ -936,118 +777,6 @@ export default function CreatePage() {
                   </Card>
                 </div>
               </div>
-            )}
-
-            {currentStep === 2 && (
-              <div className="space-y-8">
-                {/* Header Section */}
-                <div className="text-center space-y-2">
-                  <h2 className="text-3xl font-bold text-foreground">Choose Your Template</h2>
-                  <p className="text-muted-foreground text-lg">Select a template that best fits your content needs</p>
-                </div>
-
-                {/* Template Selection Card */}
-                <Card className="border-0 shadow-lg">
-                  <CardContent className="p-8">
-                    <div className="space-y-6">
-                      <div className="text-center space-y-2">
-                        <h3 className="text-xl font-semibold text-foreground">Available Templates</h3>
-                        <p className="text-sm text-muted-foreground">Click on any template to preview and select it</p>
-                      </div>
-
-                      <div id="template-section" className="grid gap-6 grid-cols-1 md:grid-cols-2">
-                        {currentTemplates.map((template) => (
-                          <TemplatePreview
-                            key={template.id}
-                            template={template}
-                            isSelected={formData.template_id === template.id}
-                            onClick={() => handleTemplateChange(template.id)}
-                          />
-                        ))}
-                      </div>
-
-                      {/* Pagination */}
-                      {totalPages > 1 && (
-                        <div className="flex justify-center">
-                          <Pagination>
-                            <PaginationContent>
-                              <PaginationItem>
-                                <PaginationPrevious
-                                  onClick={() => handlePageChange(currentPage - 1)}
-                                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                                />
-                              </PaginationItem>
-
-                              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                <PaginationItem key={page}>
-                                  <PaginationLink
-                                    onClick={() => handlePageChange(page)}
-                                    isActive={currentPage === page}
-                                    className="cursor-pointer"
-                                  >
-                                    {page}
-                                  </PaginationLink>
-                                </PaginationItem>
-                              ))}
-
-                              <PaginationItem>
-                                <PaginationNext
-                                  onClick={() => handlePageChange(currentPage + 1)}
-                                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                                />
-                              </PaginationItem>
-                            </PaginationContent>
-                          </Pagination>
-                        </div>
-                      )}
-
-                      {errors.template_id && (
-                        <Alert variant="destructive" className="border-destructive/50">
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription className="text-sm">{errors.template_id}</AlertDescription>
-                        </Alert>
-                      )}
-
-                      {generalError && (
-                        <Alert variant="destructive" className="border-destructive/50">
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription className="text-sm">{generalError}</AlertDescription>
-                        </Alert>
-                      )}
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-4 pt-4">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setCurrentStep(1)}
-                          disabled={isLoading}
-                          className="h-12 px-8 text-base font-medium"
-                        >
-                          <ChevronLeft className="h-4 w-4 mr-2" />
-                          Back to Project Details
-                        </Button>
-                        <Button
-                          type="button"
-                          onClick={handleSubmit}
-                          disabled={!formData.template_id || isLoading}
-                          className="h-12 px-8 text-base font-medium bg-primary hover:bg-primary/90"
-                        >
-                          {isLoading ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Creating Content...
-                            </>
-                          ) : (
-                            "Generate AI Content"
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
           </div>
         </main>
       </div>

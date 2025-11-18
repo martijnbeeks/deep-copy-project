@@ -75,7 +75,12 @@ export function AvatarExtractionDialog({
       // If avatars were previously extracted, reuse them instead of calling the API again
       if (Array.isArray(formData?.extracted_avatars) && formData.extracted_avatars.length > 0) {
         setIsAnalyzing(false)
-        const extracted = formData.extracted_avatars as ExtractedAvatar[]
+        // Mark the first avatar as broad persona when target_approach is "explore"
+        const extracted = (formData.extracted_avatars as ExtractedAvatar[]).map((avatar, index) => ({
+          ...avatar,
+          // Mark first avatar as broad persona if target_approach is "explore"
+          is_broad_avatar: index === 0 && formData?.target_approach === 'explore' ? true : avatar.is_broad_avatar
+        }))
         setAvatars(extracted)
 
         // If there was a previously selected avatar, preselect the matching one by persona_name (or none if not found)
@@ -224,7 +229,13 @@ export function AvatarExtractionDialog({
             clearInterval(progressInterval)
             setLoadingProgress(100)
             setTimeout(() => {
-              setAvatars(resultData.avatars)
+              // Mark the first avatar as broad persona when target_approach is "explore"
+              const processedAvatars = resultData.avatars.map((avatar: ExtractedAvatar, index: number) => ({
+                ...avatar,
+                // Mark first avatar as broad persona if target_approach is "explore"
+                is_broad_avatar: index === 0 && formData?.target_approach === 'explore' ? true : avatar.is_broad_avatar
+              }))
+              setAvatars(processedAvatars)
               setIsAnalyzing(false)
               setLoadingProgress(0)
               setLoadingStage(0)
@@ -519,7 +530,14 @@ export function AvatarExtractionDialog({
                                   <div className="flex items-center gap-2 flex-1">
                                     <span className="text-2xl">{getGenderIcon(avatar.gender)}</span>
                                     <div>
-                                      <div className="font-semibold text-base">{avatar.persona_name}</div>
+                                      <div className="flex items-center gap-2">
+                                        <div className="font-semibold text-base">{avatar.persona_name}</div>
+                                        {avatar.is_broad_avatar && (
+                                          <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
+                                            Broad Persona
+                                          </Badge>
+                                        )}
+                                      </div>
                                       <div className="text-xs text-muted-foreground">{avatar.age_range}</div>
                                     </div>
                                   </div>
