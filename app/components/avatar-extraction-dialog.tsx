@@ -23,6 +23,9 @@ interface ExtractedAvatar {
   desire?: string
   hook_line?: string
   is_broad_avatar?: boolean
+  characteristics?: string[]
+  objections?: string[]
+  failed_alternatives?: string[]
 }
 
 interface AvatarExtractionDialogProps {
@@ -529,8 +532,8 @@ export function AvatarExtractionDialog({
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2 flex-1">
                                     <span className="text-2xl">{getGenderIcon(avatar.gender)}</span>
-                                    <div>
-                                      <div className="flex items-center gap-2">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 flex-wrap">
                                         <div className="font-semibold text-base">{avatar.persona_name}</div>
                                         {avatar.is_broad_avatar && (
                                           <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
@@ -538,7 +541,26 @@ export function AvatarExtractionDialog({
                                           </Badge>
                                         )}
                                       </div>
-                                      <div className="text-xs text-muted-foreground">{avatar.age_range}</div>
+                                      <div className="flex items-center gap-2 flex-wrap mt-1">
+                                        <span className="text-xs text-muted-foreground">{avatar.age_range}</span>
+                                        <span className="text-xs text-muted-foreground">•</span>
+                                        <span className="text-xs text-muted-foreground">{avatar.gender}</span>
+                                        {avatar.characteristics && avatar.characteristics.length > 0 && (
+                                          <>
+                                            <span className="text-xs text-muted-foreground">•</span>
+                                            <div className="flex flex-wrap gap-1">
+                                              {avatar.characteristics.slice(0, 3).map((char, idx) => (
+                                                <Badge key={idx} variant="outline" className="text-xs px-1.5 py-0">
+                                                  {char}
+                                                </Badge>
+                                              ))}
+                                              {avatar.characteristics.length > 3 && (
+                                                <span className="text-xs text-muted-foreground">+{avatar.characteristics.length - 3}</span>
+                                              )}
+                                            </div>
+                                          </>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2">
@@ -550,11 +572,31 @@ export function AvatarExtractionDialog({
                                 </div>
                               </div>
                               <AccordionContent className="px-4 pb-4">
-                                <div className="space-y-2 text-sm">
+                                <div className="space-y-3 text-sm">
+                                  <div>
+                                    <span className="font-medium">Age Range:</span>
+                                    <p className="text-muted-foreground">{avatar.age_range}</p>
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">Gender:</span>
+                                    <p className="text-muted-foreground">{avatar.gender}</p>
+                                  </div>
                                   <div>
                                     <span className="font-medium">Description:</span>
                                     <p className="text-muted-foreground">{avatar.description}</p>
                                   </div>
+                                  {avatar.characteristics && avatar.characteristics.length > 0 && (
+                                    <div>
+                                      <span className="font-medium">Characteristics:</span>
+                                      <div className="flex flex-wrap gap-2 mt-1">
+                                        {avatar.characteristics.map((char, idx) => (
+                                          <Badge key={idx} variant="outline" className="text-xs">
+                                            {char}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                   {avatar.pain_point && (
                                     <div>
                                       <span className="font-medium">Pain Point:</span>
@@ -577,6 +619,26 @@ export function AvatarExtractionDialog({
                                     <div className="pt-2 border-t border-border">
                                       <span className="font-medium">Key Buying Motivation:</span>
                                       <p className="text-muted-foreground">{avatar.key_buying_motivation}</p>
+                                    </div>
+                                  )}
+                                  {avatar.objections && avatar.objections.length > 0 && (
+                                    <div className="pt-2 border-t border-border">
+                                      <span className="font-medium">Objections:</span>
+                                      <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
+                                        {avatar.objections.map((obj, idx) => (
+                                          <li key={idx}>{obj}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {avatar.failed_alternatives && avatar.failed_alternatives.length > 0 && (
+                                    <div className="pt-2 border-t border-border">
+                                      <span className="font-medium">Failed Alternatives:</span>
+                                      <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
+                                        {avatar.failed_alternatives.map((alt, idx) => (
+                                          <li key={idx}>{alt}</li>
+                                        ))}
+                                      </ul>
                                     </div>
                                   )}
                                 </div>
@@ -670,13 +732,33 @@ export function AvatarExtractionDialog({
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 flex-1">
                             <span className="text-2xl">{getGenderIcon(avatar.gender)}</span>
-                            <div>
-                              <div className="flex items-center gap-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <div className="font-semibold text-base">{avatar.persona_name}</div>
                                 {avatar.is_broad_avatar && (
                                   <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
                                     Broad Persona
                                   </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap mt-1">
+                                <span className="text-xs text-muted-foreground">{avatar.age_range}</span>
+                                <span className="text-xs text-muted-foreground">•</span>
+                                <span className="text-xs text-muted-foreground">{avatar.gender}</span>
+                                {avatar.characteristics && avatar.characteristics.length > 0 && (
+                                  <>
+                                    <span className="text-xs text-muted-foreground">•</span>
+                                    <div className="flex flex-wrap gap-1">
+                                      {avatar.characteristics.slice(0, 3).map((char, idx) => (
+                                        <Badge key={idx} variant="outline" className="text-xs px-1.5 py-0">
+                                          {char}
+                                        </Badge>
+                                      ))}
+                                      {avatar.characteristics.length > 3 && (
+                                        <span className="text-xs text-muted-foreground">+{avatar.characteristics.length - 3}</span>
+                                      )}
+                                    </div>
+                                  </>
                                 )}
                               </div>
                             </div>
@@ -690,7 +772,7 @@ export function AvatarExtractionDialog({
                         </div>
                       </div>
                       <AccordionContent className="px-4 pb-4">
-                        <div className="space-y-2 text-sm">
+                        <div className="space-y-3 text-sm">
                           <div>
                             <span className="font-medium">Age Range:</span>
                             <p className="text-muted-foreground">{avatar.age_range}</p>
@@ -699,6 +781,18 @@ export function AvatarExtractionDialog({
                             <span className="font-medium">Description:</span>
                             <p className="text-muted-foreground">{avatar.description}</p>
                           </div>
+                          {avatar.characteristics && avatar.characteristics.length > 0 && (
+                            <div>
+                              <span className="font-medium">Characteristics:</span>
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                {avatar.characteristics.map((char, idx) => (
+                                  <Badge key={idx} variant="outline" className="text-xs">
+                                    {char}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           <div>
                             <span className="font-medium">Gender:</span>
                             <p className="text-muted-foreground">{avatar.gender}</p>
@@ -725,6 +819,26 @@ export function AvatarExtractionDialog({
                             <div>
                               <span className="font-medium">Desire:</span>
                               <p className="text-muted-foreground">{avatar.desire}</p>
+                            </div>
+                          )}
+                          {avatar.objections && avatar.objections.length > 0 && (
+                            <div className="pt-2 border-t border-border">
+                              <span className="font-medium">Objections:</span>
+                              <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
+                                {avatar.objections.map((obj, idx) => (
+                                  <li key={idx}>{obj}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {avatar.failed_alternatives && avatar.failed_alternatives.length > 0 && (
+                            <div className="pt-2 border-t border-border">
+                              <span className="font-medium">Failed Alternatives:</span>
+                              <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
+                                {avatar.failed_alternatives.map((alt, idx) => (
+                                  <li key={idx}>{alt}</li>
+                                ))}
+                              </ul>
                             </div>
                           )}
                           {avatar.hook_line && (

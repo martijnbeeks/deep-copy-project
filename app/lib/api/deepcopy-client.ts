@@ -17,6 +17,13 @@ interface CustomerAvatar {
   age_range: string
   gender: string
   key_buying_motivation: string
+  pain_point?: string
+  emotion?: string
+  desire?: string
+  characteristics?: string[]
+  objections?: string[]
+  failed_alternatives?: string[]
+  is_broad_avatar?: boolean
 }
 
 interface SubmitJobRequest {

@@ -34,7 +34,20 @@ interface DeepCopyResultsProps {
   jobId?: string
   advertorialType?: string
   templateId?: string
-  customerAvatars?: Array<{ persona_name: string; description?: string; age_range?: string; gender?: string; key_buying_motivation?: string }>
+  customerAvatars?: Array<{ 
+    persona_name: string; 
+    description?: string; 
+    age_range?: string; 
+    gender?: string; 
+    key_buying_motivation?: string;
+    pain_point?: string;
+    emotion?: string;
+    desire?: string;
+    characteristics?: string[];
+    objections?: string[];
+    failed_alternatives?: string[];
+    is_broad_avatar?: boolean;
+  }>
   salesPageUrl?: string
 }
 
