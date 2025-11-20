@@ -52,6 +52,13 @@ interface JobStatusResponse {
 interface Angle {
   angle: string
   title: string
+  target_age_range?: string
+  target_audience?: string
+  pain_points?: string[]
+  desires?: string[]
+  common_objections?: string[]
+  failed_alternatives?: string[]
+  copy_approach?: string[]
 }
 
 interface JobResult {

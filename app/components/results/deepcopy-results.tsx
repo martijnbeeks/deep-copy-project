@@ -796,29 +796,119 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                       {fullResult?.results?.marketing_angles && (
                         <div className="space-y-4">
                           <h4 className="text-lg font-semibold mb-4">Marketing Angles</h4>
-                          <div className="grid grid-cols-1 gap-3">
+                          <Accordion type="multiple" className="w-full space-y-3">
                             {fullResult.results.marketing_angles.map((angle, index) => {
                               // Handle both old format (string) and new format (object with angle and title)
                               const angleTitle = typeof angle === 'object' ? angle.title : null;
                               const angleDescription = typeof angle === 'object' ? angle.angle : angle;
+                              const angleObj = typeof angle === 'object' ? angle : null;
 
                               return (
-                                <div key={index} className="bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-950/20 dark:to-teal-950/20 rounded-lg p-3 border border-cyan-200/50 dark:border-cyan-800/50 hover:shadow-md transition-shadow">
-                                  <div className="flex items-start gap-2">
-                                    <div className="bg-primary/10 rounded-full p-1.5 flex-shrink-0">
-                                      <Target className="h-3 w-3 text-primary" />
+                                <AccordionItem 
+                                  key={index} 
+                                  value={`angle-${index}`}
+                                  className="bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-950/20 dark:to-teal-950/20 rounded-lg border border-cyan-200/50 dark:border-cyan-800/50 px-4"
+                                >
+                                  <AccordionTrigger className="hover:no-underline py-4">
+                                    <div className="flex items-start gap-3 w-full text-left">
+                                      <div className="bg-primary/10 rounded-full p-1.5 flex-shrink-0 mt-0.5">
+                                        <Target className="h-4 w-4 text-primary" />
+                                      </div>
+                                      <div className="flex-1">
+                                        {angleTitle && (
+                                          <h5 className="text-sm font-bold text-foreground mb-1">{angleTitle}</h5>
+                                        )}
+                                        <p className="text-sm text-foreground font-medium leading-relaxed break-words">{angleDescription}</p>
+                                      </div>
                                     </div>
-                                    <div className="flex-1">
-                                      {angleTitle && (
-                                        <h5 className="text-sm font-bold text-foreground mb-1">{angleTitle}</h5>
-                                      )}
-                                      <p className="text-sm text-foreground font-medium leading-relaxed break-words">{angleDescription}</p>
-                                    </div>
-                                  </div>
-                                </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent className="pt-0 pb-4">
+                                    {angleObj && (
+                                      <div className="space-y-4 pl-9">
+                                        {angleObj.target_age_range && (
+                                          <div>
+                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Age Range</h6>
+                                            <p className="text-sm text-foreground">{angleObj.target_age_range}</p>
+                                          </div>
+                                        )}
+                                        {angleObj.target_audience && (
+                                          <div>
+                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Audience</h6>
+                                            <p className="text-sm text-foreground">{angleObj.target_audience}</p>
+                                          </div>
+                                        )}
+                                        {angleObj.pain_points && angleObj.pain_points.length > 0 && (
+                                          <div>
+                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Pain Points</h6>
+                                            <ul className="space-y-1">
+                                              {angleObj.pain_points.map((point, idx) => (
+                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                                  <span className="text-primary mt-1.5">•</span>
+                                                  <span>{point}</span>
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                        {angleObj.desires && angleObj.desires.length > 0 && (
+                                          <div>
+                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Desires</h6>
+                                            <ul className="space-y-1">
+                                              {angleObj.desires.map((desire, idx) => (
+                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                                  <span className="text-primary mt-1.5">•</span>
+                                                  <span>{desire}</span>
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                        {angleObj.common_objections && angleObj.common_objections.length > 0 && (
+                                          <div>
+                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Common Objections</h6>
+                                            <ul className="space-y-1">
+                                              {angleObj.common_objections.map((objection, idx) => (
+                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                                  <span className="text-primary mt-1.5">•</span>
+                                                  <span>{objection}</span>
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                        {angleObj.failed_alternatives && angleObj.failed_alternatives.length > 0 && (
+                                          <div>
+                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Failed Alternatives</h6>
+                                            <ul className="space-y-1">
+                                              {angleObj.failed_alternatives.map((alternative, idx) => (
+                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                                  <span className="text-primary mt-1.5">•</span>
+                                                  <span>{alternative}</span>
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                        {angleObj.copy_approach && angleObj.copy_approach.length > 0 && (
+                                          <div>
+                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Copy Approach</h6>
+                                            <ul className="space-y-1">
+                                              {angleObj.copy_approach.map((approach, idx) => (
+                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                                  <span className="text-primary mt-1.5">•</span>
+                                                  <span>{approach}</span>
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </AccordionContent>
+                                </AccordionItem>
                               );
                             })}
-                          </div>
+                          </Accordion>
                         </div>
                       )}
                     </div>
@@ -1141,62 +1231,156 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
                   <AccordionContent>
                     <div className="px-8 pb-8 space-y-3 border-t border-border/50 pt-6">
-                      {fullResult.results.marketing_angles.map((angle, index) => {
-                        // Handle both old format (string) and new format (object with title and angle)
-                        const angleTitle = typeof angle === 'object' ? angle.title : null;
-                        const angleDescription = typeof angle === 'object' ? angle.angle : angle;
-                        // For select_angle, use the format: "Title: Description" or just the string
-                        const angleString = typeof angle === 'object' ? `${angle.title}: ${angle.angle}` : angle;
-                        const isGenerated = generatedAngles.has(angleString);
-                        const isGenerating = generatingAngles.has(angleString);
-                        const status = angleStatuses.get(angleString);
+                      <Accordion type="multiple" className="w-full space-y-3">
+                        {fullResult.results.marketing_angles.map((angle, index) => {
+                          // Handle both old format (string) and new format (object with title and angle)
+                          const angleTitle = typeof angle === 'object' ? angle.title : null;
+                          const angleDescription = typeof angle === 'object' ? angle.angle : angle;
+                          const angleObj = typeof angle === 'object' ? angle : null;
+                          // For select_angle, use the format: "Title: Description" or just the string
+                          const angleString = typeof angle === 'object' ? `${angle.title}: ${angle.angle}` : angle;
+                          const isGenerated = generatedAngles.has(angleString);
+                          const isGenerating = generatingAngles.has(angleString);
+                          const status = angleStatuses.get(angleString);
 
-                        return (
-                          <Card
-                            key={index}
-                            className={`transition-all hover:shadow-md ${selectedAngle === angleString && !isGenerated ? 'border-primary shadow-sm bg-primary/5' : 'border-border/50'
-                              } ${isGenerated ? 'bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800' : ''}`}
-                            onClick={() => !isGenerated && !isGenerating && setSelectedAngle(angleString)}
-                          >
-                            <div className="p-4">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3 flex-1">
-                                  {isGenerated ? (
-                                    <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                                      <CheckCircle2 className="w-3 h-3 text-white" />
-                                    </div>
-                                  ) : isGenerating ? (
-                                    <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
-                                  ) : (
-                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedAngle === angleString ? 'border-primary bg-primary' : 'border-muted-foreground'
-                                      }`}>
-                                      {selectedAngle === angleString && <CheckCircle2 className="w-3 h-3 text-primary-foreground" />}
-                                    </div>
-                                  )}
-                                  <div className="flex-1">
-                                    {angleTitle && (
-                                      <h3 className="text-lg font-bold text-foreground mb-1">{angleTitle}</h3>
+                          return (
+                            <AccordionItem
+                              key={index}
+                              value={`select-angle-${index}`}
+                              className={`border rounded-lg transition-all hover:shadow-md ${selectedAngle === angleString && !isGenerated ? 'border-primary shadow-sm bg-primary/5' : 'border-border/50'
+                                } ${isGenerated ? 'bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800' : ''}`}
+                            >
+                              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                                <div className="flex items-center justify-between w-full">
+                                  <div className="flex items-center gap-3 flex-1">
+                                    {isGenerated ? (
+                                      <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                                        <CheckCircle2 className="w-3 h-3 text-white" />
+                                      </div>
+                                    ) : isGenerating ? (
+                                      <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
+                                    ) : (
+                                      <div 
+                                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 cursor-pointer ${selectedAngle === angleString ? 'border-primary bg-primary' : 'border-muted-foreground'
+                                        }`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (!isGenerated && !isGenerating) {
+                                            setSelectedAngle(angleString);
+                                          }
+                                        }}
+                                      >
+                                        {selectedAngle === angleString && <CheckCircle2 className="w-3 h-3 text-primary-foreground" />}
+                                      </div>
                                     )}
-                                    <p className="text-sm text-muted-foreground">{angleDescription}</p>
+                                    <div className="flex-1 text-left">
+                                      {angleTitle && (
+                                        <h3 className="text-lg font-bold text-foreground mb-1">{angleTitle}</h3>
+                                      )}
+                                      <p className="text-sm text-muted-foreground">{angleDescription}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {isGenerated && (
+                                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">
+                                        Generated
+                                      </Badge>
+                                    )}
+                                    {isGenerating && status && (
+                                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
+                                        {status}
+                                      </Badge>
+                                    )}
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  {isGenerated && (
-                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">
-                                      Generated
-                                    </Badge>
-                                  )}
-                                  {isGenerating && status && (
-                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
-                                      {status}
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </Card>
-                        );
-                      })}
+                              </AccordionTrigger>
+                              <AccordionContent className="px-4 pb-4">
+                                {angleObj && (
+                                  <div className="space-y-4 pt-2">
+                                    {angleObj.target_age_range && (
+                                      <div>
+                                        <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Age Range</h6>
+                                        <p className="text-sm text-foreground">{angleObj.target_age_range}</p>
+                                      </div>
+                                    )}
+                                    {angleObj.target_audience && (
+                                      <div>
+                                        <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Audience</h6>
+                                        <p className="text-sm text-foreground">{angleObj.target_audience}</p>
+                                      </div>
+                                    )}
+                                    {angleObj.pain_points && angleObj.pain_points.length > 0 && (
+                                      <div>
+                                        <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Pain Points</h6>
+                                        <ul className="space-y-1">
+                                          {angleObj.pain_points.map((point, idx) => (
+                                            <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                              <span className="text-primary mt-1.5">•</span>
+                                              <span>{point}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                    {angleObj.desires && angleObj.desires.length > 0 && (
+                                      <div>
+                                        <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Desires</h6>
+                                        <ul className="space-y-1">
+                                          {angleObj.desires.map((desire, idx) => (
+                                            <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                              <span className="text-primary mt-1.5">•</span>
+                                              <span>{desire}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                    {angleObj.common_objections && angleObj.common_objections.length > 0 && (
+                                      <div>
+                                        <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Common Objections</h6>
+                                        <ul className="space-y-1">
+                                          {angleObj.common_objections.map((objection, idx) => (
+                                            <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                              <span className="text-primary mt-1.5">•</span>
+                                              <span>{objection}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                    {angleObj.failed_alternatives && angleObj.failed_alternatives.length > 0 && (
+                                      <div>
+                                        <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Failed Alternatives</h6>
+                                        <ul className="space-y-1">
+                                          {angleObj.failed_alternatives.map((alternative, idx) => (
+                                            <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                              <span className="text-primary mt-1.5">•</span>
+                                              <span>{alternative}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                    {angleObj.copy_approach && angleObj.copy_approach.length > 0 && (
+                                      <div>
+                                        <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Copy Approach</h6>
+                                        <ul className="space-y-1">
+                                          {angleObj.copy_approach.map((approach, idx) => (
+                                            <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                              <span className="text-primary mt-1.5">•</span>
+                                              <span>{approach}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </AccordionContent>
+                            </AccordionItem>
+                          );
+                        })}
+                      </Accordion>
 
                       <div className="flex justify-end pt-4">
                         <Button
