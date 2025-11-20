@@ -10,7 +10,7 @@ import { FileText, BarChart3, Code, BookOpen, User, Target, Calendar, Clock, Use
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { extractContentFromSwipeResult, injectContentIntoTemplate } from "@/lib/utils/template-injection"
-import { JobResult, SwipeResult, Listicle, Advertorial } from "@/lib/api/deepcopy-client"
+import { JobResult, SwipeResult, Listicle, Advertorial, Angle } from "@/lib/api/deepcopy-client"
 
 interface DeepCopyResult extends JobResult {
   // This now matches the JobResult interface from the API client
@@ -34,11 +34,11 @@ interface DeepCopyResultsProps {
   jobId?: string
   advertorialType?: string
   templateId?: string
-  customerAvatars?: Array<{ 
-    persona_name: string; 
-    description?: string; 
-    age_range?: string; 
-    gender?: string; 
+  customerAvatars?: Array<{
+    persona_name: string;
+    description?: string;
+    age_range?: string;
+    gender?: string;
     key_buying_motivation?: string;
     pain_point?: string;
     emotion?: string;
@@ -51,8 +51,24 @@ interface DeepCopyResultsProps {
   salesPageUrl?: string
 }
 
+// Type guard function to check if an object is an Angle
+function isAngle(obj: any): obj is Angle {
+  return typeof obj === 'object' && obj !== null && 'title' in obj && 'angle' in obj;
+}
+
+// Local type alias to ensure TypeScript recognizes all Angle properties
+type AngleWithProperties = Angle & {
+  target_age_range?: string;
+  target_audience?: string;
+  pain_points?: string[];
+  desires?: string[];
+  common_objections?: string[];
+  failed_alternatives?: string[];
+  copy_approach?: string[];
+};
+
 export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, templateId, customerAvatars, salesPageUrl }: DeepCopyResultsProps) {
-  const [templates, setTemplates] = useState<Array<{ name: string, type: string, html: string, angle?: string, timestamp?: string }>>([])
+  const [templates, setTemplates] = useState<Array<{ name: string, type: string, html: string, angle?: string, timestamp?: string, templateId?: string }>>([])
   const [templatesLoading, setTemplatesLoading] = useState(true)
   const [selectedTemplate, setSelectedTemplate] = useState<{ name: string; html_content: string; description?: string; category?: string } | null>(null)
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
@@ -80,7 +96,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
             const angles = await anglesResponse.json()
             setGeneratedAngles(new Set(angles))
           }
-          
+
           // Load templates from database
           const templatesResponse = await fetch(`/api/jobs/${jobId}/injected-templates`)
           if (templatesResponse.ok) {
@@ -94,7 +110,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                 templateId: injected.template_id,
                 timestamp: injected.created_at
               }))
-              
+
               // Sort by angle name and template ID
               templates.sort((a: any, b: any) => {
                 if (a.angle !== b.angle) {
@@ -102,7 +118,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                 }
                 return (a.templateId || '').localeCompare(b.templateId || '')
               })
-              
+
               setTemplates(templates)
             }
             // Always set loading to false after checking database
@@ -195,7 +211,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                 const angles = await anglesResponse.json()
                 setGeneratedAngles(new Set(angles))
               }
-              
+
               // Reload templates
               const templatesResponse = await fetch(`/api/jobs/${jobId}/injected-templates`)
               if (templatesResponse.ok) {
@@ -209,14 +225,14 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                     templateId: injected.template_id,
                     timestamp: injected.created_at
                   }))
-                  
+
                   templates.sort((a: any, b: any) => {
                     if (a.angle !== b.angle) {
                       return (a.angle || '').localeCompare(b.angle || '')
                     }
                     return (a.templateId || '').localeCompare(b.templateId || '')
                   })
-                  
+
                   setTemplates(templates)
                 }
               }
@@ -289,7 +305,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
           const response = await fetch(`/api/jobs/${jobId}/injected-templates`)
           if (response.ok) {
             const injectedTemplates = await response.json()
-            
+
             if (injectedTemplates && injectedTemplates.length > 0) {
               injectedTemplates.forEach((injected: any) => {
                 templates.push({
@@ -301,7 +317,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                   timestamp: injected.created_at
                 })
               })
-              
+
               // Sort by angle name and template ID
               templates.sort((a, b) => {
                 if (a.angle !== b.angle) {
@@ -309,7 +325,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                 }
                 return (a.templateId || '').localeCompare(b.templateId || '')
               })
-              
+
               return templates
             }
           }
@@ -584,9 +600,9 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                     <Globe className="w-4 h-4 text-accent" />
                     <span className="text-sm font-medium text-foreground">Sales Page URL</span>
                   </div>
-                  <a 
-                    href={salesPageUrl} 
-                    target="_blank" 
+                  <a
+                    href={salesPageUrl}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-primary hover:underline break-all"
                   >
@@ -799,13 +815,13 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                           <Accordion type="multiple" className="w-full space-y-3">
                             {fullResult.results.marketing_angles.map((angle, index) => {
                               // Handle both old format (string) and new format (object with angle and title)
-                              const angleTitle = typeof angle === 'object' ? angle.title : null;
-                              const angleDescription = typeof angle === 'object' ? angle.angle : angle;
-                              const angleObj = typeof angle === 'object' ? angle : null;
+                              const angleObj: AngleWithProperties | null = isAngle(angle) ? (angle as AngleWithProperties) : null;
+                              const angleTitle = angleObj?.title ?? null;
+                              const angleDescription = angleObj?.angle ?? (typeof angle === 'string' ? angle : '');
 
                               return (
-                                <AccordionItem 
-                                  key={index} 
+                                <AccordionItem
+                                  key={index}
                                   value={`angle-${index}`}
                                   className="bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-950/20 dark:to-teal-950/20 rounded-lg border border-cyan-200/50 dark:border-cyan-800/50 px-4"
                                 >
@@ -825,23 +841,23 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                   <AccordionContent className="pt-0 pb-4">
                                     {angleObj && (
                                       <div className="space-y-4 pl-9">
-                                        {angleObj.target_age_range && (
+                                        {angleObj?.target_age_range && (
                                           <div>
                                             <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Age Range</h6>
                                             <p className="text-sm text-foreground">{angleObj.target_age_range}</p>
                                           </div>
                                         )}
-                                        {angleObj.target_audience && (
+                                        {angleObj?.target_audience && (
                                           <div>
                                             <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Audience</h6>
                                             <p className="text-sm text-foreground">{angleObj.target_audience}</p>
                                           </div>
                                         )}
-                                        {angleObj.pain_points && angleObj.pain_points.length > 0 && (
+                                        {angleObj?.pain_points && angleObj.pain_points.length > 0 && (
                                           <div>
                                             <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Pain Points</h6>
                                             <ul className="space-y-1">
-                                              {angleObj.pain_points.map((point, idx) => (
+                                              {(angleObj.pain_points || []).map((point: string, idx: number) => (
                                                 <li key={idx} className="text-sm text-foreground flex items-start gap-2">
                                                   <span className="text-primary mt-1.5">•</span>
                                                   <span>{point}</span>
@@ -850,11 +866,11 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                             </ul>
                                           </div>
                                         )}
-                                        {angleObj.desires && angleObj.desires.length > 0 && (
+                                        {angleObj?.desires && angleObj.desires.length > 0 && (
                                           <div>
                                             <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Desires</h6>
                                             <ul className="space-y-1">
-                                              {angleObj.desires.map((desire, idx) => (
+                                              {(angleObj.desires || []).map((desire: string, idx: number) => (
                                                 <li key={idx} className="text-sm text-foreground flex items-start gap-2">
                                                   <span className="text-primary mt-1.5">•</span>
                                                   <span>{desire}</span>
@@ -863,11 +879,11 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                             </ul>
                                           </div>
                                         )}
-                                        {angleObj.common_objections && angleObj.common_objections.length > 0 && (
+                                        {angleObj?.common_objections && angleObj.common_objections.length > 0 && (
                                           <div>
                                             <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Common Objections</h6>
                                             <ul className="space-y-1">
-                                              {angleObj.common_objections.map((objection, idx) => (
+                                              {(angleObj.common_objections || []).map((objection: string, idx: number) => (
                                                 <li key={idx} className="text-sm text-foreground flex items-start gap-2">
                                                   <span className="text-primary mt-1.5">•</span>
                                                   <span>{objection}</span>
@@ -876,11 +892,11 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                             </ul>
                                           </div>
                                         )}
-                                        {angleObj.failed_alternatives && angleObj.failed_alternatives.length > 0 && (
+                                        {angleObj?.failed_alternatives && angleObj.failed_alternatives.length > 0 && (
                                           <div>
                                             <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Failed Alternatives</h6>
                                             <ul className="space-y-1">
-                                              {angleObj.failed_alternatives.map((alternative, idx) => (
+                                              {(angleObj.failed_alternatives || []).map((alternative: string, idx: number) => (
                                                 <li key={idx} className="text-sm text-foreground flex items-start gap-2">
                                                   <span className="text-primary mt-1.5">•</span>
                                                   <span>{alternative}</span>
@@ -889,11 +905,11 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                             </ul>
                                           </div>
                                         )}
-                                        {angleObj.copy_approach && angleObj.copy_approach.length > 0 && (
+                                        {angleObj?.copy_approach && angleObj.copy_approach.length > 0 && (
                                           <div>
                                             <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Copy Approach</h6>
                                             <ul className="space-y-1">
-                                              {angleObj.copy_approach.map((approach, idx) => (
+                                              {(angleObj.copy_approach || []).map((approach: string, idx: number) => (
                                                 <li key={idx} className="text-sm text-foreground flex items-start gap-2">
                                                   <span className="text-primary mt-1.5">•</span>
                                                   <span>{approach}</span>
@@ -1234,9 +1250,9 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                       <Accordion type="multiple" className="w-full space-y-3">
                         {fullResult.results.marketing_angles.map((angle, index) => {
                           // Handle both old format (string) and new format (object with title and angle)
-                          const angleTitle = typeof angle === 'object' ? angle.title : null;
-                          const angleDescription = typeof angle === 'object' ? angle.angle : angle;
-                          const angleObj = typeof angle === 'object' ? angle : null;
+                          const angleObj: AngleWithProperties | null = isAngle(angle) ? (angle as AngleWithProperties) : null;
+                          const angleTitle = angleObj?.title ?? null;
+                          const angleDescription = angleObj?.angle ?? (typeof angle === 'string' ? angle : '');
                           // For select_angle, use the format: "Title: Description" or just the string
                           const angleString = typeof angle === 'object' ? `${angle.title}: ${angle.angle}` : angle;
                           const isGenerated = generatedAngles.has(angleString);
@@ -1260,9 +1276,9 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                     ) : isGenerating ? (
                                       <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
                                     ) : (
-                                      <div 
+                                      <div
                                         className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 cursor-pointer ${selectedAngle === angleString ? 'border-primary bg-primary' : 'border-muted-foreground'
-                                        }`}
+                                          }`}
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           if (!isGenerated && !isGenerating) {
@@ -1297,23 +1313,23 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                               <AccordionContent className="px-4 pb-4">
                                 {angleObj && (
                                   <div className="space-y-4 pt-2">
-                                    {angleObj.target_age_range && (
+                                    {angleObj?.target_age_range && (
                                       <div>
                                         <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Age Range</h6>
                                         <p className="text-sm text-foreground">{angleObj.target_age_range}</p>
                                       </div>
                                     )}
-                                    {angleObj.target_audience && (
+                                    {angleObj?.target_audience && (
                                       <div>
                                         <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Audience</h6>
                                         <p className="text-sm text-foreground">{angleObj.target_audience}</p>
                                       </div>
                                     )}
-                                    {angleObj.pain_points && angleObj.pain_points.length > 0 && (
+                                    {angleObj?.pain_points && angleObj.pain_points.length > 0 && (
                                       <div>
                                         <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Pain Points</h6>
                                         <ul className="space-y-1">
-                                          {angleObj.pain_points.map((point, idx) => (
+                                          {(angleObj.pain_points || []).map((point: string, idx: number) => (
                                             <li key={idx} className="text-sm text-foreground flex items-start gap-2">
                                               <span className="text-primary mt-1.5">•</span>
                                               <span>{point}</span>
@@ -1322,11 +1338,11 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                         </ul>
                                       </div>
                                     )}
-                                    {angleObj.desires && angleObj.desires.length > 0 && (
+                                    {angleObj?.desires && angleObj.desires.length > 0 && (
                                       <div>
                                         <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Desires</h6>
                                         <ul className="space-y-1">
-                                          {angleObj.desires.map((desire, idx) => (
+                                          {(angleObj.desires || []).map((desire: string, idx: number) => (
                                             <li key={idx} className="text-sm text-foreground flex items-start gap-2">
                                               <span className="text-primary mt-1.5">•</span>
                                               <span>{desire}</span>
@@ -1335,11 +1351,11 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                         </ul>
                                       </div>
                                     )}
-                                    {angleObj.common_objections && angleObj.common_objections.length > 0 && (
+                                    {angleObj?.common_objections && angleObj.common_objections.length > 0 && (
                                       <div>
                                         <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Common Objections</h6>
                                         <ul className="space-y-1">
-                                          {angleObj.common_objections.map((objection, idx) => (
+                                          {(angleObj.common_objections || []).map((objection: string, idx: number) => (
                                             <li key={idx} className="text-sm text-foreground flex items-start gap-2">
                                               <span className="text-primary mt-1.5">•</span>
                                               <span>{objection}</span>
@@ -1348,11 +1364,11 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                         </ul>
                                       </div>
                                     )}
-                                    {angleObj.failed_alternatives && angleObj.failed_alternatives.length > 0 && (
+                                    {angleObj?.failed_alternatives && angleObj.failed_alternatives.length > 0 && (
                                       <div>
                                         <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Failed Alternatives</h6>
                                         <ul className="space-y-1">
-                                          {angleObj.failed_alternatives.map((alternative, idx) => (
+                                          {(angleObj.failed_alternatives || []).map((alternative: string, idx: number) => (
                                             <li key={idx} className="text-sm text-foreground flex items-start gap-2">
                                               <span className="text-primary mt-1.5">•</span>
                                               <span>{alternative}</span>
@@ -1361,11 +1377,11 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                         </ul>
                                       </div>
                                     )}
-                                    {angleObj.copy_approach && angleObj.copy_approach.length > 0 && (
+                                    {angleObj?.copy_approach && angleObj.copy_approach.length > 0 && (
                                       <div>
                                         <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Copy Approach</h6>
                                         <ul className="space-y-1">
-                                          {angleObj.copy_approach.map((approach, idx) => (
+                                          {(angleObj.copy_approach || []).map((approach: string, idx: number) => (
                                             <li key={idx} className="text-sm text-foreground flex items-start gap-2">
                                               <span className="text-primary mt-1.5">•</span>
                                               <span>{approach}</span>
@@ -1431,12 +1447,12 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                 newMap.delete(selectedAngle)
                                 return newMap
                               })
-                              
+
                               // Show user-friendly error message
-                              const errorMessage = error instanceof Error 
-                                ? error.message 
+                              const errorMessage = error instanceof Error
+                                ? error.message
                                 : 'Failed to generate swipe files. Please try again.';
-                              
+
                               // Use toast if available, otherwise alert
                               if (typeof window !== 'undefined' && (window as any).toast) {
                                 (window as any).toast({
