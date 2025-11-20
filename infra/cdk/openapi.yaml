@@ -82,6 +82,10 @@ paths:
                   advertorial_type: "Listicle"
                   customer_avatars:
                     - persona_name: "Active Senior"
+                      characteristics:
+                        - "Active lifestyle"
+                        - "Gardening enthusiast"
+                        - "Chronic pain"
                       description: "Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain"
                       age_range: "60-75"
                       gender: "both"
@@ -98,6 +102,10 @@ paths:
                         - "Physical therapy that didn't provide lasting relief"
                         - "Over-the-counter pain relievers that only work temporarily"
                     - persona_name: "Desk-Bound Professional"
+                      characteristics:
+                        - "Standing all day"
+                        - "Work-related pain"
+                        - "Evening fatigue"
                       description: "Office worker sitting 8+ hours daily experiencing lower back pain"
                       age_range: "30-45"
                       gender: "both"
@@ -153,6 +161,7 @@ paths:
                 "customer_avatars": [
                   {
                     "persona_name": "Active Senior",
+                    "characteristics": ["Active lifestyle", "Gardening enthusiast", "Chronic pain"],
                     "description": "Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain",
                     "age_range": "60-75",
                     "gender": "both",
@@ -456,6 +465,12 @@ paths:
                 select_angle:
                   type: string
                   description: The marketing angle to focus on for the swipe files
+                swipe_file_ids:
+                  type: array
+                  description: The IDs of the swipe files to generate
+                  items:
+                    type: string
+                    format: uuid
             examples:
               example:
                 summary: Generate swipe files for a marketing angle
@@ -646,6 +661,10 @@ components:
         advertorial_type: "Listicle"
         customer_avatars:
           - persona_name: "Active Senior"
+            characteristics:
+              - "Active lifestyle"
+              - "Gardening enthusiast"
+              - "Chronic pain"
             description: "Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain"
             age_range: "60-75"
             gender: "both"
@@ -662,6 +681,10 @@ components:
               - "Physical therapy that didn't provide lasting relief"
               - "Over-the-counter pain relievers that only work temporarily"
           - persona_name: "Desk-Bound Professional"
+            characteristics:
+              - "Standing all day"
+              - "Work-related pain"
+              - "Evening fatigue"
             description: "Office worker sitting 8+ hours daily experiencing lower back pain"
             age_range: "30-45"
             gender: "both"
@@ -832,7 +855,7 @@ components:
           description: Job status
     AvatarExtractionResponse:
       type: object
-      required: [success, url, job_id, timestamp_iso, avatars]
+      required: [success, url, job_id, timestamp_iso, avatars, company_type, product_description]
       properties:
         success:
           type: boolean
@@ -853,6 +876,12 @@ components:
           description: List of extracted customer avatars
           items:
             $ref: '#/components/schemas/CustomerAvatar'
+        company_type:
+          type: string
+          description: The type of company the product is for
+        product_description:
+          type: string
+          description: A description of the product
     SubmitSwipeFileResponse:
       type: object
       required: [jobId, status]
@@ -987,7 +1016,7 @@ components:
           description: "Relief & commitment stage (decision/outcome)"
     Angle:
       type: object
-      required: [angle, title]
+      required: [angle, title, target_age_range, target_audience, pain_points, desires, common_objections, failed_alternatives, copy_approach]
       properties:
         angle:
           type: string
@@ -995,6 +1024,37 @@ components:
         title:
           type: string
           description: "The title of the marketing angle"
+        target_age_range:
+          type: string
+          description: "The target age range for the marketing angle. Note it like: 45-55, 60-70, etc."
+        target_audience:
+          type: string
+          description: "The target audience for the marketing angle. Note it like: Competitive athletes seeking reliability, Skilled professionals seeking productivity, etc."
+        pain_points:
+          type: array
+          description: "The pain points for the marketing angle"
+          items:
+            type: string
+        desires:
+          type: array
+          description: "The desires for the marketing angle"
+          items:
+            type: string
+        common_objections:
+          type: array
+          description: "The common objections for the marketing angle"
+          items:
+            type: string
+        failed_alternatives:
+          type: array
+          description: "The failed alternatives for the marketing angle"
+          items:
+            type: string
+        copy_approach:
+          type: array
+          description: "The copy approaches for the marketing angle"
+          items:
+            type: string
     Avatar:
       type: object
       description: "Marketing Avatar sheet for product–market fit & messaging research"
@@ -1026,11 +1086,16 @@ components:
             $ref: '#/components/schemas/Angle'
     CustomerAvatar:
       type: object
-      required: [persona_name, description, age_range, gender, key_buying_motivation, pain_point, emotion, desire, objections, failed_alternatives]
+      required: [persona_name, characteristics, description, age_range, gender, key_buying_motivation, pain_point, emotion, desire, objections, failed_alternatives]
       properties:
         persona_name:
           type: string
           description: A short, descriptive name that captures the essence of the customer
+        characteristics:
+          type: array
+          description: Characteristics of the customer, e.g. Stands all day, Active lifestyle, etc. Provide at least 3 characteristics and max three words each.
+          items:
+            type: string
         description:
           type: string
           description: 1 sentence summarizing their lifestyle, motivations, and key challenges

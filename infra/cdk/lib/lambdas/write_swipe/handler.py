@@ -98,7 +98,7 @@ def fetch_results_from_s3(job_id: str):
 def select_swipe_files_template(select_angle: str, research_page_analysis: str, product_summary: str):
     """Select swipe files template based on product summary."""
     # TODO: Implement this
-    return ["L00001", "A00002"]
+    return ["A00002"]
 
 
 def load_swipe_file_templates(swipe_file_template_ids: list[str]):
@@ -140,6 +140,11 @@ def lambda_handler(event, context):
     original_job_id = event.get('original_job_id')
     job_id = event.get('job_id')
     select_angle = event.get('select_angle')
+    
+    swipe_file_ids = event.get('swipe_file_id')
+    # check if swipe_file_ids is a number / string, make a list of it
+    if isinstance(swipe_file_ids, (str)):
+        swipe_file_ids = [swipe_file_ids]
     
     if not job_id or not select_angle:
         error_msg = f"Missing required parameters: job_id={job_id}, select_angle={select_angle}"
@@ -187,13 +192,15 @@ def lambda_handler(event, context):
         angles = job_results.get("marketing_angles", [])
         
         # Select swipe files (3) template based on product summary
-        swipe_file_template_ids = select_swipe_files_template(select_angle, research_page_analysis, summary)
+        if not swipe_file_ids:
+            logger.info(f"No swipe file IDs provided, selecting swipe files based on product summary")
+            swipe_file_ids = select_swipe_files_template(select_angle, research_page_analysis, summary)
         
         # Load swipe file template from S3
-        swipe_file_html_list, swipe_file_json_list = load_swipe_file_templates(swipe_file_template_ids)
+        swipe_file_html_list, swipe_file_json_list = load_swipe_file_templates(swipe_file_ids)
         
         swipe_file_config = {}
-        for i, template_id in enumerate(swipe_file_template_ids):
+        for i, template_id in enumerate(swipe_file_ids):
             swipe_file_config[template_id] = {
                 "html": swipe_file_html_list[i] if i < len(swipe_file_html_list) else None,
                 "json": swipe_file_json_list[i] if i < len(swipe_file_json_list) else None
@@ -205,6 +212,11 @@ def lambda_handler(event, context):
             select_angle, avatar_sheet, deep_research_output, offer_brief, marketing_philosophy_analysis, swipe_file_config, anthropic_client
         )
         
+        # TEMPORARY: load the swipe files from s3
+        results_bucket = os.environ.get('RESULTS_BUCKET')
+        s3_key = 'results/all_results.json'
+        obj = s3_client.get_object(Bucket=results_bucket, Key=s3_key)
+        swipe_files = json.loads(obj['Body'].read().decode('utf-8'))
         # Save the swipe files to S3
         s3_key = save_results_to_s3(job_id, swipe_files)
         
@@ -228,6 +240,7 @@ if __name__ == "__main__":
     test_event = {
         "original_job_id": "03479dbf-bc4c-4472-80ff-b11b561b8777",
         "job_id": "03479dbf-bc4c-4472-80ff-b11b561b8777-swipe",
-        "select_angle": "Embarrassment & Professional Confidence: 'Restore the beard you earned—no flakes in meetings.'"
+        "select_angle": "Embarrassment & Professional Confidence: 'Restore the beard you earned—no flakes in meetings.'",
+        "swipe_file_ids": ["A00002"]
     }
     print(lambda_handler(test_event, {}))

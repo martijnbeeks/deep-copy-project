@@ -997,8 +997,8 @@ def run_pipeline(event, context):
         
         # # Step 5: Complete avatar sheet
         # logger.info("Step 5: Completing avatar sheet")
-        # avatar_parsed, avatar_sheet = generator.complete_avatar_sheet(deep_research_output)
-        # angles = avatar_parsed.marketing_angles
+        avatar_parsed, avatar_sheet = generator.complete_avatar_sheet(deep_research_output)
+        angles = avatar_parsed.marketing_angles
         
         # # Step 6: Complete offer brief
         # logger.info("Step 6: Completing offer brief")
@@ -1042,7 +1042,7 @@ def run_pipeline(event, context):
             "marketing_philosophy_analysis": marketing_philosophy_analysis,
             "summary": summary,
             # "swipe_results": swipe_results,
-            "marketing_angles": angles
+            "marketing_angles": [angle.model_dump() if hasattr(angle, 'model_dump') else angle for angle in angles]
         }
         
         generator.save_results_to_s3(all_results, s3_bucket, project_name, job_id)

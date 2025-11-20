@@ -2,6 +2,7 @@ import json
 import os
 import base64
 import requests
+import re
 from botocore.exceptions import ClientError
 from openai import OpenAI
 import boto3
@@ -45,12 +46,13 @@ if not logger.handlers:
 def extract_clean_text_from_html(html: str) -> str:
     """
     Extract clean text from an HTML string by removing scripts, styles, and extra whitespace.
+    Preserves only bold text tags (<b>, <strong>) and line break tags (<br>), removes all other HTML tags.
 
     Args:
         html: HTML content as a string.
 
     Returns:
-        Cleaned text as a string.
+        Cleaned text as a string with only bold and br tags preserved.
     """
     soup = BeautifulSoup(html, 'html.parser')
 
@@ -58,16 +60,56 @@ def extract_clean_text_from_html(html: str) -> str:
     for script in soup(["script", "style"]):
         script.decompose()
 
-    # Get text
-    text = soup.get_text()
+    # Find all tags except bold and br tags and unwrap them (remove tag but keep content)
+    # Process in reverse order (deepest first) to avoid unwrapping parent before child
+    all_tags = soup.find_all(True)  # Find all tags
+    # Keep both bold tags (<b>, <strong>) and line break tags (<br>, <br/>)
+    non_bold_tags = [tag for tag in all_tags if tag.name not in ['b', 'strong', 'br']]
+    
+    # Sort by depth (deepest first) - tags with more parents come first
+    def get_depth(tag):
+        depth = 0
+        parent = tag.parent
+        while parent and parent.name != '[document]':
+            depth += 1
+            parent = parent.parent
+        return depth
+    
+    non_bold_tags.sort(key=get_depth, reverse=True)
+    
+    # Unwrap all non-bold tags (this removes the tag but keeps the content)
+    for tag in non_bold_tags:
+        try:
+            tag.unwrap()
+        except (AttributeError, ValueError):
+            # Tag might have been already unwrapped or removed
+            pass
 
-    # Break into lines and remove leading/trailing space
-    lines = (line.strip() for line in text.splitlines())
+    # Convert the soup back to string
+    html_output = str(soup)
 
-    # Drop blank lines and join with newlines
-    chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-    clean_text = '\n'.join(chunk for chunk in chunks if chunk)
+    # Clean up excessive whitespace while preserving structure
+    # Remove multiple consecutive spaces (but keep single spaces)
+    html_output = re.sub(r' +', ' ', html_output)
+    
+    # Clean up multiple consecutive newlines (max 2)
+    html_output = re.sub(r'\n{3,}', '\n\n', html_output)
+    
+    # Remove leading/trailing whitespace from each line
+    lines = []
+    for line in html_output.splitlines():
+        stripped = line.strip()
+        if stripped:  # Keep non-empty lines
+            lines.append(stripped)
+        elif lines and lines[-1]:  # Keep single blank lines between content
+            lines.append("")
 
+    clean_text = "\n".join(lines)
+    
+    # Convert any remaining newline characters to <br> tags for valid HTML
+    # (newlines in HTML source don't render as line breaks)
+    clean_text = clean_text.replace('\n', '<br>')
+    
     return clean_text
 
 def load_pdf_file(file_path: str) -> str:
@@ -381,8 +423,8 @@ def rewrite_swipe_file(
     marketing_philosophy_analysis: str,
     swipe_file_config: dict[str, dict[str, Any]],
     anthropic_client: anthropic.Anthropic,
-    model: str = "claude-haiku-4-5-20251001",
-    max_tokens: int = 10000) -> dict[str, dict[str, Any]]:  
+    model: str = "claude-sonnet-4-5-20250929",
+    max_tokens: int = 4000) -> dict[str, dict[str, Any]]:  
     # Model configuration
     
     for swipe_file_id, swipe_file_data in swipe_file_config.items():
@@ -414,6 +456,8 @@ def rewrite_swipe_file(
             """,
             "cache_control": {"type": "ephemeral"}
     }]
+    
+    # TODO: test performance with only a summary of deep research.
     
     # Add first user message
     messages.append({
@@ -451,7 +495,7 @@ def rewrite_swipe_file(
         raw_swipe_file_text = swipe_file_data["raw_text"]
         
         generate_content_prompt = f"""Excellent work. Now we're going to be writing an advertorial, which is a type of pre-sales page designed to nurture customers before they actually see the main product offer page. I'm going to send you an indirect competitor with a very successful advertorial, and I want you to please analyze this advertorial and let me know your thoughts
-        Raw text from the pdf advertorial:
+        Raw text from the pdf advertorial with HTML formatting preserved:
         {raw_swipe_file_text}
         """
         user_content_with_pdf = [
@@ -484,17 +528,31 @@ def rewrite_swipe_file(
         logger.info(f"Turn 2 usage for {swipe_file_id}: {second_usage}")
 
         logger.info("Turn 3: Writing advertorial with structured output")
-        third_query_prompt = f"""You are an expert copywriter creating a complete, polished advertorial for the NewAura Seborrheic Dermatitis & Psoriasis Cream.
+        third_query_prompt = f"""You are an expert copywriter creating a complete, polished advertorial for a new product.
 
         Your task:
         1. Rewrite the advertorial using ALL the relevant information about the new product.  
         2. Focus specifically on the marketing angle: {angle}.  
         3. Generate **a full and complete output** following the schema provided below.  
         4. DO NOT skip or leave out any fields — every field in the schema must be filled.  
-        5. Please make sure that the length of each field matches the length of the description of the field.
-        6. If any data is missing, intelligently infer or create realistic content that fits the schema.  
-        7. Write fluently and naturally, with complete sentences. Do not stop mid-thought or end with ellipses (“...”).  
-        8. At the end, verify your own output is **100% complete** — all schema fields filled.
+        5. Match the FORMATTING style of the original advertorial exactly:
+        - Use short, punchy paragraphs (1-2 sentences each where dramatic)
+        - Create white space and breathing room between key moments
+        - Keep the rhythm snappy and scannable
+        - Aim for similar total word count as the original example
+        - Use similar HTML formatting elements within your text as the original advertorial, only <br>, <b>, <strong>
+        - In addition to using standard HTML formatting elements found in the example, you must actively incorporate **ordered lists** (`<ol>`) for numbered steps, **unordered lists** (`<ul>`) for bullet points, and **list items** (`<li>`) for individual entries whenever you present a series, steps, important points, or grouped information. Use these tags natively (not just plain text) to match real advertorial HTML style.
+        6. Avoid using AI-specific markers, emojis and unusual punctuation (such as long em dashes "—") in your writing.
+        8. If any data is missing, intelligently infer or create realistic content that fits the schema.  
+        9. Write fluently and naturally, with complete sentences. Do not stop mid-thought or end with ellipses ("...").
+        10. Prioritize EMOTIONAL PACING over information density — shorter is often stronger in direct response copy.
+        11. At the end, verify your own output is **100% complete** — all schema fields filled.
+
+        CRITICAL FORMATTING RULES:
+        - Break up dense paragraphs into shorter ones
+        - Use paragraph breaks for dramatic pauses
+        - Single impactful sentences should stand alone
+        - Match the "fascination-style" pacing of the original
 
         When ready, output ONLY the completed schema with all fields filled in. Do not include explanations or notes.
         """
@@ -518,7 +576,7 @@ def rewrite_swipe_file(
             tool_name=tool_name,
             tool_description=tool_description,
             tool_schema=tool_schema,
-            max_tokens=25000,
+            max_tokens=20000,
             model=model,
             anthropic_client=anthropic_client,
             system_prompt=system_prompt

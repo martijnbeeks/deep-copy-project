@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 class Demographics(BaseModel):
     """Demographic & general information about the avatar."""
     age_range: Optional[int] = Field(
-        None, description="Inclusive min/max age in years, e.g. (28, 45)."
+        None, description="Inclusive min/max age in years. Note it like: 45-55, 60-70, etc."
     )
     gender: Optional[List[str]] = Field(
         None, description="Gender distribution labels, e.g. ['male', 'female', 'non-binary']."
@@ -67,6 +67,14 @@ class Angle(BaseModel):
     """A marketing angle for a product."""
     angle: str = Field(..., description="The marketing angle for the product.")
     title: str = Field(..., description="The title of the marketing angle.")
+    target_age_range: str = Field(..., description="The target age range for the marketing angle. Note it like: 45-55, 60-70, etc.")
+    target_audience: str = Field(..., description="The target audience for the marketing angle. Note it like: Competitive athletes seeking reliability, Skilled professionals seeking productivity, etc.")
+    pain_points: List[str] = Field(..., description="The pain points for the marketing angle")
+    desires: List[str] = Field(..., description="The desires for the marketing angle")
+    common_objections: List[str] = Field(..., description="The common objections for the marketing angle")
+    failed_alternatives: List[str] = Field(..., description="The failed alternatives for the marketing angle")
+    copy_approach: List[str] = Field(..., description="The copy approaches for the marketing angle")
+    
 
 class Avatar(BaseModel):
     """
@@ -185,10 +193,10 @@ class OfferBrief(BaseModel):
         description="Brainstormed product/offer name options."
     )
     level_of_consciousness: Optional[ConsciousnessLevel] = Field(
-        None, description="Prospect’s general self-awareness/readiness to change."
+        None, description="Prospect’s general self-awareness/readiness to change. Explain in 2-3 sentences."
     )
     level_of_awareness: Optional[AwarenessLevel] = Field(
-        None, description="Prospect’s current awareness of problem/solution/product."
+        None, description="Prospect’s current awareness of problem/solution/product. Explain in 2-3 sentences."
     )
     stage_of_sophistication: Optional[StageOfSophistication] = Field(
         None, description="Market sophistication selection with reasoning."
@@ -256,9 +264,4 @@ class OfferBrief(BaseModel):
     examples_swipes: List[SwipeExample] = Field(
         default_factory=list,
         description="Reference campaigns, pages, or ads to emulate."
-    )
-
-    other_notes: Optional[str] = Field(
-        None,
-        description="Anything else helpful: compliance constraints, must-include proof, JTBD, ICP nuances."
     )

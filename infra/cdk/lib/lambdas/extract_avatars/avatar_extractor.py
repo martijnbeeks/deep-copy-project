@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 class CustomerAvatar(BaseModel):
     """Single customer avatar/persona"""
     persona_name: str = Field(..., description="A short, descriptive name that captures the essence of the customer")
+    characteristics: List[str] = Field(..., description="Characteristics of the customer, e.g. Stands all day, Active lifestyle, etc. Provide at least 3 characteristics and max three words each.")
     description: str = Field(..., description="1 sentence summarizing their lifestyle, motivations, and key challenges")
     age_range: str = Field(..., description="Approximate age bracket (e.g., 25-34)")
     gender: str = Field(..., description="male, female, or both")
@@ -32,6 +33,8 @@ class CustomerAvatar(BaseModel):
 class AvatarCollection(BaseModel):
     """Collection of customer avatars for a product"""
     avatars: List[CustomerAvatar] = Field(..., min_items=5, description="At least 5 distinct customer avatars")
+    company_type: str = Field(..., description="The type of company the product is for")
+    product_description: str = Field(..., description="A description of the product")
 
 
 def capture_page_as_image_bytes(url: str) -> bytes:
