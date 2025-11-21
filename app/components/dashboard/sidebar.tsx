@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import {
   Sidebar as UISidebar,
   SidebarContent,
@@ -55,13 +56,25 @@ export function Sidebar() {
     <div className="fixed left-0 top-0 h-screen z-50 w-16 hover:w-64 transition-all duration-300 group bg-sidebar border-r border-sidebar-border overflow-hidden">
       <UISidebar className="h-full w-full bg-sidebar" collapsible="none">
         <SidebarContent>
-          <Link href="/dashboard" className="p-4 flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-primary-foreground font-bold text-lg">DC</span>
+          <Link href="/dashboard" className="p-4 pb-0 flex items-center justify-center gap-2 transition-opacity">
+            <div className="w-10 h-10 group-hover:w-48 group-hover:h-12 flex items-center justify-center flex-shrink-0 relative transition-all duration-300">
+              {/* Favicon - shown when collapsed */}
+              <Image
+                src="/deepcopy-favicon.png"
+                alt="DeepCopy"
+                width={40}
+                height={40}
+                className="opacity-100 group-hover:opacity-0 transition-opacity duration-300"
+              />
+              {/* Full logo - shown when expanded */}
+              <Image
+                src="/deepcopy-logo.png"
+                alt="DeepCopy"
+                width={192}
+                height={48}
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 object-contain"
+              />
             </div>
-            <span className="text-xl font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
-              DeepCopy
-            </span>
           </Link>
 
           <SidebarGroup>
