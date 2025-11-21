@@ -21,7 +21,7 @@ import {
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Create", href: "/create", icon: PenTool },
+  /*{ name: "Create", href: "/create", icon: PenTool },*/
   { name: "Templates", href: "/templates", icon: FileText },
 ]
 
