@@ -28,9 +28,9 @@ export const metadata: Metadata = {
   generator: "v0.app",
   robots: "index, follow",
   icons: {
-    icon: "/nib.png",
-    shortcut: "/nib.png",
-    apple: "/nib.png",
+    icon: "/deepcopy-favicon.png",
+    shortcut: "/deepcopy-favicon.png",
+    apple: "/deepcopy-favicon.png",
   },
   openGraph: {
     title: "AI Copywriting Dashboard",
