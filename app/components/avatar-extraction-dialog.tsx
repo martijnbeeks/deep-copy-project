@@ -31,7 +31,7 @@ interface ExtractedAvatar {
 interface AvatarExtractionDialogProps {
   isOpen: boolean
   onClose: () => void
-  onAvatarsSelected: (selected: ExtractedAvatar[], all: ExtractedAvatar[]) => void
+  onAvatarsSelected: (selected: ExtractedAvatar[], all: ExtractedAvatar[], shouldClose?: boolean, autoSubmit?: boolean) => void
   salesPageUrl: string
   formData: any
   isLoading?: boolean
@@ -143,21 +143,22 @@ export function AvatarExtractionDialog({
     setLoadingProgress(0)
     setLoadingStage(0)
 
-    // Start progress animation
+    // Start progress animation - slower to accommodate 90+ seconds
+    // Updates every 500ms, increments by 0.5% to reach 90% in ~90 seconds
     const progressInterval = setInterval(() => {
       setLoadingProgress(prev => {
         if (prev >= 90) {
           return 90 // Keep at 90% until completion
         }
-        return prev + 1
+        return prev + 0.5
       })
-    }, 200)
+    }, 500)
 
-    // Update stages based on progress
-    setTimeout(() => setLoadingStage(1), 2000)   // Stage 1 at 2s
-    setTimeout(() => setLoadingStage(2), 4000)   // Stage 2 at 4s
-    setTimeout(() => setLoadingStage(3), 6000)   // Stage 3 at 6s
-    setTimeout(() => setLoadingStage(4), 8000)   // Stage 4 at 8s
+    // Update stages based on progress - spread over 90+ seconds
+    setTimeout(() => setLoadingStage(1), 15000)   // Stage 1 at 15s
+    setTimeout(() => setLoadingStage(2), 30000)   // Stage 2 at 30s
+    setTimeout(() => setLoadingStage(3), 45000)   // Stage 3 at 45s
+    setTimeout(() => setLoadingStage(4), 60000)   // Stage 4 at 60s
 
     try {
       // Step 1: Submit avatar extraction job to AWS (exact cURL equivalent)
@@ -197,7 +198,7 @@ export function AvatarExtractionDialog({
   }
 
   const pollAvatarExtractionStatus = async (jobId: string, progressInterval: NodeJS.Timeout) => {
-    const maxAttempts = 50 // ~100 seconds max (20 * 5s)
+    const maxAttempts = 120 // ~20 minutes max (120 * 10s) to accommodate longer processing times
     const pollInterval = 10000 // Poll every 10 seconds
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -242,6 +243,12 @@ export function AvatarExtractionDialog({
               setIsAnalyzing(false)
               setLoadingProgress(0)
               setLoadingStage(0)
+
+              // Save extracted avatars to parent immediately so they persist even if modal is closed
+              // Pass empty array for selected avatars since user hasn't selected yet
+              // Pass false for shouldClose to keep the modal open for user to select avatars
+              onAvatarsSelected([], processedAvatars, false)
+
               // Show verification dialog after extraction
               setShowVerification(true)
             }, 500)
@@ -272,7 +279,7 @@ export function AvatarExtractionDialog({
     }
 
     clearInterval(progressInterval)
-    throw new Error('Avatar extraction timed out after 60 seconds. The service may be experiencing delays.')
+    throw new Error('Avatar extraction timed out after 20 minutes. The service may be experiencing delays. Please try again or use the "I know exactly who my customer is" option instead.')
   }
 
   const handleAvatarToggle = (index: number) => {
@@ -293,7 +300,8 @@ export function AvatarExtractionDialog({
 
     try {
       const selectedAvatarData = Array.from(selectedAvatars).map(index => avatars[index])
-      onAvatarsSelected(selectedAvatarData, avatars)
+      // Trigger automatic form submission when proceeding
+      onAvatarsSelected(selectedAvatarData, avatars, true, true)
     } catch (err) {
       console.error('Submit error:', err)
       setError('Failed to create job. Please try again.')
@@ -319,8 +327,25 @@ export function AvatarExtractionDialog({
     return 'bg-gray-100 text-gray-800'
   }
 
+  const handleDialogClose = (open: boolean) => {
+    if (!open) {
+      // When closing, preserve extracted avatars if they exist but weren't confirmed
+      if (avatars.length > 0) {
+        // Save extracted avatars to parent so they don't get lost
+        // Preserve any previously selected avatars, or use empty array if none selected
+        const currentSelected = selectedAvatars.size > 0
+          ? Array.from(selectedAvatars).map(index => avatars[index])
+          : (formData?.customer_avatars || [])
+
+        // Pass false for shouldClose since dialog is already closing via onClose()
+        onAvatarsSelected(currentSelected, avatars, false)
+      }
+      onClose()
+    }
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleDialogClose}>
       <DialogContent className="!max-w-[80vw] !w-[80vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -350,6 +375,19 @@ export function AvatarExtractionDialog({
               {loadingStage === 3 && "Identifying Customer Avatars"}
               {loadingStage === 4 && "Finalizing Results"}
             </h3>
+
+            {/* Progress Bar */}
+            <div className="w-full max-w-md space-y-2">
+              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-500 ease-out"
+                  style={{ width: `${Math.min(loadingProgress, 100)}%` }}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground text-center">
+                {Math.round(loadingProgress)}% Complete
+              </p>
+            </div>
 
             {/* Stage-specific messages */}
             <div className="space-y-3 w-full animate-fade-in">
@@ -400,7 +438,7 @@ export function AvatarExtractionDialog({
             </div>
 
             <p className="text-xs text-muted-foreground text-center">
-              Analyzing your sales page and generating customer personas
+              This process typically takes 1-2 minutes. Please be patient while we analyze your sales page and generate customer personas.
             </p>
 
             <Button
@@ -674,8 +712,8 @@ export function AvatarExtractionDialog({
                   setIsSubmitting(true)
                   try {
                     const selectedAvatarData = Array.from(selectedAvatars).map(index => avatars[index])
-                    // Update formData with verification data before submitting
-                    onAvatarsSelected(selectedAvatarData, avatars)
+                    // Update formData with verification data and trigger automatic form submission
+                    onAvatarsSelected(selectedAvatarData, avatars, true, true)
                   } catch (err) {
                     console.error('Submit error:', err)
                     setError('Failed to create job. Please try again.')

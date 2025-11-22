@@ -61,6 +61,16 @@ module.exports = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // New Color Palette
+        "bg-pure-white-cards": "var(--background-pure-white-cards)",
+        "bg-white": "var(--background-white)",
+        "text-dark-header": "var(--text-dark-header)",
+        "text-secondary-grey": "var(--text-secondary-grey)",
+        "cta-blue": "var(--cta-blue)",
+        "gradient-blue": "var(--gradient-blue)",
+        "gradient-purple": "var(--gradient-purple)",
+        "icon-soft-blue": "var(--icon-soft-blue)",
+        "border-light-grey": "var(--border-light-grey)",
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -38,7 +38,7 @@ export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps)
   const { templates, fetchTemplates, selectedTemplate, setSelectedTemplate } = useTemplatesStore()
   const { createJob } = useJobsStore()
   const { user } = useAuthStore()
-  
+
   const [formData, setFormData] = useState<PipelineFormData>({
     title: "",
     brand_info: "",
@@ -55,17 +55,31 @@ export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps)
     fetchTemplates()
   }, [fetchTemplates])
 
+  // Check if all required fields are empty
+  const isFormEmpty = (): boolean => {
+    // Check if title is empty
+    if (formData.title.trim()) {
+      return false
+    }
+
+    // Check if template_id is selected
+    if (formData.template_id) {
+      return false
+    }
+
+    // Check if advertorial_type is selected
+    if (formData.advertorial_type) {
+      return false
+    }
+
+    return true
+  }
+
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof PipelineFormData, string>> = {}
 
     if (!formData.title.trim()) {
       newErrors.title = "Project title is required"
-    }
-
-    if (!formData.brand_info.trim()) {
-      newErrors.brand_info = "Brand information is required"
-    } else if (formData.brand_info.trim().length < 10) {
-      newErrors.brand_info = "Brand information must be at least 10 characters"
     }
 
     if (!formData.template_id) {
@@ -94,7 +108,7 @@ export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps)
         // Use store directly if no onSubmit prop
         await createJob(formData)
       }
-      
+
       // Reset form on success
       setFormData({
         title: "",
@@ -147,30 +161,6 @@ export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps)
               <p className="text-sm text-destructive flex items-center gap-1">
                 <AlertCircle className="h-3 w-3" />
                 {errors.title}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="brand_info">
-              Brand Information <span className="text-destructive">*</span>
-            </Label>
-            <Textarea
-              id="brand_info"
-              placeholder="Describe your brand, product, or service. Include key features, benefits, target audience, and any specific messaging you want to convey..."
-              value={formData.brand_info}
-              onChange={(e) => {
-                setFormData((prev) => ({ ...prev, brand_info: e.target.value }))
-                if (errors.brand_info) setErrors((prev) => ({ ...prev, brand_info: undefined }))
-              }}
-              rows={4}
-              disabled={isLoading}
-              className={errors.brand_info ? "border-destructive" : ""}
-            />
-            {errors.brand_info && (
-              <p className="text-sm text-destructive flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {errors.brand_info}
               </p>
             )}
           </div>
@@ -284,7 +274,7 @@ export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps)
             </Alert>
           )}
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="w-full" disabled={isLoading || isFormEmpty()}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

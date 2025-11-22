@@ -76,6 +76,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
   // Swipe file generation state - track multiple angles
   const [selectedAngle, setSelectedAngle] = useState<string | null>(null)
+  const [accordionValue, setAccordionValue] = useState<string | undefined>(undefined)
   const [generatedAngles, setGeneratedAngles] = useState<Set<string>>(new Set())
   const [generatingAngles, setGeneratingAngles] = useState<Map<string, string>>(new Map()) // angle -> jobId
   const [angleStatuses, setAngleStatuses] = useState<Map<string, string>>(new Map()) // angle -> status
@@ -615,327 +616,6 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
         </Card>
       </div>
 
-
-      {/* Avatar & Marketing */}
-      {(fullResult?.results?.avatar_sheet || fullResult?.results?.marketing_angles) && (
-        <div className="mb-12">
-          <Accordion type="single" collapsible>
-            <AccordionItem value="avatar-marketing">
-              <Card className="bg-card/80 border-border/50">
-                <AccordionTrigger className="p-8 hover:no-underline">
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
-                        <User className="w-5 h-5 text-primary-foreground" />
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-foreground">Avatar & Marketing</h2>
-                        <p className="text-sm text-muted-foreground">Customer avatar and marketing angles</p>
-                      </div>
-                    </div>
-                  </div>
-                </AccordionTrigger>
-
-                <AccordionContent>
-                  <div className="px-8 pb-8 space-y-6 border-t border-border/50 pt-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {fullResult?.results?.avatar_sheet && (
-                        <div className="space-y-4">
-                          <h4 className="text-lg font-semibold mb-4">
-                            {customerAvatars?.[0]?.persona_name || 'Customer Avatar'}
-                          </h4>
-                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-4 border border-blue-200/50 dark:border-blue-800/50">
-                            {(() => {
-                              try {
-                                const avatarData = JSON.parse(fullResult.results.avatar_sheet)
-                                return (
-                                  <Accordion type="multiple" className="w-full">
-                                    {/* Demographics */}
-                                    <AccordionItem value="demographics" className="border-none">
-                                      <AccordionTrigger className="py-2 hover:no-underline">
-                                        <div className="flex items-center gap-2">
-                                          <Users className="h-4 w-4 text-primary" />
-                                          <span className="font-semibold text-foreground text-sm">Demographics</span>
-                                        </div>
-                                      </AccordionTrigger>
-                                      <AccordionContent className="pt-2">
-                                        <div className="space-y-3">
-                                          <div className="grid grid-cols-2 gap-3 text-sm">
-                                            <div>
-                                              <p className="text-muted-foreground text-xs">Age</p>
-                                              <p className="font-medium text-foreground">{avatarData.demographics?.age_range || 'N/A'}</p>
-                                            </div>
-                                            <div>
-                                              <p className="text-muted-foreground text-xs">Gender</p>
-                                              <p className="font-medium text-foreground">
-                                                {avatarData.demographics?.gender?.join(', ') || 'N/A'}
-                                              </p>
-                                            </div>
-                                          </div>
-                                          <div>
-                                            <p className="text-muted-foreground text-xs mb-1">Locations</p>
-                                            <div className="flex flex-wrap gap-1">
-                                              {avatarData.demographics?.locations?.map((location: string, index: number) => (
-                                                <Badge key={index} variant="secondary" className="text-xs px-2 py-0.5">
-                                                  {location}
-                                                </Badge>
-                                              ))}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </AccordionContent>
-                                    </AccordionItem>
-
-                                    {/* Professional Background */}
-                                    {avatarData.demographics?.professional_backgrounds && (
-                                      <AccordionItem value="professional-background" className="border-none">
-                                        <AccordionTrigger className="py-2 hover:no-underline">
-                                          <div className="flex items-center gap-2">
-                                            <Briefcase className="h-4 w-4 text-accent" />
-                                            <span className="font-semibold text-foreground text-sm">Professional Background</span>
-                                          </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="pt-2">
-                                          <div className="flex flex-wrap gap-1">
-                                            {avatarData.demographics.professional_backgrounds.map((bg: string, index: number) => (
-                                              <Badge key={index} variant="outline" className="text-sm px-2 py-0.5">
-                                                {bg}
-                                              </Badge>
-                                            ))}
-                                          </div>
-                                        </AccordionContent>
-                                      </AccordionItem>
-                                    )}
-
-                                    {/* Identities */}
-                                    {avatarData.demographics?.typical_identities && (
-                                      <AccordionItem value="identities" className="border-none">
-                                        <AccordionTrigger className="py-2 hover:no-underline">
-                                          <div className="flex items-center gap-2">
-                                            <Sparkles className="h-4 w-4 text-accent" />
-                                            <span className="font-semibold text-foreground text-sm">Identities</span>
-                                          </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="pt-2">
-                                          <div className="flex flex-wrap gap-1">
-                                            {avatarData.demographics.typical_identities.map((identity: string, index: number) => (
-                                              <Badge key={index} variant="secondary" className="text-sm px-2 py-0.5">
-                                                {identity}
-                                              </Badge>
-                                            ))}
-                                          </div>
-                                        </AccordionContent>
-                                      </AccordionItem>
-                                    )}
-
-                                    {/* Pain Points */}
-                                    {avatarData.pain_points && (
-                                      <AccordionItem value="pain-points" className="border-none">
-                                        <AccordionTrigger className="py-2 hover:no-underline">
-                                          <div className="flex items-center gap-2">
-                                            <AlertTriangle className="h-4 w-4 text-destructive" />
-                                            <span className="font-semibold text-foreground text-sm">Pain Points</span>
-                                          </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="pt-2">
-                                          <div className="space-y-2">
-                                            {avatarData.pain_points.slice(0, 3).map((painPoint: any, index: number) => (
-                                              <div key={index} className="bg-destructive/5 border border-destructive/20 p-2 rounded-lg">
-                                                <h6 className="font-medium text-foreground text-sm mb-1">{painPoint.title}</h6>
-                                                <ul className="space-y-0.5">
-                                                  {painPoint.bullets?.slice(0, 2).map((bullet: string, bulletIndex: number) => (
-                                                    <li key={bulletIndex} className="text-sm text-muted-foreground flex items-start gap-1">
-                                                      <span className="text-destructive mt-0.5">•</span>
-                                                      <span className="break-words">{bullet}</span>
-                                                    </li>
-                                                  ))}
-                                                </ul>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        </AccordionContent>
-                                      </AccordionItem>
-                                    )}
-
-                                    {/* Goals */}
-                                    {avatarData.goals && (
-                                      <AccordionItem value="goals" className="border-none">
-                                        <AccordionTrigger className="py-2 hover:no-underline">
-                                          <div className="flex items-center gap-2">
-                                            <Star className="h-4 w-4 text-primary" />
-                                            <span className="font-semibold text-foreground text-sm">Goals</span>
-                                          </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="pt-2">
-                                          <div className="grid grid-cols-1 gap-2">
-                                            <div>
-                                              <h6 className="font-medium text-foreground text-sm mb-1">Short Term</h6>
-                                              <ul className="space-y-0.5">
-                                                {avatarData.goals.short_term?.slice(0, 2).map((goal: string, index: number) => (
-                                                  <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
-                                                    <span className="text-primary mt-0.5">✓</span>
-                                                    <span className="break-words">{goal}</span>
-                                                  </li>
-                                                ))}
-                                              </ul>
-                                            </div>
-                                            <div>
-                                              <h6 className="font-medium text-foreground text-sm mb-1">Long Term</h6>
-                                              <ul className="space-y-0.5">
-                                                {avatarData.goals.long_term?.slice(0, 2).map((goal: string, index: number) => (
-                                                  <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
-                                                    <span className="text-primary mt-0.5">✓</span>
-                                                    <span className="break-words">{goal}</span>
-                                                  </li>
-                                                ))}
-                                              </ul>
-                                            </div>
-                                          </div>
-                                        </AccordionContent>
-                                      </AccordionItem>
-                                    )}
-                                  </Accordion>
-                                )
-                              } catch (error) {
-                                return (
-                                  <div className="bg-muted rounded-lg p-4">
-                                    <pre className="text-sm whitespace-pre-wrap text-foreground">
-                                      {fullResult.results.avatar_sheet}
-                                    </pre>
-                                  </div>
-                                )
-                              }
-                            })()}
-                          </div>
-                        </div>
-                      )}
-                      {fullResult?.results?.marketing_angles && (
-                        <div className="space-y-4">
-                          <h4 className="text-lg font-semibold mb-4">Marketing Angles</h4>
-                          <Accordion type="multiple" className="w-full space-y-3">
-                            {fullResult.results.marketing_angles.map((angle, index) => {
-                              // Handle both old format (string) and new format (object with angle and title)
-                              const angleObj: AngleWithProperties | null = isAngle(angle) ? (angle as AngleWithProperties) : null;
-                              const angleTitle = angleObj?.title ?? null;
-                              const angleDescription = angleObj?.angle ?? (typeof angle === 'string' ? angle : '');
-
-                              return (
-                                <AccordionItem
-                                  key={index}
-                                  value={`angle-${index}`}
-                                  className="bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-950/20 dark:to-teal-950/20 rounded-lg border border-cyan-200/50 dark:border-cyan-800/50 px-4"
-                                >
-                                  <AccordionTrigger className="hover:no-underline py-4">
-                                    <div className="flex items-start gap-3 w-full text-left">
-                                      <div className="bg-primary/10 rounded-full p-1.5 flex-shrink-0 mt-0.5">
-                                        <Target className="h-4 w-4 text-primary" />
-                                      </div>
-                                      <div className="flex-1">
-                                        {angleTitle && (
-                                          <h5 className="text-sm font-bold text-foreground mb-1">{angleTitle}</h5>
-                                        )}
-                                        <p className="text-sm text-foreground font-medium leading-relaxed break-words">{angleDescription}</p>
-                                      </div>
-                                    </div>
-                                  </AccordionTrigger>
-                                  <AccordionContent className="pt-0 pb-4">
-                                    {angleObj && (
-                                      <div className="space-y-4 pl-9">
-                                        {angleObj?.target_age_range && (
-                                          <div>
-                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Age Range</h6>
-                                            <p className="text-sm text-foreground">{angleObj.target_age_range}</p>
-                                          </div>
-                                        )}
-                                        {angleObj?.target_audience && (
-                                          <div>
-                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Audience</h6>
-                                            <p className="text-sm text-foreground">{angleObj.target_audience}</p>
-                                          </div>
-                                        )}
-                                        {angleObj?.pain_points && angleObj.pain_points.length > 0 && (
-                                          <div>
-                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Pain Points</h6>
-                                            <ul className="space-y-1">
-                                              {(angleObj.pain_points || []).map((point: string, idx: number) => (
-                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
-                                                  <span className="text-primary mt-1.5">•</span>
-                                                  <span>{point}</span>
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        )}
-                                        {angleObj?.desires && angleObj.desires.length > 0 && (
-                                          <div>
-                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Desires</h6>
-                                            <ul className="space-y-1">
-                                              {(angleObj.desires || []).map((desire: string, idx: number) => (
-                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
-                                                  <span className="text-primary mt-1.5">•</span>
-                                                  <span>{desire}</span>
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        )}
-                                        {angleObj?.common_objections && angleObj.common_objections.length > 0 && (
-                                          <div>
-                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Common Objections</h6>
-                                            <ul className="space-y-1">
-                                              {(angleObj.common_objections || []).map((objection: string, idx: number) => (
-                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
-                                                  <span className="text-primary mt-1.5">•</span>
-                                                  <span>{objection}</span>
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        )}
-                                        {angleObj?.failed_alternatives && angleObj.failed_alternatives.length > 0 && (
-                                          <div>
-                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Failed Alternatives</h6>
-                                            <ul className="space-y-1">
-                                              {(angleObj.failed_alternatives || []).map((alternative: string, idx: number) => (
-                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
-                                                  <span className="text-primary mt-1.5">•</span>
-                                                  <span>{alternative}</span>
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        )}
-                                        {angleObj?.copy_approach && angleObj.copy_approach.length > 0 && (
-                                          <div>
-                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Copy Approach</h6>
-                                            <ul className="space-y-1">
-                                              {(angleObj.copy_approach || []).map((approach: string, idx: number) => (
-                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
-                                                  <span className="text-primary mt-1.5">•</span>
-                                                  <span>{approach}</span>
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </AccordionContent>
-                                </AccordionItem>
-                              );
-                            })}
-                          </Accordion>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </AccordionContent>
-              </Card>
-            </AccordionItem>
-          </Accordion>
-        </div>
-      )}
-
       {/* Offer Brief */}
       {fullResult?.results?.offer_brief && (
         <div className="mb-12">
@@ -1223,6 +903,342 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
         </div>
       )}
 
+      {/* Avatar & Marketing */}
+      {(fullResult?.results?.avatar_sheet || fullResult?.results?.marketing_angles) && (
+        <div className="mb-12">
+          <Accordion type="single" collapsible>
+            <AccordionItem value="avatar-marketing">
+              <Card className="bg-card/80 border-border/50">
+                <AccordionTrigger className="p-8 hover:no-underline">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
+                        <User className="w-5 h-5 text-primary-foreground" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-foreground">Avatar & Marketing</h2>
+                        <p className="text-sm text-muted-foreground">Customer avatar and marketing angles</p>
+                      </div>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+
+                <AccordionContent>
+                  <div className="px-8 pb-8 space-y-6 border-t border-border/50 pt-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {fullResult?.results?.avatar_sheet && (
+                        <div className="space-y-4">
+                          <h4 className="text-lg font-semibold mb-4">
+                            {customerAvatars?.[0]?.persona_name || 'Customer Avatar'}
+                          </h4>
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-4 border border-blue-200/50 dark:border-blue-800/50">
+                            {(() => {
+                              try {
+                                const avatarData = JSON.parse(fullResult.results.avatar_sheet)
+
+                                // Build array of all available accordion items to open by default
+                                const defaultOpenItems = ["demographics"]
+                                if (avatarData.demographics?.professional_backgrounds) {
+                                  defaultOpenItems.push("professional-background")
+                                }
+                                if (avatarData.demographics?.typical_identities) {
+                                  defaultOpenItems.push("identities")
+                                }
+                                if (avatarData.pain_points) {
+                                  defaultOpenItems.push("pain-points")
+                                }
+                                if (avatarData.goals) {
+                                  defaultOpenItems.push("goals")
+                                }
+
+                                return (
+                                  <Accordion type="multiple" className="w-full" defaultValue={defaultOpenItems}>
+                                    {/* Demographics */}
+                                    <AccordionItem value="demographics" className="border-none">
+                                      <AccordionTrigger className="py-2 hover:no-underline">
+                                        <div className="flex items-center gap-2">
+                                          <Users className="h-4 w-4 text-primary" />
+                                          <span className="font-semibold text-foreground text-sm">Demographics</span>
+                                        </div>
+                                      </AccordionTrigger>
+                                      <AccordionContent className="pt-2">
+                                        <div className="space-y-3">
+                                          <div className="grid grid-cols-2 gap-3 text-sm">
+                                            <div>
+                                              <p className="text-muted-foreground text-xs">Age</p>
+                                              <p className="font-medium text-foreground">{avatarData.demographics?.age_range || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                              <p className="text-muted-foreground text-xs">Gender</p>
+                                              <p className="font-medium text-foreground">
+                                                {avatarData.demographics?.gender?.join(', ') || 'N/A'}
+                                              </p>
+                                            </div>
+                                          </div>
+                                          <div>
+                                            <p className="text-muted-foreground text-xs mb-1">Locations</p>
+                                            <div className="flex flex-wrap gap-1">
+                                              {avatarData.demographics?.locations?.map((location: string, index: number) => (
+                                                <Badge key={index} variant="secondary" className="text-xs px-2 py-0.5">
+                                                  {location}
+                                                </Badge>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </AccordionContent>
+                                    </AccordionItem>
+
+                                    {/* Professional Background */}
+                                    {avatarData.demographics?.professional_backgrounds && (
+                                      <AccordionItem value="professional-background" className="border-none">
+                                        <AccordionTrigger className="py-2 hover:no-underline">
+                                          <div className="flex items-center gap-2">
+                                            <Briefcase className="h-4 w-4 text-accent" />
+                                            <span className="font-semibold text-foreground text-sm">Professional Background</span>
+                                          </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-2">
+                                          <div className="flex flex-wrap gap-1">
+                                            {avatarData.demographics.professional_backgrounds.map((bg: string, index: number) => (
+                                              <Badge key={index} variant="outline" className="text-sm px-2 py-0.5">
+                                                {bg}
+                                              </Badge>
+                                            ))}
+                                          </div>
+                                        </AccordionContent>
+                                      </AccordionItem>
+                                    )}
+
+                                    {/* Identities */}
+                                    {avatarData.demographics?.typical_identities && (
+                                      <AccordionItem value="identities" className="border-none">
+                                        <AccordionTrigger className="py-2 hover:no-underline">
+                                          <div className="flex items-center gap-2">
+                                            <Sparkles className="h-4 w-4 text-accent" />
+                                            <span className="font-semibold text-foreground text-sm">Identities</span>
+                                          </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-2">
+                                          <div className="flex flex-wrap gap-1">
+                                            {avatarData.demographics.typical_identities.map((identity: string, index: number) => (
+                                              <Badge key={index} variant="secondary" className="text-sm px-2 py-0.5">
+                                                {identity}
+                                              </Badge>
+                                            ))}
+                                          </div>
+                                        </AccordionContent>
+                                      </AccordionItem>
+                                    )}
+
+                                    {/* Pain Points */}
+                                    {avatarData.pain_points && (
+                                      <AccordionItem value="pain-points" className="border-none">
+                                        <AccordionTrigger className="py-2 hover:no-underline">
+                                          <div className="flex items-center gap-2">
+                                            <AlertTriangle className="h-4 w-4 text-destructive" />
+                                            <span className="font-semibold text-foreground text-sm">Pain Points</span>
+                                          </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-2">
+                                          <div className="space-y-2">
+                                            {avatarData.pain_points.slice(0, 3).map((painPoint: any, index: number) => (
+                                              <div key={index} className="bg-destructive/5 border border-destructive/20 p-2 rounded-lg">
+                                                <h6 className="font-medium text-foreground text-sm mb-1">{painPoint.title}</h6>
+                                                <ul className="space-y-0.5">
+                                                  {painPoint.bullets?.slice(0, 2).map((bullet: string, bulletIndex: number) => (
+                                                    <li key={bulletIndex} className="text-sm text-muted-foreground flex items-start gap-1">
+                                                      <span className="text-destructive mt-0.5">•</span>
+                                                      <span className="break-words">{bullet}</span>
+                                                    </li>
+                                                  ))}
+                                                </ul>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </AccordionContent>
+                                      </AccordionItem>
+                                    )}
+
+                                    {/* Goals */}
+                                    {avatarData.goals && (
+                                      <AccordionItem value="goals" className="border-none">
+                                        <AccordionTrigger className="py-2 hover:no-underline">
+                                          <div className="flex items-center gap-2">
+                                            <Star className="h-4 w-4 text-primary" />
+                                            <span className="font-semibold text-foreground text-sm">Goals</span>
+                                          </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-2">
+                                          <div className="grid grid-cols-1 gap-2">
+                                            <div>
+                                              <h6 className="font-medium text-foreground text-sm mb-1">Short Term</h6>
+                                              <ul className="space-y-0.5">
+                                                {avatarData.goals.short_term?.slice(0, 2).map((goal: string, index: number) => (
+                                                  <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
+                                                    <span className="text-primary mt-0.5">✓</span>
+                                                    <span className="break-words">{goal}</span>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                            <div>
+                                              <h6 className="font-medium text-foreground text-sm mb-1">Long Term</h6>
+                                              <ul className="space-y-0.5">
+                                                {avatarData.goals.long_term?.slice(0, 2).map((goal: string, index: number) => (
+                                                  <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
+                                                    <span className="text-primary mt-0.5">✓</span>
+                                                    <span className="break-words">{goal}</span>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          </div>
+                                        </AccordionContent>
+                                      </AccordionItem>
+                                    )}
+                                  </Accordion>
+                                )
+                              } catch (error) {
+                                return (
+                                  <div className="bg-muted rounded-lg p-4">
+                                    <pre className="text-sm whitespace-pre-wrap text-foreground">
+                                      {fullResult.results.avatar_sheet}
+                                    </pre>
+                                  </div>
+                                )
+                              }
+                            })()}
+                          </div>
+                        </div>
+                      )}
+                      {fullResult?.results?.marketing_angles && (
+                        <div className="space-y-4">
+                          <h4 className="text-lg font-semibold mb-4">Marketing Angles</h4>
+                          <Accordion type="multiple" className="w-full space-y-3">
+                            {fullResult.results.marketing_angles.map((angle, index) => {
+                              // Handle both old format (string) and new format (object with angle and title)
+                              const angleObj: AngleWithProperties | null = isAngle(angle) ? (angle as AngleWithProperties) : null;
+                              const angleTitle = angleObj?.title ?? null;
+                              const angleDescription = angleObj?.angle ?? (typeof angle === 'string' ? angle : '');
+
+                              return (
+                                <AccordionItem
+                                  key={index}
+                                  value={`angle-${index}`}
+                                  className="bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-950/20 dark:to-teal-950/20 rounded-lg border border-cyan-200/50 dark:border-cyan-800/50 border-b border-cyan-200/50 dark:border-cyan-800/50 last:!border-b last:!border-cyan-200/50 dark:last:!border-cyan-800/50 px-4"
+                                >
+                                  <AccordionTrigger className="hover:no-underline py-4">
+                                    <div className="flex items-start gap-3 w-full text-left">
+                                      <div className="bg-primary/10 rounded-full p-1.5 flex-shrink-0 mt-0.5">
+                                        <Target className="h-4 w-4 text-primary" />
+                                      </div>
+                                      <div className="flex-1">
+                                        {angleTitle && (
+                                          <h5 className="text-sm font-bold text-foreground mb-1">{angleTitle}</h5>
+                                        )}
+                                        <p className="text-sm text-foreground font-medium leading-relaxed break-words">{angleDescription}</p>
+                                      </div>
+                                    </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent className="pt-0 pb-4">
+                                    {angleObj && (
+                                      <div className="space-y-4 pl-9">
+                                        {angleObj?.target_age_range && (
+                                          <div>
+                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Age Range</h6>
+                                            <p className="text-sm text-foreground">{angleObj.target_age_range}</p>
+                                          </div>
+                                        )}
+                                        {angleObj?.target_audience && (
+                                          <div>
+                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Audience</h6>
+                                            <p className="text-sm text-foreground">{angleObj.target_audience}</p>
+                                          </div>
+                                        )}
+                                        {angleObj?.pain_points && angleObj.pain_points.length > 0 && (
+                                          <div>
+                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Pain Points</h6>
+                                            <ul className="space-y-1">
+                                              {(angleObj.pain_points || []).map((point: string, idx: number) => (
+                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                                  <span className="text-primary mt-1.5">•</span>
+                                                  <span>{point}</span>
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                        {angleObj?.desires && angleObj.desires.length > 0 && (
+                                          <div>
+                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Desires</h6>
+                                            <ul className="space-y-1">
+                                              {(angleObj.desires || []).map((desire: string, idx: number) => (
+                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                                  <span className="text-primary mt-1.5">•</span>
+                                                  <span>{desire}</span>
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                        {angleObj?.common_objections && angleObj.common_objections.length > 0 && (
+                                          <div>
+                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Common Objections</h6>
+                                            <ul className="space-y-1">
+                                              {(angleObj.common_objections || []).map((objection: string, idx: number) => (
+                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                                  <span className="text-primary mt-1.5">•</span>
+                                                  <span>{objection}</span>
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                        {angleObj?.failed_alternatives && angleObj.failed_alternatives.length > 0 && (
+                                          <div>
+                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Failed Alternatives</h6>
+                                            <ul className="space-y-1">
+                                              {(angleObj.failed_alternatives || []).map((alternative: string, idx: number) => (
+                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                                  <span className="text-primary mt-1.5">•</span>
+                                                  <span>{alternative}</span>
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                        {angleObj?.copy_approach && angleObj.copy_approach.length > 0 && (
+                                          <div>
+                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Copy Approach</h6>
+                                            <ul className="space-y-1">
+                                              {(angleObj.copy_approach || []).map((approach: string, idx: number) => (
+                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                                  <span className="text-primary mt-1.5">•</span>
+                                                  <span>{approach}</span>
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </AccordionContent>
+                                </AccordionItem>
+                              );
+                            })}
+                          </Accordion>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      )}
+
       {/* Angle Selection & Swipe File Generation */}
       {/* Always show if we have marketing_angles */}
       {fullResult?.results?.marketing_angles &&
@@ -1247,7 +1263,24 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
                   <AccordionContent>
                     <div className="px-8 pb-8 space-y-3 border-t border-border/50 pt-6">
-                      <Accordion type="multiple" className="w-full space-y-3">
+                      <Accordion
+                        type="single"
+                        collapsible
+                        className="w-full space-y-3"
+                        value={accordionValue}
+                        onValueChange={(value) => {
+                          // Only allow closing if no angle is selected
+                          // If an angle is selected, keep its accordion open
+                          if (value) {
+                            // Opening a new accordion - update the value
+                            setAccordionValue(value);
+                          } else if (!selectedAngle) {
+                            // Only allow closing if no angle is selected
+                            setAccordionValue(undefined);
+                          }
+                          // If selectedAngle exists and trying to close, ignore the change
+                        }}
+                      >
                         {fullResult.results.marketing_angles.map((angle, index) => {
                           // Handle both old format (string) and new format (object with title and angle)
                           const angleObj: AngleWithProperties | null = isAngle(angle) ? (angle as AngleWithProperties) : null;
@@ -1258,16 +1291,27 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                           const isGenerated = generatedAngles.has(angleString);
                           const isGenerating = generatingAngles.has(angleString);
                           const status = angleStatuses.get(angleString);
+                          const isSelected = selectedAngle === angleString;
 
                           return (
                             <AccordionItem
                               key={index}
                               value={`select-angle-${index}`}
-                              className={`border rounded-lg transition-all hover:shadow-md ${selectedAngle === angleString && !isGenerated ? 'border-primary shadow-sm bg-primary/5' : 'border-border/50'
+                              className={`border rounded-lg transition-all hover:shadow-md border-b last:!border-b ${isSelected && !isGenerated ? 'border-primary shadow-sm bg-primary/5' : 'border-border/50'
                                 } ${isGenerated ? 'bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800' : ''}`}
                             >
-                              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                                <div className="flex items-center justify-between w-full">
+                              <AccordionTrigger
+                                className="px-4 py-3 hover:no-underline"
+                                onClick={(e) => {
+                                  // Select the angle when clicking anywhere on the card
+                                  if (!isGenerated && !isGenerating) {
+                                    setSelectedAngle(angleString);
+                                    // Open the accordion for the selected angle
+                                    setAccordionValue(`select-angle-${index}`);
+                                  }
+                                }}
+                              >
+                                <div className="flex items-center justify-between w-full cursor-pointer">
                                   <div className="flex items-center gap-3 flex-1">
                                     {isGenerated ? (
                                       <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
@@ -1277,14 +1321,8 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                       <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
                                     ) : (
                                       <div
-                                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 cursor-pointer ${selectedAngle === angleString ? 'border-primary bg-primary' : 'border-muted-foreground'
+                                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${selectedAngle === angleString ? 'border-primary bg-primary' : 'border-muted-foreground'
                                           }`}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (!isGenerated && !isGenerating) {
-                                            setSelectedAngle(angleString);
-                                          }
-                                        }}
                                       >
                                         {selectedAngle === angleString && <CheckCircle2 className="w-3 h-3 text-primary-foreground" />}
                                       </div>
@@ -1514,33 +1552,6 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                       <p className="text-sm text-muted-foreground mb-4">
                         No templates generated yet. Select a marketing angle above to generate templates.
                       </p>
-                      {fullResult?.results?.marketing_angles && fullResult.results.marketing_angles.length > 0 && (
-                        <div className="bg-muted/50 rounded-lg p-6">
-                          <h3 className="text-lg font-semibold mb-4 text-foreground">Available Marketing Angles</h3>
-                          <div className="space-y-3">
-                            {fullResult.results.marketing_angles.map((angle, index) => {
-                              const angleTitle = typeof angle === 'object' ? angle.title : null;
-                              const angleDescription = typeof angle === 'object' ? angle.angle : angle;
-                              const angleString = typeof angle === 'object' ? `${angle.title}: ${angle.angle}` : angle;
-                              const isGenerated = generatedAngles.has(angleString);
-
-                              return (
-                                <div key={index} className="border border-border rounded-lg p-4">
-                                  {angleTitle && (
-                                    <h4 className="font-semibold text-foreground mb-2">{angleTitle}</h4>
-                                  )}
-                                  <p className="text-sm text-muted-foreground">{angleDescription}</p>
-                                  {isGenerated && (
-                                    <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">
-                                      Generated
-                                    </Badge>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <div className="space-y-4">

@@ -127,6 +127,24 @@
     --shadow-feature: 0 10px 40px -10px hsl(220 15% 15% / 0.1);
     --shadow-primary: 0 10px 40px -10px hsl(217 91% 60% / 0.3);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* New Color Palette */
+    /* Backgrounds */
+    --background-pure-white-cards: #FCFCFC;
+    --background-white: #FFFFFF;
+
+    /* Text */
+    --text-dark-header: #1E1F23;
+    --text-secondary-grey: #6A6F7A;
+
+    /* CTA & Gradients */
+    --cta-blue: #1F6BFF;
+    --gradient-blue: #4C6FFF;
+    --gradient-purple: #6B4DFF;
+
+    /* Icons & Borders */
+    --icon-soft-blue: #AABAF7;
+    --border-light-grey: #E9ECF1;
   }
 
   .dark {
