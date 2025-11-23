@@ -106,8 +106,8 @@
     --popover-foreground: 225 8% 13%;
     /* #1E1F23 */
 
-    --primary: 196 67% 45%;
-    /* rgba(37, 150, 190) - New Blue Tint */
+    --primary: 232 87% 66%;
+    /* #5d71f2 - New Blue Tint */
     --primary-foreground: 0 0% 100%;
     /* White text on primary */
 
@@ -121,8 +121,8 @@
     --muted-foreground: 220 7% 45%;
     /* #6A6F7A - Secondary Grey Text */
 
-    --accent: 196 67% 45%;
-    /* rgba(37, 150, 190) - New Blue Tint */
+    --accent: 232 87% 66%;
+    /* #5d71f2 - New Blue Tint */
     --accent-foreground: 0 0% 100%;
     /* White */
 
@@ -133,18 +133,18 @@
     /* #E9ECF1 - Border Light Grey */
     --input: 220 20% 93%;
     /* #E9ECF1 */
-    --ring: 196 67% 45%;
-    /* rgba(37, 150, 190) - New Blue Tint */
+    --ring: 232 87% 66%;
+    /* #5d71f2 - New Blue Tint */
 
     --radius: 0.75rem;
 
     /* DeepCopy Brand Color System - Custom design tokens */
-    --gradient-primary: linear-gradient(135deg, rgba(37, 150, 190, 1) 0%, rgba(37, 150, 190, 0.8) 100%);
+    --gradient-primary: linear-gradient(135deg, #5d71f2 0%, rgba(93, 113, 242, 0.8) 100%);
     /* Gradient using new blue tint */
     --gradient-hero: linear-gradient(180deg, #FCFCFC 0%, #FFFFFF 100%);
-    --shadow-lg: 0 20px 60px -15px rgba(37, 150, 190, 0.3);
+    --shadow-lg: 0 20px 60px -15px rgba(93, 113, 242, 0.3);
     --shadow-feature: 0 10px 40px -10px hsl(225 8% 13% / 0.1);
-    --shadow-primary: 0 10px 40px -10px rgba(37, 150, 190, 0.3);
+    --shadow-primary: 0 10px 40px -10px rgba(93, 113, 242, 0.3);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     /* DeepCopy Brand Color Variables */
@@ -152,9 +152,9 @@
     --background-white: #FFFFFF;
     --text-dark-header: #1E1F23;
     --text-secondary-grey: #6A6F7A;
-    --cta-blue: rgba(37, 150, 190, 1);
-    --gradient-blue: rgba(37, 150, 190, 1);
-    --gradient-purple: rgba(37, 150, 190, 0.8);
+    --cta-blue: #5d71f2;
+    --gradient-blue: #5d71f2;
+    --gradient-purple: rgba(93, 113, 242, 0.8);
     --icon-soft-blue: #AABAF7;
     --border-light-grey: #E9ECF1;
   }
@@ -171,8 +171,8 @@
     --popover: 225 8% 10%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 196 67% 45%;
-    /* rgba(37, 150, 190) - New Blue Tint (same in dark mode) */
+    --primary: 232 87% 66%;
+    /* #5d71f2 - New Blue Tint (same in dark mode) */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 225 8% 15%;
@@ -182,8 +182,8 @@
     --muted-foreground: 220 7% 65%;
     /* Lighter grey for dark mode */
 
-    --accent: 196 67% 45%;
-    /* rgba(37, 150, 190) - New Blue Tint */
+    --accent: 232 87% 66%;
+    /* #5d71f2 - New Blue Tint */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 63% 31%;
@@ -191,14 +191,14 @@
 
     --border: 225 8% 20%;
     --input: 225 8% 20%;
-    --ring: 196 67% 45%;
-    /* rgba(37, 150, 190) - New Blue Tint */
+    --ring: 232 87% 66%;
+    /* #5d71f2 - New Blue Tint */
 
-    --gradient-primary: linear-gradient(135deg, rgba(37, 150, 190, 1) 0%, rgba(37, 150, 190, 0.8) 100%);
+    --gradient-primary: linear-gradient(135deg, #5d71f2 0%, rgba(93, 113, 242, 0.8) 100%);
     --gradient-hero: linear-gradient(180deg, hsl(225 8% 8%) 0%, hsl(225 8% 10%) 100%);
-    --shadow-lg: 0 20px 60px -15px rgba(37, 150, 190, 0.4);
+    --shadow-lg: 0 20px 60px -15px rgba(93, 113, 242, 0.4);
     --shadow-feature: 0 10px 40px -10px hsl(0 0% 0% / 0.3);
-    --shadow-primary: 0 10px 40px -10px rgba(37, 150, 190, 0.4);
+    --shadow-primary: 0 10px 40px -10px rgba(93, 113, 242, 0.4);
   }
 }
 
@@ -416,10 +416,10 @@
 
 /* Additional root variables for compatibility */
 :root {
-  --chart-1: 196 67% 45%;
-  /* rgba(37, 150, 190) - New Blue Tint */
-  --chart-2: 196 67% 45%;
-  /* rgba(37, 150, 190) - New Blue Tint */
+  --chart-1: 232 87% 66%;
+  /* #5d71f2 - New Blue Tint */
+  --chart-2: 232 87% 66%;
+  /* #5d71f2 - New Blue Tint */
   --chart-3: 225 8% 13%;
   /* #1E1F23 - Dark Header Text */
   --chart-4: 0 0% 99%;
@@ -432,8 +432,8 @@
   /* #FFFFFF - Pure White Cards */
   --sidebar-foreground: 225 8% 13%;
   /* #1E1F23 - Dark Header Text */
-  --sidebar-primary: 196 67% 45%;
-  /* rgba(37, 150, 190) - New Blue Tint */
+  --sidebar-primary: 232 87% 66%;
+  /* #5d71f2 - New Blue Tint */
   --sidebar-primary-foreground: 0 0% 100%;
   /* White */
   --sidebar-accent: 220 20% 93%;
@@ -442,8 +442,8 @@
   /* #1E1F23 */
   --sidebar-border: 220 20% 93%;
   /* #E9ECF1 - Border Light Grey */
-  --sidebar-ring: 196 67% 45%;
-  /* rgba(37, 150, 190) - New Blue Tint */
+  --sidebar-ring: 232 87% 66%;
+  /* #5d71f2 - New Blue Tint */
 }
 
 .dark {
@@ -451,14 +451,14 @@
   --sidebar-background: 225 8% 8%;
   /* Darker version */
   --sidebar-foreground: 0 0% 98%;
-  --sidebar-primary: 196 67% 45%;
-  /* rgba(37, 150, 190) - New Blue Tint */
+  --sidebar-primary: 232 87% 66%;
+  /* #5d71f2 - New Blue Tint */
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 225 8% 15%;
   --sidebar-accent-foreground: 0 0% 98%;
   --sidebar-border: 225 8% 20%;
-  --sidebar-ring: 196 67% 45%;
-  /* rgba(37, 150, 190) - New Blue Tint */
+  --sidebar-ring: 232 87% 66%;
+  /* #5d71f2 - New Blue Tint */
 }
 
 

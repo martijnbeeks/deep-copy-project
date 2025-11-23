@@ -676,27 +676,27 @@ export default function CreatePage() {
                             <div 
                               className="p-4 rounded-lg border"
                               style={{
-                                backgroundColor: 'rgba(37, 150, 190, 0.1)',
-                                borderColor: 'rgba(37, 150, 190, 0.3)'
+                                backgroundColor: 'rgba(93, 113, 242, 0.1)',
+                                borderColor: 'rgba(93, 113, 242, 0.3)'
                               }}
                             >
                               <h4 
                                 className="font-medium text-sm mb-3"
-                                style={{ color: 'rgba(37, 150, 190, 1)' }}
+                                style={{ color: '#5d71f2' }}
                               >
                                 AI Avatar Discovery
                               </h4>
                               <p 
                                 className="text-sm mb-4"
-                                style={{ color: 'rgba(37, 150, 190, 0.9)' }}
+                                style={{ color: 'rgba(93, 113, 242, 0.9)' }}
                               >
                                 Our AI will analyze your sales page to discover and extract customer personas automatically.
                                 No manual selection needed - just provide your sales page URL and we'll do the research for you.
                               </p>
-                              <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(37, 150, 190, 0.85)' }}>
+                              <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(93, 113, 242, 0.85)' }}>
                                 <div 
                                   className="w-2 h-2 rounded-full"
-                                  style={{ backgroundColor: 'rgba(37, 150, 190, 1)' }}
+                                  style={{ backgroundColor: '#5d71f2' }}
                                 ></div>
                                 <span>Avatars will be extracted after you submit the form</span>
                               </div>

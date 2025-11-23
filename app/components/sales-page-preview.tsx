@@ -57,45 +57,49 @@ export function SalesPagePreview({ url, jobId, className = "" }: SalesPagePrevie
       target="_blank"
       rel="noopener noreferrer"
       onClick={(e) => e.stopPropagation()}
-      className={`group relative block border border-border rounded-lg overflow-hidden bg-gradient-to-br from-muted/50 to-muted/30 hover:from-muted/70 hover:to-muted/50 transition-all ${className}`}
+      className={`group relative block w-full h-full rounded-lg overflow-hidden bg-white dark:bg-gray-900 transition-all ${className}`}
     >
-      <div className="relative w-full h-32 bg-background">
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-muted/50 z-10">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
-        )}
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 z-10 backdrop-blur-sm">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      )}
 
-        {screenshot ? (
-          <>
-            <img src={screenshot} alt={`Preview of ${domain}`} className="w-full h-full object-cover" />
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/95 via-background/80 to-transparent p-2">
-              <div className="flex items-center gap-1.5 text-xs text-primary">
-                <span className="truncate flex-1">{domain}</span>
-                <ExternalLink className="h-3 w-3 flex-shrink-0" />
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full p-4 gap-3">
-            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-background/80 border border-border/50 shadow-sm">
-              {!faviconError ? (
-                <img src={faviconUrl} alt="" className="w-8 h-8" onError={() => setFaviconError(true)} />
-              ) : (
-                <Globe className="w-6 h-6 text-muted-foreground" />
-              )}
-            </div>
-            <div className="flex flex-col items-center gap-1.5 w-full">
-              <div className="flex items-center gap-1.5 text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                <span className="truncate max-w-[200px]">{domain}</span>
-                <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-              </div>
-              <span className="text-xs text-muted-foreground">Click to view page</span>
+      {screenshot ? (
+        <div className="relative w-full h-full overflow-hidden">
+          <img
+            src={screenshot}
+            alt={`Preview of ${domain}`}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+          />
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors pointer-events-none" />
+
+          {/* URL Badge - Bottom Right Corner */}
+          <div className="absolute bottom-2 right-2">
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-md text-white text-xs opacity-80 group-hover:opacity-100 transition-opacity">
+              <span className="truncate max-w-[120px]">{domain}</span>
+              <ExternalLink className="h-3 w-3 flex-shrink-0" />
             </div>
           </div>
-        )}
-      </div>
-      <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full p-4 gap-3">
+          <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-muted/50 border border-border/50">
+            {!faviconError ? (
+              <img src={faviconUrl} alt="" className="w-8 h-8" onError={() => setFaviconError(true)} />
+            ) : (
+              <Globe className="w-6 h-6 text-muted-foreground" />
+            )}
+          </div>
+          <div className="flex flex-col items-center gap-1.5 w-full">
+            <div className="flex items-center gap-1.5 text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+              <span className="truncate max-w-[200px]">{domain}</span>
+              <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </div>
+            <span className="text-xs text-muted-foreground">Click to view page</span>
+          </div>
+        </div>
+      )}
     </a>
   )
 }

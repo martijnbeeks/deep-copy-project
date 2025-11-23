@@ -264,83 +264,95 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Create New Content Card - First Card */}
                 <Link href="/create" className={filteredJobs.length === 0 ? "hidden" : "block"}>
-                  <Card className="bg-card border-border hover:border-primary/50 shadow-sm hover:shadow-md transition-all cursor-pointer group h-full">
-                    <CardHeader className="pb-3">
-                      <div className="flex flex-col items-center justify-center text-center py-4">
-                        <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3">
-                          <Zap className="h-6 w-6 text-primary" />
-                        </div>
-                        <CardTitle className="text-lg font-bold text-foreground mb-2">
-                          Create New Content
-                        </CardTitle>
-                        <p className="text-muted-foreground text-sm">
-                          Start generating AI-powered content in seconds
-                        </p>
+                  <div className="relative cursor-pointer rounded-xl border-2 p-2 md:p-3 transition-all h-[280px] md:h-[320px] flex flex-col border-border bg-card hover:border-primary/50 hover:shadow-md">
+                    <div className="flex-1 flex flex-col items-center justify-center text-center">
+                      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3">
+                        <Zap className="h-6 w-6 text-primary" />
                       </div>
-                    </CardHeader>
-                  </Card>
+                      <h3 className="font-semibold text-base text-foreground mb-2">
+                        Create New Content
+                      </h3>
+                      <p className="text-xs text-muted-foreground px-4">
+                        Start generating AI-powered content in seconds
+                      </p>
+                    </div>
+                  </div>
                 </Link>
 
                 {filteredJobs.length === 0 ? (
                   <div className="col-span-full flex items-center justify-center py-12">
                     <Link href="/create" className="block">
-                      <Card className="bg-card border-border shadow-sm hover:border-primary/50 hover:shadow-md transition-all cursor-pointer group h-full">
-                        <CardHeader className="pb-3">
-                          <div className="flex flex-col items-center justify-center text-center py-4">
-                            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3">
-                              <Zap className="h-6 w-6 text-primary" />
-                            </div>
-                            <CardTitle className="text-lg font-bold text-foreground mb-2">
-                              Create New Content
-                            </CardTitle>
-                            <p className="text-muted-foreground text-sm">
-                              Start generating AI-powered content in seconds
-                            </p>
+                      <div className="relative cursor-pointer rounded-xl border-2 p-2 md:p-3 transition-all h-[280px] md:h-[320px] flex flex-col border-border bg-card hover:border-primary/50 hover:shadow-md">
+                        <div className="flex-1 flex flex-col items-center justify-center text-center">
+                          <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3">
+                            <Zap className="h-6 w-6 text-primary" />
                           </div>
-                        </CardHeader>
-                      </Card>
+                          <h3 className="font-semibold text-base text-foreground mb-2">
+                            Create New Content
+                          </h3>
+                          <p className="text-xs text-muted-foreground px-4">
+                            Start generating AI-powered content in seconds
+                          </p>
+                        </div>
+                      </div>
                     </Link>
                   </div>
                 ) : (
                   filteredJobs.map((job: any) => (
-                    <Card
+                    <div
                       key={job.id}
-                      className="bg-card/80 border-border/50 shadow-sm hover:shadow-md transition-all cursor-pointer group hover:border-primary/50"
+                      className="relative cursor-pointer rounded-xl border-2 p-2 md:p-3 transition-all h-[280px] md:h-[320px] flex flex-col border-border bg-card hover:border-primary/50 hover:shadow-md"
                       onClick={() => router.push(`/avatars?jobId=${job.id}`)}
                     >
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <CardTitle className="text-base font-semibold text-foreground line-clamp-2 mb-2">
-                              {job.title}
-                            </CardTitle>
-                            <div className="flex items-center gap-2 mb-2">
-                              {getStatusBadge(job.status)}
-                            </div>
-                          </div>
-                          <div className="w-8 h-8 bg-accent/20 rounded-lg flex items-center justify-center group-hover:bg-accent/30 transition-colors flex-shrink-0">
-                            <Eye className="h-4 w-4 text-accent" />
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <FileText className="h-3 w-3 flex-shrink-0" />
-                            <span className="capitalize truncate">{job.template?.name || 'AI Generated'}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Calendar className="h-3 w-3 flex-shrink-0" />
-                            <span>{new Date(job.created_at).toLocaleDateString()}</span>
-                          </div>
-                          {job.sales_page_url && (
-                            <div onClick={(e) => e.stopPropagation()}>
-                              <SalesPagePreview url={job.sales_page_url} jobId={job.id} className="w-full" />
-                            </div>
+                      {/* Job Header */}
+                      <div className="flex items-start justify-between mb-1.5 gap-1.5">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm text-foreground break-words line-clamp-1">{job.title}</h3>
+                          {job.template?.name && (
+                            <p className="text-xs text-muted-foreground break-words line-clamp-1">
+                              {job.template.name}
+                            </p>
                           )}
                         </div>
-                      </CardContent>
-                    </Card>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {getStatusBadge(job.status)}
+                        </div>
+                      </div>
+
+                      {/* Preview Area */}
+                      <div className="flex-1 relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border">
+                        {job.sales_page_url ? (
+                          <div onClick={(e) => e.stopPropagation()} className="h-full">
+                            <SalesPagePreview url={job.sales_page_url} jobId={job.id} className="w-full h-full" />
+                          </div>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="text-center space-y-2 p-4">
+                              <FileText className="h-8 w-8 text-muted-foreground mx-auto opacity-50" />
+                              <p className="text-xs text-muted-foreground">No preview available</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="flex items-center justify-between mt-3">
+                        <button
+                          type="button"
+                          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary hover:text-primary/80 hover:bg-primary/10 rounded-md transition-colors cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`/avatars?jobId=${job.id}`)
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                          View Details
+                        </button>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(job.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
                   ))
                 )}
               </div>
