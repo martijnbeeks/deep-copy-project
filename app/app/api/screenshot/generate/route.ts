@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateScreenshot } from '@/lib/utils/screenshot'
 
 export async function POST(request: NextRequest) {
     try {
@@ -11,6 +10,9 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             )
         }
+
+        // Dynamically import to prevent bundling playwright-core
+        const { generateScreenshot } = await import('@/lib/utils/screenshot')
 
         // Generate screenshot asynchronously
         await generateScreenshot(jobId, url)
