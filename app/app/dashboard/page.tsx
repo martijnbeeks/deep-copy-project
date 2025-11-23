@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { FileText, AlertCircle, Zap, Eye, Search, Filter, Calendar, ExternalLink } from "lucide-react"
+import { FileText, AlertCircle, Zap, Eye, Search, Filter, Calendar, ExternalLink, ArrowUp } from "lucide-react"
 import { SalesPagePreview } from "@/components/sales-page-preview"
 import { useToast } from "@/hooks/use-toast"
 import { useAuthStore } from "@/stores/auth-store"
@@ -194,6 +194,13 @@ export default function DashboardPage() {
     }
   }
 
+  const scrollToTop = () => {
+    const mainElement = document.querySelector('main')
+    if (mainElement) {
+      mainElement.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
   return (
     <ErrorBoundary>
       <div className="flex h-screen bg-background overflow-hidden">
@@ -355,6 +362,31 @@ export default function DashboardPage() {
                     </div>
                   ))
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* Fixed Footer with Action Buttons */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border ml-16">
+            <div className="px-4 py-2 md:px-6 md:py-3">
+              <div className="flex items-center justify-between gap-4">
+                <Button
+                  onClick={() => router.push('/create')}
+                  size="default"
+                  className="flex-1 max-w-xs"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  Generate New Content
+                </Button>
+                <Button
+                  onClick={scrollToTop}
+                  variant="outline"
+                  size="default"
+                  className="flex-shrink-0"
+                >
+                  <ArrowUp className="h-4 w-4 mr-2" />
+                  Go to Top
+                </Button>
               </div>
             </div>
           </div>
