@@ -33,6 +33,10 @@ export interface Job {
   created_at: string
   updated_at: string
   completed_at?: string
+  // Avatar job fields
+  parent_job_id?: string
+  avatar_persona_name?: string
+  is_avatar_job?: boolean
 }
 
 export interface Result {

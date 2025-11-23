@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getJobById, updateJobStatus, createResult } from '@/lib/db/queries'
+import { getJobById, updateJobStatus, createResult, createJob } from '@/lib/db/queries'
 import { deepCopyClient } from '@/lib/api/deepcopy-client'
 import { query } from '@/lib/db/connection'
 
@@ -38,51 +38,54 @@ export async function POST(request: NextRequest) {
 
     // Get avatars from parent job
     const avatars = parentJob.avatars || []
-    const avatarIndex = avatars.findIndex((a: any) => a.persona_name === personaName)
+    const selectedAvatar = avatars.find((a: any) => a.persona_name === personaName)
     
-    if (avatarIndex === -1) {
+    if (!selectedAvatar) {
       return NextResponse.json(
         { error: 'Avatar not found in job' },
         { status: 404 }
       )
     }
 
-    // Mark the selected avatar as researched
-    const updatedAvatars = avatars.map((avatar: any, index: number) => ({
-      ...avatar,
-      is_researched: index === avatarIndex ? true : (avatar.is_researched || false)
-    }))
+    // Check if avatar job already exists for this persona
+    const existingAvatarJob = await query(
+      `SELECT * FROM jobs 
+       WHERE parent_job_id = $1 
+       AND avatar_persona_name = $2 
+       AND user_id = $3
+       LIMIT 1`,
+      [jobId, personaName, user.id]
+    )
 
-    // Get selected avatars (where is_researched === true) for DeepCopy API
-    const selectedAvatars = updatedAvatars.filter((a: any) => a.is_researched === true)
-
-    // Check if parent job already has an execution_id (already submitted to DeepCopy)
-    if (parentJob.execution_id) {
-      // Job already has results - just update avatars and return parent job
+    if (existingAvatarJob.rows.length > 0) {
+      // Avatar job already exists, return it
+      const avatarJob = existingAvatarJob.rows[0]
+      
+      // Update parent job's avatar to mark as researched
+      const updatedAvatars = avatars.map((avatar: any) => ({
+        ...avatar,
+        is_researched: avatar.persona_name === personaName ? true : avatar.is_researched,
+        avatar_job_id: avatar.persona_name === personaName ? avatarJob.id : avatar.avatar_job_id
+      }))
+      
       await query(
         `UPDATE jobs SET avatars = $1, updated_at = NOW() WHERE id = $2`,
         [JSON.stringify(updatedAvatars), jobId]
       )
-
-      // Get updated job
-      const updatedJob = await getJobById(jobId, user.id)
-
-      return NextResponse.json({ 
-        job: updatedJob,
-        message: 'Avatar marked as researched'
+      
+      return NextResponse.json({
+        job: avatarJob,
+        message: 'Avatar job already exists'
       })
     }
 
-    // Job hasn't been submitted yet - submit to DeepCopy with selected avatar
+    // Submit NEW job to DeepCopy API with ONLY this avatar
     let deepCopyJobId: string
     try {
       const jobPayload: any = {
         sales_page_url: parentJob.sales_page_url || '',
-        project_name: parentJob.title
-      }
-
-      if (selectedAvatars.length > 0) {
-        jobPayload.customer_avatars = selectedAvatars
+        project_name: `${parentJob.title} - ${personaName}`,
+        customer_avatars: [selectedAvatar] // Only the selected avatar
       }
 
       const deepCopyResponse = await deepCopyClient.submitJob(jobPayload)
@@ -95,11 +98,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update parent job with avatars, execution_id, and status
+    // Create NEW job for this avatar
+    const avatarJob = await createJob({
+      user_id: user.id,
+      title: `${parentJob.title} - ${personaName}`,
+      brand_info: parentJob.brand_info,
+      sales_page_url: parentJob.sales_page_url,
+      template_id: null,
+      advertorial_type: 'advertorial',
+      target_approach: parentJob.target_approach,
+      avatars: [selectedAvatar], // Only this avatar
+      execution_id: deepCopyJobId,
+      custom_id: deepCopyJobId,
+      parent_job_id: jobId,
+      avatar_persona_name: personaName,
+      is_avatar_job: true
+    })
+
+    // Update parent job's avatar to mark as researched and link to avatar job
+    const updatedAvatars = avatars.map((avatar: any) => ({
+      ...avatar,
+      is_researched: avatar.persona_name === personaName ? true : avatar.is_researched,
+      avatar_job_id: avatar.persona_name === personaName ? avatarJob.id : avatar.avatar_job_id
+    }))
+
     await query(
-      `UPDATE jobs SET avatars = $1, execution_id = $2, status = 'processing', updated_at = NOW() WHERE id = $3`,
-      [JSON.stringify(updatedAvatars), deepCopyJobId, jobId]
+      `UPDATE jobs SET avatars = $1, updated_at = NOW() WHERE id = $2`,
+      [JSON.stringify(updatedAvatars), jobId]
     )
+
+    // Update avatar job status to processing
+    await updateJobStatus(avatarJob.id, 'processing', 0)
 
     // Check initial status
     try {
@@ -107,7 +136,7 @@ export async function POST(request: NextRequest) {
       
       if (statusResponse.status === 'SUCCEEDED') {
         const result = await deepCopyClient.getJobResult(deepCopyJobId)
-        await createResult(jobId, '', {
+        await createResult(avatarJob.id, '', {
           deepcopy_job_id: deepCopyJobId,
           full_result: result,
           project_name: result.project_name,
@@ -115,24 +144,22 @@ export async function POST(request: NextRequest) {
           job_id: result.job_id,
           generated_at: new Date().toISOString()
         })
-        await updateJobStatus(jobId, 'completed', 100)
+        await updateJobStatus(avatarJob.id, 'completed', 100)
       } else if (statusResponse.status === 'FAILED') {
-        await updateJobStatus(jobId, 'failed')
+        await updateJobStatus(avatarJob.id, 'failed')
       } else if (['RUNNING', 'SUBMITTED', 'PENDING'].includes(statusResponse.status)) {
         const progress = statusResponse.status === 'SUBMITTED' ? 25 : 
                        statusResponse.status === 'RUNNING' ? 50 : 30
-        await updateJobStatus(jobId, 'processing', progress)
+        await updateJobStatus(avatarJob.id, 'processing', progress)
       }
     } catch (statusError) {
       // Continue even if status check fails
+      console.warn('Status check failed:', statusError)
     }
 
-    // Get updated job
-    const updatedJob = await getJobById(jobId, user.id)
-
     return NextResponse.json({ 
-      job: updatedJob,
-      message: 'Research started successfully'
+      job: avatarJob,
+      message: 'Avatar research job created successfully'
     })
   } catch (error) {
     console.error('❌ Avatar Research Error:', error)
