@@ -90,7 +90,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
   // Template exploration state
   const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [templateModalStep, setTemplateModalStep] = useState<1 | 2>(1) // 1 = template selection, 2 = angle selection
-  const [selectedTemplateForRefinement, setSelectedTemplateForRefinement] = useState<string | null>(null)
+  const [selectedTemplateForRefinement, setSelectedTemplateForRefinement] = useState<string[]>([])
   const [selectedAngleForRefinement, setSelectedAngleForRefinement] = useState<string | null>(null)
   const [isGeneratingRefined, setIsGeneratingRefined] = useState(false)
   const { templates: availableTemplates, fetchTemplates, isLoading: availableTemplatesLoading } = useTemplatesStore()
@@ -552,23 +552,23 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
   // Handler for template selection
   const handleTemplateSelect = (templateId: string) => {
     console.log('Template selected:', templateId)
-    setSelectedTemplateForRefinement(templateId)
-    
-    // If angle is already selected (from marketing angles section), proceed to generate
-    if (selectedAngle) {
-      handleGenerateRefinedTemplate(templateId, selectedAngle)
-    } else {
-      // Move to step 2 (angle selection)
-      setTemplateModalStep(2)
-    }
+    setSelectedTemplateForRefinement(prev => {
+      if (prev.includes(templateId)) {
+        // Deselect if already selected
+        return prev.filter(id => id !== templateId)
+      } else {
+        // Add to selection
+        return [...prev, templateId]
+      }
+    })
   }
 
   // Handler for generating refined template
-  const handleGenerateRefinedTemplate = async (templateId: string, angle: string) => {
-    if (!originalJobId || !templateId || !angle) {
+  const handleGenerateRefinedTemplate = async (templateIds: string[], angle: string) => {
+    if (!originalJobId || !templateIds || templateIds.length === 0 || !angle) {
       toast({
         title: "Error",
-        description: "Missing required information. Please try again.",
+        description: "Please select at least one template and an angle.",
         variant: "destructive",
       })
       return
@@ -576,14 +576,14 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
     
     setIsGeneratingRefined(true)
     try {
-      // Call swipe-files/generate endpoint with original_job_id, select_angle, and swipe_file_ids
+      // Call swipe-files/generate endpoint with original_job_id, select_angle, and swipe_file_ids array
       const response = await fetch('/api/swipe-files/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           original_job_id: originalJobId,
           select_angle: angle,
-          swipe_file_ids: [templateId] // Template ID should be in format L00001, A00003, etc.
+          swipe_file_ids: templateIds // Array of template IDs in format L00001, A00003, etc.
         })
       })
       
@@ -613,12 +613,13 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
       
       // Close modal and reset
       setShowTemplateModal(false)
-      setSelectedTemplateForRefinement(null)
+      setSelectedTemplateForRefinement([])
       setSelectedAngleForRefinement(null)
+      setTemplateModalStep(1)
       
       toast({
         title: "Success",
-        description: "Swipe file generation started! Templates will appear when ready.",
+        description: `Swipe file generation started for ${templateIds.length} template${templateIds.length !== 1 ? 's' : ''}! Templates will appear when ready.`,
       })
     } catch (error) {
       toast({
@@ -1965,28 +1966,64 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
             ) : (
               <div className="space-y-6">
               {/* Template Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {availableTemplates.map((template) => (
-                  <TemplatePreview
-                    key={template.id}
-                    template={template}
-                    isSelected={selectedTemplateForRefinement === template.id}
-                    onClick={() => handleTemplateSelect(template.id)}
-                  />
-                ))}
+              <div className="space-y-4">
+                {selectedTemplateForRefinement.length > 0 && (
+                  <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+                    <p className="text-sm font-medium text-foreground mb-1">
+                      {selectedTemplateForRefinement.length} template{selectedTemplateForRefinement.length !== 1 ? 's' : ''} selected
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {selectedTemplateForRefinement.map((templateId) => {
+                        const template = availableTemplates.find(t => t.id === templateId)
+                        return (
+                          <Badge key={templateId} variant="secondary" className="text-xs">
+                            {template?.name || templateId}
+                          </Badge>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {availableTemplates.map((template) => (
+                    <TemplatePreview
+                      key={template.id}
+                      template={template}
+                      isSelected={selectedTemplateForRefinement.includes(template.id)}
+                      onClick={() => handleTemplateSelect(template.id)}
+                    />
+                  ))}
+                </div>
+                {selectedTemplateForRefinement.length > 0 && (
+                  <div className="flex justify-end pt-2">
+                    <Button
+                      onClick={() => setTemplateModalStep(2)}
+                      disabled={selectedTemplateForRefinement.length === 0}
+                    >
+                      Continue with {selectedTemplateForRefinement.length} template{selectedTemplateForRefinement.length !== 1 ? 's' : ''}
+                    </Button>
+                  </div>
+                )}
               </div>
               </div>
             )
           ) : (
             // Step 2: Angle Selection
             <div className="space-y-6">
-              {/* Show selected template info */}
-              {selectedTemplateForRefinement && (
+              {/* Show selected templates info */}
+              {selectedTemplateForRefinement.length > 0 && (
                 <div className="p-4 bg-muted rounded-lg border border-border">
-                  <p className="text-sm text-muted-foreground mb-1">Selected Template</p>
-                  <p className="font-semibold text-foreground">
-                    {availableTemplates.find(t => t.id === selectedTemplateForRefinement)?.name || selectedTemplateForRefinement}
-                  </p>
+                  <p className="text-sm text-muted-foreground mb-2">Selected Templates ({selectedTemplateForRefinement.length})</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTemplateForRefinement.map((templateId) => {
+                      const template = availableTemplates.find(t => t.id === templateId)
+                      return (
+                        <Badge key={templateId} variant="secondary" className="text-sm">
+                          {template?.name || templateId}
+                        </Badge>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
               
@@ -2141,14 +2178,14 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                 </Button>
                 <Button
                   onClick={() => {
-                    if (selectedTemplateForRefinement && selectedAngleForRefinement) {
+                    if (selectedTemplateForRefinement.length > 0 && selectedAngleForRefinement) {
                       handleGenerateRefinedTemplate(
                         selectedTemplateForRefinement,
                         selectedAngleForRefinement
                       )
                     }
                   }}
-                  disabled={isGeneratingRefined || !selectedAngleForRefinement}
+                  disabled={isGeneratingRefined || !selectedAngleForRefinement || selectedTemplateForRefinement.length === 0}
                   className="min-w-[180px]"
                 >
                   {isGeneratingRefined ? (
