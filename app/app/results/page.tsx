@@ -33,12 +33,17 @@ export default function ResultsPage() {
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
   useEffect(() => {
     if (!user) {
-      router.push("/login")
+      router.replace("/login")
       return
     }
 
     fetchJobs()
   }, [user, router])
+
+  // Early return if not authenticated to prevent skeleton loader
+  if (!user) {
+    return null
+  }
 
   useEffect(() => {
     const completedJobs = jobs.filter(job => job.status === 'completed')

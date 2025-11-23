@@ -59,10 +59,15 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
-      router.push("/login")
+      router.replace("/login")
       return
     }
   }, [isAuthenticated, user, router])
+
+  // Early return if not authenticated to prevent skeleton loader
+  if (!isAuthenticated || !user) {
+    return null
+  }
 
   // Show research loading modal if job is processing
   useEffect(() => {

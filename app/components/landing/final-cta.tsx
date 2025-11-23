@@ -6,7 +6,7 @@ export const FinalCTA = () => {
   return (
     <section className="py-20 md:py-32 bg-gradient-hero">
       <div className="container mx-auto px-4 md:px-6">
-        <Card className="max-w-5xl mx-auto p-12 md:p-16 text-center shadow-primary border-2">
+        <Card className="max-w-5xl mx-auto p-12 md:p-16 text-center border-2">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full mb-6 text-sm font-medium text-primary">
             🚀 Ready to Transform Your Conversions?
           </div>
@@ -22,7 +22,7 @@ export const FinalCTA = () => {
             Join forward-thinking marketers who've discovered the unfair advantage of AI-driven landing pages. Limited spots available for our early adopter program — secure yours now.
           </p>
           
-          <Button size="lg" className="text-lg px-12 shadow-primary hover:scale-105 transition-transform" asChild>
+          <Button size="lg" className="text-lg px-12 hover:scale-105 transition-transform" asChild>
             <Link href="/login">Start Your Free Trial →</Link>
           </Button>
           

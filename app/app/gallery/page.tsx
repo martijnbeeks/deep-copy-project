@@ -47,11 +47,16 @@ export default function ResultsGalleryPage() {
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
-      router.push("/login")
+      router.replace("/login")
       return
     }
     loadAllGalleryData()
   }, [isAuthenticated, user, router])
+
+  // Early return if not authenticated to prevent skeleton loader
+  if (!isAuthenticated || !user) {
+    return null
+  }
 
   // Client-side filtering and pagination
   const filteredTemplates = useMemo(() => {

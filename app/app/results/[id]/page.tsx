@@ -56,22 +56,16 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
   })
 
   useEffect(() => {
-    // Only load job if authenticated, don't redirect
-    if (isAuthenticated && user) {
-      loadJob()
+    if (!isAuthenticated || !user) {
+      router.replace("/login")
+      return
     }
-  }, [isAuthenticated, user, loadJob])
+    loadJob()
+  }, [isAuthenticated, user, router, loadJob])
 
-  // Show loading state instead of redirecting
+  // Early return if not authenticated to prevent skeleton loader
   if (!isAuthenticated || !user) {
-    return (
-      <div className="flex h-screen bg-background overflow-hidden">
-        <Sidebar />
-        <main className="flex-1 overflow-auto ml-16 p-6">
-          <ContentViewerSkeleton />
-        </main>
-      </div>
-    )
+    return null
   }
 
   if (!user || isLoading) {

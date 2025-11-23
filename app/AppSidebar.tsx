@@ -1,6 +1,8 @@
 import { LayoutDashboard, Plus, FileText, Sun, Moon, LogOut } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useTheme } from "next-themes";
+import { useAuthStore } from "@/stores/auth-store";
+import { useRouter } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -21,6 +23,13 @@ const navItems = [
 
 export function AppSidebar() {
   const { theme, setTheme } = useTheme();
+  const { logout } = useAuthStore();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    router.replace("/login");
+  };
 
   return (
     <Sidebar className="w-16 hover:w-64 transition-all duration-300 group" collapsible="none">
@@ -92,7 +101,7 @@ export function AppSidebar() {
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-            <SidebarMenuButton>
+            <SidebarMenuButton onClick={handleLogout}>
               <LogOut className="h-5 w-5 flex-shrink-0" />
               <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
                 Logout

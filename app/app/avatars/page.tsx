@@ -66,12 +66,17 @@ function AvatarsContent() {
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
-      router.push("/login")
+      router.replace("/login")
       return
     }
 
     fetchAvatars()
   }, [isAuthenticated, user, router, jobId])
+
+  // Early return if not authenticated to prevent skeleton loader
+  if (!isAuthenticated || !user) {
+    return null
+  }
 
   const fetchAvatars = async () => {
     try {

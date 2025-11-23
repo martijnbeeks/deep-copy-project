@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const Header = () => {
   return (
@@ -12,9 +13,9 @@ export const Header = () => {
             <Image 
               src="/deepcopy-logo.png" 
               alt="DeepCopy" 
-              width={144}
-              height={58}
-              className="h-[57.6px] w-auto"
+              width={100}
+              height={40}
+              className="h-10 w-auto"
               priority
             />
           </Link>
@@ -38,11 +39,12 @@ export const Header = () => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <Button variant="ghost" size="sm" asChild>
             <Link href="/login">Login</Link>
           </Button>
           <Button size="sm" asChild>
-            <Link href="/login">Join Waitlist</Link>
+            <Link href="/login?waitlist=true">Join Waitlist</Link>
           </Button>
         </div>
       </div>

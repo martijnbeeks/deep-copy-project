@@ -16,7 +16,7 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
-      router.push("/login")
+      router.replace("/login")
       return
     }
 
@@ -31,6 +31,11 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
 
     loadJob()
   }, [isAuthenticated, user, router, params.id])
+
+  // Early return if not authenticated to prevent skeleton loader
+  if (!isAuthenticated || !user) {
+    return null
+  }
 
   const handleDownload = () => {
     if (currentJob?.result?.html_content) {

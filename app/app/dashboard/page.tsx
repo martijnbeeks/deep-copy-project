@@ -77,9 +77,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
-      router.push("/login")
+      router.replace("/login")
     }
   }, [isAuthenticated, user, router])
+
+  // Early return if not authenticated to prevent skeleton loader
+  if (!isAuthenticated || !user) {
+    return null
+  }
 
   // Filter jobs based on search and status
   const filteredJobs = jobs.filter((job: any) => {

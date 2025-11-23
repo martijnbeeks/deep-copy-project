@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
 
@@ -26,27 +26,34 @@ export function LoginForm({ onLogin, isLoading = false, error }: LoginFormProps)
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-        <CardDescription>Sign in to your AI Copywriting Dashboard</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <Card className="w-full border bg-card/50 backdrop-blur-sm">
+      <CardContent className="p-8">
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold mb-2">Welcome Back</h2>
+          <p className="text-sm text-muted-foreground">Sign in to continue to your dashboard</p>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-sm font-medium">
+              Email
+            </Label>
             <Input
               id="email"
               type="email"
-              placeholder="Enter your email"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={isLoading}
+              className="h-11 bg-background border-border focus:border-primary transition-colors"
             />
           </div>
+          
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-sm font-medium">
+              Password
+            </Label>
             <Input
               id="password"
               type="password"
@@ -55,14 +62,21 @@ export function LoginForm({ onLogin, isLoading = false, error }: LoginFormProps)
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={isLoading}
+              className="h-11 bg-background border-border focus:border-primary transition-colors"
             />
           </div>
+          
           {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
+            <Alert variant="destructive" className="border-destructive/50">
+              <AlertDescription className="text-sm">{error}</AlertDescription>
             </Alert>
           )}
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          
+          <Button 
+            type="submit" 
+            className="w-full h-11 font-medium transition-all" 
+            disabled={isLoading}
+          >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

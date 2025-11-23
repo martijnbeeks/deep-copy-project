@@ -110,10 +110,15 @@ export default function CreatePage() {
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
-      router.push("/login")
+      router.replace("/login")
       return
     }
   }, [isAuthenticated, user, router])
+
+  // Early return if not authenticated to prevent skeleton loader
+  if (!isAuthenticated || !user) {
+    return null
+  }
 
   // Check if all required fields are empty
   const isFormEmpty = (): boolean => {

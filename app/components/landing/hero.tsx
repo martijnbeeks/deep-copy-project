@@ -30,7 +30,7 @@ export const Hero = () => {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Button size="lg" className="text-lg px-8 shadow-primary hover:scale-105 transition-transform" asChild>
-              <a href="/login">Join Waitlist →</a>
+              <a href="/login?waitlist=true">Join Waitlist →</a>
             </Button>
             <Button size="lg" variant="outline" className="text-lg px-8 group">
               <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />

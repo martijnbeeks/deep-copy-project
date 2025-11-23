@@ -20,7 +20,7 @@ export default function TemplatesPage() {
   
   // Pagination state - same as create page
   const [currentPage, setCurrentPage] = useState(1)
-  const templatesPerPage = 4
+  const templatesPerPage = 9
 
   // Preload templates early for better UX - Same as create page
   useEffect(() => {
@@ -91,11 +91,9 @@ export default function TemplatesPage() {
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="email">Email</SelectItem>
-                <SelectItem value="social">Social Media</SelectItem>
-                <SelectItem value="video">Video</SelectItem>
-                <SelectItem value="analytics">Analytics</SelectItem>
+                <SelectItem value="all">All Category</SelectItem>
+                <SelectItem value="advertorial">Advertorial</SelectItem>
+                <SelectItem value="listicle">Listicle</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -111,14 +109,14 @@ export default function TemplatesPage() {
 
                 {/* Templates Grid - Same as create page using TemplatePreview */}
                 {templatesLoading ? (
-                  <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-                    {Array.from({ length: 4 }).map((_, i) => (
+                  <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                    {Array.from({ length: 9 }).map((_, i) => (
                       <div key={i} className="h-[350px] md:h-[400px] bg-muted/20 rounded-xl animate-pulse" />
                     ))}
                   </div>
                 ) : filteredTemplates.length > 0 ? (
                   <>
-                    <div id="template-section" className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                    <div id="template-section" className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                       {currentTemplates.map((template) => (
                         <TemplatePreview
                           key={template.id}

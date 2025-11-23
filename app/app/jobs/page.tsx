@@ -41,10 +41,15 @@ export default function JobsPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push("/login")
+      router.replace("/login")
       return
     }
   }, [user, router])
+
+  // Early return if not authenticated to prevent skeleton loader
+  if (!user) {
+    return null
+  }
 
   // Filter jobs based on search and status
   const filteredJobs = jobs.filter((job: any) => {

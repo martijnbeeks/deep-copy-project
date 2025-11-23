@@ -157,7 +157,10 @@ export function Sidebar() {
             </SidebarMenuItem>
 
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={logout}>
+              <SidebarMenuButton onClick={() => {
+                logout();
+                router.replace("/login");
+              }}>
                 <LogOut className="h-5 w-5 flex-shrink-0" />
                 <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
                   Logout
