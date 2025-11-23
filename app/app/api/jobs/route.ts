@@ -6,10 +6,10 @@ export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
     const userEmail = authHeader?.replace('Bearer ', '') || 'demo@example.com'
-    
+
     const { getUserByEmail } = await import('@/lib/db/queries')
     const user = await getUserByEmail(userEmail)
-    
+
     if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
@@ -34,10 +34,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { 
-      title, 
-      brand_info, 
-      sales_page_url, 
+    const {
+      title,
+      brand_info,
+      sales_page_url,
       target_approach,
       avatars
     } = await request.json()
@@ -58,32 +58,32 @@ export async function POST(request: NextRequest) {
 
     const authHeader = request.headers.get('authorization')
     const userEmail = authHeader?.replace('Bearer ', '') || 'demo@example.com'
-    
+
     const { getUserByEmail } = await import('@/lib/db/queries')
     const user = await getUserByEmail(userEmail)
-    
+
     if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       )
     }
-    
+
     // Check for duplicate jobs (same title created within last 30 seconds)
     const { checkDuplicateJob } = await import('@/lib/db/queries')
     const duplicateJob = await checkDuplicateJob(user.id, title)
-    
+
     if (duplicateJob) {
       return NextResponse.json(
-        { 
-          error: 'Duplicate job detected', 
+        {
+          error: 'Duplicate job detected',
           message: `A job with the title "${title}" was created recently. Please wait a moment before creating another job with the same title.`,
           duplicateJobId: duplicateJob.id
         },
         { status: 409 } // Conflict status
       )
     }
-    
+
     // Get selected avatars (where is_researched === true) for DeepCopy API
     const selectedAvatars = avatars?.filter((a: any) => a.is_researched === true) || []
 
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       title,
       brand_info: brandInfoSafe,
       sales_page_url,
-      template_id: null, // No template selection at creation
+      template_id: undefined, // No template selection at creation
       advertorial_type: 'advertorial', // Default type for database constraint, will be determined later from swipe results
       target_approach,
       avatars: avatars || [],
@@ -129,32 +129,41 @@ export async function POST(request: NextRequest) {
     // Update job status to processing
     await updateJobStatus(job.id, 'processing')
 
-    // Generate screenshot asynchronously (don't block job creation)
+    // Generate screenshot asynchronously via API route (don't block job creation)
     if (sales_page_url) {
-      const { generateScreenshot } = await import('@/lib/utils/screenshot')
-      generateScreenshot(job.id, sales_page_url).catch(err => 
-        console.error('Screenshot generation failed:', err)
+      // Get the base URL for the API call
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` :
+          'http://localhost:3000')
+
+      // Call screenshot API route asynchronously
+      fetch(`${baseUrl}/api/screenshot/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId: job.id, url: sales_page_url })
+      }).catch(err =>
+        console.error('Screenshot generation API call failed:', err)
       )
     }
 
     // Immediately check the job status to get initial progress
     try {
       const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
-      
+
       if (statusResponse.status === 'SUCCEEDED') {
         // Job completed immediately - get results and store them
         const result = await deepCopyClient.getJobResult(deepCopyJobId)
         await storeJobResults(job.id, result, deepCopyJobId)
         await updateJobStatus(job.id, 'completed', 100)
-        
+
       } else if (statusResponse.status === 'FAILED') {
         // Job failed immediately
         await updateJobStatus(job.id, 'failed')
-        
+
       } else if (['RUNNING', 'SUBMITTED', 'PENDING'].includes(statusResponse.status)) {
         // Job is processing - update progress
-        const progress = statusResponse.status === 'SUBMITTED' ? 25 : 
-                       statusResponse.status === 'RUNNING' ? 50 : 30
+        const progress = statusResponse.status === 'SUBMITTED' ? 25 :
+          statusResponse.status === 'RUNNING' ? 50 : 30
         await updateJobStatus(job.id, 'processing', progress)
       }
     } catch (statusError) {
@@ -175,7 +184,7 @@ export async function POST(request: NextRequest) {
 // Store job results in database
 async function storeJobResults(localJobId: string, result: any, deepCopyJobId: string) {
   try {
-    
+
     // Store the complete JSON result as metadata
     await createResult(localJobId, '', {
       deepcopy_job_id: deepCopyJobId,
@@ -185,8 +194,8 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
       job_id: result.job_id,
       generated_at: new Date().toISOString()
     })
-    
-    
+
+
   } catch (error) {
     throw error
   }
