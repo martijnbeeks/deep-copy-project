@@ -36,7 +36,7 @@ async function getAccessToken(): Promise<string> {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { original_job_id, select_angle } = body
+    const { original_job_id, select_angle, swipe_file_ids } = body
 
     if (!original_job_id || !select_angle) {
       return NextResponse.json(
@@ -72,7 +72,8 @@ export async function POST(request: NextRequest) {
           },
           body: JSON.stringify({
             original_job_id,
-            select_angle
+            select_angle,
+            ...(swipe_file_ids && swipe_file_ids.length > 0 && { swipe_file_ids })
           }),
           signal: controller.signal
         })

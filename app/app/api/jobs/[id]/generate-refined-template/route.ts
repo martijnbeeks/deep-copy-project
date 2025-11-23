@@ -47,19 +47,52 @@ export async function POST(
       return ma.angle || ma.title || ''
     }
 
+    // Helper: Extract description from combined format like "Title: 'Description'" or just return the text
+    const extractDescription = (text: string): string => {
+      // Handle format: "Title: 'Description'" or "Title: Description"
+      if (text.includes(':')) {
+        const afterColon = text.split(':').slice(1).join(':').trim()
+        if (afterColon) {
+          // Remove quotes if present (both single and double quotes)
+          return afterColon.replace(/^['"]+|['"]+$/g, '').trim()
+        }
+      }
+      return text
+    }
+
     // Find the swipe result for the selected angle
     let swipeResult: any = null
     let angleIndex = -1
     const normalizedSelectedAngle = normalize(angle)
+    const normalizedSelectedDescription = normalize(extractDescription(angle))
 
     // Strategy 1: Match by index in marketing_angles array (most reliable)
     // Marketing angles and swipe_results should be in the same order
     const marketingAngleIndex = marketingAngles.findIndex((ma: any) => {
-      const maText = getAngleText(ma)
-      const normalizedMA = normalize(maText)
-      return normalizedMA === normalizedSelectedAngle || 
-             normalizedMA.includes(normalizedSelectedAngle) || 
-             normalizedSelectedAngle.includes(normalizedMA)
+      if (typeof ma === 'string') {
+        const normalizedMA = normalize(ma)
+        return normalizedMA === normalizedSelectedAngle || 
+               normalizedMA === normalizedSelectedDescription ||
+               normalizedMA.includes(normalizedSelectedAngle) || 
+               normalizedSelectedAngle.includes(normalizedMA) ||
+               normalizedMA.includes(normalizedSelectedDescription) ||
+               normalizedSelectedDescription.includes(normalizedMA)
+      }
+      
+      // For object format, check both angle and title properties
+      const maAngle = ma.angle ? normalize(ma.angle) : ''
+      const maTitle = ma.title ? normalize(ma.title) : ''
+      
+      // Match against full selected angle or extracted description
+      return (maAngle && (maAngle === normalizedSelectedAngle || 
+                          maAngle === normalizedSelectedDescription ||
+                          maAngle.includes(normalizedSelectedAngle) ||
+                          normalizedSelectedAngle.includes(maAngle) ||
+                          maAngle.includes(normalizedSelectedDescription) ||
+                          normalizedSelectedDescription.includes(maAngle))) ||
+             (maTitle && (maTitle === normalizedSelectedAngle ||
+                          normalizedSelectedAngle.includes(maTitle) ||
+                          maTitle.includes(normalizedSelectedAngle)))
     })
 
     if (marketingAngleIndex >= 0 && swipeResults[marketingAngleIndex]) {
@@ -72,8 +105,11 @@ export async function POST(
         if (!swipeAngle) return false
         const normalizedSwipe = normalize(swipeAngle)
         return normalizedSwipe === normalizedSelectedAngle ||
+               normalizedSwipe === normalizedSelectedDescription ||
                normalizedSwipe.includes(normalizedSelectedAngle) ||
-               normalizedSelectedAngle.includes(normalizedSwipe)
+               normalizedSelectedAngle.includes(normalizedSwipe) ||
+               normalizedSwipe.includes(normalizedSelectedDescription) ||
+               normalizedSelectedDescription.includes(normalizedSwipe)
       })
       
       if (foundIndex >= 0) {

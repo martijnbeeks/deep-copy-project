@@ -565,53 +565,50 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
   // Handler for generating refined template
   const handleGenerateRefinedTemplate = async (templateId: string, angle: string) => {
-    if (!jobId || !templateId || !angle) return
+    if (!originalJobId || !templateId || !angle) {
+      toast({
+        title: "Error",
+        description: "Missing required information. Please try again.",
+        variant: "destructive",
+      })
+      return
+    }
     
     setIsGeneratingRefined(true)
     try {
-      const response = await fetch(`/api/jobs/${jobId}/generate-refined-template`, {
+      // Call swipe-files/generate endpoint with original_job_id, select_angle, and swipe_file_ids
+      const response = await fetch('/api/swipe-files/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ templateId, angle })
+        body: JSON.stringify({
+          original_job_id: originalJobId,
+          select_angle: angle,
+          swipe_file_ids: [templateId] // Template ID should be in format L00001, A00003, etc.
+        })
       })
       
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || 'Failed to generate template')
+        throw new Error(error.error || 'Failed to generate swipe files')
       }
       
       const data = await response.json()
       
-      // Reload templates from database
-      try {
-        const templatesResponse = await fetch(`/api/jobs/${jobId}/injected-templates`)
-        if (templatesResponse.ok) {
-          const injectedTemplates = await templatesResponse.json()
-          if (injectedTemplates && injectedTemplates.length > 0) {
-            const updatedTemplates = injectedTemplates.map((injected: any) => ({
-              name: `${injected.template_id} - ${injected.angle_name}`,
-              type: 'Injected Template',
-              html: injected.html_content,
-              angle: injected.angle_name,
-              templateId: injected.template_id,
-              timestamp: injected.created_at
-            }))
-
-            updatedTemplates.sort((a: any, b: any) => {
-              if (a.angle !== b.angle) {
-                return (a.angle || '').localeCompare(b.angle || '')
-              }
-              return (a.templateId || '').localeCompare(b.templateId || '')
-            })
-
-            setTemplates(updatedTemplates)
-          } else {
-            // If no templates, set empty array
-            setTemplates([])
-          }
-        }
-      } catch (error) {
-        console.error('Error reloading templates:', error)
+      // Track this angle as generating (similar to the swipe file generation flow)
+      if (data.jobId) {
+        setGeneratingAngles(prev => {
+          const newMap = new Map(prev)
+          newMap.set(angle, data.jobId)
+          return newMap
+        })
+        setAngleStatuses(prev => {
+          const newMap = new Map(prev)
+          newMap.set(angle, 'SUBMITTED')
+          return newMap
+        })
+        
+        // Start polling for this specific angle
+        pollSwipeFileStatus(data.jobId, angle)
       }
       
       // Close modal and reset
@@ -621,12 +618,12 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
       
       toast({
         title: "Success",
-        description: "New template generated successfully!",
+        description: "Swipe file generation started! Templates will appear when ready.",
       })
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to generate template",
+        description: error instanceof Error ? error.message : "Failed to generate swipe files",
         variant: "destructive",
       })
     } finally {
@@ -2012,7 +2009,8 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                       const angleObj: AngleWithProperties | null = isAngle(angle) ? (angle as AngleWithProperties) : null;
                       const angleTitle = angleObj?.title ?? null;
                       const angleDescription = angleObj?.angle ?? (typeof angle === 'string' ? angle : '');
-                      const angleText = typeof angle === 'string' ? angle : angle.angle || angle.title || angleDescription;
+                      // Always prioritize the angle property for matching, not the title
+                      const angleText = typeof angle === 'string' ? angle : (angle.angle || angleDescription);
 
                       return (
                         <AccordionItem
