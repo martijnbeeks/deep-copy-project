@@ -33,6 +33,7 @@ interface CustomerAvatar {
   objections?: string[]
   failed_alternatives?: string[]
   is_broad_avatar?: boolean
+  is_researched?: boolean  // Mark if user selected this avatar
 }
 
 interface PipelineFormData {
@@ -40,12 +41,17 @@ interface PipelineFormData {
   brand_info: string
   sales_page_url: string
   target_approach?: string
-  customer_avatars?: CustomerAvatar[]
-  extracted_avatars?: CustomerAvatar[]
-  // Deprecated fields for backward compatibility
-  persona?: string
-  age_range?: string
-  gender?: string
+  avatars?: CustomerAvatar[]  // Single source of truth - all avatars with is_researched flag
+}
+
+// Helper to get selected avatars
+const getSelectedAvatars = (avatars?: CustomerAvatar[]): CustomerAvatar[] => {
+  return avatars?.filter(a => a.is_researched === true) || []
+}
+
+// Helper to get first selected avatar (for display)
+const getFirstSelectedAvatar = (avatars?: CustomerAvatar[]): CustomerAvatar | undefined => {
+  return getSelectedAvatars(avatars)[0]
 }
 
 export default function CreatePage() {
@@ -62,12 +68,7 @@ export default function CreatePage() {
     brand_info: "",
     sales_page_url: "",
     target_approach: "explore",
-    customer_avatars: [],
-    extracted_avatars: [],
-    // Deprecated fields for backward compatibility
-    persona: "",
-    age_range: "",
-    gender: "",
+    avatars: [],
   })
   const [errors, setErrors] = useState<Partial<Record<keyof PipelineFormData, string>>>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
@@ -133,7 +134,7 @@ export default function CreatePage() {
 
     // For "known" approach, check if customer avatar fields are filled
     if (formData.target_approach === 'known') {
-      const avatar = formData.customer_avatars?.[0]
+      const avatar = getFirstSelectedAvatar(formData.avatars)
       if (avatar) {
         // If avatar exists, check if any required field is filled
         if (avatar.persona_name?.trim() ||
@@ -148,7 +149,7 @@ export default function CreatePage() {
 
     // For "explore" approach, check if avatars are selected
     if (formData.target_approach === 'explore') {
-      if ((formData.customer_avatars?.length ?? 0) > 0) {
+      if (getSelectedAvatars(formData.avatars).length > 0) {
         return false
       }
     }
@@ -175,12 +176,12 @@ export default function CreatePage() {
     }
     // Note: For "explore" approach, avatars will be generated when button is clicked
     // For "known" approach, avatars should already be provided
-    if (data.target_approach === 'known' && (data.customer_avatars?.length ?? 0) === 0) {
-      newErrors.customer_avatars = "Please provide customer avatar information"
+    if (data.target_approach === 'known' && getSelectedAvatars(data.avatars).length === 0) {
+      newErrors.avatars = "Please provide customer avatar information"
     }
     // For "explore" approach, ensure avatars were generated and selected
-    if (data.target_approach === 'explore' && (data.customer_avatars?.length ?? 0) === 0) {
-      newErrors.customer_avatars = "Please generate and select avatars before proceeding"
+    if (data.target_approach === 'explore' && getSelectedAvatars(data.avatars).length === 0) {
+      newErrors.avatars = "Please generate and select avatars before proceeding"
     }
 
     setErrors(newErrors)
@@ -192,7 +193,7 @@ export default function CreatePage() {
     const dataToSubmit = updatedFormData || formData
 
     // If user selected "explore new avatars" but hasn't selected any yet, show the extraction dialog
-    if (!skipAvatarCheck && dataToSubmit.target_approach === 'explore' && (dataToSubmit.customer_avatars?.length ?? 0) === 0) {
+    if (!skipAvatarCheck && dataToSubmit.target_approach === 'explore' && getSelectedAvatars(dataToSubmit.avatars).length === 0) {
       setShowAvatarDialog(true)
       return
     }
@@ -332,10 +333,7 @@ export default function CreatePage() {
                   brand_info: "",
                   sales_page_url: "",
                   target_approach: "explore",
-                  customer_avatars: [],
-                  persona: "",
-                  age_range: "",
-                  gender: "",
+                  avatars: [],
                 })
                 setErrors({})
                 setGeneralError(null)
@@ -465,11 +463,17 @@ export default function CreatePage() {
 
   const handleAvatarsSelected = async (selectedAvatars: any[], allAvatars: any[], shouldClose: boolean = true, autoSubmit: boolean = false) => {
     try {
-      // Update form data with selected avatars
+      // Mark selected avatars as researched
+      const avatarsWithResearch = allAvatars.map(avatar => ({
+        ...avatar,
+        is_researched: selectedAvatars.some(selected => 
+          selected.persona_name === avatar.persona_name
+        ) ? true : (avatar.is_researched || false)
+      }))
+
       const updatedFormData: PipelineFormData = {
         ...formData,
-        customer_avatars: selectedAvatars,
-        extracted_avatars: allAvatars
+        avatars: avatarsWithResearch  // Single array with all avatars
       }
 
       setFormData(updatedFormData)
@@ -612,7 +616,7 @@ export default function CreatePage() {
                                 ? 'border-primary bg-primary/5 shadow-sm'
                                 : 'border-border hover:border-primary/50 hover:bg-muted/50'
                                 }`}
-                              onClick={() => setFormData(prev => ({ ...prev, target_approach: 'explore', persona: '', age_range: '', gender: '' }))}
+                              onClick={() => setFormData(prev => ({ ...prev, target_approach: 'explore', avatars: [] }))}
                             >
                               <div className="flex items-start gap-4">
                                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${formData.target_approach === 'explore' ? 'border-primary bg-primary' : 'border-muted-foreground'
@@ -638,7 +642,7 @@ export default function CreatePage() {
                                 ? 'border-primary bg-primary/5 shadow-sm'
                                 : 'border-border hover:border-primary/50 hover:bg-muted/50'
                                 }`}
-                              onClick={() => setFormData(prev => ({ ...prev, target_approach: 'known', persona: '', age_range: '', gender: '' }))}
+                              onClick={() => setFormData(prev => ({ ...prev, target_approach: 'known', avatars: [] }))}
                             >
                               <div className="flex items-start gap-4">
                                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${formData.target_approach === 'known' ? 'border-primary bg-primary' : 'border-muted-foreground'
@@ -678,10 +682,10 @@ export default function CreatePage() {
                               </div>
                             </div>
 
-                            {(formData.customer_avatars?.length ?? 0) > 0 && (
+                            {getSelectedAvatars(formData.avatars).length > 0 && (
                               <div className="flex items-center justify-between p-4 border rounded-lg">
                                 <div className="text-sm text-muted-foreground">
-                                  {formData.customer_avatars?.length} avatar{(formData.customer_avatars?.length || 0) > 1 ? 's' : ''} selected
+                                  {getSelectedAvatars(formData.avatars).length} avatar{getSelectedAvatars(formData.avatars).length > 1 ? 's' : ''} selected
                                 </div>
                                 <Button
                                   type="button"
@@ -713,21 +717,24 @@ export default function CreatePage() {
                                   </Label>
                                   <Input
                                     placeholder="e.g., Health-conscious professionals, Tech-savvy millennials, Busy parents..."
-                                    value={formData.customer_avatars?.[0]?.persona_name || ''}
+                                    value={getFirstSelectedAvatar(formData.avatars)?.persona_name || ''}
                                     onChange={(e) => {
-                                      const newAvatars = [...(formData.customer_avatars || [])]
-                                      if (newAvatars.length === 0) {
-                                        newAvatars.push({
-                                          persona_name: e.target.value,
-                                          description: '',
-                                          age_range: '',
-                                          gender: '',
-                                          key_buying_motivation: ''
-                                        })
-                                      } else {
-                                        newAvatars[0].persona_name = e.target.value
-                                      }
-                                      setFormData((prev) => ({ ...prev, customer_avatars: newAvatars }))
+                                      const currentAvatars = formData.avatars || []
+                                      const firstAvatar = getFirstSelectedAvatar(formData.avatars)
+                                      const updatedAvatars = firstAvatar 
+                                        ? currentAvatars.map(a => 
+                                            a.is_researched ? { ...a, persona_name: e.target.value } : a
+                                          )
+                                        : [{ 
+                                            persona_name: e.target.value,
+                                            description: '',
+                                            age_range: '',
+                                            gender: '',
+                                            key_buying_motivation: '',
+                                            is_researched: true
+                                          }, ...currentAvatars]
+                                      
+                                      setFormData((prev) => ({ ...prev, avatars: updatedAvatars }))
                                     }}
                                     disabled={isLoading}
                                     className="h-11 text-sm border-green-200 dark:border-green-800 focus-visible:ring-green-500"
@@ -740,21 +747,24 @@ export default function CreatePage() {
                                   </Label>
                                   <Textarea
                                     placeholder="Describe their lifestyle, motivations, and key challenges in 1-2 sentences..."
-                                    value={formData.customer_avatars?.[0]?.description || ''}
+                                    value={getFirstSelectedAvatar(formData.avatars)?.description || ''}
                                     onChange={(e) => {
-                                      const newAvatars = [...(formData.customer_avatars || [])]
-                                      if (newAvatars.length === 0) {
-                                        newAvatars.push({
-                                          persona_name: '',
-                                          description: e.target.value,
-                                          age_range: '',
-                                          gender: '',
-                                          key_buying_motivation: ''
-                                        })
-                                      } else {
-                                        newAvatars[0].description = e.target.value
-                                      }
-                                      setFormData((prev) => ({ ...prev, customer_avatars: newAvatars }))
+                                      const currentAvatars = formData.avatars || []
+                                      const firstAvatar = getFirstSelectedAvatar(formData.avatars)
+                                      const updatedAvatars = firstAvatar 
+                                        ? currentAvatars.map(a => 
+                                            a.is_researched ? { ...a, description: e.target.value } : a
+                                          )
+                                        : [{ 
+                                            persona_name: '',
+                                            description: e.target.value,
+                                            age_range: '',
+                                            gender: '',
+                                            key_buying_motivation: '',
+                                            is_researched: true
+                                          }, ...currentAvatars]
+                                      
+                                      setFormData((prev) => ({ ...prev, avatars: updatedAvatars }))
                                     }}
                                     rows={3}
                                     disabled={isLoading}
@@ -768,21 +778,24 @@ export default function CreatePage() {
                                       Age Range <span className="text-red-500">*</span>
                                     </Label>
                                     <Select
-                                      value={formData.customer_avatars?.[0]?.age_range || ''}
+                                      value={getFirstSelectedAvatar(formData.avatars)?.age_range || ''}
                                       onValueChange={(value) => {
-                                        const newAvatars = [...(formData.customer_avatars || [])]
-                                        if (newAvatars.length === 0) {
-                                          newAvatars.push({
-                                            persona_name: '',
-                                            description: '',
-                                            age_range: value,
-                                            gender: '',
-                                            key_buying_motivation: ''
-                                          })
-                                        } else {
-                                          newAvatars[0].age_range = value
-                                        }
-                                        setFormData((prev) => ({ ...prev, customer_avatars: newAvatars }))
+                                        const currentAvatars = formData.avatars || []
+                                        const firstAvatar = getFirstSelectedAvatar(formData.avatars)
+                                        const updatedAvatars = firstAvatar 
+                                          ? currentAvatars.map(a => 
+                                              a.is_researched ? { ...a, age_range: value } : a
+                                            )
+                                          : [{ 
+                                              persona_name: '',
+                                              description: '',
+                                              age_range: value,
+                                              gender: '',
+                                              key_buying_motivation: '',
+                                              is_researched: true
+                                            }, ...currentAvatars]
+                                        
+                                        setFormData((prev) => ({ ...prev, avatars: updatedAvatars }))
                                       }}
                                       disabled={isLoading}
                                     >
@@ -804,21 +817,24 @@ export default function CreatePage() {
                                       Gender <span className="text-red-500">*</span>
                                     </Label>
                                     <Select
-                                      value={formData.customer_avatars?.[0]?.gender || ''}
+                                      value={getFirstSelectedAvatar(formData.avatars)?.gender || ''}
                                       onValueChange={(value) => {
-                                        const newAvatars = [...(formData.customer_avatars || [])]
-                                        if (newAvatars.length === 0) {
-                                          newAvatars.push({
-                                            persona_name: '',
-                                            description: '',
-                                            age_range: '',
-                                            gender: value,
-                                            key_buying_motivation: ''
-                                          })
-                                        } else {
-                                          newAvatars[0].gender = value
-                                        }
-                                        setFormData((prev) => ({ ...prev, customer_avatars: newAvatars }))
+                                        const currentAvatars = formData.avatars || []
+                                        const firstAvatar = getFirstSelectedAvatar(formData.avatars)
+                                        const updatedAvatars = firstAvatar 
+                                          ? currentAvatars.map(a => 
+                                              a.is_researched ? { ...a, gender: value } : a
+                                            )
+                                          : [{ 
+                                              persona_name: '',
+                                              description: '',
+                                              age_range: '',
+                                              gender: value,
+                                              key_buying_motivation: '',
+                                              is_researched: true
+                                            }, ...currentAvatars]
+                                        
+                                        setFormData((prev) => ({ ...prev, avatars: updatedAvatars }))
                                       }}
                                       disabled={isLoading}
                                     >
@@ -840,21 +856,24 @@ export default function CreatePage() {
                                   </Label>
                                   <Textarea
                                     placeholder="What drives them to purchase this product? What problem does it solve for them?"
-                                    value={formData.customer_avatars?.[0]?.key_buying_motivation || ''}
+                                    value={getFirstSelectedAvatar(formData.avatars)?.key_buying_motivation || ''}
                                     onChange={(e) => {
-                                      const newAvatars = [...(formData.customer_avatars || [])]
-                                      if (newAvatars.length === 0) {
-                                        newAvatars.push({
-                                          persona_name: '',
-                                          description: '',
-                                          age_range: '',
-                                          gender: '',
-                                          key_buying_motivation: e.target.value
-                                        })
-                                      } else {
-                                        newAvatars[0].key_buying_motivation = e.target.value
-                                      }
-                                      setFormData((prev) => ({ ...prev, customer_avatars: newAvatars }))
+                                      const currentAvatars = formData.avatars || []
+                                      const firstAvatar = getFirstSelectedAvatar(formData.avatars)
+                                      const updatedAvatars = firstAvatar 
+                                        ? currentAvatars.map(a => 
+                                            a.is_researched ? { ...a, key_buying_motivation: e.target.value } : a
+                                          )
+                                        : [{ 
+                                            persona_name: '',
+                                            description: '',
+                                            age_range: '',
+                                            gender: '',
+                                            key_buying_motivation: e.target.value,
+                                            is_researched: true
+                                          }, ...currentAvatars]
+                                      
+                                      setFormData((prev) => ({ ...prev, avatars: updatedAvatars }))
                                     }}
                                     rows={2}
                                     disabled={isLoading}
@@ -866,11 +885,11 @@ export default function CreatePage() {
                           </div>
                         )}
 
-                        {/* Error display for customer avatars */}
-                        {errors.customer_avatars && (
+                        {/* Error display for avatars */}
+                        {errors.avatars && (
                           <p className="text-sm text-destructive flex items-center gap-2">
                             <AlertCircle className="h-4 w-4" />
-                            {errors.customer_avatars}
+                            {errors.avatars}
                           </p>
                         )}
                       </div>
@@ -932,15 +951,15 @@ export default function CreatePage() {
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Selected Marketing Angle</p>
                 <p className="text-base font-semibold text-foreground">
-                  {formData.customer_avatars?.[0]?.key_buying_motivation
-                    ? formData.customer_avatars[0].key_buying_motivation.split('.')[0] || "Before/After Transformation Angle"
+                  {getFirstSelectedAvatar(formData.avatars)?.key_buying_motivation
+                    ? getFirstSelectedAvatar(formData.avatars)!.key_buying_motivation.split('.')[0] || "Before/After Transformation Angle"
                     : "Before/After Transformation Angle"}
                 </p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Target Audience</p>
                 <p className="text-base font-semibold text-foreground">
-                  {formData.customer_avatars?.[0]?.persona_name || "Evidence-seeking fitness enthusiasts"}
+                  {getFirstSelectedAvatar(formData.avatars)?.persona_name || "Evidence-seeking fitness enthusiasts"}
                 </p>
               </div>
             </div>

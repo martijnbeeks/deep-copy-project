@@ -24,6 +24,7 @@ interface CustomerAvatar {
   objections?: string[]
   failed_alternatives?: string[]
   is_broad_avatar?: boolean
+  is_researched?: boolean  // Mark if user selected this avatar
 }
 
 interface SubmitJobRequest {

@@ -23,6 +23,7 @@ interface ExtractedAvatar {
   desire?: string
   hook_line?: string
   is_broad_avatar?: boolean
+  is_researched?: boolean  // Mark if user selected this avatar
   characteristics?: string[]
   objections?: string[]
   failed_alternatives?: string[]
@@ -76,27 +77,21 @@ export function AvatarExtractionDialog({
       setError(null)
 
       // If avatars were previously extracted, reuse them instead of calling the API again
-      if (Array.isArray(formData?.extracted_avatars) && formData.extracted_avatars.length > 0) {
+      if (Array.isArray(formData?.avatars) && formData.avatars.length > 0) {
         setIsAnalyzing(false)
         // Mark the first avatar as broad persona when target_approach is "explore"
-        const extracted = (formData.extracted_avatars as ExtractedAvatar[]).map((avatar, index) => ({
+        const extracted = formData.avatars.map((avatar, index) => ({
           ...avatar,
           // Mark first avatar as broad persona if target_approach is "explore"
           is_broad_avatar: index === 0 && formData?.target_approach === 'explore' ? true : avatar.is_broad_avatar
         }))
         setAvatars(extracted)
 
-        // If there was a previously selected avatar, preselect the matching one by persona_name (or none if not found)
-        const previouslySelected = Array.isArray(formData?.customer_avatars) && formData.customer_avatars.length > 0
-          ? formData.customer_avatars[0]
-          : undefined
-
-        if (previouslySelected) {
-          const matchIndex = extracted.findIndex(a => a.persona_name === previouslySelected.persona_name)
-          setSelectedAvatars(new Set(matchIndex >= 0 ? [matchIndex] : []))
-        } else {
-          setSelectedAvatars(new Set())
-        }
+        // Preselect researched avatars
+        const researchedIndices = extracted
+          .map((avatar, index) => avatar.is_researched ? index : -1)
+          .filter(index => index >= 0)
+        setSelectedAvatars(new Set(researchedIndices))
       } else {
         // Fresh extraction flow
         setAvatars([])
@@ -237,7 +232,8 @@ export function AvatarExtractionDialog({
               const processedAvatars = resultData.avatars.map((avatar: ExtractedAvatar, index: number) => ({
                 ...avatar,
                 // Mark first avatar as broad persona if target_approach is "explore"
-                is_broad_avatar: index === 0 && formData?.target_approach === 'explore' ? true : avatar.is_broad_avatar
+                is_broad_avatar: index === 0 && formData?.target_approach === 'explore' ? true : avatar.is_broad_avatar,
+                is_researched: false  // Initialize as not researched
               }))
               setAvatars(processedAvatars)
               setIsAnalyzing(false)
@@ -300,8 +296,13 @@ export function AvatarExtractionDialog({
 
     try {
       const selectedAvatarData = Array.from(selectedAvatars).map(index => avatars[index])
+      // Mark selected avatars as researched
+      const avatarsWithResearch = avatars.map((avatar, index) => ({
+        ...avatar,
+        is_researched: selectedAvatars.has(index) ? true : (avatar.is_researched || false)
+      }))
       // Trigger automatic form submission when proceeding
-      onAvatarsSelected(selectedAvatarData, avatars, true, true)
+      onAvatarsSelected(selectedAvatarData, avatarsWithResearch, true, true)
     } catch (err) {
       console.error('Submit error:', err)
       setError('Failed to create job. Please try again.')
@@ -335,10 +336,16 @@ export function AvatarExtractionDialog({
         // Preserve any previously selected avatars, or use empty array if none selected
         const currentSelected = selectedAvatars.size > 0
           ? Array.from(selectedAvatars).map(index => avatars[index])
-          : (formData?.customer_avatars || [])
+          : (formData?.avatars?.filter((a: any) => a.is_researched) || [])
+
+        // Mark selected avatars as researched
+        const avatarsWithResearch = avatars.map((avatar, index) => ({
+          ...avatar,
+          is_researched: selectedAvatars.has(index) ? true : (avatar.is_researched || false)
+        }))
 
         // Pass false for shouldClose since dialog is already closing via onClose()
-        onAvatarsSelected(currentSelected, avatars, false)
+        onAvatarsSelected(currentSelected, avatarsWithResearch, false)
       }
       onClose()
     }
@@ -712,8 +719,13 @@ export function AvatarExtractionDialog({
                   setIsSubmitting(true)
                   try {
                     const selectedAvatarData = Array.from(selectedAvatars).map(index => avatars[index])
+                    // Mark selected avatars as researched
+                    const avatarsWithResearch = avatars.map((avatar, index) => ({
+                      ...avatar,
+                      is_researched: selectedAvatars.has(index) ? true : (avatar.is_researched || false)
+                    }))
                     // Update formData with verification data and trigger automatic form submission
-                    onAvatarsSelected(selectedAvatarData, avatars, true, true)
+                    onAvatarsSelected(selectedAvatarData, avatarsWithResearch, true, true)
                   } catch (err) {
                     console.error('Submit error:', err)
                     setError('Failed to create job. Please try again.')

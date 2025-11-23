@@ -329,7 +329,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Target Avatar:</span>
                   <span className="text-sm text-muted-foreground">
-                    {currentJob.customer_avatars?.[0]?.persona_name || 'General Audience'}
+                    {currentJob.avatars?.find((a: any) => a.is_researched === true)?.persona_name || 'General Audience'}
                   </span>
                 </div>
               </div>

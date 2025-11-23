@@ -26,11 +26,7 @@ export interface Job {
   template_id?: string
   advertorial_type: string
   target_approach?: string
-  customer_avatars?: any[]
-  // Deprecated fields for backward compatibility
-  persona?: string
-  age_range?: string
-  gender?: string
+  avatars?: any[]  // Single source of truth - all avatars with is_researched flag
   status: 'pending' | 'processing' | 'completed' | 'failed'
   execution_id?: string
   progress: number

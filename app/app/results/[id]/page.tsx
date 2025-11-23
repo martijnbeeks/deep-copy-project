@@ -171,7 +171,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
               jobId={currentJob.id}
               advertorialType={currentJob.advertorial_type}
               templateId={currentJob.template_id}
-              customerAvatars={currentJob.customer_avatars}
+              customerAvatars={currentJob.avatars?.filter((a: any) => a.is_researched === true) || []}
               salesPageUrl={currentJob.sales_page_url}
             />
           </div>

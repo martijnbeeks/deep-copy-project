@@ -300,7 +300,7 @@ export default function DashboardPage() {
                     <Card
                       key={job.id}
                       className="bg-card/80 border-border/50 shadow-sm hover:shadow-md transition-all cursor-pointer group hover:border-primary/50"
-                      onClick={() => router.push(`/results/${job.id}`)}
+                      onClick={() => router.push(`/avatars?jobId=${job.id}`)}
                     >
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between gap-2">

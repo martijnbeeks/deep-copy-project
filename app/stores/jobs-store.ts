@@ -45,11 +45,7 @@ interface JobsActions {
     template_id?: string
     advertorial_type: string
     target_approach?: string
-    customer_avatars?: any[]
-    // Deprecated fields for backward compatibility
-    persona?: string
-    age_range?: string
-    gender?: string
+    avatars?: any[]
   }) => Promise<JobWithTemplate>
   pollJobStatus: (jobId: string) => void
   stopPolling: (jobId: string) => void

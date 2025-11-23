@@ -39,11 +39,7 @@ export async function POST(request: NextRequest) {
       brand_info, 
       sales_page_url, 
       target_approach,
-      customer_avatars,
-      // Deprecated fields for backward compatibility
-      persona, 
-      age_range, 
-      gender 
+      avatars
     } = await request.json()
 
     if (!title) {
@@ -88,8 +84,8 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Use provided customer avatars (extracted from frontend dialog)
-    const finalCustomerAvatars = customer_avatars || []
+    // Get selected avatars (where is_researched === true) for DeepCopy API
+    const selectedAvatars = avatars?.filter((a: any) => a.is_researched === true) || []
 
     // Submit job to DeepCopy API first to get the job ID
     let deepCopyJobId: string
@@ -99,14 +95,8 @@ export async function POST(request: NextRequest) {
         project_name: title
       }
 
-      // Use new customer_avatars format if available, otherwise fall back to deprecated fields
-      if (finalCustomerAvatars.length > 0) {
-        jobPayload.customer_avatars = finalCustomerAvatars
-      } else if (persona || age_range || gender) {
-        // Fallback to deprecated fields for backward compatibility
-        jobPayload.persona = persona
-        jobPayload.age_range = age_range
-        jobPayload.gender = gender
+      if (selectedAvatars.length > 0) {
+        jobPayload.customer_avatars = selectedAvatars
       }
 
       const deepCopyResponse = await deepCopyClient.submitJob(jobPayload)
@@ -131,11 +121,7 @@ export async function POST(request: NextRequest) {
       template_id: null, // No template selection at creation
       advertorial_type: 'advertorial', // Default type for database constraint, will be determined later from swipe results
       target_approach,
-      customer_avatars: finalCustomerAvatars,
-      // Deprecated fields for backward compatibility
-      persona,
-      age_range,
-      gender,
+      avatars: avatars || [],
       execution_id: deepCopyJobId,
       custom_id: deepCopyJobId // Use DeepCopy job ID as the primary key
     })
