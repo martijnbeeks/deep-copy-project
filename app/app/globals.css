@@ -87,100 +87,118 @@
   mix-blend-mode: normal !important;
 }
 
-/* Design System - Matching Reference */
+/* Design System - DeepCopy™ Brand Color System */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 220 15% 15%;
+    /* Core Colors - Using DeepCopy Brand Colors */
+    --background: 0 0% 99%;
+    /* #FCFCFC - Background */
+    --foreground: 225 8% 13%;
+    /* #1E1F23 - Dark Header Text */
 
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 15%;
+    /* #FFFFFF - Pure White Cards */
+    --card-foreground: 225 8% 13%;
+    /* #1E1F23 */
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 15%;
+    /* #FFFFFF */
+    --popover-foreground: 225 8% 13%;
+    /* #1E1F23 */
 
-    --primary: 217 91% 60%;
+    --primary: 196 67% 45%;
+    /* rgba(37, 150, 190) - New Blue Tint */
     --primary-foreground: 0 0% 100%;
+    /* White text on primary */
 
-    --secondary: 220 15% 96%;
-    --secondary-foreground: 220 15% 15%;
+    --secondary: 220 20% 93%;
+    /* #E9ECF1 - Border Light Grey (adjusted for secondary bg) */
+    --secondary-foreground: 225 8% 13%;
+    /* #1E1F23 */
 
-    --muted: 220 15% 96%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 220 20% 93%;
+    /* #E9ECF1 - Border Light Grey */
+    --muted-foreground: 220 7% 45%;
+    /* #6A6F7A - Secondary Grey Text */
 
-    --accent: 217 91% 60%;
+    --accent: 196 67% 45%;
+    /* rgba(37, 150, 190) - New Blue Tint */
     --accent-foreground: 0 0% 100%;
+    /* White */
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 217 91% 60%;
+    --border: 220 20% 93%;
+    /* #E9ECF1 - Border Light Grey */
+    --input: 220 20% 93%;
+    /* #E9ECF1 */
+    --ring: 196 67% 45%;
+    /* rgba(37, 150, 190) - New Blue Tint */
 
     --radius: 0.75rem;
 
-    /* Custom design tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(217 91% 60%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 40% 98%) 100%);
-    --shadow-lg: 0 20px 60px -15px hsl(217 91% 60% / 0.3);
-    --shadow-feature: 0 10px 40px -10px hsl(220 15% 15% / 0.1);
-    --shadow-primary: 0 10px 40px -10px hsl(217 91% 60% / 0.3);
+    /* DeepCopy Brand Color System - Custom design tokens */
+    --gradient-primary: linear-gradient(135deg, rgba(37, 150, 190, 1) 0%, rgba(37, 150, 190, 0.8) 100%);
+    /* Gradient using new blue tint */
+    --gradient-hero: linear-gradient(180deg, #FCFCFC 0%, #FFFFFF 100%);
+    --shadow-lg: 0 20px 60px -15px rgba(37, 150, 190, 0.3);
+    --shadow-feature: 0 10px 40px -10px hsl(225 8% 13% / 0.1);
+    --shadow-primary: 0 10px 40px -10px rgba(37, 150, 190, 0.3);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-    /* New Color Palette */
-    /* Backgrounds */
-    --background-pure-white-cards: #FCFCFC;
+    /* DeepCopy Brand Color Variables */
+    --background-pure-white-cards: #FFFFFF;
     --background-white: #FFFFFF;
-
-    /* Text */
     --text-dark-header: #1E1F23;
     --text-secondary-grey: #6A6F7A;
-
-    /* CTA & Gradients */
-    --cta-blue: #1F6BFF;
-    --gradient-blue: #4C6FFF;
-    --gradient-purple: #6B4DFF;
-
-    /* Icons & Borders */
+    --cta-blue: rgba(37, 150, 190, 1);
+    --gradient-blue: rgba(37, 150, 190, 1);
+    --gradient-purple: rgba(37, 150, 190, 0.8);
     --icon-soft-blue: #AABAF7;
     --border-light-grey: #E9ECF1;
   }
 
   .dark {
-    --background: 220 20% 10%;
+    /* Dark mode - keeping DeepCopy brand colors but with darker backgrounds */
+    --background: 225 8% 8%;
+    /* Darker version of dark header */
     --foreground: 0 0% 98%;
 
-    --card: 220 20% 12%;
+    --card: 225 8% 10%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 220 20% 12%;
+    --popover: 225 8% 10%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 217 91% 60%;
+    --primary: 196 67% 45%;
+    /* rgba(37, 150, 190) - New Blue Tint (same in dark mode) */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 15% 20%;
+    --secondary: 225 8% 15%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 220 15% 20%;
-    --muted-foreground: 220 10% 65%;
+    --muted: 225 8% 15%;
+    --muted-foreground: 220 7% 65%;
+    /* Lighter grey for dark mode */
 
-    --accent: 217 91% 60%;
+    --accent: 196 67% 45%;
+    /* rgba(37, 150, 190) - New Blue Tint */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 15% 20%;
-    --input: 220 15% 20%;
-    --ring: 217 91% 60%;
+    --border: 225 8% 20%;
+    --input: 225 8% 20%;
+    --ring: 196 67% 45%;
+    /* rgba(37, 150, 190) - New Blue Tint */
 
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(217 91% 60%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(220 20% 10%) 0%, hsl(220 20% 12%) 100%);
-    --shadow-lg: 0 20px 60px -15px hsl(217 91% 60% / 0.4);
+    --gradient-primary: linear-gradient(135deg, rgba(37, 150, 190, 1) 0%, rgba(37, 150, 190, 0.8) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(225 8% 8%) 0%, hsl(225 8% 10%) 100%);
+    --shadow-lg: 0 20px 60px -15px rgba(37, 150, 190, 0.4);
     --shadow-feature: 0 10px 40px -10px hsl(0 0% 0% / 0.3);
-    --shadow-primary: 0 10px 40px -10px hsl(217 91% 60% / 0.4);
+    --shadow-primary: 0 10px 40px -10px rgba(37, 150, 190, 0.4);
   }
 }
 
@@ -313,6 +331,7 @@
 
 /* Custom scrollbar styles - Global for landing page */
 @layer base {
+
   /* Firefox */
   * {
     scrollbar-width: thin;
@@ -397,33 +416,49 @@
 
 /* Additional root variables for compatibility */
 :root {
-  --chart-1: 217 91% 60%;
-  --chart-2: 217 91% 60%;
-  --chart-3: 220 15% 15%;
-  --chart-4: 220 40% 98%;
-  --chart-5: 220 10% 46%;
+  --chart-1: 196 67% 45%;
+  /* rgba(37, 150, 190) - New Blue Tint */
+  --chart-2: 196 67% 45%;
+  /* rgba(37, 150, 190) - New Blue Tint */
+  --chart-3: 225 8% 13%;
+  /* #1E1F23 - Dark Header Text */
+  --chart-4: 0 0% 99%;
+  /* #FCFCFC - Background */
+  --chart-5: 220 7% 45%;
+  /* #6A6F7A - Secondary Grey Text */
 
-  /* Sidebar tokens (light) */
+  /* Sidebar tokens (light) - DeepCopy Brand Colors */
   --sidebar-background: 0 0% 100%;
-  --sidebar-foreground: 220 15% 15%;
-  --sidebar-primary: 217 91% 60%;
+  /* #FFFFFF - Pure White Cards */
+  --sidebar-foreground: 225 8% 13%;
+  /* #1E1F23 - Dark Header Text */
+  --sidebar-primary: 196 67% 45%;
+  /* rgba(37, 150, 190) - New Blue Tint */
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 220 15% 96%;
-  --sidebar-accent-foreground: 220 15% 15%;
-  --sidebar-border: 220 13% 91%;
-  --sidebar-ring: 217 91% 60%;
+  /* White */
+  --sidebar-accent: 220 20% 93%;
+  /* #E9ECF1 - Border Light Grey */
+  --sidebar-accent-foreground: 225 8% 13%;
+  /* #1E1F23 */
+  --sidebar-border: 220 20% 93%;
+  /* #E9ECF1 - Border Light Grey */
+  --sidebar-ring: 196 67% 45%;
+  /* rgba(37, 150, 190) - New Blue Tint */
 }
 
 .dark {
-  /* Sidebar tokens (dark) */
-  --sidebar-background: 220 20% 10%;
+  /* Sidebar tokens (dark) - DeepCopy Brand Colors */
+  --sidebar-background: 225 8% 8%;
+  /* Darker version */
   --sidebar-foreground: 0 0% 98%;
-  --sidebar-primary: 217 91% 60%;
+  --sidebar-primary: 196 67% 45%;
+  /* rgba(37, 150, 190) - New Blue Tint */
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 220 15% 20%;
+  --sidebar-accent: 225 8% 15%;
   --sidebar-accent-foreground: 0 0% 98%;
-  --sidebar-border: 220 15% 20%;
-  --sidebar-ring: 217 91% 60%;
+  --sidebar-border: 225 8% 20%;
+  --sidebar-ring: 196 67% 45%;
+  /* rgba(37, 150, 190) - New Blue Tint */
 }
 
 

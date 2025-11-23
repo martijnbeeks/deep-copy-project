@@ -80,7 +80,7 @@ export function AvatarExtractionDialog({
       if (Array.isArray(formData?.avatars) && formData.avatars.length > 0) {
         setIsAnalyzing(false)
         // Mark the first avatar as broad persona when target_approach is "explore"
-        const extracted = formData.avatars.map((avatar, index) => ({
+        const extracted = formData.avatars.map((avatar: ExtractedAvatar, index: number) => ({
           ...avatar,
           // Mark first avatar as broad persona if target_approach is "explore"
           is_broad_avatar: index === 0 && formData?.target_approach === 'explore' ? true : avatar.is_broad_avatar
@@ -89,8 +89,8 @@ export function AvatarExtractionDialog({
 
         // Preselect researched avatars
         const researchedIndices = extracted
-          .map((avatar, index) => avatar.is_researched ? index : -1)
-          .filter(index => index >= 0)
+          .map((avatar: ExtractedAvatar, index: number) => avatar.is_researched ? index : -1)
+          .filter((index: number) => index >= 0)
         setSelectedAvatars(new Set(researchedIndices))
       } else {
         // Fresh extraction flow
@@ -318,6 +318,14 @@ export function AvatarExtractionDialog({
       case 'both': return '👥'
       default: return '👤'
     }
+  }
+
+  const formatGender = (gender: string) => {
+    const lowerGender = gender.toLowerCase()
+    if (lowerGender === 'both') {
+      return 'Male & Female'
+    }
+    return gender.toUpperCase()
   }
 
   const getAgeBadgeColor = (ageRange: string) => {
@@ -579,6 +587,9 @@ export function AvatarExtractionDialog({
                                     <span className="text-2xl">{getGenderIcon(avatar.gender)}</span>
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2 flex-wrap">
+                                        <Badge variant="outline" className="text-xs font-semibold bg-muted text-foreground border-border">
+                                          #{index + 1}
+                                        </Badge>
                                         <div className="font-semibold text-base">{avatar.persona_name}</div>
                                         {avatar.is_broad_avatar && (
                                           <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
@@ -589,7 +600,7 @@ export function AvatarExtractionDialog({
                                       <div className="flex items-center gap-2 flex-wrap mt-1">
                                         <span className="text-xs text-muted-foreground">{avatar.age_range}</span>
                                         <span className="text-xs text-muted-foreground">•</span>
-                                        <span className="text-xs text-muted-foreground">{avatar.gender}</span>
+                                        <span className="text-xs text-muted-foreground">{formatGender(avatar.gender)}</span>
                                         {avatar.characteristics && avatar.characteristics.length > 0 && (
                                           <>
                                             <span className="text-xs text-muted-foreground">•</span>
@@ -624,7 +635,7 @@ export function AvatarExtractionDialog({
                                   </div>
                                   <div>
                                     <span className="font-medium">Gender:</span>
-                                    <p className="text-muted-foreground">{avatar.gender}</p>
+                                    <p className="text-muted-foreground">{formatGender(avatar.gender)}</p>
                                   </div>
                                   <div>
                                     <span className="font-medium">Description:</span>
@@ -784,6 +795,9 @@ export function AvatarExtractionDialog({
                             <span className="text-2xl">{getGenderIcon(avatar.gender)}</span>
                             <div className="flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
+                                <Badge variant="outline" className="text-xs font-semibold bg-muted text-foreground border-border">
+                                  #{index + 1}
+                                </Badge>
                                 <div className="font-semibold text-base">{avatar.persona_name}</div>
                                 {avatar.is_broad_avatar && (
                                   <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
@@ -794,7 +808,7 @@ export function AvatarExtractionDialog({
                               <div className="flex items-center gap-2 flex-wrap mt-1">
                                 <span className="text-xs text-muted-foreground">{avatar.age_range}</span>
                                 <span className="text-xs text-muted-foreground">•</span>
-                                <span className="text-xs text-muted-foreground">{avatar.gender}</span>
+                                <span className="text-xs text-muted-foreground">{formatGender(avatar.gender)}</span>
                                 {avatar.characteristics && avatar.characteristics.length > 0 && (
                                   <>
                                     <span className="text-xs text-muted-foreground">•</span>
@@ -845,7 +859,7 @@ export function AvatarExtractionDialog({
                           )}
                           <div>
                             <span className="font-medium">Gender:</span>
-                            <p className="text-muted-foreground">{avatar.gender}</p>
+                            <p className="text-muted-foreground">{formatGender(avatar.gender)}</p>
                           </div>
                           {avatar.key_buying_motivation && (
                             <div>

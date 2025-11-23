@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { FileText, AlertCircle, Zap, Eye, Search, Filter, Calendar, ExternalLink } from "lucide-react"
+import { SalesPagePreview } from "@/components/sales-page-preview"
 import { useToast } from "@/hooks/use-toast"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobs, useCreateJob } from "@/lib/hooks/use-jobs"
@@ -333,17 +334,9 @@ export default function DashboardPage() {
                             <span>{new Date(job.created_at).toLocaleDateString()}</span>
                           </div>
                           {job.sales_page_url && (
-                            <a
-                              href={job.sales_page_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-2 px-2 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-md text-xs font-medium text-primary hover:text-primary/90 transition-colors group/link w-full"
-                              title={job.sales_page_url}
-                            >
-                              <ExternalLink className="h-3 w-3 flex-shrink-0 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
-                              <span className="truncate flex-1">{job.sales_page_url}</span>
-                            </a>
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <SalesPagePreview url={job.sales_page_url} jobId={job.id} className="w-full" />
+                            </div>
                           )}
                         </div>
                       </CardContent>

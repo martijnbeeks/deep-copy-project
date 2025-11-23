@@ -37,6 +37,7 @@ export interface Job {
   parent_job_id?: string
   avatar_persona_name?: string
   is_avatar_job?: boolean
+  screenshot?: string // Base64 screenshot of sales_page_url
 }
 
 export interface Result {

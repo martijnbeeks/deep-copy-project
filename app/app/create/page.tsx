@@ -673,16 +673,31 @@ export default function CreatePage() {
                         {/* Conditional Content Based on Approach */}
                         {formData.target_approach === 'explore' && (
                           <div className="space-y-4">
-                            <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                              <h4 className="font-medium text-sm mb-3 text-blue-900 dark:text-blue-100">
+                            <div 
+                              className="p-4 rounded-lg border"
+                              style={{
+                                backgroundColor: 'rgba(37, 150, 190, 0.1)',
+                                borderColor: 'rgba(37, 150, 190, 0.3)'
+                              }}
+                            >
+                              <h4 
+                                className="font-medium text-sm mb-3"
+                                style={{ color: 'rgba(37, 150, 190, 1)' }}
+                              >
                                 AI Avatar Discovery
                               </h4>
-                              <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">
+                              <p 
+                                className="text-sm mb-4"
+                                style={{ color: 'rgba(37, 150, 190, 0.9)' }}
+                              >
                                 Our AI will analyze your sales page to discover and extract customer personas automatically.
                                 No manual selection needed - just provide your sales page URL and we'll do the research for you.
                               </p>
-                              <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
-                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(37, 150, 190, 0.85)' }}>
+                                <div 
+                                  className="w-2 h-2 rounded-full"
+                                  style={{ backgroundColor: 'rgba(37, 150, 190, 1)' }}
+                                ></div>
                                 <span>Avatars will be extracted after you submit the form</span>
                               </div>
                             </div>

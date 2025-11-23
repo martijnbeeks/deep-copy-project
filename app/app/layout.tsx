@@ -23,18 +23,18 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Copywriting Dashboard",
-  description: "Professional AI-powered content creation platform",
+  title: "DeepCopy - Turn Deep Research Into High-Converting Landing Pages",
+  description: "DeepCopy - Turn Deep Research Into High-Converting Landing Pages",
   generator: "v0.app",
   robots: "index, follow",
   icons: {
-    icon: "/deepcopy-favicon.png",
-    shortcut: "/deepcopy-favicon.png",
-    apple: "/deepcopy-favicon.png",
+    icon: "/deepcopy-favicon.ico",
+    shortcut: "/deepcopy-favicon.ico",
+    apple: "/deepcopy-favicon.ico",
   },
   openGraph: {
-    title: "AI Copywriting Dashboard",
-    description: "Professional AI-powered content creation platform",
+    title: "DeepCopy - Turn Deep Research Into High-Converting Landing Pages",
+    description: "DeepCopy - Turn Deep Research Into High-Converting Landing Pages",
     type: "website",
   },
 };

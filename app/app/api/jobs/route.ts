@@ -129,6 +129,14 @@ export async function POST(request: NextRequest) {
     // Update job status to processing
     await updateJobStatus(job.id, 'processing')
 
+    // Generate screenshot asynchronously (don't block job creation)
+    if (sales_page_url) {
+      const { generateScreenshot } = await import('@/lib/utils/screenshot')
+      generateScreenshot(job.id, sales_page_url).catch(err => 
+        console.error('Screenshot generation failed:', err)
+      )
+    }
+
     // Immediately check the job status to get initial progress
     try {
       const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)

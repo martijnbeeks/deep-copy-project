@@ -71,7 +71,7 @@ export const createJob = async (jobData: {
   if (jobData.custom_id) {
     // Use custom ID (DeepCopy job ID) as the primary key
     const result = await query(
-      'INSERT INTO jobs (id, user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id, parent_job_id, avatar_persona_name, is_avatar_job) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *',
+      'INSERT INTO jobs (id, user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id, parent_job_id, avatar_persona_name, is_avatar_job, screenshot) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *',
       [
         jobData.custom_id, 
         jobData.user_id, 
@@ -85,14 +85,15 @@ export const createJob = async (jobData: {
         jobData.execution_id,
         jobData.parent_job_id || null,
         jobData.avatar_persona_name || null,
-        jobData.is_avatar_job || false
+        jobData.is_avatar_job || false,
+        null // screenshot - will be populated later
       ]
     )
     return result.rows[0]
   } else {
     // Use default UUID generation
     const result = await query(
-      'INSERT INTO jobs (user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id, parent_job_id, avatar_persona_name, is_avatar_job) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
+      'INSERT INTO jobs (user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id, parent_job_id, avatar_persona_name, is_avatar_job, screenshot) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *',
       [
         jobData.user_id, 
         jobData.title, 
@@ -105,7 +106,8 @@ export const createJob = async (jobData: {
         jobData.execution_id,
         jobData.parent_job_id || null,
         jobData.avatar_persona_name || null,
-        jobData.is_avatar_job || false
+        jobData.is_avatar_job || false,
+        null // screenshot - will be populated later
       ]
     )
     return result.rows[0]
