@@ -140,33 +140,33 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
   return (
     <div
       key={template.id}
-      className={`relative cursor-pointer rounded-xl border-2 p-3 md:p-4 transition-all h-[350px] md:h-[400px] flex flex-col ${
+      className={`relative cursor-pointer rounded-xl border-2 p-2 md:p-3 transition-all h-[280px] md:h-[320px] flex flex-col ${
         isSelected
           ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
           : 'border-border bg-card'
       }`}
       onClick={(e) => {
         // Don't navigate if:
-        // 1. Dialog is currently open or closing
+        // 1. Preview dialog is currently open or closing
         // 2. Click is on a button (like "Full Preview")
-        // 3. Click is inside dialog content
         const target = e.target as HTMLElement
         const isButton = target.closest('button') !== null
-        const isDialogContent = target.closest('[role="dialog"]') !== null
         
-        if (!isDialogOpen && !isDialogClosing && !isButton && !isDialogContent) {
+        // Only prevent click if preview dialog is open, not parent modals
+        if (!isDialogOpen && !isDialogClosing && !isButton) {
+          e.stopPropagation()
           onClick()
         }
       }}
     >
       {/* Template Header */}
-      <div className="flex items-start justify-between mb-2 md:mb-3 gap-2">
+      <div className="flex items-start justify-between mb-1.5 gap-1.5">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-base md:text-lg text-foreground break-words">{template.name}</h3>
-          <p className="text-xs md:text-sm text-muted-foreground break-words">{template.description || 'No description available'}</p>
+          <h3 className="font-semibold text-sm text-foreground break-words line-clamp-1">{template.name}</h3>
+          <p className="text-xs text-muted-foreground break-words line-clamp-1">{template.description || 'No description available'}</p>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="px-2 py-1 text-xs font-medium bg-secondary text-secondary-foreground rounded-full">
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <span className="px-1.5 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground rounded-full">
             {template.category || 'General'}
           </span>
         </div>

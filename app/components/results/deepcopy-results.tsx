@@ -9,6 +9,10 @@ import { TemplateGrid } from "@/components/results/template-grid"
 import { FileText, BarChart3, Code, BookOpen, User, Target, Calendar, Clock, Users, MapPin, DollarSign, Briefcase, Sparkles, AlertTriangle, Star, Eye, TrendingUp, Brain, Loader2, CheckCircle2, Download, Globe } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { TemplatePreview } from "@/components/template-preview"
+import { useToast } from "@/hooks/use-toast"
+import { useTemplatesStore } from "@/stores/templates-store"
 import { extractContentFromSwipeResult, injectContentIntoTemplate } from "@/lib/utils/template-injection"
 import { JobResult, SwipeResult, Listicle, Advertorial, Angle } from "@/lib/api/deepcopy-client"
 
@@ -82,6 +86,15 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
   const [angleStatuses, setAngleStatuses] = useState<Map<string, string>>(new Map()) // angle -> status
   const [isGeneratingSwipeFiles, setIsGeneratingSwipeFiles] = useState(false)
   const [swipeFileResults, setSwipeFileResults] = useState<any>(null)
+
+  // Template exploration state
+  const [showTemplateModal, setShowTemplateModal] = useState(false)
+  const [templateModalStep, setTemplateModalStep] = useState<1 | 2>(1) // 1 = template selection, 2 = angle selection
+  const [selectedTemplateForRefinement, setSelectedTemplateForRefinement] = useState<string | null>(null)
+  const [selectedAngleForRefinement, setSelectedAngleForRefinement] = useState<string | null>(null)
+  const [isGeneratingRefined, setIsGeneratingRefined] = useState(false)
+  const { templates: availableTemplates, fetchTemplates, isLoading: availableTemplatesLoading } = useTemplatesStore()
+  const { toast } = useToast()
 
   const fullResult = result.metadata?.full_result
   const originalJobId = result.metadata?.deepcopy_job_id
@@ -528,6 +541,98 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
     // Load templates as fallback if database doesn't have them (for old jobs)
     loadTemplates()
   }, [result, jobTitle, swipeFileResults, fullResult, templates.length, templatesLoading])
+
+  // Handler for exploring templates
+  const handleExploreTemplates = async () => {
+    setShowTemplateModal(true)
+    // Use the same store as /templates page
+    await fetchTemplates()
+  }
+
+  // Handler for template selection
+  const handleTemplateSelect = (templateId: string) => {
+    console.log('Template selected:', templateId)
+    setSelectedTemplateForRefinement(templateId)
+    
+    // If angle is already selected (from marketing angles section), proceed to generate
+    if (selectedAngle) {
+      handleGenerateRefinedTemplate(templateId, selectedAngle)
+    } else {
+      // Move to step 2 (angle selection)
+      setTemplateModalStep(2)
+    }
+  }
+
+  // Handler for generating refined template
+  const handleGenerateRefinedTemplate = async (templateId: string, angle: string) => {
+    if (!jobId || !templateId || !angle) return
+    
+    setIsGeneratingRefined(true)
+    try {
+      const response = await fetch(`/api/jobs/${jobId}/generate-refined-template`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId, angle })
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to generate template')
+      }
+      
+      const data = await response.json()
+      
+      // Reload templates from database
+      try {
+        const templatesResponse = await fetch(`/api/jobs/${jobId}/injected-templates`)
+        if (templatesResponse.ok) {
+          const injectedTemplates = await templatesResponse.json()
+          if (injectedTemplates && injectedTemplates.length > 0) {
+            const updatedTemplates = injectedTemplates.map((injected: any) => ({
+              name: `${injected.template_id} - ${injected.angle_name}`,
+              type: 'Injected Template',
+              html: injected.html_content,
+              angle: injected.angle_name,
+              templateId: injected.template_id,
+              timestamp: injected.created_at
+            }))
+
+            updatedTemplates.sort((a: any, b: any) => {
+              if (a.angle !== b.angle) {
+                return (a.angle || '').localeCompare(b.angle || '')
+              }
+              return (a.templateId || '').localeCompare(b.templateId || '')
+            })
+
+            setTemplates(updatedTemplates)
+          } else {
+            // If no templates, set empty array
+            setTemplates([])
+          }
+        }
+      } catch (error) {
+        console.error('Error reloading templates:', error)
+      }
+      
+      // Close modal and reset
+      setShowTemplateModal(false)
+      setSelectedTemplateForRefinement(null)
+      setSelectedAngleForRefinement(null)
+      
+      toast({
+        title: "Success",
+        description: "New template generated successfully!",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate template",
+        variant: "destructive",
+      })
+    } finally {
+      setIsGeneratingRefined(false)
+    }
+  }
 
   const formatAnalysis = (analysis: string) => {
     const paragraphs = analysis.split('\n\n').filter(p => p.trim())
@@ -1562,16 +1667,25 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                           </p>
                         </div>
                       )}
-                      {templates.length > 0 && (
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <h3 className="text-lg font-semibold">Generated Prelanders</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {templates.length} template{templates.length !== 1 ? 's' : ''} generated
-                            </p>
-                          </div>
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold">Generated Prelanders</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {templates.length > 0 
+                              ? `${templates.length} template${templates.length !== 1 ? 's' : ''} generated`
+                              : 'No templates generated yet'}
+                          </p>
                         </div>
-                      )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleExploreTemplates}
+                          disabled={availableTemplatesLoading}
+                        >
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Explore More Templates
+                        </Button>
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {/* Existing templates */}
                         {templates.map((template, index) => (
@@ -1815,6 +1929,242 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
               />
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Template Selection Modal for Refined Generation */}
+      <Dialog open={showTemplateModal} onOpenChange={(open) => {
+        setShowTemplateModal(open)
+        if (!open) {
+          // Reset state when modal closes
+          setSelectedTemplateForRefinement(null)
+          setSelectedAngleForRefinement(null)
+          setTemplateModalStep(1)
+        }
+      }}>
+        <DialogContent className="!max-w-[95vw] !max-h-[95vh] !w-[95vw] !h-[95vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {templateModalStep === 1 ? 'Step 1: Select a Template' : 'Step 2: Select Marketing Angle'}
+            </DialogTitle>
+            <DialogDescription>
+              {templateModalStep === 1 
+                ? 'Choose a template to generate a refined prelander'
+                : 'Choose a marketing angle for your selected template'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {availableTemplatesLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : templateModalStep === 1 ? (
+            // Step 1: Template Selection
+            availableTemplates.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No templates available</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+              {/* Template Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {availableTemplates.map((template) => (
+                  <TemplatePreview
+                    key={template.id}
+                    template={template}
+                    isSelected={selectedTemplateForRefinement === template.id}
+                    onClick={() => handleTemplateSelect(template.id)}
+                  />
+                ))}
+              </div>
+              </div>
+            )
+          ) : (
+            // Step 2: Angle Selection
+            <div className="space-y-6">
+              {/* Show selected template info */}
+              {selectedTemplateForRefinement && (
+                <div className="p-4 bg-muted rounded-lg border border-border">
+                  <p className="text-sm text-muted-foreground mb-1">Selected Template</p>
+                  <p className="font-semibold text-foreground">
+                    {availableTemplates.find(t => t.id === selectedTemplateForRefinement)?.name || selectedTemplateForRefinement}
+                  </p>
+                </div>
+              )}
+              
+              {/* Marketing Angles in Accordion Format */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">Select Marketing Angle</h3>
+                  <p className="text-sm text-muted-foreground">Choose a marketing angle to generate your refined template</p>
+                </div>
+                
+                {fullResult?.results?.marketing_angles && fullResult.results.marketing_angles.length > 0 ? (
+                  <Accordion 
+                    type="single" 
+                    className="w-full space-y-3"
+                    value={selectedAngleForRefinement || undefined}
+                    onValueChange={(value) => setSelectedAngleForRefinement(value || null)}
+                  >
+                    {fullResult.results.marketing_angles.map((angle: any, index: number) => {
+                      // Handle both old format (string) and new format (object with angle and title)
+                      const angleObj: AngleWithProperties | null = isAngle(angle) ? (angle as AngleWithProperties) : null;
+                      const angleTitle = angleObj?.title ?? null;
+                      const angleDescription = angleObj?.angle ?? (typeof angle === 'string' ? angle : '');
+                      const angleText = typeof angle === 'string' ? angle : angle.angle || angle.title || angleDescription;
+
+                      return (
+                        <AccordionItem
+                          key={index}
+                          value={angleText}
+                          className="bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-950/20 dark:to-teal-950/20 rounded-lg border border-cyan-200/50 dark:border-cyan-800/50 border-b border-cyan-200/50 dark:border-cyan-800/50 last:!border-b last:!border-cyan-200/50 dark:last:!border-cyan-800/50 px-4"
+                        >
+                          <AccordionTrigger className="hover:no-underline py-4">
+                            <div className="flex items-start gap-3 w-full text-left">
+                              <div className={`bg-primary/10 rounded-full p-1.5 flex-shrink-0 mt-0.5 ${selectedAngleForRefinement === angleText ? 'bg-primary/20' : ''}`}>
+                                <Target className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="flex-1">
+                                {angleTitle && (
+                                  <h5 className="text-sm font-bold text-foreground mb-1">{angleTitle}</h5>
+                                )}
+                                <p className="text-sm text-foreground font-medium leading-relaxed break-words">{angleDescription}</p>
+                              </div>
+                              {selectedAngleForRefinement === angleText && (
+                                <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                              )}
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="pt-0 pb-4">
+                            {angleObj && (
+                              <div className="space-y-4 pl-9">
+                                {angleObj?.target_age_range && (
+                                  <div>
+                                    <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Age Range</h6>
+                                    <p className="text-sm text-foreground">{angleObj.target_age_range}</p>
+                                  </div>
+                                )}
+                                {angleObj?.target_audience && (
+                                  <div>
+                                    <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Audience</h6>
+                                    <p className="text-sm text-foreground">{angleObj.target_audience}</p>
+                                  </div>
+                                )}
+                                {angleObj?.pain_points && angleObj.pain_points.length > 0 && (
+                                  <div>
+                                    <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Pain Points</h6>
+                                    <ul className="space-y-1">
+                                      {(angleObj.pain_points || []).map((point: string, idx: number) => (
+                                        <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                          <span className="text-primary mt-1.5">•</span>
+                                          <span>{point}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {angleObj?.desires && angleObj.desires.length > 0 && (
+                                  <div>
+                                    <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Desires</h6>
+                                    <ul className="space-y-1">
+                                      {(angleObj.desires || []).map((desire: string, idx: number) => (
+                                        <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                          <span className="text-primary mt-1.5">•</span>
+                                          <span>{desire}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {angleObj?.common_objections && angleObj.common_objections.length > 0 && (
+                                  <div>
+                                    <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Common Objections</h6>
+                                    <ul className="space-y-1">
+                                      {(angleObj.common_objections || []).map((objection: string, idx: number) => (
+                                        <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                          <span className="text-primary mt-1.5">•</span>
+                                          <span>{objection}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {angleObj?.failed_alternatives && angleObj.failed_alternatives.length > 0 && (
+                                  <div>
+                                    <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Failed Alternatives</h6>
+                                    <ul className="space-y-1">
+                                      {(angleObj.failed_alternatives || []).map((alternative: string, idx: number) => (
+                                        <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                          <span className="text-primary mt-1.5">•</span>
+                                          <span>{alternative}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {angleObj?.copy_approach && angleObj.copy_approach.length > 0 && (
+                                  <div>
+                                    <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Copy Approach</h6>
+                                    <ul className="space-y-1">
+                                      {(angleObj.copy_approach || []).map((approach: string, idx: number) => (
+                                        <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                                          <span className="text-primary mt-1.5">•</span>
+                                          <span>{approach}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </AccordionContent>
+                        </AccordionItem>
+                      )
+                    })}
+                  </Accordion>
+                ) : (
+                  <div className="p-4 bg-muted rounded-lg border border-border text-center">
+                    <p className="text-sm text-muted-foreground">No marketing angles available</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Navigation and Generate Button */}
+              <div className="flex justify-between pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setTemplateModalStep(1)
+                    setSelectedAngleForRefinement(null)
+                  }}
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (selectedTemplateForRefinement && selectedAngleForRefinement) {
+                      handleGenerateRefinedTemplate(
+                        selectedTemplateForRefinement,
+                        selectedAngleForRefinement
+                      )
+                    }
+                  }}
+                  disabled={isGeneratingRefined || !selectedAngleForRefinement}
+                  className="min-w-[180px]"
+                >
+                  {isGeneratingRefined ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    'Generate Refined Template'
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

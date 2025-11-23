@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { EmptyState } from "@/components/ui/empty-state"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { Search, Filter, Users, CheckCircle, Calendar, User, ArrowLeft, Loader2, Globe, Package, MessageSquare, FileText, BarChart, Info } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
 import { useToast } from "@/hooks/use-toast"
@@ -32,7 +32,7 @@ interface Avatar {
   avatar_index?: number
 }
 
-export default function AvatarsPage() {
+function AvatarsContent() {
   const { user, isAuthenticated } = useAuthStore()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -419,7 +419,7 @@ export default function AvatarsPage() {
   }
 
   return (
-    <ErrorBoundary>
+    <>
       <div className="flex h-screen bg-background overflow-hidden">
         <Sidebar />
         <main className="flex-1 overflow-auto ml-16">
@@ -942,6 +942,46 @@ export default function AvatarsPage() {
           </div>
         </DialogContent>
       </Dialog>
+    </>
+  )
+}
+
+function AvatarsLoading() {
+  return (
+    <div className="flex h-screen bg-background">
+      <Sidebar />
+      <main className="flex-1 overflow-auto ml-16">
+        <div className="p-4 md:p-6">
+          <div className="space-y-6">
+            <div className="h-8 w-48 bg-muted animate-pulse rounded" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardHeader>
+                    <div className="h-6 w-3/4 bg-muted rounded" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="h-4 w-full bg-muted rounded" />
+                      <div className="h-4 w-5/6 bg-muted rounded" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+export default function AvatarsPage() {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<AvatarsLoading />}>
+        <AvatarsContent />
+      </Suspense>
     </ErrorBoundary>
   )
 }

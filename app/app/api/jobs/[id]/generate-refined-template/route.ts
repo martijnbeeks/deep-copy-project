@@ -1,0 +1,190 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { query } from '@/lib/db/connection'
+import { getInjectableTemplateById, createInjectedTemplate, getInjectableTemplateIdForTemplate } from '@/lib/db/queries'
+import { extractContentFromSwipeResult, injectContentIntoTemplate } from '@/lib/utils/template-injection'
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const jobId = params.id
+    const { templateId, angle } = await request.json()
+
+    if (!templateId || !angle) {
+      return NextResponse.json(
+        { error: 'templateId and angle are required' },
+        { status: 400 }
+      )
+    }
+
+    // Get job result data
+    const resultQuery = await query(
+      `SELECT metadata FROM results WHERE job_id = $1`,
+      [jobId]
+    )
+
+    if (resultQuery.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Job result not found' },
+        { status: 404 }
+      )
+    }
+
+    const metadata = resultQuery.rows[0].metadata
+    const fullResult = metadata?.full_result || metadata
+    const swipeResults = fullResult?.results?.swipe_results || fullResult?.swipe_results || []
+    const marketingAngles = fullResult?.results?.marketing_angles || []
+
+    // Helper: Normalize text for comparison (handle newlines, extra spaces)
+    const normalize = (text: string): string => {
+      return text.toLowerCase().trim().replace(/\s+/g, ' ').replace(/\n/g, ' ')
+    }
+
+    // Helper: Extract angle text from marketing angle (string or object)
+    const getAngleText = (ma: any): string => {
+      if (typeof ma === 'string') return ma
+      return ma.angle || ma.title || ''
+    }
+
+    // Find the swipe result for the selected angle
+    let swipeResult: any = null
+    let angleIndex = -1
+    const normalizedSelectedAngle = normalize(angle)
+
+    // Strategy 1: Match by index in marketing_angles array (most reliable)
+    // Marketing angles and swipe_results should be in the same order
+    const marketingAngleIndex = marketingAngles.findIndex((ma: any) => {
+      const maText = getAngleText(ma)
+      const normalizedMA = normalize(maText)
+      return normalizedMA === normalizedSelectedAngle || 
+             normalizedMA.includes(normalizedSelectedAngle) || 
+             normalizedSelectedAngle.includes(normalizedMA)
+    })
+
+    if (marketingAngleIndex >= 0 && swipeResults[marketingAngleIndex]) {
+      swipeResult = swipeResults[marketingAngleIndex]
+      angleIndex = marketingAngleIndex
+    } else {
+      // Strategy 2: Fallback - match by text in swipe results
+      const foundIndex = swipeResults.findIndex((swipe: any) => {
+        const swipeAngle = swipe?.angle || swipe?.angle_name || ''
+        if (!swipeAngle) return false
+        const normalizedSwipe = normalize(swipeAngle)
+        return normalizedSwipe === normalizedSelectedAngle ||
+               normalizedSwipe.includes(normalizedSelectedAngle) ||
+               normalizedSelectedAngle.includes(normalizedSwipe)
+      })
+      
+      if (foundIndex >= 0) {
+        swipeResult = swipeResults[foundIndex]
+        angleIndex = foundIndex
+      }
+    }
+
+    if (!swipeResult) {
+      // Log available angles for debugging
+      const availableAngles = swipeResults.map((swipe: any, idx: number) => ({
+        index: idx,
+        angle: swipe?.angle || swipe?.angle_name || `Angle ${idx + 1}`,
+      }))
+      
+      const availableMarketingAngles = marketingAngles.map((ma: any, idx: number) => {
+        if (typeof ma === 'string') return { index: idx, text: ma }
+        return { index: idx, title: ma.title, angle: ma.angle }
+      })
+      
+      console.error('❌ Angle matching failed:')
+      console.error('Selected angle:', angle)
+      console.error('Available swipe angles:', JSON.stringify(availableAngles, null, 2))
+      console.error('Available marketing angles:', JSON.stringify(availableMarketingAngles, null, 2))
+      
+      return NextResponse.json(
+        { 
+          error: `Marketing angle "${angle}" not found in job results`,
+          debug: {
+            selectedAngle: angle,
+            availableSwipeAngles: availableAngles.map(a => a.angle),
+            marketingAnglesCount: marketingAngles.length,
+            swipeResultsCount: swipeResults.length
+          }
+        },
+        { status: 404 }
+      )
+    }
+
+    // Get job advertorial type once (DRY principle)
+    const jobQuery = await query(
+      `SELECT advertorial_type FROM jobs WHERE id = $1`,
+      [jobId]
+    )
+    const advertorialType = jobQuery.rows[0]?.advertorial_type || 'advertorial'
+
+    // Get injectable template
+    let injectableTemplates = await getInjectableTemplateById(templateId)
+    
+    if (!injectableTemplates || injectableTemplates.length === 0) {
+      const injectableTemplateId = await getInjectableTemplateIdForTemplate(templateId)
+      if (injectableTemplateId) {
+        injectableTemplates = await getInjectableTemplateById(injectableTemplateId)
+      }
+    }
+    
+    if (!injectableTemplates || injectableTemplates.length === 0) {
+      const fallbackResult = await query(
+        `SELECT * FROM injectable_templates WHERE advertorial_type = $1 ORDER BY created_at DESC LIMIT 1`,
+        [advertorialType]
+      )
+      if (fallbackResult.rows.length > 0) {
+        injectableTemplates = fallbackResult.rows
+      }
+    }
+    
+    if (!injectableTemplates || injectableTemplates.length === 0) {
+      return NextResponse.json(
+        { error: `No injectable template found for template ${templateId}` },
+        { status: 404 }
+      )
+    }
+
+    const injectableTemplate = injectableTemplates[0]
+
+    // Extract content from swipe result
+    const contentData = extractContentFromSwipeResult(swipeResult, advertorialType)
+
+    // Inject content into template
+    const injectedHtml = injectContentIntoTemplate(injectableTemplate, contentData)
+
+    // Use the angle index we found (1-based for database)
+    const finalAngleIndex = angleIndex >= 0 ? angleIndex + 1 : swipeResults.length + 1
+
+    // Store in database
+    const storedTemplate = await createInjectedTemplate(
+      jobId,
+      angle,
+      templateId,
+      injectedHtml,
+      finalAngleIndex
+    )
+
+    return NextResponse.json({
+      success: true,
+      template: {
+        id: storedTemplate.id,
+        angle,
+        templateId,
+        html: injectedHtml
+      }
+    })
+  } catch (error) {
+    console.error('Error generating refined template:', error)
+    return NextResponse.json(
+      { 
+        error: 'Failed to generate refined template',
+        details: error instanceof Error ? error.message : String(error)
+      },
+      { status: 500 }
+    )
+  }
+}
+
