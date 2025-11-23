@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState, useCallback } from "react"
 import { RefreshCw, Download, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { ContentViewerSkeleton } from "@/components/ui/skeleton-loaders"
@@ -105,10 +106,16 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
           <div className="px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold">AI</span>
-                </div>
-                <span className="text-xl font-bold text-foreground">DeepCopy</span>
+                <Link href="/dashboard">
+                  <Image
+                    src="/deepcopy-logo.png"
+                    alt="DeepCopy"
+                    width={192}
+                    height={48}
+                    className="h-10 w-auto"
+                    priority
+                  />
+                </Link>
               </div>
               <div className="flex items-center gap-3">
                 <Link href="/dashboard">

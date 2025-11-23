@@ -64,19 +64,49 @@ export const createJob = async (jobData: {
   avatars?: any[]
   execution_id?: string
   custom_id?: string
+  parent_job_id?: string
+  avatar_persona_name?: string
+  is_avatar_job?: boolean
 }): Promise<Job> => {
   if (jobData.custom_id) {
     // Use custom ID (DeepCopy job ID) as the primary key
     const result = await query(
-      'INSERT INTO jobs (id, user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
-      [jobData.custom_id, jobData.user_id, jobData.title, jobData.brand_info, jobData.sales_page_url, jobData.template_id, jobData.advertorial_type, jobData.target_approach, JSON.stringify(jobData.avatars || []), jobData.execution_id]
+      'INSERT INTO jobs (id, user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id, parent_job_id, avatar_persona_name, is_avatar_job) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *',
+      [
+        jobData.custom_id, 
+        jobData.user_id, 
+        jobData.title, 
+        jobData.brand_info, 
+        jobData.sales_page_url, 
+        jobData.template_id, 
+        jobData.advertorial_type, 
+        jobData.target_approach, 
+        JSON.stringify(jobData.avatars || []), 
+        jobData.execution_id,
+        jobData.parent_job_id || null,
+        jobData.avatar_persona_name || null,
+        jobData.is_avatar_job || false
+      ]
     )
     return result.rows[0]
   } else {
     // Use default UUID generation
     const result = await query(
-      'INSERT INTO jobs (user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
-      [jobData.user_id, jobData.title, jobData.brand_info, jobData.sales_page_url, jobData.template_id, jobData.advertorial_type, jobData.target_approach, JSON.stringify(jobData.avatars || []), jobData.execution_id]
+      'INSERT INTO jobs (user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id, parent_job_id, avatar_persona_name, is_avatar_job) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
+      [
+        jobData.user_id, 
+        jobData.title, 
+        jobData.brand_info, 
+        jobData.sales_page_url, 
+        jobData.template_id, 
+        jobData.advertorial_type, 
+        jobData.target_approach, 
+        JSON.stringify(jobData.avatars || []), 
+        jobData.execution_id,
+        jobData.parent_job_id || null,
+        jobData.avatar_persona_name || null,
+        jobData.is_avatar_job || false
+      ]
     )
     return result.rows[0]
   }
@@ -99,6 +129,7 @@ export const getJobsByUserIdWithResults = async (userId: string, filters: { stat
     LEFT JOIN templates t ON j.template_id = t.id
     LEFT JOIN results r ON j.id = r.job_id
     WHERE j.user_id = $1
+      AND (j.is_avatar_job IS NULL OR j.is_avatar_job = FALSE)
   `
   const params: any[] = [userId]
   const conditions: string[] = []
@@ -158,6 +189,7 @@ export const getJobsByUserId = async (userId: string, filters: { status?: string
     FROM jobs j
     LEFT JOIN templates t ON j.template_id = t.id
     WHERE j.user_id = $1
+      AND (j.is_avatar_job IS NULL OR j.is_avatar_job = FALSE)
   `
   const params: any[] = [userId]
   const conditions: string[] = []

@@ -27,9 +27,13 @@ interface Avatar {
   is_broad_avatar?: boolean
   is_researched?: boolean
   job_id: string
+  parent_job_id?: string
+  avatar_job_id?: string
   job_title: string
   job_created_at: string
   avatar_index?: number
+  avatar_job_status?: string
+  avatar_job_progress?: number
 }
 
 function AvatarsContent() {
@@ -120,8 +124,9 @@ function AvatarsContent() {
     setShowAvatarDetails(false)
     
     if (avatar.is_researched) {
-      // If already researched, go to results page
-      router.push(`/results/${avatar.job_id}`)
+      // If already researched, go to results page - use avatar_job_id if available, otherwise job_id
+      const targetJobId = (avatar as any).avatar_job_id || avatar.job_id
+      router.push(`/results/${targetJobId}`)
     } else {
       // If not researched, show loading modal first
       setSelectedAvatar(avatar)
@@ -184,9 +189,9 @@ function AvatarsContent() {
         }
 
         const data = await response.json()
-        const parentJobId = data.job.id // Use parent job ID
+        const avatarJobId = data.job.id // Use avatar job ID (the new job created for this avatar)
         
-        setCurrentJobId(parentJobId)
+        setCurrentJobId(avatarJobId)
         
         // Refresh avatars to show updated research status
         await fetchAvatars()
@@ -198,7 +203,7 @@ function AvatarsContent() {
 
           for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-              const statusResponse = await fetch(`/api/jobs/${parentJobId}/status`, {
+              const statusResponse = await fetch(`/api/jobs/${avatarJobId}/status`, {
                 method: 'GET',
                 headers: {
                   'Content-Type': 'application/json',
