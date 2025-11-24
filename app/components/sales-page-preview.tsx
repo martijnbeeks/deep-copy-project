@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { ExternalLink, Globe, Loader2 } from "lucide-react"
 import {
   Dialog,
@@ -25,18 +25,21 @@ export function SalesPagePreview({ url, jobId, className = "" }: SalesPagePrevie
 
   const getDomain = (urlString: string) => {
     try {
-      const urlObj = new URL(urlString)
-      return urlObj.hostname.replace('www.', '')
+      return new URL(urlString).hostname.replace('www.', '')
     } catch {
       return urlString
     }
   }
 
-  const domain = getDomain(url)
+  const domain = useMemo(() => getDomain(url), [url])
   const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+  const proxyUrl = useMemo(() => `/api/proxy/page?url=${encodeURIComponent(url)}`, [url])
 
-  // Create proxy URL for iframe
-  const proxyUrl = `/api/proxy/page?url=${encodeURIComponent(url)}`
+  // Reset iframe state helper
+  const resetIframeState = () => {
+    setIframeError(false)
+    setIframeLoading(true)
+  }
 
   useEffect(() => {
     if (!jobId) {
@@ -63,55 +66,28 @@ export function SalesPagePreview({ url, jobId, className = "" }: SalesPagePrevie
     fetchScreenshot()
   }, [jobId])
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setIframeError(false)
-    setIframeLoading(true)
-    setIsModalOpen(true)
-  }
-
-  // Reset iframe loading state when modal closes
+  // Reset iframe state when modal closes
   useEffect(() => {
     if (!isModalOpen) {
-      setIframeError(false)
-      setIframeLoading(true)
+      resetIframeState()
     }
   }, [isModalOpen])
 
-  // Timeout fallback - if iframe doesn't load within 3 seconds, check for blocking
-  useEffect(() => {
-    if (isModalOpen && !iframeError && iframeLoading) {
-      const timeout = setTimeout(() => {
-        // If still loading after 3 seconds, likely blocked
-        const iframe = document.querySelector(`iframe[title*="Sales page"]`) as HTMLIFrameElement
-        if (iframe && iframeLoading) {
-          try {
-            // Try to detect if iframe is blocked
-            const test = iframe.contentWindow
-            if (!test) {
-              setIframeError(true)
-              setIframeLoading(false)
-              return
-            }
-            // Try accessing location - will throw if blocked
-            try {
-              iframe.contentWindow.location.href
-            } catch (e: any) {
-              // If we get here, it's likely blocked
-              setIframeError(true)
-              setIframeLoading(false)
-            }
-          } catch (e: any) {
-            // Any error accessing iframe content suggests blocking
-            setIframeError(true)
-            setIframeLoading(false)
-          }
-        }
-      }, 3000)
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    resetIframeState()
+    setIsModalOpen(true)
+  }
 
-      return () => clearTimeout(timeout)
-    }
-  }, [isModalOpen, iframeError, iframeLoading])
+  const handleIframeError = () => {
+    setIframeError(true)
+    setIframeLoading(false)
+  }
+
+  const handleIframeLoad = () => {
+    setIframeLoading(false)
+    // With proxy, no need for complex error detection
+  }
 
   return (
     <>
@@ -205,30 +181,8 @@ export function SalesPagePreview({ url, jobId, className = "" }: SalesPagePrevie
                   title={`Sales page: ${domain}`}
                   allow="fullscreen"
                   style={{ height: '100%', minHeight: 0 }}
-                  onError={() => {
-                    setIframeError(true)
-                    setIframeLoading(false)
-                  }}
-                  onLoad={(e) => {
-                    const iframe = e.target as HTMLIFrameElement
-                    setIframeLoading(false)
-
-                    // With proxy, we should be able to access the content
-                    // But still check for any errors after a short delay
-                    setTimeout(() => {
-                      try {
-                        const contentWindow = iframe.contentWindow
-                        if (!contentWindow) {
-                          setIframeError(true)
-                        }
-                        // If we can access contentWindow, the proxy is working
-                      } catch (e: any) {
-                        // If there's still an error, show fallback
-                        console.error('Iframe load error:', e)
-                        setIframeError(true)
-                      }
-                    }, 1000)
-                  }}
+                  onError={handleIframeError}
+                  onLoad={handleIframeLoad}
                 />
               </>
             )}
