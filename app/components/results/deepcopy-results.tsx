@@ -72,6 +72,89 @@ type AngleWithProperties = Angle & {
   copy_approach?: string[];
 };
 
+// Helper function to parse angle data (DRY: used in multiple places)
+function parseAngle(angle: any): {
+  angleObj: AngleWithProperties | null;
+  angleTitle: string | null;
+  angleDescription: string;
+  angleString: string;
+} {
+  const angleObj: AngleWithProperties | null = isAngle(angle) ? (angle as AngleWithProperties) : null;
+  return {
+    angleObj,
+    angleTitle: angleObj?.title ?? null,
+    angleDescription: angleObj?.angle ?? (typeof angle === 'string' ? angle : ''),
+    angleString: typeof angle === 'object' ? `${angle.title}: ${angle.angle}` : angle
+  };
+}
+
+// Reusable component for angle list sections (DRY: used for pain_points, desires, objections, etc.)
+function AngleListSection({
+  title,
+  items,
+  className = "",
+  listStyle = "bullet" // "bullet" or "disc"
+}: {
+  title: string;
+  items?: string[];
+  className?: string;
+  listStyle?: "bullet" | "disc";
+}) {
+  if (!items || items.length === 0) return null;
+
+  if (listStyle === "disc") {
+    return (
+      <div className={className}>
+        <span className="font-medium">{title}:</span>
+        <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
+          {items.map((item, idx) => (
+            <li key={idx}>{item}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  return (
+    <div className={className}>
+      <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">{title}</h6>
+      <ul className="space-y-1">
+        {items.map((item, idx) => (
+          <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+            <span className="text-primary mt-1.5">•</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// Reusable component for angle status icon (DRY: used in multiple places)
+function AngleStatusIcon({
+  isGenerated,
+  isGenerating
+}: {
+  isGenerated: boolean;
+  isGenerating: boolean;
+}) {
+  if (isGenerated) {
+    return (
+      <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+        <CheckCircle2 className="w-3 h-3 text-white" />
+      </div>
+    );
+  }
+  if (isGenerating) {
+    return <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />;
+  }
+  return (
+    <div className="bg-primary/10 rounded-full p-1.5 flex-shrink-0">
+      <Target className="h-4 w-4 text-primary" />
+    </div>
+  );
+}
+
 export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, templateId, customerAvatars, salesPageUrl }: DeepCopyResultsProps) {
   const [templates, setTemplates] = useState<Array<{ name: string, type: string, html: string, angle?: string, timestamp?: string, templateId?: string }>>([])
   const [templatesLoading, setTemplatesLoading] = useState(true)
@@ -96,11 +179,80 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
   const [openAngleItem, setOpenAngleItem] = useState<string | undefined>(undefined)
   const [isGeneratingRefined, setIsGeneratingRefined] = useState(false)
   const [selectedAngleFilter, setSelectedAngleFilter] = useState<string>("all")
+  const [openMarketingAngle, setOpenMarketingAngle] = useState<string | undefined>(undefined)
   const { templates: availableTemplates, fetchTemplates, isLoading: availableTemplatesLoading } = useTemplatesStore()
   const { toast } = useToast()
 
   const fullResult = result.metadata?.full_result
   const originalJobId = result.metadata?.deepcopy_job_id
+
+  // Helper functions for Map state updates (DRY: used multiple times)
+  const updateGeneratingAngle = (angleString: string, jobId: string) => {
+    setGeneratingAngles(prev => {
+      const newMap = new Map(prev);
+      newMap.set(angleString, jobId);
+      return newMap;
+    });
+  };
+
+  const removeGeneratingAngle = (angleString: string) => {
+    setGeneratingAngles(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(angleString);
+      return newMap;
+    });
+  };
+
+  const updateAngleStatus = (angleString: string, status: string) => {
+    setAngleStatuses(prev => {
+      const newMap = new Map(prev);
+      newMap.set(angleString, status);
+      return newMap;
+    });
+  };
+
+  const removeAngleStatus = (angleString: string) => {
+    setAngleStatuses(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(angleString);
+      return newMap;
+    });
+  };
+
+  // Helper function to show error (DRY: used multiple times)
+  const showError = (error: unknown, defaultMessage: string = 'An error occurred') => {
+    const errorMessage = error instanceof Error ? error.message : defaultMessage;
+    toast({
+      title: "Error",
+      description: errorMessage,
+      variant: "destructive",
+    });
+  };
+
+  // Helper function to filter templates by angle (DRY: used in multiple places)
+  const filterTemplatesByAngle = (
+    templatesList: Array<{ name: string; type: string; html: string; angle?: string; timestamp?: string; templateId?: string }>,
+    angleFilter: string
+  ) => {
+    if (angleFilter === "all") return templatesList;
+
+    return templatesList.filter((template: { name: string; type: string; html: string; angle?: string; timestamp?: string; templateId?: string }) => {
+      // Direct match
+      if (template.angle === angleFilter) return true;
+
+      // Handle "Title: Description" format - check if description part matches
+      if (template.angle?.includes(': ')) {
+        const parts = template.angle.split(': ');
+        if (parts.length >= 2 && parts[1] === angleFilter) return true;
+      }
+
+      // Partial matches (for backwards compatibility)
+      if (template.angle?.includes(angleFilter)) return true;
+      if (angleFilter.includes(template.angle || '')) return true;
+
+      return false;
+    });
+  };
 
   // Load generated angles and templates from database on mount
   useEffect(() => {
@@ -527,16 +679,76 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
   }
 
   // Helper function to get angle title from angle string (DRY principle)
+  // Handles both "Title: Description" format (from Avatar & Marketing) and plain description format (from Explore More)
   const getAngleTitle = (angleString: string | undefined, fallback: string = '') => {
     if (!angleString) return fallback;
+
+    // Extract description part if angleString is in "Title: Description" format
+    let angleDescription = angleString;
+    let angleTitlePart = '';
+    if (angleString.includes(': ')) {
+      const parts = angleString.split(': ');
+      if (parts.length >= 2) {
+        angleTitlePart = parts[0];
+        angleDescription = parts[1];
+      }
+    }
+
+    // Try to find matching marketing angle by description (the actual angle text)
     const matchingAngle = fullResult?.results?.marketing_angles?.find((ma: any) => {
-      if (typeof ma === 'string') return ma === angleString;
-      return ma.angle === angleString || ma.title === angleString;
+      if (typeof ma === 'string') {
+        // Match against full string or description part
+        return ma === angleString || ma === angleDescription;
+      }
+      // Match by angle description (the actual angle text)
+      if (ma.angle === angleDescription || ma.angle === angleString) return true;
+      // Also check if title matches (for backwards compatibility)
+      if (ma.title === angleString || (angleTitlePart && ma.title === angleTitlePart)) return true;
+      return false;
     });
+
     if (matchingAngle && typeof matchingAngle === 'object' && matchingAngle.title) {
       return matchingAngle.title;
     }
+
+    // If no match found but we have a title part from "Title: Description" format, use it
+    if (angleTitlePart) {
+      return angleTitlePart;
+    }
+
     return angleString;
+  };
+
+  // Helper function to get angle description from angle string
+  // Handles both "Title: Description" format and plain description format
+  const getAngleDescription = (angleString: string | undefined, fallback: string = '') => {
+    if (!angleString) return fallback;
+
+    // Extract description part if angleString is in "Title: Description" format
+    let angleDescription = angleString;
+    if (angleString.includes(': ')) {
+      const parts = angleString.split(': ');
+      if (parts.length >= 2) {
+        angleDescription = parts[1];
+      }
+    }
+
+    // Try to find matching marketing angle by description (the actual angle text)
+    const matchingAngle = fullResult?.results?.marketing_angles?.find((ma: any) => {
+      if (typeof ma === 'string') {
+        return ma === angleString || ma === angleDescription;
+      }
+      // Match by angle description (the actual angle text)
+      if (ma.angle === angleDescription || ma.angle === angleString) return true;
+      return false;
+    });
+
+    if (matchingAngle && typeof matchingAngle === 'object' && matchingAngle.angle) {
+      return matchingAngle.angle;
+    }
+
+    // Return the description part (or full string if not in "Title: Description" format)
+    return angleDescription;
   };
 
   const handleDownloadAll = async () => {
@@ -1193,115 +1405,151 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                       {fullResult?.results?.marketing_angles && (
                         <div className="space-y-4">
                           <h4 className="text-lg font-semibold mb-4">Marketing Angles</h4>
-                          <Accordion type="multiple" className="w-full space-y-3">
+                          <Accordion
+                            type="single"
+                            collapsible
+                            className="w-full space-y-3"
+                            value={openMarketingAngle}
+                            onValueChange={setOpenMarketingAngle}
+                          >
                             {fullResult.results.marketing_angles.map((angle, index) => {
-                              // Handle both old format (string) and new format (object with angle and title)
-                              const angleObj: AngleWithProperties | null = isAngle(angle) ? (angle as AngleWithProperties) : null;
-                              const angleTitle = angleObj?.title ?? null;
-                              const angleDescription = angleObj?.angle ?? (typeof angle === 'string' ? angle : '');
+                              const { angleObj, angleTitle, angleDescription, angleString } = parseAngle(angle);
+                              const isGenerated = generatedAngles.has(angleString);
+                              const isGenerating = generatingAngles.has(angleString);
+                              const status = angleStatuses.get(angleString);
+                              const itemValue = `angle-${index}`;
+                              const isOpen = openMarketingAngle === itemValue;
 
                               return (
                                 <AccordionItem
                                   key={index}
-                                  value={`angle-${index}`}
-                                  className="bg-gradient-to-r from-cyan-50 to-teal-50 dark:from-cyan-950/20 dark:to-teal-950/20 rounded-lg border border-cyan-200/50 dark:border-cyan-800/50 border-b border-cyan-200/50 dark:border-cyan-800/50 last:!border-b last:!border-cyan-200/50 dark:last:!border-cyan-800/50 px-4"
+                                  value={itemValue}
+                                  className="border-none"
                                 >
-                                  <AccordionTrigger className="hover:no-underline py-4">
-                                    <div className="flex items-start gap-3 w-full text-left">
-                                      <div className="bg-primary/10 rounded-full p-1.5 flex-shrink-0 mt-0.5">
-                                        <Target className="h-4 w-4 text-primary" />
-                                      </div>
-                                      <div className="flex-1">
-                                        {angleTitle && (
-                                          <h5 className="text-sm font-bold text-foreground mb-1">{angleTitle}</h5>
-                                        )}
-                                        <p className="text-sm text-foreground font-medium leading-relaxed break-words">{angleDescription}</p>
+                                  <Card className={`p-0 transition-all hover:shadow-md cursor-pointer ${isGenerated
+                                    ? 'border-2 border-green-500 bg-green-50/50 dark:bg-green-950/20'
+                                    : 'border border-border hover:border-primary/50'
+                                    }`}>
+                                    <div
+                                      className="p-4"
+                                      onClick={() => {
+                                        setOpenMarketingAngle(isOpen ? undefined : itemValue);
+                                      }}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 flex-1">
+                                          <AngleStatusIcon isGenerated={isGenerated} isGenerating={isGenerating} />
+                                          <div className="flex-1">
+                                            {angleTitle && (
+                                              <div className="flex items-center gap-2 flex-wrap">
+                                                <Badge variant="outline" className="text-xs font-semibold bg-muted text-foreground border-border">
+                                                  #{index + 1}
+                                                </Badge>
+                                                <h3 className="text-base font-semibold text-foreground">{angleTitle}</h3>
+                                              </div>
+                                            )}
+                                            <p className="text-sm text-muted-foreground mt-1">{angleDescription}</p>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          {isGenerated && (
+                                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">
+                                              Generated
+                                            </Badge>
+                                          )}
+                                          {isGenerating && status && (
+                                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
+                                              {status}
+                                            </Badge>
+                                          )}
+                                          <AccordionTrigger className="pointer-events-none" />
+                                        </div>
                                       </div>
                                     </div>
-                                  </AccordionTrigger>
-                                  <AccordionContent className="pt-0 pb-4">
-                                    {angleObj && (
-                                      <div className="space-y-4 pl-9">
-                                        {angleObj?.target_age_range && (
-                                          <div>
-                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Age Range</h6>
-                                            <p className="text-sm text-foreground">{angleObj.target_age_range}</p>
-                                          </div>
-                                        )}
-                                        {angleObj?.target_audience && (
-                                          <div>
-                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Audience</h6>
-                                            <p className="text-sm text-foreground">{angleObj.target_audience}</p>
-                                          </div>
-                                        )}
-                                        {angleObj?.pain_points && angleObj.pain_points.length > 0 && (
-                                          <div>
-                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Pain Points</h6>
-                                            <ul className="space-y-1">
-                                              {(angleObj.pain_points || []).map((point: string, idx: number) => (
-                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
-                                                  <span className="text-primary mt-1.5">•</span>
-                                                  <span>{point}</span>
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        )}
-                                        {angleObj?.desires && angleObj.desires.length > 0 && (
-                                          <div>
-                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Desires</h6>
-                                            <ul className="space-y-1">
-                                              {(angleObj.desires || []).map((desire: string, idx: number) => (
-                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
-                                                  <span className="text-primary mt-1.5">•</span>
-                                                  <span>{desire}</span>
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        )}
-                                        {angleObj?.common_objections && angleObj.common_objections.length > 0 && (
-                                          <div>
-                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Common Objections</h6>
-                                            <ul className="space-y-1">
-                                              {(angleObj.common_objections || []).map((objection: string, idx: number) => (
-                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
-                                                  <span className="text-primary mt-1.5">•</span>
-                                                  <span>{objection}</span>
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        )}
-                                        {angleObj?.failed_alternatives && angleObj.failed_alternatives.length > 0 && (
-                                          <div>
-                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Failed Alternatives</h6>
-                                            <ul className="space-y-1">
-                                              {(angleObj.failed_alternatives || []).map((alternative: string, idx: number) => (
-                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
-                                                  <span className="text-primary mt-1.5">•</span>
-                                                  <span>{alternative}</span>
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        )}
-                                        {angleObj?.copy_approach && angleObj.copy_approach.length > 0 && (
-                                          <div>
-                                            <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Copy Approach</h6>
-                                            <ul className="space-y-1">
-                                              {(angleObj.copy_approach || []).map((approach: string, idx: number) => (
-                                                <li key={idx} className="text-sm text-foreground flex items-start gap-2">
-                                                  <span className="text-primary mt-1.5">•</span>
-                                                  <span>{approach}</span>
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        )}
+                                    <AccordionContent className="px-4 pb-4">
+                                      {angleObj && (
+                                        <div className="space-y-4">
+                                          {angleObj?.target_age_range && (
+                                            <div>
+                                              <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Age Range</h6>
+                                              <p className="text-sm text-foreground">{angleObj.target_age_range}</p>
+                                            </div>
+                                          )}
+                                          {angleObj?.target_audience && (
+                                            <div>
+                                              <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Audience</h6>
+                                              <p className="text-sm text-foreground">{angleObj.target_audience}</p>
+                                            </div>
+                                          )}
+                                          <AngleListSection title="Pain Points" items={angleObj?.pain_points} />
+                                          <AngleListSection title="Desires" items={angleObj?.desires} />
+                                          <AngleListSection title="Common Objections" items={angleObj?.common_objections} />
+                                          <AngleListSection title="Failed Alternatives" items={angleObj?.failed_alternatives} />
+                                          <AngleListSection title="Copy Approach" items={angleObj?.copy_approach} />
+                                        </div>
+                                      )}
+                                      <div className="flex justify-end pt-4 border-t border-border/50 mt-4">
+                                        <Button
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            if (!originalJobId || isGenerated || isGenerating) return;
+
+                                            // Add to generating map
+                                            updateGeneratingAngle(angleString, 'pending');
+                                            updateAngleStatus(angleString, 'SUBMITTED');
+
+                                            try {
+                                              const response = await fetch('/api/swipe-files/generate', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                  original_job_id: originalJobId,
+                                                  select_angle: angleString
+                                                })
+                                              });
+
+                                              if (!response.ok) {
+                                                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                                                throw new Error(errorData.error || 'Failed to generate swipe files');
+                                              }
+
+                                              const data = await response.json();
+
+                                              // Track this angle as generating
+                                              updateGeneratingAngle(angleString, data.jobId);
+
+                                              // Start polling for this specific angle
+                                              pollSwipeFileStatus(data.jobId, angleString);
+                                            } catch (error) {
+                                              console.error('Error generating swipe files:', error);
+                                              // Remove from generating map on error
+                                              removeGeneratingAngle(angleString);
+                                              removeAngleStatus(angleString);
+
+                                              // Show user-friendly error message
+                                              showError(error, 'Failed to generate swipe files. Please try again.');
+                                            }
+                                          }}
+                                          disabled={!originalJobId || isGenerated || isGenerating}
+                                          size="sm"
+                                        >
+                                          {isGenerating ? (
+                                            <>
+                                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                              Generating...
+                                            </>
+                                          ) : isGenerated ? (
+                                            <>
+                                              <CheckCircle2 className="w-4 h-4 mr-2" />
+                                              Generated
+                                            </>
+                                          ) : (
+                                            'Generate Swipe Files'
+                                          )}
+                                        </Button>
                                       </div>
-                                    )}
-                                  </AccordionContent>
+                                    </AccordionContent>
+                                  </Card>
                                 </AccordionItem>
                               );
                             })}
@@ -1319,7 +1567,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
       {/* Angle Selection & Swipe File Generation */}
       {/* Always show if we have marketing_angles */}
-      {fullResult?.results?.marketing_angles &&
+      {/*fullResult?.results?.marketing_angles &&
         fullResult.results.marketing_angles.length > 0 && (
           <div className="mb-12">
             <Accordion type="single" collapsible>
@@ -1349,12 +1597,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                         onValueChange={setAccordionValue}
                       >
                         {fullResult.results.marketing_angles.map((angle, index) => {
-                          // Handle both old format (string) and new format (object with title and angle)
-                          const angleObj: AngleWithProperties | null = isAngle(angle) ? (angle as AngleWithProperties) : null;
-                          const angleTitle = angleObj?.title ?? null;
-                          const angleDescription = angleObj?.angle ?? (typeof angle === 'string' ? angle : '');
-                          // For select_angle, use the format: "Title: Description" or just the string
-                          const angleString = typeof angle === 'object' ? `${angle.title}: ${angle.angle}` : angle;
+                          const { angleObj, angleTitle, angleDescription, angleString } = parseAngle(angle);
                           const isGenerated = generatedAngles.has(angleString);
                           const isGenerating = generatingAngles.has(angleString);
                           const status = angleStatuses.get(angleString);
@@ -1390,16 +1633,12 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                 <div className="p-4">
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2 flex-1">
-                                      {isGenerated ? (
-                                        <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                                          <CheckCircle2 className="w-3 h-3 text-white" />
-                                        </div>
-                                      ) : isGenerating ? (
-                                        <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0" />
-                                      ) : (
-                                        <div className={`bg-primary/10 rounded-full p-1.5 flex-shrink-0 ${isSelected ? 'bg-primary/20' : ''}`}>
+                                      {isSelected && !isGenerated && !isGenerating ? (
+                                        <div className="bg-primary/20 rounded-full p-1.5 flex-shrink-0">
                                           <Target className="h-4 w-4 text-primary" />
                                         </div>
+                                      ) : (
+                                        <AngleStatusIcon isGenerated={isGenerated} isGenerating={isGenerating} />
                                       )}
                                       <div className="flex-1">
                                         {angleTitle && (
@@ -1446,56 +1685,11 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                           <p className="text-muted-foreground">{angleObj.target_audience}</p>
                                         </div>
                                       )}
-                                      {angleObj?.pain_points && angleObj.pain_points.length > 0 && (
-                                        <div>
-                                          <span className="font-medium">Pain Points:</span>
-                                          <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
-                                            {(angleObj.pain_points || []).map((point: string, idx: number) => (
-                                              <li key={idx}>{point}</li>
-                                            ))}
-                                          </ul>
-                                        </div>
-                                      )}
-                                      {angleObj?.desires && angleObj.desires.length > 0 && (
-                                        <div>
-                                          <span className="font-medium">Desires:</span>
-                                          <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
-                                            {(angleObj.desires || []).map((desire: string, idx: number) => (
-                                              <li key={idx}>{desire}</li>
-                                            ))}
-                                          </ul>
-                                        </div>
-                                      )}
-                                      {angleObj?.common_objections && angleObj.common_objections.length > 0 && (
-                                        <div className="pt-2 border-t border-border">
-                                          <span className="font-medium">Common Objections:</span>
-                                          <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
-                                            {(angleObj.common_objections || []).map((objection: string, idx: number) => (
-                                              <li key={idx}>{objection}</li>
-                                            ))}
-                                          </ul>
-                                        </div>
-                                      )}
-                                      {angleObj?.failed_alternatives && angleObj.failed_alternatives.length > 0 && (
-                                        <div className="pt-2 border-t border-border">
-                                          <span className="font-medium">Failed Alternatives:</span>
-                                          <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
-                                            {(angleObj.failed_alternatives || []).map((alternative: string, idx: number) => (
-                                              <li key={idx}>{alternative}</li>
-                                            ))}
-                                          </ul>
-                                        </div>
-                                      )}
-                                      {angleObj?.copy_approach && angleObj.copy_approach.length > 0 && (
-                                        <div className="pt-2 border-t border-border">
-                                          <span className="font-medium">Copy Approach:</span>
-                                          <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
-                                            {(angleObj.copy_approach || []).map((approach: string, idx: number) => (
-                                              <li key={idx}>{approach}</li>
-                                            ))}
-                                          </ul>
-                                        </div>
-                                      )}
+                                      <AngleListSection title="Pain Points" items={angleObj?.pain_points} listStyle="disc" />
+                                      <AngleListSection title="Desires" items={angleObj?.desires} listStyle="disc" />
+                                      <AngleListSection title="Common Objections" items={angleObj?.common_objections} listStyle="disc" className="pt-2 border-t border-border" />
+                                      <AngleListSection title="Failed Alternatives" items={angleObj?.failed_alternatives} listStyle="disc" className="pt-2 border-t border-border" />
+                                      <AngleListSection title="Copy Approach" items={angleObj?.copy_approach} listStyle="disc" className="pt-2 border-t border-border" />
                                     </div>
                                   )}
                                 </AccordionContent>
@@ -1556,20 +1750,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                               })
 
                               // Show user-friendly error message
-                              const errorMessage = error instanceof Error
-                                ? error.message
-                                : 'Failed to generate swipe files. Please try again.';
-
-                              // Use toast if available, otherwise alert
-                              if (typeof window !== 'undefined' && (window as any).toast) {
-                                (window as any).toast({
-                                  title: "Error",
-                                  description: errorMessage,
-                                  variant: "destructive",
-                                });
-                              } else {
-                                alert(errorMessage);
-                              }
+                              showError(error, 'Failed to generate swipe files. Please try again.');
                             } finally {
                               setIsGeneratingSwipeFiles(false);
                             }
@@ -1593,7 +1774,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
               </AccordionItem>
             </Accordion>
           </div>
-        )}
+        )*/}
 
       {/* Generated Prelanders */}
       <div className="mb-12">
@@ -1636,14 +1817,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                           <h3 className="text-lg font-semibold">Generated Prelanders</h3>
                           <p className="text-sm text-muted-foreground">
                             {(() => {
-                              const filteredCount = selectedAngleFilter === "all"
-                                ? templates.length
-                                : templates.filter(t => {
-                                  if (t.angle === selectedAngleFilter) return true;
-                                  if (t.angle?.includes(selectedAngleFilter)) return true;
-                                  if (selectedAngleFilter.includes(t.angle || '')) return true;
-                                  return false;
-                                }).length;
+                              const filteredCount = filterTemplatesByAngle(templates, selectedAngleFilter).length;
 
                               if (templates.length === 0) {
                                 return 'No templates generated yet';
@@ -1666,33 +1840,18 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                         <div className="flex items-center gap-3">
                           {/* Angle Filter */}
                           {templates.length > 0 && (() => {
-                            // Get unique angles from templates with their titles
+                            // Only use angles from the API response (marketing_angles)
+                            // Don't create new entries from templates - only show original marketing angles
                             const angleMap = new Map<string, { title: string; description: string }>();
 
-                            // Process templates to extract angle info
-                            templates.forEach(t => {
-                              if (t.angle) {
-                                // Try to match with marketing angles to get title
-                                const matchingAngle = fullResult?.results?.marketing_angles?.find((ma: any) => {
-                                  if (typeof ma === 'string') return ma === t.angle;
-                                  return ma.angle === t.angle || ma.title === t.angle;
-                                });
-
-                                if (matchingAngle && typeof matchingAngle === 'object') {
-                                  const title = matchingAngle.title || t.angle;
-                                  const description = matchingAngle.angle || t.angle;
-                                  angleMap.set(t.angle, { title, description });
-                                } else {
-                                  // Use the angle as both title and description if no match
-                                  angleMap.set(t.angle, { title: t.angle, description: t.angle });
-                                }
-                              }
-                            });
-
-                            // Also add marketing angles that might not have templates yet
+                            // Only add marketing angles from the API response
                             fullResult?.results?.marketing_angles?.forEach((angle: any) => {
                               if (typeof angle === 'object' && angle.title && angle.angle) {
+                                // Use angle.angle (description) as the key for consistency
                                 angleMap.set(angle.angle, { title: angle.title, description: angle.angle });
+                              } else if (typeof angle === 'string') {
+                                // Handle string format marketing angles
+                                angleMap.set(angle, { title: angle, description: angle });
                               }
                             });
 
@@ -1737,32 +1896,52 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                               Download All
                             </Button>
                           )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleExploreTemplates}
-                            disabled={availableTemplatesLoading}
-                          >
-                            <Sparkles className="h-4 w-4 mr-2" />
-                            Explore More Templates
-                          </Button>
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                         {/* Existing templates */}
                         {(() => {
                           // Filter templates by selected angle
-                          const filteredTemplates = selectedAngleFilter === "all"
-                            ? templates
-                            : templates.filter(template => {
-                              // Match by angle property
-                              if (template.angle === selectedAngleFilter) return true;
-                              // Also check if angle string contains the filter (for partial matches)
-                              if (template.angle?.includes(selectedAngleFilter)) return true;
-                              // Check if the filter contains the template angle (reverse match)
-                              if (selectedAngleFilter.includes(template.angle || '')) return true;
-                              return false;
-                            });
+                          let filteredTemplates = filterTemplatesByAngle(templates, selectedAngleFilter);
+
+                          // Sort templates by angle index to group same angles together and maintain order
+                          filteredTemplates = [...filteredTemplates].sort((a, b) => {
+                            // Helper to find angle index in marketing_angles array
+                            const getAngleIndex = (templateAngle: string | undefined): number => {
+                              if (!templateAngle || !fullResult?.results?.marketing_angles) return 999;
+
+                              return fullResult.results.marketing_angles.findIndex((ma: any) => {
+                                if (typeof ma === 'string') {
+                                  return ma === templateAngle;
+                                }
+                                // Extract description from template.angle if it's in "Title: Description" format
+                                let templateAngleDesc = templateAngle;
+                                if (templateAngle.includes(': ')) {
+                                  const parts = templateAngle.split(': ');
+                                  if (parts.length >= 2) {
+                                    templateAngleDesc = parts[1];
+                                  }
+                                }
+                                return ma.angle === templateAngleDesc || ma.angle === templateAngle;
+                              });
+                            };
+
+                            const indexA = getAngleIndex(a.angle);
+                            const indexB = getAngleIndex(b.angle);
+
+                            // First sort by angle index (to maintain #1, #2, #3 order)
+                            if (indexA !== indexB) {
+                              // If not found, put at end (999)
+                              if (indexA === -1) return 1;
+                              if (indexB === -1) return -1;
+                              return indexA - indexB;
+                            }
+
+                            // If same angle index, sort by templateId for consistency
+                            const idA = a.templateId || '';
+                            const idB = b.templateId || '';
+                            return idA.localeCompare(idB);
+                          });
 
                           if (filteredTemplates.length === 0) {
                             return (
@@ -1840,9 +2019,58 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                 {/* Content Section */}
                                 <div className="p-5 flex flex-col flex-1 min-h-0">
                                   <div className="flex-1">
-                                    <h4 className="font-semibold text-lg text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                                      {getAngleTitle(template.angle, template.name)}
-                                    </h4>
+                                    {(() => {
+                                      // Find the matching marketing angle to get its index
+                                      let angleIndex = -1;
+                                      const templateAngle = template.angle;
+                                      if (fullResult?.results?.marketing_angles && templateAngle) {
+                                        const matchingIndex = fullResult.results.marketing_angles.findIndex((ma: any) => {
+                                          if (typeof ma === 'string') {
+                                            return ma === templateAngle;
+                                          }
+                                          // Extract description from template.angle if it's in "Title: Description" format
+                                          let templateAngleDesc = templateAngle;
+                                          if (templateAngle.includes(': ')) {
+                                            const parts = templateAngle.split(': ');
+                                            if (parts.length >= 2) {
+                                              templateAngleDesc = parts[1];
+                                            }
+                                          }
+                                          return ma.angle === templateAngleDesc || ma.angle === templateAngle;
+                                        });
+                                        if (matchingIndex >= 0) {
+                                          angleIndex = matchingIndex;
+                                        }
+                                      }
+
+                                      return (
+                                        <div className="space-y-2">
+                                          {/* Number Badge */}
+                                          {angleIndex >= 0 && (
+                                            <Badge variant="outline" className="text-xs font-semibold bg-muted text-foreground border-border w-fit">
+                                              #{angleIndex + 1}
+                                            </Badge>
+                                          )}
+                                          {/* Title with Icon */}
+                                          <div className="flex items-start gap-2">
+                                            {angleIndex >= 0 && (
+                                              <div className="bg-primary/10 rounded-full p-1.5 flex-shrink-0 mt-0.5">
+                                                <Target className="h-4 w-4 text-primary" />
+                                              </div>
+                                            )}
+                                            <h4 className="font-semibold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors flex-1">
+                                              {getAngleTitle(template.angle, template.name)}
+                                            </h4>
+                                          </div>
+                                          {/* Description */}
+                                          {template.angle && (
+                                            <p className="text-sm text-muted-foreground line-clamp-2">
+                                              {getAngleDescription(template.angle)}
+                                            </p>
+                                          )}
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
 
                                   {/* Action Buttons */}
@@ -1950,6 +2178,18 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                             <div className="h-48 w-full bg-muted animate-pulse rounded-md" />
                           </div>
                         ))}
+                      </div>
+                      {/* Explore More Templates Button */}
+                      <div className="mt-8">
+                        <Button
+                          onClick={handleExploreTemplates}
+                          disabled={availableTemplatesLoading}
+                          size="lg"
+                          className="w-full"
+                        >
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Explore More Templates
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -2120,10 +2360,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                     onValueChange={setOpenAngleItem}
                   >
                     {fullResult.results.marketing_angles.map((angle: any, index: number) => {
-                      // Handle both old format (string) and new format (object with angle and title)
-                      const angleObj: AngleWithProperties | null = isAngle(angle) ? (angle as AngleWithProperties) : null;
-                      const angleTitle = angleObj?.title ?? null;
-                      const angleDescription = angleObj?.angle ?? (typeof angle === 'string' ? angle : '');
+                      const { angleObj, angleTitle, angleDescription } = parseAngle(angle);
                       // Always prioritize the angle property for matching, not the title
                       const angleText = typeof angle === 'string' ? angle : (angle.angle || angleDescription);
                       const isSelected = selectedAngleForRefinement === angleText;
