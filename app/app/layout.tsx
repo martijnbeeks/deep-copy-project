@@ -28,9 +28,9 @@ export const metadata: Metadata = {
   generator: "v0.app",
   robots: "index, follow",
   icons: {
-    icon: "/deepcopy-favicon.ico",
-    shortcut: "/deepcopy-favicon.ico",
-    apple: "/deepcopy-favicon.ico",
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
   },
   openGraph: {
     title: "DeepCopy - Turn Deep Research Into High-Converting Landing Pages",

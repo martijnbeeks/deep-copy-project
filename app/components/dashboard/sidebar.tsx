@@ -60,7 +60,7 @@ export function Sidebar() {
             <div className="w-10 h-10 group-hover:w-48 group-hover:h-12 flex items-center justify-center flex-shrink-0 relative transition-all duration-300">
               {/* Favicon - shown when collapsed */}
               <Image
-                src="/deepcopy-favicon.png"
+                src="/favicon.svg"
                 alt="DeepCopy"
                 width={40}
                 height={40}
@@ -68,7 +68,7 @@ export function Sidebar() {
               />
               {/* Full logo - shown when expanded */}
               <Image
-                src="/deepcopy-logo.png"
+                src="/deepcopy-logo.svg"
                 alt="DeepCopy"
                 width={192}
                 height={48}

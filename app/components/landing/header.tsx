@@ -10,9 +10,9 @@ export const Header = () => {
         {/* Logo */}
         <div className="flex items-center gap-2">
           <Link href="/">
-            <Image 
-              src="/deepcopy-logo.png" 
-              alt="DeepCopy" 
+            <Image
+              src="/deepcopy-logo.svg"
+              alt="DeepCopy"
               width={100}
               height={40}
               className="h-10 w-auto"
