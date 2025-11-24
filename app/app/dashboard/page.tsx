@@ -207,7 +207,7 @@ export default function DashboardPage() {
         <OfflineBanner />
         <Sidebar />
         <main className="flex-1 overflow-auto ml-16">
-          <div className="p-4 md:p-6">
+          <div className="p-4 md:p-6 pb-24 md:pb-28">
             <div className="mb-6">
               <div className="flex items-center gap-3">
                 <SidebarTrigger />
@@ -271,7 +271,7 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Create New Content Card - First Card */}
                 <Link href="/create" className={filteredJobs.length === 0 ? "hidden" : "block"}>
-                  <div className="relative cursor-pointer rounded-xl border-2 p-2 md:p-3 transition-all h-[280px] md:h-[320px] flex flex-col border-border bg-card hover:border-primary/50 hover:shadow-md">
+                  <div className="relative cursor-pointer rounded-xl border-2 p-2 md:p-3 transition-all h-[280px] md:h-[320px] flex flex-col border-primary/30 bg-primary/20 hover:border-primary/50 hover:shadow-md">
                     <div className="flex-1 flex flex-col items-center justify-center text-center">
                       <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3">
                         <Zap className="h-6 w-6 text-primary" />
@@ -289,7 +289,7 @@ export default function DashboardPage() {
                 {filteredJobs.length === 0 ? (
                   <div className="col-span-full flex items-center justify-center py-12">
                     <Link href="/create" className="block">
-                      <div className="relative cursor-pointer rounded-xl border-2 p-2 md:p-3 transition-all h-[280px] md:h-[320px] flex flex-col border-border bg-card hover:border-primary/50 hover:shadow-md">
+                      <div className="relative cursor-pointer rounded-xl border-2 p-2 md:p-3 transition-all h-[280px] md:h-[320px] flex flex-col border-primary/30 bg-primary/20 hover:border-primary/50 hover:bg-primary/30 hover:shadow-md">
                         <div className="flex-1 flex flex-col items-center justify-center text-center">
                           <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3">
                             <Zap className="h-6 w-6 text-primary" />
@@ -367,7 +367,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Fixed Footer with Action Buttons */}
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border ml-16">
+          <div className="fixed z-0 bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border ml-16">
             <div className="px-4 py-2 md:px-6 md:py-3">
               <div className="flex items-center justify-between gap-4">
                 <Button

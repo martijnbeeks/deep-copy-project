@@ -46,7 +46,8 @@ function AvatarsContent() {
   const [isResearching, setIsResearching] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState<string>("all")
-  
+  const [jobInfo, setJobInfo] = useState<{ title: string; created_at: string } | null>(null)
+
   // Avatar details modal state
   const [selectedAvatarForDetails, setSelectedAvatarForDetails] = useState<Avatar | null>(null)
   const [showAvatarDetails, setShowAvatarDetails] = useState(false)
@@ -65,7 +66,7 @@ function AvatarsContent() {
     competitorAnalysis: false,
     marketTrends: false,
   })
-  
+
   const jobId = searchParams.get('jobId')
 
   useEffect(() => {
@@ -85,10 +86,10 @@ function AvatarsContent() {
   const fetchAvatars = async () => {
     try {
       setIsLoading(true)
-      const url = jobId 
+      const url = jobId
         ? `/api/avatars?jobId=${jobId}`
         : '/api/avatars'
-      
+
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${user?.email || ''}`
@@ -101,6 +102,14 @@ function AvatarsContent() {
 
       const data = await response.json()
       setAvatars(data.avatars || [])
+
+      // Set job info from first avatar - this is all we need!
+      if (jobId && data.avatars && data.avatars.length > 0) {
+        setJobInfo({
+          title: data.avatars[0].job_title,
+          created_at: data.avatars[0].job_created_at
+        })
+      }
     } catch (error) {
       console.error('Error fetching avatars:', error)
       toast({
@@ -113,6 +122,7 @@ function AvatarsContent() {
     }
   }
 
+
   const handleAvatarClick = (avatar: Avatar) => {
     // Open avatar details modal
     setSelectedAvatarForDetails(avatar)
@@ -122,7 +132,7 @@ function AvatarsContent() {
   const handleStartResearch = async (avatar: Avatar) => {
     // Close details modal
     setShowAvatarDetails(false)
-    
+
     if (avatar.is_researched) {
       // If already researched, go to results page - use avatar_job_id if available, otherwise job_id
       const targetJobId = (avatar as any).avatar_job_id || avatar.job_id
@@ -134,7 +144,7 @@ function AvatarsContent() {
       setResearchProgress(0)
       setResearchStage(0)
       setCurrentJobId(null)
-      
+
       // Reset source status
       setSourceStatus({
         webSearch: false,
@@ -190,9 +200,9 @@ function AvatarsContent() {
 
         const data = await response.json()
         const avatarJobId = data.job.id // Use avatar job ID (the new job created for this avatar)
-        
+
         setCurrentJobId(avatarJobId)
-        
+
         // Refresh avatars to show updated research status
         await fetchAvatars()
 
@@ -250,22 +260,22 @@ function AvatarsContent() {
                   setShowResearchLoading(false)
                   setResearchProgress(0)
                   setResearchStage(0)
-                setCurrentJobId(null)
-                setSelectedAvatar(null)
-                setSelectedAvatarForDetails(null)
+                  setCurrentJobId(null)
+                  setSelectedAvatar(null)
+                  setSelectedAvatarForDetails(null)
 
-                // Reset source status
-                setSourceStatus({
-                  webSearch: false,
-                  amazonReviews: false,
-                  redditDiscussions: false,
-                  industryBlogs: false,
-                  competitorAnalysis: false,
-                  marketTrends: false,
-                })
+                  // Reset source status
+                  setSourceStatus({
+                    webSearch: false,
+                    amazonReviews: false,
+                    redditDiscussions: false,
+                    industryBlogs: false,
+                    competitorAnalysis: false,
+                    marketTrends: false,
+                  })
 
-                // Redirect to parent job's results page
-                router.push(`/results/${parentJobId}`)
+                  // Redirect to avatar job's results page
+                  router.push(`/results/${avatarJobId}`)
                 }, 1000)
                 return
               } else if (status === 'failed' || status === 'failure') {
@@ -273,11 +283,11 @@ function AvatarsContent() {
                 setShowResearchLoading(false)
                 setResearchProgress(0)
                 setResearchStage(0)
-              setCurrentJobId(null)
-              setSelectedAvatar(null)
-              setSelectedAvatarForDetails(null)
+                setCurrentJobId(null)
+                setSelectedAvatar(null)
+                setSelectedAvatarForDetails(null)
 
-              setSourceStatus({
+                setSourceStatus({
                   webSearch: false,
                   amazonReviews: false,
                   redditDiscussions: false,
@@ -305,11 +315,11 @@ function AvatarsContent() {
                 setShowResearchLoading(false)
                 setResearchProgress(0)
                 setResearchStage(0)
-              setCurrentJobId(null)
-              setSelectedAvatar(null)
-              setSelectedAvatarForDetails(null)
+                setCurrentJobId(null)
+                setSelectedAvatar(null)
+                setSelectedAvatarForDetails(null)
 
-              setSourceStatus({
+                setSourceStatus({
                   webSearch: false,
                   amazonReviews: false,
                   redditDiscussions: false,
@@ -334,11 +344,11 @@ function AvatarsContent() {
           setShowResearchLoading(false)
           setResearchProgress(0)
           setResearchStage(0)
-              setCurrentJobId(null)
-              setSelectedAvatar(null)
-              setSelectedAvatarForDetails(null)
+          setCurrentJobId(null)
+          setSelectedAvatar(null)
+          setSelectedAvatarForDetails(null)
 
-              setSourceStatus({
+          setSourceStatus({
             webSearch: false,
             amazonReviews: false,
             redditDiscussions: false,
@@ -363,11 +373,11 @@ function AvatarsContent() {
         setShowResearchLoading(false)
         setResearchProgress(0)
         setResearchStage(0)
-              setCurrentJobId(null)
-              setSelectedAvatar(null)
-              setSelectedAvatarForDetails(null)
+        setCurrentJobId(null)
+        setSelectedAvatar(null)
+        setSelectedAvatarForDetails(null)
 
-              setSourceStatus({
+        setSourceStatus({
           webSearch: false,
           amazonReviews: false,
           redditDiscussions: false,
@@ -394,7 +404,7 @@ function AvatarsContent() {
       avatar.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       avatar.key_buying_motivation.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesFilter = 
+    const matchesFilter =
       filterType === "all" ||
       (filterType === "researched" && avatar.is_researched === true) ||
       (filterType === "not_researched" && avatar.is_researched !== true)
@@ -434,11 +444,11 @@ function AvatarsContent() {
         <Sidebar />
         <main className="flex-1 overflow-auto ml-16">
           <div className="p-4 md:p-6">
-            <div className="mb-6">
+            <div className="mb-6 pb-6 border-b border-border/50">
               <div className="flex items-center gap-3">
                 <SidebarTrigger />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
                     {jobId && (
                       <Button
                         variant="ghost"
@@ -450,15 +460,25 @@ function AvatarsContent() {
                         Back to Dashboard
                       </Button>
                     )}
-                    <div>
-                      <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                        {jobId ? 'Job Avatars' : 'All Avatars'}
+                    {jobId && (jobInfo || (avatars.length > 0)) && (() => {
+                      const projectTitle = jobInfo?.title || avatars[0]?.job_title || 'Project'
+                      const capitalizedTitle = projectTitle.charAt(0).toUpperCase() + projectTitle.slice(1)
+                      return (
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary">
+                          <span className="text-sm font-medium">
+                            {capitalizedTitle} • {new Date(jobInfo?.created_at || avatars[0]?.job_created_at || new Date()).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                      )
+                    })()}
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border/50">
+                      <h1 className="text-sm font-medium text-foreground">
+                        {jobId ? 'Customer Avatars' : 'All Avatars'}
                       </h1>
-                      <p className="text-sm text-muted-foreground">
-                        {jobId 
-                          ? 'View avatars for this job' 
-                          : 'View all customer avatars from your jobs'}
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -566,16 +586,16 @@ function AvatarsContent() {
                   searchTerm || filterType !== "all"
                     ? "Try adjusting your search or filter criteria"
                     : jobId
-                    ? "This job has no avatars"
-                    : "Create jobs with avatar extraction to see avatars here"
+                      ? "This job has no avatars"
+                      : "Create jobs with avatar extraction to see avatars here"
                 }
                 action={
                   jobId
                     ? undefined
                     : {
-                        label: "Create New Job",
-                        onClick: () => router.push("/create"),
-                      }
+                      label: "Create New Job",
+                      onClick: () => router.push("/create"),
+                    }
                 }
               />
             ) : (
@@ -583,11 +603,10 @@ function AvatarsContent() {
                 {filteredAvatars.map((avatar, index) => (
                   <Card
                     key={`${avatar.job_id}-${index}`}
-                    className={`bg-card border-border shadow-sm hover:shadow-md transition-all cursor-pointer ${
-                      avatar.is_researched 
-                        ? 'border-green-500/50 bg-green-50/50 dark:bg-green-950/20' 
-                        : ''
-                    }`}
+                    className={`bg-card border-border shadow-sm hover:shadow-md transition-all cursor-pointer ${avatar.is_researched
+                      ? 'border-green-500/50 bg-green-50/50 dark:bg-green-950/20'
+                      : ''
+                      }`}
                     onClick={() => handleAvatarClick(avatar)}
                   >
                     <CardContent className="p-4">

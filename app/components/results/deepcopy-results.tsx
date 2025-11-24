@@ -694,82 +694,6 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
   return (
     <div className="space-y-8 min-h-full">
-      {/* Project Overview */}
-      <div className="mb-12">
-        <Card className="bg-card/80 border-border/50">
-          <CardHeader className="p-8">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-accent rounded-lg flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-accent-foreground" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-foreground">Project Overview</h2>
-                <p className="text-sm text-muted-foreground">Job details and metadata</p>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="px-8 pb-8 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-4 h-4 text-accent" />
-                  <span className="text-sm font-medium text-foreground">Generated At</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {result.metadata?.generated_at ? new Date(result.metadata.generated_at).toLocaleString() : 'Unknown'}
-                </p>
-              </div>
-              {fullResult?.project_name && (
-                <div className="bg-muted/50 p-3 rounded-lg">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Target className="w-4 h-4 text-accent" />
-                    <span className="text-sm font-medium text-foreground">Project Name</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{fullResult.project_name}</p>
-                </div>
-              )}
-              {customerAvatars && customerAvatars.length > 0 && (
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="w-4 h-4 text-accent" />
-                    <span className="text-sm font-medium text-foreground">Selected Avatar</span>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">{customerAvatars[0].persona_name}</p>
-                    {customerAvatars[0].age_range && (
-                      <p className="text-xs text-muted-foreground">Age: {customerAvatars[0].age_range}</p>
-                    )}
-                    {customerAvatars[0].gender && (
-                      <p className="text-xs text-muted-foreground">Gender: {customerAvatars[0].gender}</p>
-                    )}
-                    {customerAvatars[0].key_buying_motivation && (
-                      <p className="text-xs text-muted-foreground mt-1">{customerAvatars[0].key_buying_motivation}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-              {salesPageUrl && (
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Globe className="w-4 h-4 text-accent" />
-                    <span className="text-sm font-medium text-foreground">Sales Page URL</span>
-                  </div>
-                  <a
-                    href={salesPageUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-primary hover:underline break-all"
-                  >
-                    {salesPageUrl}
-                  </a>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Offer Brief */}
       {fullResult?.results?.offer_brief && (
         <div className="mb-12">
@@ -783,7 +707,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                         <Briefcase className="w-5 h-5 text-primary-foreground" />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-bold text-foreground">Offer Brief</h2>
+                        <h2 className="text-2xl font-bold text-foreground">Marketing Brief</h2>
                         <p className="text-sm text-muted-foreground">Key elements of your marketing strategy</p>
                       </div>
                     </div>

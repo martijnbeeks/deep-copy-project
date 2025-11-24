@@ -1,14 +1,12 @@
 "use client"
 
-import { Sidebar } from "@/components/dashboard/sidebar"
+import { Sidebar, SidebarTrigger } from "@/components/dashboard/sidebar"
 import { DeepCopyResults } from "@/components/results/deepcopy-results"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useCallback } from "react"
-import { RefreshCw, Download, CheckCircle2 } from "lucide-react"
+import { Download, ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import Image from "next/image"
 import { useAuthStore } from "@/stores/auth-store"
 import { useJobsStore } from "@/stores/jobs-store"
 import { ContentViewerSkeleton } from "@/components/ui/skeleton-loaders"
@@ -97,75 +95,53 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
     )
   }
 
+  // Get project info from currentJob
+  const projectTitle = currentJob?.title || 'Project'
+  const capitalizedTitle = projectTitle.charAt(0).toUpperCase() + projectTitle.slice(1)
+  const projectDate = currentJob?.created_at || new Date().toISOString()
+
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden ml-16">
-        {/* Header */}
-        <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
-          <div className="px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Link href="/dashboard">
-                  <Image
-                    src="/deepcopy-logo.png"
-                    alt="DeepCopy"
-                    width={192}
-                    height={48}
-                    className="h-10 w-auto"
-                    priority
-                  />
-                </Link>
-              </div>
-              <div className="flex items-center gap-3">
-                <Link href="/dashboard">
-                  <Button variant="ghost" asChild>
-                    <span>← Back to Dashboard</span>
+      <main className="flex-1 overflow-auto ml-16">
+        <div className="p-4 md:p-6">
+          <div className="mb-6 pb-6 border-b border-border/50">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => router.push('/dashboard')}
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Dashboard
                   </Button>
-                </Link>
+                  {currentJob && (
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary">
+                      <span className="text-sm font-medium">
+                        {capitalizedTitle} • {new Date(projectDate).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  )}
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border/50">
+                    <h1 className="text-sm font-medium text-foreground">
+                      Research Results
+                    </h1>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </header>
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            {/* Hero Section */}
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-primary/10 border border-primary/20 text-primary">
-                <CheckCircle2 className="w-4 h-4" />
-                <span className="text-sm font-medium">Step 3: Content Generation Complete</span>
-              </div>
-
-              <h1 className="text-3xl sm:text-5xl font-bold mb-6 text-foreground">
-                Content Results
-              </h1>
-              <p className="text-lg sm:text-xl text-muted-foreground max-w-4xl mx-auto">
-                Review your generated content, templates, and analysis results
-              </p>
-            </div>
-
-            {/* Status and Job Info */}
-            <div className="flex items-center justify-end mb-6">
-              <div className="flex items-center gap-3">
-                {isPolling && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                    <span>Processing ({attempts}/{maxAttempts})</span>
-                    {jobStatus.progress && (
-                      <span className="text-blue-600 font-medium">
-                        {jobStatus.progress}%
-                      </span>
-                    )}
-                  </div>
-                )}
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                  {currentJob.status}
-                </Badge>
-              </div>
-            </div>
-
+          {/* Main Content */}
+          <div className="max-w-7xl mx-auto">
             <DeepCopyResults
               result={currentJob.result}
               jobTitle={currentJob.title}
@@ -176,8 +152,8 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
               salesPageUrl={currentJob.sales_page_url}
             />
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }
