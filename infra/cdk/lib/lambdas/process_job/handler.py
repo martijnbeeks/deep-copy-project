@@ -1,3 +1,9 @@
+"""
+AWS Lambda handler for processing AI pipeline jobs.
+
+This handler wraps the run_pipeline function from the original handler.py
+and adapts it for Lambda execution.
+"""
 import json
 import os
 import base64
@@ -15,16 +21,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional, Literal, Any, Dict, Union
 from pydantic import BaseModel, Field, ConfigDict, create_model
 
-
 from playwright.sync_api import sync_playwright
-from pipeline.test_anthropic import (
+from test_anthropic import (
     make_streaming_request_with_retry,
     make_structured_request_with_retry,
     prepare_schema_for_tool_use,
     load_pdf_file,
 )
 
-from pipeline.data_models import Avatar, OfferBrief
+from data_models import Avatar, OfferBrief
 
 # Import extract_clean_text_from_html from test_anthropic since utils.py was removed
 def extract_clean_text_from_html(html_file_path: str) -> str:
@@ -267,7 +272,7 @@ def load_schema_as_model(schema: str) -> type[BaseModel]:
 
 class DeepCopy:
     def __init__(self):
-        # Resolve secret id/name/arn and region from environment for ECS flexibility
+        # Resolve secret id/name/arn and region from environment for Lambda flexibility
         env = os.environ.get('ENVIRONMENT', 'dev')
         secret_id = "deepcopy-secret-dev"
         self.openai_model = "gpt-5-mini"
@@ -276,7 +281,8 @@ class DeepCopy:
         self.anthropic_client = anthropic.Anthropic(api_key=self.secrets["ANTHROPIC_API_KEY"])
         aws_region = os.environ.get('AWS_REGION') or os.environ.get('AWS_DEFAULT_REGION') or 'eu-west-1'
         self.s3_client = boto3.client('s3', region_name=aws_region)
-        self.s3_bucket = "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih"
+        # Get bucket from environment or use default
+        self.s3_bucket = os.environ.get('RESULTS_BUCKET', "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih")
         # Optional DynamoDB for job status updates
         self.ddb_client = boto3.client('dynamodb', region_name=aws_region)
         self.jobs_table_name = os.environ.get('JOBS_TABLE_NAME', "DeepCopyStack-JobsTable1970BC16-1BVYVOHK8WXTU")
@@ -552,8 +558,9 @@ class DeepCopy:
     def analyze_marketing_philosophy(self, avatar_sheet, offer_brief, deep_research_output):
         """Analyze marketing philosophy and extract core beliefs"""
         try:
-            with open("src/pipeline/content/marketing_philosophy.txt", "r", encoding="utf-8") as f:
-                marketing_philosophy = f.read()
+            # Note: This file path won't exist in Lambda, so this function may need adjustment
+            # For now, we'll skip it or load from S3 if needed
+            marketing_philosophy = ""  # Placeholder - would need to load from S3 or include in Lambda package
             
             prompt = f"""
             Great work! Now that you understand that marketing at his core is simply about changing the existing beliefs of a customer into the belief that align with them empowering them to purchase our product, 
@@ -744,7 +751,7 @@ class DeepCopy:
         4. DO NOT skip or leave out any fields — every field in the schema must be filled.  
         5. Please make sure that the length of each field matches the length of the description of the field.
         6. If any data is missing, intelligently infer or create realistic content that fits the schema.  
-        7. Write fluently and naturally, with complete sentences. Do not stop mid-thought or end with ellipses (“...”).  
+        7. Write fluently and naturally, with complete sentences. Do not stop mid-thought or end with ellipses ("...").  
         8. At the end, verify your own output is **100% complete** — all schema fields filled.
 
         When ready, output ONLY the completed schema with all fields filled in. Do not include explanations or notes.
@@ -776,34 +783,6 @@ class DeepCopy:
         if len(full_advertorial) < 10:
             logger.info(f"Less then 10 fields, rerunning...")
             return self.rewrite_swipe_file(angle, avatar_sheet, deep_research_output, offer_brief, necessary_beliefs, schema_json, original_swipe_file_path_html)
-        # ============================================================
-        # Turn 4: Quality check (commented out for now)
-        # ============================================================
-        # fifth_query_prompt = f"""Amazing! I'm going to send you the full advertorial that I just completed. I want you to please analyze it and let me know your thoughts. I would specifically analyze how in line all of the copy is in relation to all the research amongst the avatar, the competitors, the research, necessary beliefs, levels of consciousness, the objections, etc., that you did earlier.
-        #
-        # Please include the deep research output such that you can verify whether all factual information is used.
-        #
-        # Rate the advertorial and provide me with a quality metrics.
-        #
-        # Find all research content can be found above and verify whether all factual information is used.
-        #
-        # Here is the full advertorial:
-        #
-        # {full_advertorial}"""
-        # 
-        # # Use only the first turn for quality check (reset messages to first turn only)
-        # first_turn_messages = [
-        #     messages[0],  # First user message
-        #     messages[1],  # First assistant response
-        #     {"role": "user", "content": fifth_query_prompt}
-        # ]
-        # 
-        # quality_report, quality_usage = make_streaming_request_with_retry(
-        #     messages=first_turn_messages,
-        #     max_tokens=MAX_TOKENS,
-        #     model=MODEL,
-        #     anthropic_client=self.anthropic_client
-        # )
         
         return full_advertorial, None
     
@@ -939,51 +918,7 @@ def run_pipeline(event, context):
         sales_page_url = event.get("sales_page_url") or os.environ.get("SALES_PAGE_URL")
         s3_bucket = event.get("s3_bucket", generator.s3_bucket)
         project_name = event.get("project_name") or os.environ.get("PROJECT_NAME") or "default-project"
-        content_dir = event.get("content_dir", "src/pipeline/content/")
-        # swipe_file_id = event.get("swipe_file_id")
-        # logger.info(
-        #     f"Pipeline inputs: project_name={project_name}, sales_page_url={sales_page_url}, "
-        #     f"swipe_file_id={swipe_file_id}, content_dir={content_dir}"
-        # )
-
-        # # Require swipe_file_id when not provided return 400
-        # if not swipe_file_id:
-        #     error_msg = "Missing required input: swipe_file_id"
-        #     logger.error(error_msg)
-        #     try:
-        #         generator.update_job_status(job_id, "FAILED", {"error": error_msg})
-        #     except Exception:
-        #         pass
-        #     return {
-        #         "statusCode": 400,
-        #         "body": {"error": error_msg}
-        #     }
-
-        # try:
-            # load both the html as the json file
-            # Try both spellings: "original" and "orginal" (typo in some files)
-            # s3_key_html_correct = f"content_library/{swipe_file_id}_original.html"
-            # s3_key_json = f"content_library/{swipe_file_id}.json"
-            
-            # Try the correct spelling first, then the typo
-            # obj_html = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_html_correct)
-            
-            # html_bytes = obj_html["Body"].read()
-            # save to local file and pass path to rewrite method. Check if directory exists, if not create it.
-            # if not os.path.exists("content"):
-            #     os.makedirs("content")
-            # original_swipe_file_path_html = f"content/{swipe_file_id}_original.html"
-            # with open(original_swipe_file_path_html, "wb") as f:
-            #     f.write(html_bytes)
-            
-            # obj_json = generator.s3_client.get_object(Bucket=s3_bucket, Key=s3_key_json)
-            # json_bytes = obj_json["Body"].read()
-            # swipe_file_model = json_bytes.decode("utf-8")
-            
-            
-        # except Exception as e:
-        #     # Check if it's a file not found error (NoSuchKey)
-        #     raise e
+        
         
         
         
@@ -1015,9 +950,8 @@ def run_pipeline(event, context):
         marketing_philosophy_analysis = results.get("marketing_philosophy_analysis")
         summary = results.get("summary")
         angles = results.get("marketing_angles", [])
+        customer_avatars = results.get("customer_avatars", [])
         
-        # # Get customer avatars from event
-        customer_avatars = event.get("customer_avatars", [])
         # Step 1: Analyze research page
         # logger.info("Step 1: Analyzing research page")
         # research_page_analysis = generator.analyze_research_page(sales_page_url, customer_avatars)
@@ -1073,8 +1007,6 @@ def run_pipeline(event, context):
         #     )
         #     swipe_results.append({"angle": angle, "content": json.dumps(full_advertorial)})
 
-        
-        # Step 10: Save all results
         logger.info("Step 10: Saving results")
         all_results = {
             "research_page_analysis": research_page_analysis,
@@ -1086,8 +1018,7 @@ def run_pipeline(event, context):
             "offer_brief": offer_brief.model_dump() if hasattr(offer_brief, 'model_dump') else offer_brief,
             "marketing_philosophy_analysis": marketing_philosophy_analysis,
             "summary": summary,
-            # "swipe_results": swipe_results,
-            "marketing_angles": [angle.model_dump() if hasattr(angle, 'model_dump') else angle for angle in angles]
+            "marketing_angles": [angle.model_dump() if hasattr(angle, 'model_dump') else angle for angle in angles],
         }
         
         generator.save_results_to_s3(all_results, s3_bucket, project_name, job_id)
@@ -1100,7 +1031,6 @@ def run_pipeline(event, context):
                 "project_name": project_name,
                 "s3_bucket": s3_bucket,
                 "marketing_angles_count": len(angles),
-                # "swipe_files_generated": len(swipe_results),
                 "results_location": f"s3://{s3_bucket}/projects/{project_name}/",
                 "job_results_location": f"s3://{s3_bucket}/results/{job_id}/",
                 "job_id": job_id
@@ -1131,6 +1061,41 @@ def run_pipeline(event, context):
         }
         return error_response
 
+
+def lambda_handler(event, context):
+    """
+    Lambda entry point for processing AI pipeline jobs.
+    
+    Args:
+        event: Lambda event (can be direct invocation or from API Gateway)
+        context: Lambda context
+        
+    Returns:
+        Response dict with statusCode and body
+    """
+    # Handle both direct invocation and API Gateway events
+    if isinstance(event, dict) and "body" in event:
+        # API Gateway event - parse body
+        try:
+            if isinstance(event["body"], str):
+                event = json.loads(event["body"])
+            else:
+                event = event["body"]
+        except json.JSONDecodeError:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"error": "Invalid JSON body"})
+            }
+    
+    # Run the pipeline
+    result = run_pipeline(event, context)
+    
+    # Ensure body is JSON string if it's a dict
+    if isinstance(result.get("body"), dict):
+        result["body"] = json.dumps(result["body"])
+    
+    return result
+
 if __name__ == "__main__":
     # Allow ECS task to pass inputs via env var JOB_EVENT_JSON and JOB_ID
     job_event_env = os.environ.get("JOB_EVENT_JSON")
@@ -1141,7 +1106,3 @@ if __name__ == "__main__":
     # Inject jobId and result prefix
     event["job_id"] = os.environ.get("JOB_ID") or event.get("job_id") or str(uuid.uuid4())
     result = run_pipeline(event, None)
-    
-
-# Add pdfs for swipe files
-# change to better models

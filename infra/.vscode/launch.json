@@ -36,11 +36,11 @@
         },
 
         {
-            "name": "Debug main",
+            "name": "Debug jobs",
             "type": "python",
             "python": "${workspaceFolder}/ai_pipeline/.venv/bin/python",
             "request": "launch",
-            "program": "${workspaceFolder}/ai_pipeline/src/pipeline/handler.py",
+            "program": "${workspaceFolder}/cdk/lib/lambdas/process_job/handler.py",
             "args": ["run"],
             "console": "integratedTerminal",
             "justMyCode": true,
@@ -50,7 +50,23 @@
                 "JOB_EVENT_JSON": "{\"sales_page_url\": \"https://www.sciatiease.com/sciatiease.php\", \"project_name\": \"meritrelief\", \"swipe_file_id\": \"L00002\", \"advertorial_type\": \"Advertorial\", \"customer_avatars\": [{\"persona_name\": \"Active Senior\", \"description\": \"Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain\", \"age_range\": \"60-75\", \"gender\": \"both\", \"key_buying_motivation\": \"Seeking non-invasive pain relief to maintain active lifestyle\"}, {\"persona_name\": \"Desk-Bound Professional\", \"description\": \"Office worker sitting 8+ hours daily experiencing lower back pain\", \"age_range\": \"30-45\", \"gender\": \"both\", \"key_buying_motivation\": \"Quick relief from work-related pain\"}]}"
             }
         },
-
+        {
+            "name": "Debug avatar",
+            "type": "python",
+            "python": "${workspaceFolder}/ai_pipeline/.venv/bin/python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cdk/lib/lambdas/extract_avatars/handler.py",
+            "args": ["run"],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}/ai_pipeline",
+            "env": {
+                "AWS_PROFILE": "personal-cdk-dev",
+                "job_id": "2a122590-f4a3-4770-a275-81e7cc5d8062",
+                "url": "https://trynewaura.com/products/seborrheic-dermatitis-cream",
+                "RESULTS_BUCKET": "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih"
+            }
+        },
         {
             "name": "Debug swipe",
             "type": "python",

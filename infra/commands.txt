@@ -1,60 +1,123 @@
-DeepCopyStack.ApiEndpoint4F160690 = https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/
-DeepCopyStack.ApiUrl = https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/
-DeepCopyStack.CognitoIssuer = https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_ilJPIuXjB
-DeepCopyStack.CognitoTokenEndpoint = https://deepcopy-613663743323-eu-west-1.auth.eu-west-1.amazoncognito.com/oauth2/token
-DeepCopyStack.JobsTableName = DeepCopyStack-JobsTable1970BC16-1BVYVOHK8WXTU
-DeepCopyStack.M2MClientId = 5e2k1st9li1eihp22fl33nd7if
-DeepCopyStack.ResultsBucketName = deepcopystack-resultsbucketa95a2103-zhwjflrlpfih
-DeepCopyStack.UserPoolId = eu-west-1_ilJPIuXjB
+# ============================================================================
+# Deep Copy API - Configuration & Credentials
+# ============================================================================
 
-DeepCopyStack.ApiEndpoint4F160690 = https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/
-DeepCopyStack.ApiUrl = https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/
-DeepCopyStack.CognitoIssuer = https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_ilJPIuXjB
-DeepCopyStack.CognitoTokenEndpoint = https://deepcopy-613663743323-eu-west-1.auth.eu-west-1.amazoncognito.com/oauth2/token
-DeepCopyStack.JobsTableName = DeepCopyStack-JobsTable1970BC16-1BVYVOHK8WXTU
-DeepCopyStack.M2MClientId = 5e2k1st9li1eihp22fl33nd7if
-DeepCopyStack.PravahaClientId = 5mbatc7uv35hr23qip437s2ai5
-DeepCopyStack.ResultsBucketName = deepcopystack-resultsbucketa95a2103-zhwjflrlpfih
-DeepCopyStack.UserPoolId = eu-west-1_ilJPIuXjB
+export AWS_PROFILE=personal-cdk-dev
+export CLIENT_ID=5mbatc7uv35hr23qip437s2ai5
+export CLIENT_SECRET=1msm19oltu7241134t5vujtldr4uvum7hvn6cj7n1s3tg1ar02k5
+export API_URL=https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/
+export TOKEN_ENDPOINT=https://deepcopy-613663743323-eu-west-1.auth.eu-west-1.amazoncognito.com/oauth2/token
 
-
-
+# Get access token
 ACCESS_TOKEN=$(curl -s -u "$CLIENT_ID:$CLIENT_SECRET" \
   -d "grant_type=client_credentials&scope=https://deep-copy.api/read https://deep-copy.api/write" \
   "$TOKEN_ENDPOINT" | jq -r .access_token)
 
-# POST /jobs (uses write) - Updated with customer_avatars
+
+# ============================================================================
+# CDK Stack Outputs
+# ============================================================================
+# ApiUrl: https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/
+# CognitoTokenEndpoint: https://deepcopy-613663743323-eu-west-1.auth.eu-west-1.amazoncognito.com/oauth2/token
+# JobsTableName: DeepCopyStack-JobsTable1970BC16-1BVYVOHK8WXTU
+# ResultsBucketName: deepcopystack-resultsbucketa95a2103-zhwjflrlpfih
+# UserPoolId: eu-west-1_ilJPIuXjB
+# M2MClientId: 5e2k1st9li1eihp22fl33nd7if
+# PravahaClientId: 5mbatc7uv35hr23qip437s2ai5
+
+
+# ============================================================================
+# Jobs API - AI Pipeline Processing
+# ============================================================================
+
+# POST /jobs - Submit a job
 curl -sS -X POST "${API_URL}jobs" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"sales_page_url":"https://try.meritrelief.com/","project_name":"meritrelief","swipe_file_id":"A00002","advertorial_type":"Advertorial","customer_avatars":[{"persona_name":"Active Senior","description":"Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain","age_range":"60-75","gender":"both","key_buying_motivation":"Seeking non-invasive pain relief to maintain active lifestyle"},{"persona_name":"Desk-Bound Professional","description":"Office worker sitting 8+ hours daily experiencing lower back pain","age_range":"30-45","gender":"both","key_buying_motivation":"Quick relief from work-related pain"}]}'
+  -d '{
+    "sales_page_url": "https://try.meritrelief.com/",
+    "project_name": "meritrelief",
+    "swipe_file_id": "A00002",
+    "advertorial_type": "Advertorial",
+    "customer_avatars": [
+      {
+        "persona_name": "Active Senior",
+        "description": "Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain",
+        "age_range": "60-75",
+        "gender": "both",
+        "key_buying_motivation": "Seeking non-invasive pain relief to maintain active lifestyle"
+      },
+      {
+        "persona_name": "Desk-Bound Professional",
+        "description": "Office worker sitting 8+ hours daily experiencing lower back pain",
+        "age_range": "30-45",
+        "gender": "both",
+        "key_buying_motivation": "Quick relief from work-related pain"
+      }
+    ]
+  }' | jq '.'
+
+# GET /jobs/{id} - Get job status
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "${API_URL}jobs/YOUR_JOB_ID" | jq '.'
+
+# GET /jobs/{id}/result - Get job results
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "${API_URL}jobs/YOUR_JOB_ID/result" | jq '.'
 
 
+# ============================================================================
+# Avatar Extraction API
+# ============================================================================
 
-  curl -X POST "https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/extract" \
+# POST /avatars/extract - Submit avatar extraction job
+curl -sS -X POST "${API_URL}avatars/extract" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://naxir.co/products/footrevive?srsltid=AfmBOopi0uyM4_XKmqAgzsZUQf9Q4PcN1lGdnj-rPmrhF0l0GZO_v8rA"}' | jq '.'
+  -d '{
+    "url": "https://naxir.co/products/footrevive"
+  }' | jq '.'
 
-# GET /jobs/{id} (uses read)
-curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID"
-curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID/result"
+# GET /avatars/{id} - Get avatar extraction job status
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "${API_URL}avatars/YOUR_JOB_ID" | jq '.'
 
-# POST /swipe-files/generate (uses write) - Submit swipe file generation job
+# GET /avatars/{id}/result - Get avatar extraction results
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "${API_URL}avatars/YOUR_JOB_ID/result" | jq '.'
+
+
+# ============================================================================
+# Swipe File Generation API
+# ============================================================================
+
+# POST /swipe-files/generate - Submit swipe file generation job
 curl -sS -X POST "${API_URL}swipe-files/generate" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "original_job_id": "03479dbf-bc4c-4472-80ff-b11b561b8777",
-    "select_angle": "Embarrassment & Professional Confidence: '\''Restore the beard you earned—no flakes in meetings.'\''"
+    "original_job_id": "f8ae3e35-1b65-4109-bee3-d5fd5278f89b",
+    "select_angle": "Embarrassment & Professional Confidence: Restore the beard you earned—no flakes in meetings."
   }' | jq '.'
 
-# GET /swipe-files/{id} (uses read) - Get swipe file generation job status
-curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}swipe-files/YOUR_JOB_ID-swipe" | jq '.'
+# GET /swipe-files/{id} - Get swipe file generation job status
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "${API_URL}swipe-files/YOUR_JOB_ID-swipe" | jq '.'
 
-# GET /swipe-files/{id}/result (uses read) - Get swipe file generation results
-curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}swipe-files/YOUR_JOB_ID-swipe/result" | jq '.'
+# GET /swipe-files/{id}/result - Get swipe file generation results
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "${API_URL}swipe-files/YOUR_JOB_ID-swipe/result" | jq '.'
 
+
+# ============================================================================
+# Deployment Commands
+# ============================================================================
+
+# Deploy CDK stack
 AWS_PROFILE=personal-cdk-dev npx cdk deploy
 
-2a122590-f4a3-4770-a275-81e7cc5d8062
+
+# ============================================================================
+# Other Notes
+# ============================================================================
+# Job ID example: 2a122590-f4a3-4770-a275-81e7cc5d8062

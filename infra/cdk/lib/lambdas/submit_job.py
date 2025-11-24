@@ -7,7 +7,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 
-_ecs = boto3.client("ecs")
+_lambda = boto3.client("lambda")
 _ddb = boto3.client("dynamodb")
 
 
@@ -18,10 +18,7 @@ def _required_env(name: str) -> str:
     return value
 
 
-CLUSTER_ARN = _required_env("CLUSTER_ARN")
-TASK_DEF_ARN = _required_env("TASK_DEF_ARN")
-SUBNET_IDS = _required_env("SUBNET_IDS").split(",")
-SECURITY_GROUP_IDS = _required_env("SECURITY_GROUP_IDS").split(",")
+PROCESS_LAMBDA_NAME = _required_env("PROCESS_LAMBDA_NAME")
 JOBS_TABLE_NAME = _required_env("JOBS_TABLE_NAME")
 
 
@@ -61,63 +58,31 @@ def handler(event, _context):
             "body": json.dumps({"error": f"DynamoDB error: {e.response['Error'].get('Message', str(e))}"}),
         }
 
-    # Extract and forward specific fields as individual env vars for convenience
-    sales_page_url = body.get("sales_page_url")
-    project_name = body.get("project_name")
-    swipe_file_id = body.get("swipe_file_id")
-    advertorial_type = body.get("advertorial_type")
-
-    env_overrides = [
-        {"name": "JOB_ID", "value": job_id},
-        {
-            "name": "JOB_EVENT_JSON",
-            "value": json.dumps({**body, "job_id": job_id, "result_prefix": result_prefix}),
-        },
-    ]
-    if sales_page_url is not None:
-        env_overrides.append({"name": "SALES_PAGE_URL", "value": str(sales_page_url)})
-    if project_name is not None:
-        env_overrides.append({"name": "PROJECT_NAME", "value": str(project_name)})
-    if swipe_file_id is not None:
-        env_overrides.append({"name": "SWIPE_FILE_ID", "value": str(swipe_file_id)})
-    if advertorial_type is not None:
-        env_overrides.append({"name": "ADVERTORIAL_TYPE", "value": str(advertorial_type)})
+    # Prepare Lambda invocation payload
+    lambda_payload = {
+        **body,
+        "job_id": job_id,
+        "result_prefix": result_prefix,
+    }
 
     try:
-        run_resp = _ecs.run_task(
-            cluster=CLUSTER_ARN,
-            taskDefinition=TASK_DEF_ARN,
-            launchType="FARGATE",
-            count=1,
-            networkConfiguration={
-                "awsvpcConfiguration": {
-                    "subnets": SUBNET_IDS,
-                    "securityGroups": SECURITY_GROUP_IDS,
-                    "assignPublicIp": "ENABLED",
-                }
-            },
-            overrides={
-                "containerOverrides": [
-                    {"name": "AppContainer", "environment": env_overrides}
-                ]
-            },
+        # Invoke Lambda function asynchronously
+        invoke_resp = _lambda.invoke(
+            FunctionName=PROCESS_LAMBDA_NAME,
+            InvocationType="Event",  # Asynchronous invocation
+            Payload=json.dumps(lambda_payload),
         )
     except ClientError as e:
         return {
             "statusCode": 500,
             "headers": {"content-type": "application/json", "Access-Control-Allow-Origin": "*"},
-            "body": json.dumps({"error": f"ECS error: {e.response['Error'].get('Message', str(e))}"}),
+            "body": json.dumps({"error": f"Lambda invocation error: {e.response['Error'].get('Message', str(e))}"}),
         }
-
-    task_arn = None
-    tasks = run_resp.get("tasks") or []
-    if tasks:
-        task_arn = tasks[0].get("taskArn")
 
     return {
         "statusCode": 202,
         "headers": {"content-type": "application/json", "Access-Control-Allow-Origin": "*"},
-        "body": json.dumps({"jobId": job_id, "taskArn": task_arn, "status": "SUBMITTED"}),
+        "body": json.dumps({"jobId": job_id, "status": "SUBMITTED"}),
     }
 
 

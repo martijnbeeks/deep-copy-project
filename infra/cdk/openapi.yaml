@@ -882,6 +882,10 @@ components:
         product_description:
           type: string
           description: A description of the product
+        product_image:
+          type: string
+          description: Base64 encoded string of the product image
+
     SubmitSwipeFileResponse:
       type: object
       required: [jobId, status]

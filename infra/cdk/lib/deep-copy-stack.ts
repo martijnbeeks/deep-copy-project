@@ -45,6 +45,9 @@ export class DeepCopyStack extends Stack {
       tableClass: dynamodb.TableClass.STANDARD,
     });
 
+    // Secret ARN for API keys (used by multiple Lambdas)
+    const secretArn = `arn:aws:secretsmanager:${Stack.of(this).region}:${Stack.of(this).account}:secret:deepcopy-secret-dev*`;
+
     // VPC for ECS Fargate
     // Keep NAT Gateway provisioned but use public subnets to avoid NAT charges
     const vpc = new ec2.Vpc(this, 'Vpc', {
@@ -138,7 +141,39 @@ export class DeepCopyStack extends Stack {
       description: 'Allow outbound internet for API calls',
     });
 
-    // Small Lambda to submit tasks (Python version)
+    // AI Pipeline - Processing Lambda (Docker-based)
+    const processJobLambda = new lambda.DockerImageFunction(this, 'ProcessJobLambda', {
+      code: lambda.DockerImageCode.fromImageAsset(
+        path.join(__dirname, 'lambdas', 'process_job'),
+        {
+          platform: Platform.LINUX_AMD64,
+        }
+      ),
+      timeout: Duration.seconds(900), // 15 minutes for long-running pipeline
+      memorySize: 3008, // 3GB for Playwright + OpenAI + Anthropic
+      architecture: lambda.Architecture.X86_64,
+      environment: {
+        PLAYWRIGHT_BROWSERS_PATH: '/var/task/.playwright',
+        JOBS_TABLE_NAME: jobsTable.tableName,
+        RESULTS_BUCKET: resultsBucket.bucketName,
+        ENVIRONMENT: 'prod',
+      },
+    });
+
+    // Grant access to secrets
+    processJobLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['secretsmanager:GetSecretValue'],
+        resources: [secretArn],
+      }),
+    );
+    jobsTable.grantReadWriteData(processJobLambda);
+    resultsBucket.grantPut(processJobLambda);
+    resultsBucket.grantPutAcl(processJobLambda);
+    resultsBucket.grantRead(processJobLambda, 'content_library/*');
+    resultsBucket.grantRead(processJobLambda, 'projects/*'); // Allow reading pre-computed results
+
+    // Small Lambda to submit jobs (Python version)
     const submitLambda = new lambda.Function(this, 'SubmitJobLambda', {
       runtime: lambda.Runtime.PYTHON_3_11,
       timeout: Duration.seconds(10),
@@ -146,29 +181,14 @@ export class DeepCopyStack extends Stack {
       handler: 'submit_job.handler',
       code: lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
       environment: {
-        CLUSTER_ARN: cluster.clusterArn,
-        TASK_DEF_ARN: taskDef.taskDefinitionArn,
-        // Only public subnets (no NAT Gateway needed)
-        SUBNET_IDS: vpc.publicSubnets.map((s) => s.subnetId).join(','),
-        SECURITY_GROUP_IDS: taskSecurityGroup.securityGroupId,
+        PROCESS_LAMBDA_NAME: processJobLambda.functionName,
         JOBS_TABLE_NAME: jobsTable.tableName,
         RESULTS_BUCKET: resultsBucket.bucketName,
       },
     });
 
-    // Permissions for submitter
-    submitLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['ecs:RunTask', 'ecs:DescribeTasks'],
-        resources: ['*'],
-      }),
-    );
-    submitLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['iam:PassRole'],
-        resources: [taskDef.taskRole.roleArn, taskDef.executionRole!.roleArn],
-      }),
-    );
+    // Permissions for submitter - invoke Lambda instead of ECS
+    processJobLambda.grantInvoke(submitLambda);
     jobsTable.grantReadWriteData(submitLambda);
 
     // Lambda to get job status (reads DynamoDB) - Python version
@@ -216,7 +236,6 @@ export class DeepCopyStack extends Stack {
     });
 
     // Grant access to the same secret as the ECS pipeline
-    const secretArn = `arn:aws:secretsmanager:${Stack.of(this).region}:${Stack.of(this).account}:secret:deepcopy-secret-dev*`;
     processAvatarExtractionLambda.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['secretsmanager:GetSecretValue'],

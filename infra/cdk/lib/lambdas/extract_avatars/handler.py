@@ -15,6 +15,7 @@ import logging
 import boto3
 from datetime import datetime, timezone
 from avatar_extractor import extract_avatars_from_url
+from get_largest_image import capture_product_image
 
 # Configure logging
 logger = logging.getLogger()
@@ -23,6 +24,7 @@ logger.setLevel(logging.INFO)
 # Initialize AWS clients
 s3_client = boto3.client('s3')
 ddb_client = boto3.client('dynamodb')
+results_bucket = os.environ.get('RESULTS_BUCKET')
 
 
 def get_secrets(secret_id: str = "deepcopy-secret-dev"):
@@ -92,7 +94,7 @@ def lambda_handler(event, context):
         
     Returns:
         Success/failure status
-    """
+    """ 
     job_id = event.get('job_id')
     url = event.get('url')
     
@@ -125,21 +127,30 @@ def lambda_handler(event, context):
             raise RuntimeError(error_msg)
         
         # Get model from environment or use default
-        model = "gpt-4.1-mini"
+        model = "gpt-5-mini"
         
         # Extract avatars using OpenAI
         logger.info(f'Processing avatar extraction for job {job_id}, URL: {url}')
-        avatars = extract_avatars_from_url(url, openai_api_key, model)
+        # avatars = extract_avatars_from_url(url, openai_api_key, model)
+        # image_base64 = capture_product_image(url)
         
+        
+        # Load temp results from s3. Load json
+        s3_key = "results/avatars/test-job-123/avatar_extraction_results.json"
+        results = json.loads(s3_client.get_object(Bucket=results_bucket, Key=s3_key)['Body'].read().decode('utf-8'))
+        
+    
+
         # Prepare results
-        results = {
-            'success': True,
-            'url': url,
-            'job_id': job_id,
-            'timestamp_iso': datetime.now(timezone.utc).isoformat(),
-            'avatars': [avatar.model_dump() for avatar in avatars.avatars]
-        }
-        print(results)
+        # results = {
+        #     'success': True,
+        #     'url': url,
+        #     'job_id': job_id,
+        #     'timestamp_iso': datetime.now(timezone.utc).isoformat(),
+        #     'avatars': [avatar.model_dump() for avatar in avatars.avatars],
+        #     "product_image": image_base64
+        # }
+
         
         # Save to S3
         s3_key = save_results_to_s3(job_id, results)
@@ -163,6 +174,6 @@ if __name__ == "__main__":
     os.environ['RESULTS_BUCKET'] = 'deepcopystack-resultsbucketa95a2103-zhwjflrlpfih'
     test_event = {
         "job_id": "test-job-123",
-        "url": "https://naxir.co/products/footrevive?srsltid=AfmBOopi0uyM4_XKmqAgzsZUQf9Q4PcN1lGdnj-rPmrhF0l0GZO_v8rA"
+        "url": "https://trynewaura.com/products/seborrheic-dermatitis-cream"
     }
     print(lambda_handler(test_event, {}))
