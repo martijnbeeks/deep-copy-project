@@ -85,28 +85,36 @@ async function handleProxy(req: NextRequest, method: "GET" | "POST" = "GET") {
 
     // ✔ Handle HTML normally - stream for faster initial render
     if (contentType.includes("text/html")) {
-      // Stream the response instead of waiting for full body
-      const reader = response.body?.getReader()
-      if (!reader) {
-        return NextResponse.json({ error: "No response body" }, { status: 500 })
+      // Get full HTML to inject CSS
+      let html = await response.text()
+
+      // Inject CSS to disable pointer events on interactive elements
+      const disableInteractionsCSS = `
+        <style>
+          a, button, input, select, textarea, [onclick], [role="button"], 
+          [tabindex]:not([tabindex="-1"]), label[for] {
+            pointer-events: none !important;
+            cursor: default !important;
+          }
+          /* Allow scrolling */
+          body, html {
+            overflow: auto !important;
+            pointer-events: auto !important;
+          }
+        </style>
+      `
+
+      // Inject CSS before </head> or at the start of <head>
+      if (html.includes('</head>')) {
+        html = html.replace('</head>', `${disableInteractionsCSS}</head>`)
+      } else if (html.includes('<head>')) {
+        html = html.replace('<head>', `<head>${disableInteractionsCSS}`)
+      } else {
+        // No head tag, add it at the beginning
+        html = `<head>${disableInteractionsCSS}</head>${html}`
       }
 
-      const stream = new ReadableStream({
-        async start(controller) {
-          try {
-            while (true) {
-              const { done, value } = await reader.read()
-              if (done) break
-              controller.enqueue(value)
-            }
-            controller.close()
-          } catch (error) {
-            controller.error(error)
-          }
-        },
-      })
-
-      return new NextResponse(stream, {
+      return new NextResponse(html, {
         status: 200,
         headers: {
           "Content-Type": "text/html",
