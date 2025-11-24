@@ -155,6 +155,38 @@ function AngleStatusIcon({
   );
 }
 
+// Helper function to get file type from templateId or advertorialType
+function getFileType(templateId?: string, advertorialType?: string): string {
+  // First try to determine from templateId (L = listicle, A = advertorial)
+  if (templateId) {
+    if (templateId.startsWith('L')) {
+      return 'listicle';
+    }
+    if (templateId.startsWith('A')) {
+      return 'advertorial';
+    }
+  }
+  
+  // Fallback to advertorialType prop
+  if (advertorialType) {
+    return advertorialType.toLowerCase();
+  }
+  
+  // Default fallback
+  return 'advertorial';
+}
+
+// Helper function to format file type for display
+function formatFileType(type: string): string {
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+// Helper function to capitalize first letter of a string
+function capitalizeFirst(str: string): string {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
 export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, templateId, customerAvatars, salesPageUrl }: DeepCopyResultsProps) {
   const [templates, setTemplates] = useState<Array<{ name: string, type: string, html: string, angle?: string, timestamp?: string, templateId?: string }>>([])
   const [templatesLoading, setTemplatesLoading] = useState(true)
@@ -516,6 +548,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                   type: 'Marketing Angle',
                   html: renderedHtml,
                   angle: swipeResult.angle,
+                  templateId: injectableTemplate.id,
                   timestamp: result.metadata?.generated_at || new Date().toISOString()
                 })
               } catch (error) {
@@ -1261,7 +1294,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                             <div>
                                               <p className="text-muted-foreground text-xs">Gender</p>
                                               <p className="font-medium text-foreground">
-                                                {avatarData.demographics?.gender?.join(', ') || 'N/A'}
+                                                {avatarData.demographics?.gender?.map(g => capitalizeFirst(g)).join(', ') || 'N/A'}
                                               </p>
                                             </div>
                                           </div>
@@ -2043,14 +2076,21 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                         }
                                       }
 
+                                      const fileType = getFileType(template.templateId, advertorialType);
+                                      
                                       return (
                                         <div className="space-y-2">
-                                          {/* Number Badge */}
-                                          {angleIndex >= 0 && (
-                                            <Badge variant="outline" className="text-xs font-semibold bg-muted text-foreground border-border w-fit">
-                                              #{angleIndex + 1}
+                                          {/* Number Badge and File Type */}
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            {angleIndex >= 0 && (
+                                              <Badge variant="outline" className="text-xs font-semibold bg-muted text-foreground border-border w-fit">
+                                                #{angleIndex + 1}
+                                              </Badge>
+                                            )}
+                                            <Badge variant="outline" className="text-xs font-semibold bg-primary/10 text-primary border-primary/20 w-fit">
+                                              {formatFileType(fileType)}
                                             </Badge>
-                                          )}
+                                          </div>
                                           {/* Title with Icon */}
                                           <div className="flex items-start gap-2">
                                             {angleIndex >= 0 && (

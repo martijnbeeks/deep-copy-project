@@ -421,6 +421,12 @@ function AvatarsContent() {
     }
   }
 
+  // Helper function to capitalize first letter of gender
+  const capitalizeFirst = (str: string): string => {
+    if (!str) return str;
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  }
+
   if (!user) {
     return (
       <div className="flex h-screen bg-background">
@@ -642,6 +648,11 @@ function AvatarsContent() {
                                   {avatar.age_range}
                                 </Badge>
                               )}
+                              {avatar.gender && (
+                                <Badge variant="outline" className="text-xs">
+                                  {capitalizeFirst(avatar.gender)}
+                                </Badge>
+                              )}
                             </div>
                           </div>
                           <div className="text-2xl flex-shrink-0">
@@ -722,7 +733,7 @@ function AvatarsContent() {
                   {selectedAvatarForDetails.gender && (
                     <div>
                       <h3 className="text-sm font-semibold text-foreground mb-2">Gender</h3>
-                      <Badge variant="outline">{selectedAvatarForDetails.gender}</Badge>
+                      <Badge variant="outline">{capitalizeFirst(selectedAvatarForDetails.gender)}</Badge>
                     </div>
                   )}
                 </div>
