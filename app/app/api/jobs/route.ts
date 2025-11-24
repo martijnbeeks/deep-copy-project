@@ -129,20 +129,11 @@ export async function POST(request: NextRequest) {
     // Update job status to processing
     await updateJobStatus(job.id, 'processing')
 
-    // Generate screenshot asynchronously via API route (don't block job creation)
+    // Generate screenshot asynchronously (don't block job creation)
     if (sales_page_url) {
-      // Get the base URL for the API call
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` :
-          'http://localhost:3000')
-
-      // Call screenshot API route asynchronously
-      fetch(`${baseUrl}/api/screenshot/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId: job.id, url: sales_page_url })
-      }).catch(err =>
-        console.error('Screenshot generation API call failed:', err)
+      const { generateScreenshot } = await import('@/lib/utils/screenshot')
+      generateScreenshot(job.id, sales_page_url).catch(err =>
+        console.error('Screenshot generation failed:', err)
       )
     }
 

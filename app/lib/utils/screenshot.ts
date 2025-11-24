@@ -1,5 +1,4 @@
-import chromium from '@sparticuz/chromium'
-import playwright from 'playwright-core'
+import { chromium } from 'playwright'
 import { query } from '@/lib/db/connection'
 
 export async function generateScreenshot(jobId: string, url: string): Promise<void> {
@@ -12,18 +11,15 @@ export async function generateScreenshot(jobId: string, url: string): Promise<vo
 
     console.log(`Starting screenshot generation for job ${jobId}, URL: ${url}`)
 
-    // For Vercel, use serverless-optimized Chromium
-    browser = await playwright.chromium.launch({
-      args: chromium.args,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
+    browser = await chromium.launch({
+      headless: true,
     })
 
     const page = await browser.newPage()
     await page.setViewportSize({ width: 1280, height: 720 })
 
     await page.goto(url, {
-      waitUntil: 'networkidle',
+      waitUntil: 'domcontentloaded',
       timeout: 30000
     })
 
@@ -42,11 +38,11 @@ export async function generateScreenshot(jobId: string, url: string): Promise<vo
     const base64Screenshot = screenshot.toString('base64')
 
     await query('UPDATE jobs SET screenshot = $1 WHERE id = $2', [base64Screenshot, jobId])
-    
+
     console.log(`Screenshot generated successfully for job ${jobId}`)
   } catch (error) {
     console.error(`Failed to generate screenshot for job ${jobId}:`, error)
-    
+
     // Ensure browser is closed even on error
     if (browser) {
       try {
@@ -55,7 +51,7 @@ export async function generateScreenshot(jobId: string, url: string): Promise<vo
         console.error('Error closing browser:', closeError)
       }
     }
-    
+
     // Re-throw so API route can handle it properly
     throw error
   }

@@ -21,7 +21,6 @@ export function SalesPagePreview({ url, jobId, className = "" }: SalesPagePrevie
   const [faviconError, setFaviconError] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [iframeError, setIframeError] = useState(false)
-  const [iframeLoading, setIframeLoading] = useState(true)
 
   const getDomain = (urlString: string) => {
     try {
@@ -38,7 +37,6 @@ export function SalesPagePreview({ url, jobId, className = "" }: SalesPagePrevie
   // Reset iframe state helper
   const resetIframeState = () => {
     setIframeError(false)
-    setIframeLoading(true)
   }
 
   useEffect(() => {
@@ -81,12 +79,6 @@ export function SalesPagePreview({ url, jobId, className = "" }: SalesPagePrevie
 
   const handleIframeError = () => {
     setIframeError(true)
-    setIframeLoading(false)
-  }
-
-  const handleIframeLoad = () => {
-    setIframeLoading(false)
-    // With proxy, no need for complex error detection
   }
 
   return (
@@ -166,25 +158,14 @@ export function SalesPagePreview({ url, jobId, className = "" }: SalesPagePrevie
                 </a>
               </div>
             ) : (
-              <>
-                {iframeLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-10 rounded-lg border">
-                    <div className="flex flex-col items-center gap-3">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      <p className="text-sm text-muted-foreground">Loading page...</p>
-                    </div>
-                  </div>
-                )}
-                <iframe
-                  src={proxyUrl}
-                  className="w-full h-full border rounded-lg"
-                  title={`Sales page: ${domain}`}
-                  allow="fullscreen"
-                  style={{ height: '100%', minHeight: 0 }}
-                  onError={handleIframeError}
-                  onLoad={handleIframeLoad}
-                />
-              </>
+              <iframe
+                src={proxyUrl}
+                className="w-full h-full border rounded-lg"
+                title={`Sales page: ${domain}`}
+                allow="fullscreen"
+                style={{ height: '100%', minHeight: 0 }}
+                onError={handleIframeError}
+              />
             )}
           </div>
         </DialogContent>

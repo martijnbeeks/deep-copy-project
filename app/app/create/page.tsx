@@ -120,16 +120,17 @@ export default function CreatePage() {
     return null
   }
 
-  // Check if all required fields are empty
+  // Check if form is valid (all required fields are filled)
+  // Returns true if form is invalid/empty (button should be disabled)
   const isFormEmpty = (): boolean => {
-    // Check if title is empty
-    if (formData.title.trim()) {
-      return false
+    // Title is required
+    if (!formData.title.trim()) {
+      return true
     }
 
-    // Check if sales_page_url is empty
-    if (formData.sales_page_url.trim()) {
-      return false
+    // Sales page URL is required
+    if (!formData.sales_page_url.trim()) {
+      return true
     }
 
     // Check if target_approach is set (it has a default, but check anyway)
@@ -137,29 +138,26 @@ export default function CreatePage() {
       return true
     }
 
-    // For "known" approach, check if customer avatar fields are filled
+    // For "known" approach, check if customer avatar fields are complete
     if (formData.target_approach === 'known') {
       const avatar = getFirstSelectedAvatar(formData.avatars)
-      if (avatar) {
-        // If avatar exists, check if any required field is filled
-        if (avatar.persona_name?.trim() ||
-          avatar.description?.trim() ||
-          avatar.age_range?.trim() ||
-          avatar.gender?.trim() ||
-          avatar.key_buying_motivation?.trim()) {
-          return false
-        }
+      if (!avatar) {
+        return true
+      }
+      // All required avatar fields must be filled
+      if (!avatar.persona_name?.trim() ||
+        !avatar.description?.trim() ||
+        !avatar.age_range?.trim() ||
+        !avatar.gender?.trim() ||
+        !avatar.key_buying_motivation?.trim()) {
+        return true
       }
     }
 
-    // For "explore" approach, check if avatars are selected
-    if (formData.target_approach === 'explore') {
-      if (getSelectedAvatars(formData.avatars).length > 0) {
-        return false
-      }
-    }
+    // For "explore" approach, avatars are optional initially (will be generated)
+    // So we don't need to check for avatars here
 
-    return true
+    return false // Form is valid, button should be enabled
   }
 
   const validateForm = (dataToValidate?: PipelineFormData): boolean => {

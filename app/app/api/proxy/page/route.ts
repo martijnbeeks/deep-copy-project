@@ -1,114 +1,142 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from "next/server"
 
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
+  return handleProxy(req)
+}
+
+export async function POST(req: NextRequest) {
+  return handleProxy(req, "POST")
+}
+
+async function handleProxy(req: NextRequest, method: "GET" | "POST" = "GET") {
   try {
-    const { searchParams } = new URL(request.url)
-    const targetUrl = searchParams.get('url')
+    const targetUrl = req.nextUrl.searchParams.get("url")
 
     if (!targetUrl) {
-      return NextResponse.json({ error: 'URL parameter is required' }, { status: 400 })
+      return NextResponse.json({ error: "Missing url parameter" }, { status: 400 })
     }
 
     // Validate URL format
-    let parsedUrl: URL
     try {
-      parsedUrl = new URL(targetUrl)
+      const parsedUrl = new URL(targetUrl)
+      // Only allow http and https protocols
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+        return NextResponse.json({ error: "Only HTTP and HTTPS URLs are allowed" }, { status: 400 })
+      }
     } catch {
-      return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 })
+      return NextResponse.json({ error: "Invalid URL format" }, { status: 400 })
     }
 
-    // Only allow http and https protocols
-    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      return NextResponse.json({ error: 'Only HTTP and HTTPS URLs are allowed' }, { status: 400 })
+    // Forward incoming cookies if needed (optional)
+    const incomingCookies = req.headers.get("cookie") || ""
+
+    // Browser-like headers to defeat bot protection
+    const browserHeaders: Record<string, string> = {
+      "User-Agent":
+        req.headers.get("user-agent") ||
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+      "Accept":
+        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Accept-Encoding": "identity", // prevent gzip blocking
+      "Referer": "https://www.google.com/",
+      "Cookie": incomingCookies, // forward cookies
+      "Sec-Fetch-Site": "none",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-User": "?1",
+      "Upgrade-Insecure-Requests": "1",
     }
 
-    // Fetch the page content with timeout
+    let body
+    if (method === "POST") {
+      body = await req.text()
+    }
+
+    // Faster timeout - 15 seconds total, 5 seconds for connection
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 seconds
+    const totalTimeout = setTimeout(() => controller.abort(), 15000) // 15 seconds total
+    const connectionTimeout = setTimeout(() => {
+      controller.abort()
+    }, 5000) // 5 seconds for initial connection
 
     const response = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Referer': parsedUrl.origin,
-      },
+      method,
+      body,
+      headers: browserHeaders,
+      redirect: "follow",
       signal: controller.signal,
     })
 
-    clearTimeout(timeoutId)
+    clearTimeout(connectionTimeout)
+    clearTimeout(totalTimeout)
 
+    // If target rejects: return error
     if (!response.ok) {
       return NextResponse.json(
-        { error: `Failed to fetch page: ${response.status} ${response.statusText}` },
+        {
+          error: `Fetch failed: ${response.status} ${response.statusText}`,
+          target: targetUrl,
+        },
         { status: response.status }
       )
     }
 
-    // Get the HTML content
-    let html = await response.text()
-    const baseUrl = parsedUrl.origin
+    const contentType = response.headers.get("content-type") || ""
 
-    // Rewrite relative URLs to absolute URLs
-    // Fix relative links
-    html = html.replace(/href="\//g, `href="${baseUrl}/`)
-    html = html.replace(/href='\//g, `href='${baseUrl}/`)
-    html = html.replace(/href="(?!https?:\/\/|mailto:|tel:|#)([^"]+)"/g, (match, path) => {
-      if (path.startsWith('//')) return match // Already protocol-relative
-      if (path.startsWith('http')) return match // Already absolute
-      return `href="${new URL(path, baseUrl).href}"`
-    })
+    // ✔ Handle HTML normally - stream for faster initial render
+    if (contentType.includes("text/html")) {
+      // Stream the response instead of waiting for full body
+      const reader = response.body?.getReader()
+      if (!reader) {
+        return NextResponse.json({ error: "No response body" }, { status: 500 })
+      }
 
-    // Fix relative src attributes
-    html = html.replace(/src="\//g, `src="${baseUrl}/`)
-    html = html.replace(/src='\//g, `src='${baseUrl}/`)
-    html = html.replace(/src="(?!https?:\/\/|data:)([^"]+)"/g, (match, path) => {
-      if (path.startsWith('//')) return match
-      if (path.startsWith('http')) return match
-      return `src="${new URL(path, baseUrl).href}"`
-    })
+      const stream = new ReadableStream({
+        async start(controller) {
+          try {
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) break
+              controller.enqueue(value)
+            }
+            controller.close()
+          } catch (error) {
+            controller.error(error)
+          }
+        },
+      })
 
-    // Fix relative URLs in CSS (url())
-    html = html.replace(/url\(['"]?\/([^'")]+)['"]?\)/g, `url('${baseUrl}/$1')`)
-
-    // Remove X-Frame-Options and Content-Security-Policy headers from meta tags
-    html = html.replace(/<meta[^>]*http-equiv=["']X-Frame-Options["'][^>]*>/gi, '')
-    html = html.replace(/<meta[^>]*http-equiv=["']Content-Security-Policy["'][^>]*>/gi, '')
-    
-    // Remove X-Frame-Options from any script tags that might set it
-    html = html.replace(/X-Frame-Options[^;]*;?/gi, '')
-
-    // Add base tag if not present to help with relative URLs
-    if (!html.includes('<base')) {
-      html = html.replace(/<head[^>]*>/i, `$&<base href="${baseUrl}/">`)
+      return new NextResponse(stream, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html",
+          "X-Frame-Options": "",
+          "Content-Security-Policy": "",
+        },
+      })
     }
 
-    // Return the proxied HTML
-    return new NextResponse(html, {
+    // ✔ Handle binary files (images, pdfs, fonts, js, css)
+    const buffer = Buffer.from(await response.arrayBuffer())
+    return new NextResponse(buffer, {
       status: 200,
       headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'X-Frame-Options': 'ALLOWALL', // Allow iframe embedding
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+        "Content-Type": contentType,
+        "X-Frame-Options": "",
+        "Content-Security-Policy": "",
       },
     })
-  } catch (error) {
-    console.error('Proxy error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    
+  } catch (error: any) {
     // Handle timeout
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (error instanceof Error && error.name === "AbortError") {
       return NextResponse.json(
-        { error: 'Request timeout - the page took too long to load' },
+        { error: "Request timeout - the page took too long to load" },
         { status: 504 }
       )
     }
 
     return NextResponse.json(
-      { error: `Failed to proxy page: ${errorMessage}` },
+      { error: "Proxy error: " + (error?.message || "Unknown error") },
       { status: 500 }
     )
   }
