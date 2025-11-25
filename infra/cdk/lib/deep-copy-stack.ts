@@ -6,18 +6,9 @@ import {
   aws_iam as iam,
   aws_s3 as s3,
   aws_dynamodb as dynamodb,
-  aws_ecs as ecs,
-  aws_ecs_patterns as ecs_patterns,
-  aws_ec2 as ec2,
-  aws_logs as logs,
   aws_lambda as lambda,
-  aws_lambda_nodejs as lambdaNode,
   aws_apigateway as apigw,
   aws_cognito as cognito,
-  aws_ecr as ecr,
-  aws_ecr_assets as ecrAssets,
-  aws_events as events,
-  aws_events_targets as targets,
   CfnOutput,
 } from 'aws-cdk-lib';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
@@ -47,99 +38,6 @@ export class DeepCopyStack extends Stack {
 
     // Secret ARN for API keys (used by multiple Lambdas)
     const secretArn = `arn:aws:secretsmanager:${Stack.of(this).region}:${Stack.of(this).account}:secret:deepcopy-secret-dev*`;
-
-    // VPC for ECS Fargate
-    // Keep NAT Gateway provisioned but use public subnets to avoid NAT charges
-    const vpc = new ec2.Vpc(this, 'Vpc', {
-      maxAzs: 2,
-      natGateways: 1, // Keep existing NAT Gateway to avoid VPC recreation
-    });
-
-    // Add FREE VPC Gateway Endpoints (no cost, reduce data transfer)
-    // These keep S3 and DynamoDB traffic within AWS network at zero cost
-    vpc.addGatewayEndpoint('S3Endpoint', {
-      service: ec2.GatewayVpcEndpointAwsService.S3,
-    });
-    vpc.addGatewayEndpoint('DynamoDBEndpoint', {
-      service: ec2.GatewayVpcEndpointAwsService.DYNAMODB,
-    });
-
-    // ECS Cluster
-    const cluster = new ecs.Cluster(this, 'Cluster', { vpc });
-
-    // Build Docker image from ai_pipeline
-    // Use path.resolve to ensure correct path resolution regardless of how CDK is executed
-    const dockerImage = ecs.ContainerImage.fromAsset(
-      path.resolve(__dirname, '../../ai_pipeline'),
-      {
-        platform: ecrAssets.Platform.LINUX_ARM64,
-      },
-    );
-
-    // Task Role: permissions for the python container
-    const taskRole = new iam.Role(this, 'TaskRole', {
-      assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
-    });
-    resultsBucket.grantPut(taskRole);
-    resultsBucket.grantPutAcl(taskRole);
-    // Allow task to read swipe files stored under content_library/
-    resultsBucket.grantRead(taskRole, 'content_library/*');
-    jobsTable.grantReadWriteData(taskRole);
-
-    // Also allow SecretsManager read if your code pulls secrets
-    taskRole.addToPolicy(
-      new iam.PolicyStatement({
-        actions: ['secretsmanager:GetSecretValue'],
-        resources: ['*'],
-      }),
-    );
-
-    // Task Definition
-    const taskDef = new ecs.FargateTaskDefinition(this, 'TaskDef', {
-      cpu: 1024, // 1 vCPU
-      memoryLimitMiB: 3072, // 3GB for 20-min workload
-      runtimePlatform: {
-        cpuArchitecture: ecs.CpuArchitecture.ARM64,
-        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
-      },
-      taskRole,
-    });
-
-    const logGroup = new logs.LogGroup(this, 'TaskLogs', {
-      retention: logs.RetentionDays.ONE_WEEK,
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
-
-    const container = taskDef.addContainer('AppContainer', {
-      image: dockerImage,
-      logging: ecs.LogDrivers.awsLogs({
-        logGroup,
-        streamPrefix: 'deepcopy',
-      }),
-      environment: {
-        AWS_REGION: Stack.of(this).region,
-        BUCKET_NAME: resultsBucket.bucketName,
-        JOBS_TABLE_NAME: jobsTable.tableName,
-        ENVIRONMENT: 'prod',
-        DISABLE_SCREENSHOT: '0',
-        CONTENT_LIBRARY_BUCKET: resultsBucket.bucketName,
-      },
-    });
-
-    container.addUlimits({
-      name: ecs.UlimitName.NPROC,
-      softLimit: 16384,
-      hardLimit: 16384,
-    });
-
-    // We don't expose ports (batch style)
-
-    // Security group for tasks
-    const taskSecurityGroup = new ec2.SecurityGroup(this, 'TaskSG', {
-      vpc,
-      allowAllOutbound: true,
-      description: 'Allow outbound internet for API calls',
-    });
 
     // AI Pipeline - Processing Lambda (Docker-based)
     const processJobLambda = new lambda.DockerImageFunction(this, 'ProcessJobLambda', {
