@@ -311,6 +311,20 @@ export const updateJobExecutionId = async (id: string, execution_id: string): Pr
   await query('UPDATE jobs SET execution_id = $2, updated_at = NOW() WHERE id = $1', [id, execution_id])
 }
 
+export const updateJob = async (id: string, userId: string, updates: Partial<Pick<Job, 'title' | 'brand_info' | 'sales_page_url'>>): Promise<Job | null> => {
+  const fields = Object.keys(updates).filter(key => updates[key as keyof typeof updates] !== undefined)
+  if (fields.length === 0) return null
+
+  const setClause = fields.map((field, index) => `${field} = $${index + 3}`).join(', ')
+  const values = fields.map(field => updates[field as keyof typeof updates])
+  
+  const result = await query(
+    `UPDATE jobs SET ${setClause}, updated_at = NOW() WHERE id = $1 AND user_id = $2 RETURNING *`,
+    [id, userId, ...values]
+  )
+  return result.rows[0] || null
+}
+
 export const deleteJobById = async (id: string, userId: string): Promise<void> => {
   // First delete the associated result if it exists
   await query('DELETE FROM results WHERE job_id = $1', [id])

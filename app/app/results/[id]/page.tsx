@@ -99,6 +99,10 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
   const projectTitle = currentJob?.title || 'Project'
   const capitalizedTitle = projectTitle.charAt(0).toUpperCase() + projectTitle.slice(1)
   const projectDate = currentJob?.created_at || new Date().toISOString()
+  
+  // Get selected/researched avatars
+  const selectedAvatars = currentJob?.avatars?.filter((a: any) => a.is_researched === true) || []
+  const selectedAvatarNames = selectedAvatars.map((a: any) => a.persona_name).join(', ')
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -121,17 +125,25 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                   </Button>
                   {currentJob && (
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary">
-                      <span className="text-sm font-medium">
-                        {capitalizedTitle} • {new Date(projectDate).toLocaleDateString('en-US', {
+                      <span className="text-sm font-medium flex items-center gap-2">
+                        <span>{capitalizedTitle}</span>
+                        {selectedAvatarNames && (
+                          <>
+                            <span>•</span>
+                            <span className="font-semibold">{selectedAvatarNames}</span>
+                          </>
+                        )}
+                        <span>•</span>
+                        <span>{new Date(projectDate).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric'
-                        })}
+                        })}</span>
                       </span>
                     </div>
                   )}
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border/50">
-                    <h1 className="text-sm font-medium text-foreground">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary">
+                    <h1 className="text-sm font-medium">
                       Research Results
                     </h1>
                   </div>

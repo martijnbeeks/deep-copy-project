@@ -166,12 +166,12 @@ function getFileType(templateId?: string, advertorialType?: string): string {
       return 'advertorial';
     }
   }
-  
+
   // Fallback to advertorialType prop
   if (advertorialType) {
     return advertorialType.toLowerCase();
   }
-  
+
   // Default fallback
   return 'advertorial';
 }
@@ -453,7 +453,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
               newMap.delete(angle)
               return newMap
             })
-            alert('Swipe files generated but failed to process. Please try refreshing the page.')
+            alert('Pre-landers generated but failed to process. Please try refreshing the page.')
           }
           return
         } else if (statusData.status === 'FAILED') {
@@ -885,7 +885,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || 'Failed to generate swipe files')
+        throw new Error(error.error || 'Failed to generate pre-landers')
       }
 
       const data = await response.json()
@@ -920,7 +920,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to generate swipe files",
+        description: error instanceof Error ? error.message : "Failed to generate pre-landers",
         variant: "destructive",
       })
     } finally {
@@ -952,7 +952,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                         <Briefcase className="w-5 h-5 text-primary-foreground" />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-bold text-foreground">Marketing Brief</h2>
+                        <h2 className="text-2xl font-bold text-foreground">Marketing Research</h2>
                         <p className="text-sm text-muted-foreground">Key elements of your marketing strategy</p>
                       </div>
                     </div>
@@ -1239,7 +1239,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                         <User className="w-5 h-5 text-primary-foreground" />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-bold text-foreground">Avatar & Marketing</h2>
+                        <h2 className="text-2xl font-bold text-foreground">Avatars & Marketing Angles</h2>
                         <p className="text-sm text-muted-foreground">Customer avatar and marketing angles</p>
                       </div>
                     </div>
@@ -1294,7 +1294,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                             <div>
                                               <p className="text-muted-foreground text-xs">Gender</p>
                                               <p className="font-medium text-foreground">
-                                                {avatarData.demographics?.gender?.map(g => capitalizeFirst(g)).join(', ') || 'N/A'}
+                                                {avatarData.demographics?.gender?.map((g: string) => capitalizeFirst(g)).join(', ') || 'N/A'}
                                               </p>
                                             </div>
                                           </div>
@@ -1543,7 +1543,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
                                               if (!response.ok) {
                                                 const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-                                                throw new Error(errorData.error || 'Failed to generate swipe files');
+                                                throw new Error(errorData.error || 'Failed to generate pre-landers');
                                               }
 
                                               const data = await response.json();
@@ -1554,13 +1554,13 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                               // Start polling for this specific angle
                                               pollSwipeFileStatus(data.jobId, angleString);
                                             } catch (error) {
-                                              console.error('Error generating swipe files:', error);
+                                              console.error('Error generating pre-landers:', error);
                                               // Remove from generating map on error
                                               removeGeneratingAngle(angleString);
                                               removeAngleStatus(angleString);
 
                                               // Show user-friendly error message
-                                              showError(error, 'Failed to generate swipe files. Please try again.');
+                                              showError(error, 'Failed to generate pre-landers. Please try again.');
                                             }
                                           }}
                                           disabled={!originalJobId || isGenerated || isGenerating}
@@ -1577,7 +1577,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                               Generated
                                             </>
                                           ) : (
-                                            'Generate Swipe Files'
+                                            'Generate Pre-Landers'
                                           )}
                                         </Button>
                                       </div>
@@ -1614,7 +1614,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                         </div>
                         <div>
                           <h2 className="text-2xl font-bold text-foreground">Select Marketing Angle</h2>
-                          <p className="text-sm text-muted-foreground">Choose an angle to generate swipe files</p>
+                          <p className="text-sm text-muted-foreground">Choose an angle to generate pre-landers</p>
                         </div>
                       </div>
                     </div>
@@ -1751,7 +1751,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
                               if (!response.ok) {
                                 const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-                                throw new Error(errorData.error || 'Failed to generate swipe files');
+                                throw new Error(errorData.error || 'Failed to generate pre-landers');
                               }
 
                               const data = await response.json();
@@ -1774,7 +1774,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                               // Clear selection
                               setSelectedAngle(null);
                             } catch (error) {
-                              console.error('Error generating swipe files:', error);
+                              console.error('Error generating pre-landers:', error);
                               // Remove from generating map on error
                               setGeneratingAngles(prev => {
                                 const newMap = new Map(prev)
@@ -1783,7 +1783,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                               })
 
                               // Show user-friendly error message
-                              showError(error, 'Failed to generate swipe files. Please try again.');
+                              showError(error, 'Failed to generate pre-landers. Please try again.');
                             } finally {
                               setIsGeneratingSwipeFiles(false);
                             }
@@ -1797,7 +1797,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                               Generating...
                             </>
                           ) : (
-                            'Generate Swipe Files'
+                            'Generate Pre-Landers'
                           )}
                         </Button>
                       </div>
@@ -2077,7 +2077,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                       }
 
                                       const fileType = getFileType(template.templateId, advertorialType);
-                                      
+
                                       return (
                                         <div className="space-y-2">
                                           {/* Number Badge and File Type */}

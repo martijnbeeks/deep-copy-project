@@ -12,13 +12,16 @@ import { EmptyState } from "@/components/ui/empty-state"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { FileText, AlertCircle, Zap, Eye, Search, Filter, Calendar, ExternalLink, ArrowUp } from "lucide-react"
+import { FileText, AlertCircle, Zap, Eye, Search, Filter, Calendar, ExternalLink, ArrowUp, Edit2, Trash2 } from "lucide-react"
 import { SalesPagePreview } from "@/components/sales-page-preview"
 import { useToast } from "@/hooks/use-toast"
 import { useAuthStore } from "@/stores/auth-store"
-import { useJobs, useCreateJob } from "@/lib/hooks/use-jobs"
+import { useJobs, useCreateJob, useUpdateJob } from "@/lib/hooks/use-jobs"
 import { useSimplePolling } from "@/hooks/use-simple-polling"
 import { Job } from "@/lib/db/types"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { Label } from "@/components/ui/label"
 
 export default function DashboardPage() {
   const { user, isAuthenticated } = useAuthStore()
@@ -31,6 +34,17 @@ export default function DashboardPage() {
   // Use TanStack Query for data fetching
   const { data: jobs = [], isLoading, error: queryError, refetch } = useJobs()
   const createJobMutation = useCreateJob()
+  const updateJobMutation = useUpdateJob()
+
+  // Edit dialog state
+  const [editingJob, setEditingJob] = useState<any | null>(null)
+  const [editTitle, setEditTitle] = useState("")
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+
+  // Delete dialog state
+  const [deletingJob, setDeletingJob] = useState<any | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Use simple polling for processing jobs (hits DeepCopy API directly)
   const { isPolling } = useSimplePolling(jobs)
@@ -115,7 +129,7 @@ export default function DashboardPage() {
     }
 
     return (
-      <Badge variant={variants[status]} className={`capitalize text-xs ${statusColors[status]}`}>
+      <Badge variant={variants[status]} className={`capitalize text-[10px] px-2 py-0.5 font-medium ${statusColors[status]}`}>
         {status}
       </Badge>
     )
@@ -201,6 +215,100 @@ export default function DashboardPage() {
     }
   }
 
+  const handleEditClick = (job: any, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingJob(job)
+    setEditTitle(job.title)
+    setIsEditDialogOpen(true)
+  }
+
+  const handleEditSave = async () => {
+    if (!editingJob || !editTitle.trim()) {
+      toast({
+        title: "Error",
+        description: "Project name cannot be empty",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      await updateJobMutation.mutateAsync({
+        id: editingJob.id,
+        title: editTitle.trim(),
+      })
+
+      toast({
+        title: "Success",
+        description: "Project name updated successfully",
+      })
+
+      setIsEditDialogOpen(false)
+      setEditingJob(null)
+      setEditTitle("")
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update project name",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleEditCancel = () => {
+    setIsEditDialogOpen(false)
+    setEditingJob(null)
+    setEditTitle("")
+  }
+
+  const handleDeleteClick = (job: any, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setDeletingJob(job)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingJob) return
+
+    try {
+      setIsDeleting(true)
+      const response = await fetch(`/api/jobs/${deletingJob.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete job')
+      }
+
+      toast({
+        title: "Project deleted successfully",
+        description: "The project has been permanently removed.",
+      })
+
+      // Refetch jobs to update the list
+      refetch()
+
+      setIsDeleteDialogOpen(false)
+      setDeletingJob(null)
+    } catch (error) {
+      toast({
+        title: "Error deleting project",
+        description: error instanceof Error ? error.message : "Failed to delete project",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setIsDeleteDialogOpen(false)
+    setDeletingJob(null)
+  }
+
   return (
     <ErrorBoundary>
       <div className="flex h-screen bg-background overflow-hidden">
@@ -268,19 +376,19 @@ export default function DashboardPage() {
               </Card>
 
               {/* Jobs Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Create New Content Card - First Card */}
                 <Link href="/create" className={filteredJobs.length === 0 ? "hidden" : "block"}>
-                  <div className="relative cursor-pointer rounded-xl border-2 p-2 md:p-3 transition-all h-[280px] md:h-[320px] flex flex-col border-primary/30 bg-primary/20 hover:border-primary/50 hover:shadow-md">
-                    <div className="flex-1 flex flex-col items-center justify-center text-center">
-                      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3">
-                        <Zap className="h-6 w-6 text-primary" />
+                  <div className="relative cursor-pointer rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 hover:border-primary/50 hover:shadow-md transition-all h-[240px] md:h-[260px] flex flex-col overflow-hidden">
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
+                      <div className="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-3">
+                        <Zap className="h-7 w-7 text-primary" />
                       </div>
-                      <h3 className="font-semibold text-base text-foreground mb-2">
+                      <h3 className="font-semibold text-sm text-foreground mb-1">
                         Create New Content
                       </h3>
-                      <p className="text-xs text-muted-foreground px-4">
-                        Start generating AI-powered content in seconds
+                      <p className="text-xs text-muted-foreground">
+                        Start generating AI content
                       </p>
                     </div>
                   </div>
@@ -289,16 +397,16 @@ export default function DashboardPage() {
                 {filteredJobs.length === 0 ? (
                   <div className="col-span-full flex items-center justify-center py-12">
                     <Link href="/create" className="block">
-                      <div className="relative cursor-pointer rounded-xl border-2 p-2 md:p-3 transition-all h-[280px] md:h-[320px] flex flex-col border-primary/30 bg-primary/20 hover:border-primary/50 hover:bg-primary/30 hover:shadow-md">
-                        <div className="flex-1 flex flex-col items-center justify-center text-center">
-                          <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3">
-                            <Zap className="h-6 w-6 text-primary" />
+                      <div className="relative cursor-pointer rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 hover:border-primary/50 hover:shadow-md transition-all h-[240px] md:h-[260px] flex flex-col overflow-hidden">
+                        <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
+                          <div className="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-3">
+                            <Zap className="h-7 w-7 text-primary" />
                           </div>
-                          <h3 className="font-semibold text-base text-foreground mb-2">
+                          <h3 className="font-semibold text-sm text-foreground mb-1">
                             Create New Content
                           </h3>
-                          <p className="text-xs text-muted-foreground px-4">
-                            Start generating AI-powered content in seconds
+                          <p className="text-xs text-muted-foreground">
+                            Start generating AI content
                           </p>
                         </div>
                       </div>
@@ -308,56 +416,62 @@ export default function DashboardPage() {
                   filteredJobs.map((job: any) => (
                     <div
                       key={job.id}
-                      className="relative cursor-pointer rounded-xl border-2 p-2 md:p-3 transition-all h-[280px] md:h-[320px] flex flex-col border-border bg-card hover:border-primary/50 hover:shadow-md"
+                      className="group relative cursor-pointer rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all h-[240px] md:h-[260px] flex flex-col overflow-hidden"
                       onClick={() => router.push(`/avatars?jobId=${job.id}`)}
                     >
-                      {/* Job Header */}
-                      <div className="flex items-start justify-between mb-1.5 gap-1.5">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm text-foreground break-words line-clamp-1">{job.title}</h3>
-                          {job.template?.name && (
-                            <p className="text-xs text-muted-foreground break-words line-clamp-1">
-                              {job.template.name}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          {getStatusBadge(job.status)}
-                        </div>
-                      </div>
-
                       {/* Preview Area */}
-                      <div className="flex-1 relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border">
+                      <div className="flex-1 relative bg-gray-50 dark:bg-gray-900 overflow-hidden min-h-0">
                         {job.sales_page_url ? (
                           <div onClick={(e) => e.stopPropagation()} className="h-full">
                             <SalesPagePreview url={job.sales_page_url} jobId={job.id} className="w-full h-full" />
                           </div>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <div className="text-center space-y-2 p-4">
-                              <FileText className="h-8 w-8 text-muted-foreground mx-auto opacity-50" />
-                              <p className="text-xs text-muted-foreground">No preview available</p>
-                            </div>
+                            <FileText className="h-10 w-10 text-muted-foreground opacity-30" />
                           </div>
                         )}
                       </div>
 
-                      {/* Action Button */}
-                      <div className="flex items-center justify-between mt-3">
-                        <button
-                          type="button"
-                          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary hover:text-primary/80 hover:bg-primary/10 rounded-md transition-colors cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            router.push(`/avatars?jobId=${job.id}`)
-                          }}
-                        >
-                          <Eye className="h-4 w-4" />
-                          View Details
-                        </button>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(job.created_at).toLocaleDateString()}
-                        </span>
+                      {/* Footer - Clean and organized */}
+                      <div className="p-3 bg-card border-border">
+                        {/* Title and Status */}
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="font-semibold text-sm text-foreground line-clamp-1 flex-1">
+                            {job.title}
+                          </h3>
+                          <div className="flex-shrink-0">
+                            {getStatusBadge(job.status)}
+                          </div>
+                        </div>
+
+                        {/* Bottom row - Date and actions */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(job.created_at).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                              onClick={(e) => handleEditClick(job, e)}
+                              title="Edit"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
+                              onClick={(e) => handleDeleteClick(job, e)}
+                              title="Delete"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -390,6 +504,79 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+
+          {/* Edit Project Name Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+            setIsEditDialogOpen(open)
+            if (!open) {
+              handleEditCancel()
+            }
+          }}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Project Name</DialogTitle>
+                <DialogDescription>
+                  Update the name of your project. This will be reflected across all views.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-title">Project Name</Label>
+                  <Input
+                    id="edit-title"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="Enter project name"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleEditSave()
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={handleEditCancel}
+                  disabled={updateJobMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleEditSave}
+                  disabled={updateJobMutation.isPending || !editTitle.trim()}
+                >
+                  {updateJobMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Delete Project Confirmation Dialog */}
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent className="shadow-none">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the project
+                  {deletingJob && ` "${deletingJob.title}"`} and all associated data.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={handleDeleteCancel} disabled={isDeleting}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteConfirm}
+                  disabled={isDeleting}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {isDeleting ? "Deleting..." : "Delete"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </main>
       </div>
     </ErrorBoundary>
