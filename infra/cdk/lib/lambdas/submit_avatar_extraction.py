@@ -67,6 +67,10 @@ def handler(event, _context):
     job_id = str(uuid.uuid4())
     result_key = f"results/avatars/{job_id}/avatar_extraction_results.json"
 
+    # Detect dev mode
+    path = event.get("path", "")
+    dev_mode = path.startswith("/dev") or "/dev/" in path
+
     # Persist initial job record in DynamoDB
     try:
         _ddb.put_item(
@@ -92,6 +96,7 @@ def handler(event, _context):
     payload = {
         "job_id": job_id,
         "url": url,
+        "dev_mode": dev_mode,
     }
     
     try:

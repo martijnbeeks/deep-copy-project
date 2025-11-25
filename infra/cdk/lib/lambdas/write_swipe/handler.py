@@ -20,6 +20,13 @@ from swipe_file_writer import rewrite_swipe_file
 
 
 # Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -155,69 +162,82 @@ def lambda_handler(event, context):
         # Update status to RUNNING
         update_job_status(job_id, "RUNNING", {"message": "Processing swipe file generation"})
         
-        # Get Anthropic API key (check env first for local testing, then Secrets Manager)
-        # anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
+        if event.get("dev_mode"):
+            logger.info(f"Dev mode detected for job {job_id}. Using mock results.")
+            try:
+                # Mock source
+                mock_key = "results/all_results.json"
+                results_bucket = os.environ.get('RESULTS_BUCKET')
+                
+                # Fetch mock
+                s3_response = s3_client.get_object(Bucket=results_bucket, Key=mock_key)
+                results = json.loads(s3_response['Body'].read().decode('utf-8'))
+                
+                # Save to S3
+                s3_key = save_results_to_s3(job_id, results)
+                
+                # Update status to SUCCEEDED
+                update_job_status(job_id, "SUCCEEDED", {"resultKey": s3_key})
+                
+                return {'statusCode': 200, 'message': 'Swipe file generation completed successfully (DEV MODE)'}
+            except Exception as e:
+                logger.error(f"Dev mode failed: {e}")
+                update_job_status(job_id, "FAILED", {"error": str(e)})
+                return {'statusCode': 500, 'error': str(e)}
         
-        # if not anthropic_api_key:
-        #     # Fall back to Secrets Manager (production)
-        #     try:
-        #         secrets = get_secrets("deepcopy-secret-dev")
-        #         anthropic_api_key = secrets.get('ANTHROPIC_API_KEY')
-        #     except Exception as e:
-        #         logger.error(f'Failed to retrieve secrets: {e}')
-        #         update_job_status(job_id, "FAILED", {"error": "Failed to retrieve API key from Secrets Manager"})
-        #         raise
+        try:
+            secrets = get_secrets("deepcopy-secret-dev")
+            anthropic_api_key = secrets.get('ANTHROPIC_API_KEY')
+        except Exception as e:
+            logger.error(f'Failed to retrieve secrets: {e}')
+            update_job_status(job_id, "FAILED", {"error": "Failed to retrieve API key from Secrets Manager"})
+            raise
         
-        # if not anthropic_api_key:
-        #     error_msg = 'ANTHROPIC_API_KEY not found in environment or secrets'
-        #     logger.error(error_msg)
-        #     update_job_status(job_id, "FAILED", {"error": error_msg})
-        #     raise RuntimeError(error_msg)
+        if not anthropic_api_key:
+            error_msg = 'ANTHROPIC_API_KEY not found in environment or secrets'
+            logger.error(error_msg)
+            update_job_status(job_id, "FAILED", {"error": error_msg})
+            raise RuntimeError(error_msg)
         
-        # # Initialize Anthropic client
-        # anthropic_client = anthropic.Anthropic(api_key=anthropic_api_key)
+        # Initialize Anthropic client
+        anthropic_client = anthropic.Anthropic(api_key=anthropic_api_key)
         
-        # # Process swipe file generation
-        # logger.info(f'Processing swipe file generation for job {job_id}')
+        # Process swipe file generation
+        logger.info(f'Processing swipe file generation for job {job_id}')
         
-        # # Fetch results based on original_job_id
-        # results = fetch_results_from_s3(original_job_id)
-        # job_results = results.get("results", {})
-        # research_page_analysis = job_results.get("research_page_analysis")
-        # deep_research_output = job_results.get("deep_research_output")
-        # avatar_sheet = job_results.get("avatar_sheet")
-        # offer_brief = job_results.get("offer_brief")
-        # marketing_philosophy_analysis = job_results.get("marketing_philosophy_analysis")
-        # summary = job_results.get("summary")
-        # angles = job_results.get("marketing_angles", [])
+        # Fetch results based on original_job_id
+        results = fetch_results_from_s3(original_job_id)
+        job_results = results.get("results", {})
+        research_page_analysis = job_results.get("research_page_analysis")
+        deep_research_output = job_results.get("deep_research_output")
+        avatar_sheet = job_results.get("avatar_sheet")
+        offer_brief = job_results.get("offer_brief")
+        marketing_philosophy_analysis = job_results.get("marketing_philosophy_analysis")
+        summary = job_results.get("summary")
+        angles = job_results.get("marketing_angles", [])
         
-        # # Select swipe files (3) template based on product summary
-        # if not swipe_file_ids:
-        #     logger.info(f"No swipe file IDs provided, selecting swipe files based on product summary")
-        #     swipe_file_ids = select_swipe_files_template(select_angle, research_page_analysis, summary)
+        # Select swipe files (3) template based on product summary
+        if not swipe_file_ids:
+            logger.info(f"No swipe file IDs provided, selecting swipe files based on product summary")
+            swipe_file_ids = select_swipe_files_template(select_angle, research_page_analysis, summary)
         
-        # # Load swipe file template from S3
-        # swipe_file_html_list, swipe_file_json_list = load_swipe_file_templates(swipe_file_ids)
+        # Load swipe file template from S3
+        swipe_file_html_list, swipe_file_json_list = load_swipe_file_templates(swipe_file_ids)
         
-        # swipe_file_config = {}
-        # for i, template_id in enumerate(swipe_file_ids):
-        #     swipe_file_config[template_id] = {
-        #         "html": swipe_file_html_list[i] if i < len(swipe_file_html_list) else None,
-        #         "json": swipe_file_json_list[i] if i < len(swipe_file_json_list) else None
-        #     }
+        swipe_file_config = {}
+        for i, template_id in enumerate(swipe_file_ids):
+            swipe_file_config[template_id] = {
+                "html": swipe_file_html_list[i] if i < len(swipe_file_html_list) else None,
+                "json": swipe_file_json_list[i] if i < len(swipe_file_json_list) else None
+            }
         
         
-        # # Generate swipe files based on the selected templates
-        # swipe_files = rewrite_swipe_file(
-        #     select_angle, avatar_sheet, deep_research_output, offer_brief, marketing_philosophy_analysis, swipe_file_config, anthropic_client
-        # )
+        # Generate swipe files based on the selected templates
+        swipe_files = rewrite_swipe_file(
+            select_angle, avatar_sheet, deep_research_output, offer_brief, marketing_philosophy_analysis, swipe_file_config, anthropic_client
+        )
         
-        # TEMPORARY: load the swipe files from s3
-        results_bucket = os.environ.get('RESULTS_BUCKET')
-        s3_key = 'results/all_results.json'
-        obj = s3_client.get_object(Bucket=results_bucket, Key=s3_key)
-        swipe_files = json.loads(obj['Body'].read().decode('utf-8'))
-        # Save the swipe files to S3
+
         s3_key = save_results_to_s3(job_id, swipe_files)
         
         # Update status to SUCCEEDED
@@ -241,6 +261,7 @@ if __name__ == "__main__":
         "original_job_id": "03479dbf-bc4c-4472-80ff-b11b561b8777",
         "job_id": "03479dbf-bc4c-4472-80ff-b11b561b8777-swipe",
         "select_angle": "Embarrassment & Professional Confidence: 'Restore the beard you earned—no flakes in meetings.'",
-        "swipe_file_ids": ["A00002"]
+        "swipe_file_ids": ["A00002"],
+        "dev_mode": os.environ.get('dev_mode', 'false').lower() == 'true',
     }
-    print(lambda_handler(test_event, {}))
+    lambda_handler(test_event, {})

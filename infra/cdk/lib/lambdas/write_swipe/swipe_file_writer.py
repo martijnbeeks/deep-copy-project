@@ -148,7 +148,7 @@ def retry_with_exponential_backoff(
             return func()
         except anthropic.APIStatusError as e:
             # Check if it's a retryable error
-            if hasattr(e, 'status_code') and e.status_code in [429, 529]:
+            if hasattr(e, 'status_code') and e.status_code in [429, 500, 502, 503, 504, 529]:
                 # Rate limit or overloaded error
                 if attempt == max_retries - 1:
                     logger.error(f"Max retries ({max_retries}) reached. Giving up.")

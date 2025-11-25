@@ -72,6 +72,10 @@ def handler(event, _context):
     job_id = f"{original_job_id}-swipe"
     result_key = f"results/swipe_files/{job_id}/swipe_files_results.json"
 
+    # Detect dev mode
+    path = event.get("path", "")
+    dev_mode = path.startswith("/dev") or "/dev/" in path
+
     # Persist initial job record in DynamoDB
     try:
         _ddb.put_item(
@@ -98,6 +102,7 @@ def handler(event, _context):
         "original_job_id": original_job_id,
         "job_id": job_id,
         "select_angle": select_angle,
+        "dev_mode": dev_mode,
     }
     
     try:

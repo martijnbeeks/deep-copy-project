@@ -40,6 +40,7 @@ RUN echo "Build timestamp: $(date)" > /tmp/build_timestamp
 # Copy function code
 COPY handler.py ${LAMBDA_TASK_ROOT}/
 COPY avatar_extractor.py ${LAMBDA_TASK_ROOT}/
+COPY get_largest_image.py ${LAMBDA_TASK_ROOT}/
 
 # Set the CMD to your handler
 CMD [ "handler.lambda_handler" ]

@@ -10,6 +10,7 @@ from typing import List
 from pydantic import BaseModel, Field
 from openai import OpenAI
 from playwright.sync_api import sync_playwright
+from get_largest_image import compress_image_if_needed
 
 logger = logging.getLogger(__name__)
 
@@ -217,10 +218,10 @@ def extract_avatars_from_url(url: str, openai_api_key: str, model: str = "gpt-5"
         image_bytes = capture_page_as_image_bytes(url)
         print(f"Page capture completed in {time.time() - capture_start:.2f}s")
         
-        # Encode the image
+        # Compress and encode the image (max 0.5MB)
         encode_start = time.time()
-        base64_image = encode_image_bytes(image_bytes)
-        print(f"Image encoded in {time.time() - encode_start:.2f}s ({len(base64_image)} chars)")
+        base64_image = compress_image_if_needed(image_bytes, max_size_mb=0.5)
+        print(f"Image processed in {time.time() - encode_start:.2f}s ({len(base64_image)} chars)")
         
         # Prepare the prompt
         prompt = """You are a marketing strategist and expert in defining customer avatars (detailed ideal customer profiles).

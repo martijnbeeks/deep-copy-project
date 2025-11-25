@@ -22,12 +22,7 @@ from typing import List, Optional, Literal, Any, Dict, Union
 from pydantic import BaseModel, Field, ConfigDict, create_model
 
 from playwright.sync_api import sync_playwright
-from test_anthropic import (
-    make_streaming_request_with_retry,
-    make_structured_request_with_retry,
-    prepare_schema_for_tool_use,
-    load_pdf_file,
-)
+
 
 from data_models import Avatar, OfferBrief
 
@@ -631,162 +626,6 @@ class DeepCopy:
             logger.error(f"Error creating summary: {e}")
             raise
     
-    def rewrite_swipe_file(
-        self,
-        angle: str,
-        avatar_sheet: str,
-        deep_research_output: str,
-        offer_brief: str,
-        necessary_beliefs: str,
-        schema_json: str,
-        original_swipe_file_path_html: str    ):  
-        # Model configuration
-        MODEL = "claude-haiku-4-5-20251001"
-        MAX_TOKENS = 10000
-        
-        # Extract clean text from HTML swipe file
-        raw_swipe_file_text = extract_clean_text_from_html(original_swipe_file_path_html)
-        
-        # Build messages list manually - we'll append to this for each turn
-        messages: List[Dict[str, Any]] = []
-        
-        # ============================================================
-        # Turn 1: Familiarize with documents
-        # ============================================================
-        logger.info("Turn 1: Familiarizing with documents")
-        field_prompt = f"""Hey, Claude, I want you to please analyze the four documents that I've attached to this message. I've done a significant amount of research of a product that I'm going to be selling, and it's your role as my direct response copywriter to understand this research, the avatar document, the offer brief, and the necessary beliefs document to an extremely high degree. So please familiarize yourself with these documents before we proceed with writing anything.
-        """
-        system_prompt = [{
-                "type": "text",
-                "text": f"""
-                Docs:
-                {avatar_sheet}
-                {deep_research_output}
-                {offer_brief}
-                {necessary_beliefs}
-                """,
-                "cache_control": {"type": "ephemeral"}
-        }]
-        
-        # Add first user message
-        messages.append({
-            "role": "user",
-            "content": field_prompt
-        })
-        
-        # Get first response using streaming
-        first_response_text, first_usage = make_streaming_request_with_retry(
-            messages=messages,
-            max_tokens=MAX_TOKENS,
-            model=MODEL,
-            anthropic_client=self.anthropic_client,
-            system_prompt=system_prompt
-        )
-        
-        # Add assistant response to messages
-        messages.append({
-            "role": "assistant",
-            "content": first_response_text
-        })
-        
-        logger.info(f"Turn 1 completed. Response length: {len(first_response_text)} chars")
-        logger.info(f"Turn 1 usage: {first_usage}")
-        
-        # ============================================================
-        # Turn 2: Analyze competitor advertorial with PDF
-        # ============================================================
-        logger.info("Turn 2: Analyzing competitor advertorial with PDF")
-        generate_content_prompt = f"""Excellent work. Now we're going to be writing an advertorial, which is a type of pre-sales page designed to nurture customers before they actually see the main product offer page. I'm going to send you an indirect competitor with a very successful advertorial, and I want you to please analyze this advertorial and let me know your thoughts
-        Raw text from the pdf advertorial:
-        {raw_swipe_file_text}
-        """
-        
-        # Load PDF file and create content with PDF
-        # pdf_file_data = load_pdf_file(original_swipe_file_path_pdf)
-        user_content_with_pdf = [
-            {"type": "text", "text": generate_content_prompt},
-            # {
-            #     "type": "document",
-            #     "source": {
-            #         "type": "base64",
-            #         "media_type": "application/pdf",
-            #         "data": pdf_file_data
-            #     }
-            # }
-        ]
-        
-        # Add second user message with PDF
-        messages.append({
-            "role": "user",
-            "content": user_content_with_pdf
-        })
-        
-        # Get second response using streaming
-        second_response_text, second_usage = make_streaming_request_with_retry(
-            messages=messages,
-            max_tokens=MAX_TOKENS,
-            model=MODEL,
-            anthropic_client=self.anthropic_client,
-            system_prompt=system_prompt
-        )
-        
-        # Add assistant response to messages
-        messages.append({
-            "role": "assistant",
-            "content": second_response_text
-        })
-        
-        logger.info(f"Turn 2 completed. Response length: {len(second_response_text)} chars")
-        logger.info(f"Turn 2 usage: {second_usage}")
-        # ============================================================
-        # Turn 3: Write advertorial with structured output
-        # ============================================================
-        logger.info("Turn 3: Writing advertorial with structured output")
-        third_query_prompt = f"""You are an expert copywriter creating a complete, polished advertorial for the NewAura Seborrheic Dermatitis & Psoriasis Cream.
-
-        Your task:
-        1. Rewrite the advertorial using ALL the relevant information about the new product.  
-        2. Focus specifically on the marketing angle: {angle}.  
-        3. Generate **a full and complete output** following the schema provided below.  
-        4. DO NOT skip or leave out any fields — every field in the schema must be filled.  
-        5. Please make sure that the length of each field matches the length of the description of the field.
-        6. If any data is missing, intelligently infer or create realistic content that fits the schema.  
-        7. Write fluently and naturally, with complete sentences. Do not stop mid-thought or end with ellipses ("...").  
-        8. At the end, verify your own output is **100% complete** — all schema fields filled.
-
-        When ready, output ONLY the completed schema with all fields filled in. Do not include explanations or notes.
-        """
-        # Add third user message
-        messages.append({
-            "role": "user",
-            "content": third_query_prompt
-        })
-        
-        # Prepare schema for tool use
-        tool_name, tool_description, tool_schema = prepare_schema_for_tool_use(schema_json)
-        
-        # Get structured response
-        full_advertorial, third_usage = make_structured_request_with_retry(
-            messages=messages,
-            tool_name=tool_name,
-            tool_description=tool_description,
-            tool_schema=tool_schema,
-            max_tokens=25000,
-            model=MODEL,
-            anthropic_client=self.anthropic_client,
-            system_prompt=system_prompt
-        )
-        
-        logger.info(f"Turn 3 completed. Received {len(full_advertorial) if isinstance(full_advertorial, dict) else 0} fields in structured output")
-        logger.info(f"Turn 3 usage: {third_usage}")
-        # Check if enough fields are present, else retry
-        if len(full_advertorial) < 10:
-            logger.info(f"Less then 10 fields, rerunning...")
-            return self.rewrite_swipe_file(angle, avatar_sheet, deep_research_output, offer_brief, necessary_beliefs, schema_json, original_swipe_file_path_html)
-        
-        return full_advertorial, None
-    
-    
     def save_results_to_s3(self, results, s3_bucket, project_name, job_id):
         """Save all results to S3"""
         try:
@@ -849,45 +688,6 @@ class DeepCopy:
         except Exception as e:
             logger.error(f"Failed to update job status for {job_id}: {e}")
     
-    def get_available_swipe_files(self, s3_bucket: str) -> List[str]:
-        """Get list of available swipe files from S3 content_library folder.
-        
-        Args:
-            s3_bucket: The S3 bucket name
-            
-        Returns:
-            Sorted list of unique swipe file base names (without extensions)
-        """
-        try:
-            html_files = set()
-            json_files = set()
-            paginator = self.s3_client.get_paginator('list_objects_v2')
-            pages = paginator.paginate(Bucket=s3_bucket, Prefix='content_library/')
-            
-            for page in pages:
-                if 'Contents' in page:
-                    for obj in page['Contents']:
-                        key = obj['Key']
-                        # Extract filename from key (e.g., "content_library/file_name.json")
-                        filename = key.split('/')[-1]
-                        # Remove file extensions to get unique base names
-                        if filename.endswith('_original.html'):
-                            base_name = filename.replace('_original.html', '')
-                            html_files.add(base_name)
-                        elif filename.endswith('_orginal.html'):  # Handle typo in filename
-                            base_name = filename.replace('_orginal.html', '')
-                            html_files.add(base_name)
-                        elif filename.endswith('.json') and not filename.endswith('_analysis.json'):
-                            base_name = filename.replace('.json', '')
-                            json_files.add(base_name)
-            
-            # Only return files that have BOTH HTML and JSON files
-            available_files = html_files.intersection(json_files)
-            return sorted(list(available_files))
-        except Exception as e:
-            logger.error(f"Error listing available swipe files from S3: {e}")
-            return []
-
 def run_pipeline(event, context):
     """
     Prelander Generator pipeline
@@ -908,16 +708,51 @@ def run_pipeline(event, context):
         job_id = event.get("job_id") or os.environ.get("JOB_ID") or str(uuid.uuid4())
         # Initialize the generator
         generator = DeepCopy()
-        # Mark job running if Jobs table configured
-        try:
-            generator.update_job_status(job_id, "RUNNING", {"message": "Job started"})
-        except Exception:
-            pass
+        generator.update_job_status(job_id, "RUNNING", {"message": "Job started"})
         
         # Extract parameters from event (fallback to env vars)
         sales_page_url = event.get("sales_page_url") or os.environ.get("SALES_PAGE_URL")
         s3_bucket = event.get("s3_bucket", generator.s3_bucket)
         project_name = event.get("project_name") or os.environ.get("PROJECT_NAME") or "default-project"
+        customer_avatars = event.get("customer_avatars", [])
+        
+        content_dir = "content/"
+        
+        if event.get("dev_mode"):
+            logger.info(f"Dev mode detected for job {job_id}. Using mock results.")
+            try:
+                # Mock source
+                mock_key = "projects/test/20251121_114946/comprehensive_results.json"
+                
+                logger.info(f"Loading mock results from S3: {mock_key}")
+                s3_response = generator.s3_client.get_object(Bucket=s3_bucket, Key=mock_key)
+                comprehensive_data = json.loads(s3_response['Body'].read().decode('utf-8'))
+                results = comprehensive_data.get("results", {})
+                
+                # Save as new result
+                generator.save_results_to_s3(results, s3_bucket, project_name, job_id)
+                
+                # Update status
+                generator.update_job_status(job_id, "SUCCEEDED", {"resultPrefix": f"s3://{s3_bucket}/projects/{project_name}/"})
+                
+                return {
+                    "statusCode": 200,
+                    "body": {
+                        "message": "Prelander Generator pipeline completed successfully (DEV MODE)",
+                        "project_name": project_name,
+                        "s3_bucket": s3_bucket,
+                        "job_id": job_id,
+                        "dev_mode": True,
+                        "results_location": f"s3://{s3_bucket}/projects/{project_name}/",
+                        "job_results_location": f"s3://{s3_bucket}/results/{job_id}/",
+                    }
+                }
+                
+                
+            except Exception as e:
+                logger.error(f"Dev mode failed: {e}")
+                generator.update_job_status(job_id, "FAILED", {"error": str(e)})
+                raise e
         
         
         
@@ -925,88 +760,77 @@ def run_pipeline(event, context):
         # TEMP code:
         # Load pre-computed results from S3 comprehensive_results JSON file
         # Default S3 path: s3://deepcopystack-resultsbucketa95a2103-zhwjflrlpfih/projects/test/20251121_114946/comprehensive_results.json
-        bucket = "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih"
-        s3_results_key = "projects/test/20251121_114946/comprehensive_results.json"
-        logger.info(f"Loading pre-computed results from S3: {s3_results_key}")
+        # bucket = os.environ.get("RESULTS_BUCKET", "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih")
+        # s3_results_key = "projects/test/20251121_114946/comprehensive_results.json"
+        # logger.info(f"Loading pre-computed results from S3: {s3_results_key}")
         
-        # Download file from S3
-        try:
-            s3_response = generator.s3_client.get_object(Bucket=bucket, Key=s3_results_key)
-            comprehensive_data = json.loads(s3_response['Body'].read().decode('utf-8'))
-            results = comprehensive_data.get("results", {})
-            logger.info(f"Successfully loaded results from S3: {bucket}/{s3_results_key}")
-        except Exception as e:
-            logger.error(f"Failed to load results from S3 {bucket}/{s3_results_key}: {e}")
-            raise
+        # # Download file from S3
+        # try:
+        #     s3_response = generator.s3_client.get_object(Bucket=bucket, Key=s3_results_key)
+        #     comprehensive_data = json.loads(s3_response['Body'].read().decode('utf-8'))
+        #     results = comprehensive_data.get("results", {})
+        #     logger.info(f"Successfully loaded results from S3: {bucket}/{s3_results_key}")
+        # except Exception as e:
+        #     logger.error(f"Failed to load results from S3 {bucket}/{s3_results_key}: {e}")
+        #     raise
         
         # Extract all variables from the JSON
-        research_page_analysis = results.get("research_page_analysis")
-        doc1_analysis = results.get("doc1_analysis")
-        doc2_analysis = results.get("doc2_analysis")
-        deep_research_prompt = results.get("deep_research_prompt")
-        deep_research_output = results.get("deep_research_output")
-        avatar_sheet = results.get("avatar_sheet")
-        offer_brief = results.get("offer_brief")
-        marketing_philosophy_analysis = results.get("marketing_philosophy_analysis")
-        summary = results.get("summary")
-        angles = results.get("marketing_angles", [])
-        customer_avatars = results.get("customer_avatars", [])
+        # research_page_analysis = results.get("research_page_analysis")
+        # doc1_analysis = results.get("doc1_analysis")
+        # doc2_analysis = results.get("doc2_analysis")
+        # deep_research_prompt = results.get("deep_research_prompt")
+        # deep_research_output = results.get("deep_research_output")
+        # avatar_sheet = results.get("avatar_sheet")
+        # offer_brief = results.get("offer_brief")
+        # marketing_philosophy_analysis = results.get("marketing_philosophy_analysis")
+        # summary = results.get("summary")
+        # angles = results.get("marketing_angles", [])
+        # customer_avatars = results.get("customer_avatars", [])
         
         # Step 1: Analyze research page
-        # logger.info("Step 1: Analyzing research page")
-        # research_page_analysis = generator.analyze_research_page(sales_page_url, customer_avatars)
+        logger.info("Step 1: Analyzing research page")
+        research_page_analysis = generator.analyze_research_page(sales_page_url, customer_avatars)
         
-        # # Step 2: Analyze research documents
-        # logger.info("Step 2: Analyzing research documents")
+        # Step 2: Analyze research documents
+        logger.info("Step 2: Analyzing research documents")
         
         
-        # doc1_analysis = open(f"{content_dir}doc1_analysis.txt", "r").read()
-        # doc2_analysis = open(f"{content_dir}doc2_analysis.txt", "r").read()
+        doc1_analysis = open(f"{content_dir}doc1_analysis.txt", "r").read()
+        doc2_analysis = open(f"{content_dir}doc2_analysis.txt", "r").read()
 
         
-        # # Step 3: Create deep research prompt
-        # logger.info("Step 3: Creating deep research prompt")
-        # deep_research_prompt = generator.create_deep_research_prompt(
-        #     sales_page_url, research_page_analysis, doc1_analysis, doc2_analysis, customer_avatars
-        # )
+        # Step 3: Create deep research prompt
+        logger.info("Step 3: Creating deep research prompt")
+        deep_research_prompt = generator.create_deep_research_prompt(
+            sales_page_url, research_page_analysis, doc1_analysis, doc2_analysis, customer_avatars
+        )
         
-        # # Step 4: Execute deep research
-        # logger.info("Step 4: Executing deep research")
-        # deep_research_output = generator.execute_deep_research(deep_research_prompt)
+        # Step 4: Execute deep research
+        logger.info("Step 4: Executing deep research")
+        deep_research_output = generator.execute_deep_research(deep_research_prompt)
         
-        # # Step 5: Complete avatar sheet
-        # logger.info("Step 5: Completing avatar sheet")
-        # avatar_parsed, avatar_sheet = generator.complete_avatar_sheet(deep_research_output)
-        # angles = avatar_parsed.marketing_angles
+        # Step 5: Complete avatar sheet
+        logger.info("Step 5: Completing avatar sheet")
+        avatar_parsed, avatar_sheet = generator.complete_avatar_sheet(deep_research_output)
+        angles = avatar_parsed.marketing_angles
         
-        # # Step 6: Complete offer brief
-        # logger.info("Step 6: Completing offer brief")
-        # offer_brief_parsed, offer_brief = generator.complete_offer_brief(deep_research_output)
+        # Step 6: Complete offer brief
+        logger.info("Step 6: Completing offer brief")
+        offer_brief_parsed, offer_brief = generator.complete_offer_brief(deep_research_output)
         
-        # # Step 7: Analyze marketing philosophy
-        # logger.info("Step 7: Analyzing marketing philosophy")
-        # marketing_philosophy_analysis = generator.analyze_marketing_philosophy(
-        #     avatar_sheet, offer_brief, deep_research_output
-        # )
+        # Step 7: Analyze marketing philosophy
+        logger.info("Step 7: Analyzing marketing philosophy")
+        marketing_philosophy_analysis = generator.analyze_marketing_philosophy(
+            avatar_sheet, offer_brief, deep_research_output
+        )
         
-        # # Step 8: Create summary
-        # logger.info("Step 8: Creating summary")
-        # summary = generator.create_summary(
-        #     avatar_sheet, offer_brief, deep_research_output, marketing_philosophy_analysis
-        # )
+        # Step 8: Create summary
+        logger.info("Step 8: Creating summary")
+        summary = generator.create_summary(
+            avatar_sheet, offer_brief, deep_research_output, marketing_philosophy_analysis
+        )
     
         
-        # # Step 10: Rewrite swipe files
-        # logger.info("Step 9: Rewriting swipe files")
-        # # use max 3 angles for now.
-        # angles = angles[:1]
-        # swipe_results = []
-        # for angle in angles:
-        #     full_advertorial, quality_report = generator.rewrite_swipe_file(
-        #         angle, avatar_sheet, deep_research_output, offer_brief, marketing_philosophy_analysis, swipe_file_model, original_swipe_file_path_html
-        #     )
-        #     swipe_results.append({"angle": angle, "content": json.dumps(full_advertorial)})
-
         logger.info("Step 10: Saving results")
         all_results = {
             "research_page_analysis": research_page_analysis,
@@ -1019,6 +843,7 @@ def run_pipeline(event, context):
             "marketing_philosophy_analysis": marketing_philosophy_analysis,
             "summary": summary,
             "marketing_angles": [angle.model_dump() if hasattr(angle, 'model_dump') else angle for angle in angles],
+            "customer_avatars": customer_avatars,
         }
         
         generator.save_results_to_s3(all_results, s3_bucket, project_name, job_id)
@@ -1097,12 +922,21 @@ def lambda_handler(event, context):
     return result
 
 if __name__ == "__main__":
-    # Allow ECS task to pass inputs via env var JOB_EVENT_JSON and JOB_ID
     job_event_env = os.environ.get("JOB_EVENT_JSON")
     try:    
         event = json.loads(job_event_env)
     except Exception:
         raise Exception("Failed to load JOB_EVENT_JSON")
+    
+
+    event["dev_mode"] = os.environ.get("dev_mode", "false").lower() == "true"
+    event["RESULTS_BUCKET"] = os.environ.get("RESULTS_BUCKET", "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih")
+    event["s3_bucket"] = os.environ.get("s3_bucket", event["RESULTS_BUCKET"])
+    event["project_name"] = os.environ.get("project_name", "test")
+    event["content_dir"] = os.environ.get("content_dir", "content/")
+    event["customer_avatars"] = os.environ.get("customer_avatars", [])
+    event["sales_page_url"] = os.environ.get("sales_page_url", "https://www.sciatiease.com/sciatiease.php")
+    
     # Inject jobId and result prefix
     event["job_id"] = os.environ.get("JOB_ID") or event.get("job_id") or str(uuid.uuid4())
     result = run_pipeline(event, None)

@@ -13,11 +13,19 @@ import os
 import json
 import logging
 import boto3
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from avatar_extractor import extract_avatars_from_url
 from get_largest_image import capture_product_image
 
 # Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -107,18 +115,28 @@ def lambda_handler(event, context):
         # Update status to RUNNING
         update_job_status(job_id, "RUNNING", {"message": "Processing avatar extraction"})
         
-        # Get OpenAI API key (check env first for local testing, then Secrets Manager)
-        openai_api_key = os.environ.get('OPENAI_API_KEY')
-        
-        if not openai_api_key:
-            # Fall back to Secrets Manager (production)
+        if event.get("dev_mode"):
+            logger.info(f"Dev mode detected for job {job_id}. Using mock results.")
             try:
-                secrets = get_secrets("deepcopy-secret-dev")
-                openai_api_key = secrets.get('OPENAI_API_KEY')
+                # Mock source
+                mock_key = "results/avatars/test-job-123/avatar_extraction_results.json"
+                s3_response = s3_client.get_object(Bucket=results_bucket, Key=mock_key)
+                results = json.loads(s3_response['Body'].read().decode('utf-8'))
+                s3_key = save_results_to_s3(job_id, results)
+                update_job_status(job_id, "SUCCEEDED", {"resultKey": s3_key})
+                return {'statusCode': 200, 'message': 'Avatar extraction completed successfully (DEV MODE)'}
             except Exception as e:
-                logger.error(f'Failed to retrieve secrets: {e}')
-                update_job_status(job_id, "FAILED", {"error": "Failed to retrieve API key from Secrets Manager"})
-                raise
+                logger.error(f"Dev mode failed: {e}")
+                update_job_status(job_id, "FAILED", {"error": str(e)})
+                return {'statusCode': 500, 'error': str(e)}
+        
+        try:
+            secrets = get_secrets("deepcopy-secret-dev")
+            openai_api_key = secrets.get('OPENAI_API_KEY')
+        except Exception as e:
+            logger.error(f'Failed to retrieve secrets: {e}')
+            update_job_status(job_id, "FAILED", {"error": "Failed to retrieve API key from Secrets Manager"})
+            raise
         
         if not openai_api_key:
             error_msg = 'OPENAI_API_KEY not found in environment or secrets'
@@ -129,27 +147,24 @@ def lambda_handler(event, context):
         # Get model from environment or use default
         model = "gpt-5-mini"
         
-        # Extract avatars using OpenAI
-        logger.info(f'Processing avatar extraction for job {job_id}, URL: {url}')
-        # avatars = extract_avatars_from_url(url, openai_api_key, model)
-        # image_base64 = capture_product_image(url)
-        
-        
-        # Load temp results from s3. Load json
-        s3_key = "results/avatars/test-job-123/avatar_extraction_results.json"
-        results = json.loads(s3_client.get_object(Bucket=results_bucket, Key=s3_key)['Body'].read().decode('utf-8'))
-        
-    
+        # Extract avatars and product image in parallel
+        logger.info(f'Processing avatar extraction and image capture for job {job_id}, URL: {url}')
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            future_avatars = executor.submit(extract_avatars_from_url, url, openai_api_key, model)
+            future_image = executor.submit(capture_product_image, url)
+            
+            avatars = future_avatars.result()
+            image_base64 = future_image.result()
 
         # Prepare results
-        # results = {
-        #     'success': True,
-        #     'url': url,
-        #     'job_id': job_id,
-        #     'timestamp_iso': datetime.now(timezone.utc).isoformat(),
-        #     'avatars': [avatar.model_dump() for avatar in avatars.avatars],
-        #     "product_image": image_base64
-        # }
+        results = {
+            'success': True,
+            'url': url,
+            'job_id': job_id,
+            'timestamp_iso': datetime.now(timezone.utc).isoformat(),
+            'avatars': [avatar.model_dump() for avatar in avatars.avatars],
+            "product_image": image_base64
+        }
 
         
         # Save to S3
@@ -173,7 +188,8 @@ if __name__ == "__main__":
     # set RESULTS_BUCKET to the results bucket
     os.environ['RESULTS_BUCKET'] = 'deepcopystack-resultsbucketa95a2103-zhwjflrlpfih'
     test_event = {
-        "job_id": "test-job-123",
-        "url": "https://trynewaura.com/products/seborrheic-dermatitis-cream"
+        "job_id": os.environ.get('job_id'),
+        "url": os.environ.get('url'),
+        "dev_mode": os.environ.get('dev_mode', '').lower() == 'true'
     }
     print(lambda_handler(test_event, {}))

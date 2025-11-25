@@ -142,6 +142,7 @@ export class DeepCopyStack extends Stack {
     );
     jobsTable.grantReadWriteData(processAvatarExtractionLambda);
     resultsBucket.grantPut(processAvatarExtractionLambda);
+    resultsBucket.grantRead(processAvatarExtractionLambda, 'results/*');
 
     // Avatar extraction - Submit Lambda (Python)
     const submitAvatarExtractionLambda = new lambda.Function(this, 'SubmitAvatarExtractionLambda', {
@@ -390,6 +391,35 @@ export class DeepCopyStack extends Stack {
       authorizer: cognitoAuthorizer,
       authorizationType: apigw.AuthorizationType.COGNITO,
       authorizationScopes: ['https://deep-copy.api/read'],
+    });
+
+    // Dev endpoints
+    const devRes = api.root.addResource('dev');
+
+    // Dev jobs
+    const devJobsRes = devRes.addResource('jobs');
+    devJobsRes.addMethod('POST', new apigw.LambdaIntegration(submitLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/write'],
+    });
+
+    // Dev avatars
+    const devAvatarsRes = devRes.addResource('avatars');
+    const devAvatarsExtractRes = devAvatarsRes.addResource('extract');
+    devAvatarsExtractRes.addMethod('POST', new apigw.LambdaIntegration(submitAvatarExtractionLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/write'],
+    });
+
+    // Dev swipe files
+    const devSwipeFilesRes = devRes.addResource('swipe-files');
+    const devSwipeFilesGenerateRes = devSwipeFilesRes.addResource('generate');
+    devSwipeFilesGenerateRes.addMethod('POST', new apigw.LambdaIntegration(submitSwipeFileLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/write'],
     });
 
     // Optional: EventBridge to mark RUNNING when task starts and final status on stop

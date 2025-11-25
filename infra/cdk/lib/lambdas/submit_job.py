@@ -39,6 +39,10 @@ def handler(event, _context):
     job_id = str(uuid.uuid4())
     result_prefix = f"results/{job_id}"
 
+    # Detect dev mode
+    path = event.get("path", "")
+    dev_mode = path.startswith("/dev") or "/dev/" in path
+
     # Persist initial job record
     try:
         _ddb.put_item(
@@ -63,6 +67,7 @@ def handler(event, _context):
         **body,
         "job_id": job_id,
         "result_prefix": result_prefix,
+        "dev_mode": dev_mode,
     }
 
     try:

@@ -31,7 +31,7 @@ ACCESS_TOKEN=$(curl -s -u "$CLIENT_ID:$CLIENT_SECRET" \
 # ============================================================================
 
 # POST /jobs - Submit a job
-curl -sS -X POST "${API_URL}jobs" \
+curl -sS -X POST "${API_URL}/dev/jobs" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -71,7 +71,7 @@ curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
 # ============================================================================
 
 # POST /avatars/extract - Submit avatar extraction job
-curl -sS -X POST "${API_URL}avatars/extract" \
+curl -sS -X POST "${API_URL}dev/avatars/extract" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -92,7 +92,7 @@ curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
 # ============================================================================
 
 # POST /swipe-files/generate - Submit swipe file generation job
-curl -sS -X POST "${API_URL}swipe-files/generate" \
+curl -sS -X POST "${API_URL}dev/swipe-files/generate" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
