@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Eye } from "lucide-react"
+import { Eye, FileText } from "lucide-react"
 
 interface TemplatePreviewProps {
   template: {
@@ -16,12 +16,56 @@ interface TemplatePreviewProps {
   onClick: () => void
 }
 
+// Lazy iframe component that only loads when visible
+function LazyIframe({ srcDoc, className, style, title, onLoad, onError, ...props }: React.IframeHTMLAttributes<HTMLIFrameElement> & { srcDoc: string }) {
+  const [shouldLoad, setShouldLoad] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setShouldLoad(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '50px' } // Start loading 50px before it's visible
+    )
+
+    observer.observe(containerRef.current)
+
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <div ref={containerRef} className={className} style={style}>
+      {shouldLoad ? (
+        <iframe
+          srcDoc={srcDoc}
+          className={className}
+          style={style}
+          title={title}
+          onLoad={onLoad}
+          onError={onError}
+          {...props}
+        />
+      ) : (
+        <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center">
+          <FileText className="h-8 w-8 text-muted-foreground" />
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function TemplatePreview({ template, isSelected, onClick }: TemplatePreviewProps) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDialogClosing, setIsDialogClosing] = useState(false)
-  const iframeRef = useRef<HTMLIFrameElement>(null)
 
+  // Memoize the HTML processing function
   const createSmallPreviewHTML = useMemo(() => {
     return (htmlContent: string) => {
       const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(htmlContent);
@@ -66,6 +110,11 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
 </html>`;
     }
   }, []);
+
+  // Memoize the actual iframe HTML content based on template
+  const smallPreviewHTML = useMemo(() => {
+    return createSmallPreviewHTML(template.html_content)
+  }, [template.html_content, createSmallPreviewHTML]);
 
   const createFullPreviewHTML = useMemo(() => {
     return (htmlContent: string) => {
@@ -125,24 +174,19 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
     }
   }, []);
 
-  useEffect(() => {
-    const iframe = iframeRef.current
-    if (iframe) {
-      const handleLoad = () => {
-        setIsLoaded(true)
-      }
+  // Memoize the actual iframe HTML content based on template
+  const fullPreviewHTML = useMemo(() => {
+    return createFullPreviewHTML(template.html_content)
+  }, [template.html_content, createFullPreviewHTML]);
 
-      iframe.addEventListener('load', handleLoad)
-      return () => iframe.removeEventListener('load', handleLoad)
-    }
-  }, [])
+  // Load state is handled via onLoad prop in LazyIframe
 
   return (
     <div
       key={template.id}
       className={`relative cursor-pointer rounded-xl border-2 p-2 md:p-3 transition-all h-[280px] md:h-[320px] flex flex-col ${isSelected
-          ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-          : 'border-border bg-card'
+        ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+        : 'border-border bg-card'
         }`}
       onClick={(e) => {
         // Don't navigate if:
@@ -176,12 +220,10 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
       {/* Preview Area */}
       <div className="flex-1 relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border">
 
-        <iframe
+        <LazyIframe
           key={template.id}
-          ref={iframeRef}
-          srcDoc={createSmallPreviewHTML(template.html_content)}
+          srcDoc={smallPreviewHTML}
           className="w-full h-full border-0"
-          loading="eager"
           title={`Preview of ${template.name}`}
           onLoad={() => {
             setTimeout(() => setIsLoaded(true), 200)
@@ -243,7 +285,7 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
             <div className="flex-1 border-t bg-white overflow-hidden">
               <iframe
                 key={`full-${template.id}`}
-                srcDoc={createFullPreviewHTML(template.html_content)}
+                srcDoc={fullPreviewHTML}
                 className="w-full h-full border-0"
                 style={{
                   width: '100%',

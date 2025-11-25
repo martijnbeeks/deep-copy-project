@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -22,9 +22,104 @@ interface TemplateGridProps {
     isLoading?: boolean
 }
 
+// Lazy iframe component that only loads when visible
+function LazyIframe({ srcDoc, className, style, sandbox, title, ...props }: React.IframeHTMLAttributes<HTMLIFrameElement> & { srcDoc: string }) {
+    const [shouldLoad, setShouldLoad] = useState(false)
+    const iframeRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (!iframeRef.current) return
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) {
+                    setShouldLoad(true)
+                    observer.disconnect()
+                }
+            },
+            { rootMargin: '50px' } // Start loading 50px before it's visible
+        )
+
+        observer.observe(iframeRef.current)
+
+        return () => observer.disconnect()
+    }, [])
+
+    return (
+        <div ref={iframeRef} className={className} style={style}>
+            {shouldLoad ? (
+                <iframe
+                    srcDoc={srcDoc}
+                    className={className}
+                    style={style}
+                    sandbox={sandbox}
+                    title={title}
+                    {...props}
+                />
+            ) : (
+                <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center">
+                    <FileText className="h-8 w-8 text-muted-foreground" />
+                </div>
+            )}
+        </div>
+    )
+}
+
 export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
     const [copied, setCopied] = useState(false)
     const { toast } = useToast()
+
+    // Memoize HTML processing function
+    const createPreviewHTML = useMemo(() => {
+        return (htmlContent: string) => {
+            const raw = htmlContent;
+            const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(raw);
+            if (!hasRealImages) return raw;
+            const noOnError = raw
+                .replace(/\s+onerror="[^"]*"/gi, '')
+                .replace(/\s+onerror='[^']*'/gi, '');
+            const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+                const lower = block.toLowerCase();
+                return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+                    ? ''
+                    : block;
+            });
+            return stripFallbackScripts;
+        }
+    }, [])
+
+    // Memoize iframe HTML for each template
+    const templateIframeHTML = useMemo(() => {
+        return templates.reduce((acc, template) => {
+            acc[template.name] = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Template Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  ${createPreviewHTML(template.html)}
+  <script>
+    (function(){
+      function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }
+      function ph(img){ var alt=(img.getAttribute('alt')||'Image'); var text=encodeURIComponent(alt.replace(/[^a-zA-Z0-9\s]/g,'').substring(0,20)||'Image'); return 'https://placehold.co/600x400?text='+text; }
+      function apply(img){
+        if (isTrusted(img.src)) { img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); }; return; }
+        if (!img.complete || img.naturalWidth === 0) { img.src = ph(img); }
+        img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); };
+      }
+      function run(){ document.querySelectorAll('img').forEach(apply); }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+      setTimeout(run, 800);
+    })();
+  </script>
+</body>
+</html>`;
+            return acc;
+        }, {} as Record<string, string>);
+    }, [templates, createPreviewHTML])
 
     const handleCopyHTML = async (content: string) => {
         try {
@@ -189,47 +284,9 @@ export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
 
                                 <div className="h-32 bg-white rounded-lg overflow-hidden border border-gray-200 relative">
                                     <div className="absolute inset-0 overflow-hidden">
-                                        <iframe
-                                            srcDoc={`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Template Preview</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body>
-  ${(() => {
-                                                    const raw = template.html;
-                                                    const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(raw);
-                                                    if (!hasRealImages) return raw;
-                                                    const noOnError = raw
-                                                        .replace(/\s+onerror="[^"]*"/gi, '')
-                                                        .replace(/\s+onerror='[^']*'/gi, '');
-                                                    const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
-                                                        const lower = block.toLowerCase();
-                                                        return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
-                                                            ? ''
-                                                            : block;
-                                                    });
-                                                    return stripFallbackScripts;
-                                                })()}
-  <script>
-    (function(){
-      function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }
-      function ph(img){ var alt=(img.getAttribute('alt')||'Image'); var text=encodeURIComponent(alt.replace(/[^a-zA-Z0-9\s]/g,'').substring(0,20)||'Image'); return 'https://placehold.co/600x400?text='+text; }
-      function apply(img){
-        if (isTrusted(img.src)) { img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); }; return; }
-        if (!img.complete || img.naturalWidth === 0) { img.src = ph(img); }
-        img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); };
-      }
-      function run(){ document.querySelectorAll('img').forEach(apply); }
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
-      setTimeout(run, 800);
-    })();
-  </script>
-</body>
-</html>`}
+                                        <LazyIframe
+                                            key={`preview-${template.name}-${index}`}
+                                            srcDoc={templateIframeHTML[template.name]}
                                             className="w-full h-full"
                                             style={{
                                                 border: 'none',
@@ -274,46 +331,8 @@ export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
                                             </DialogHeader>
                                             <div className="h-[calc(98vh-120px)] border rounded-lg bg-background overflow-auto">
                                                 <iframe
-                                                    srcDoc={`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Template Preview</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body>
-  ${(() => {
-                                                            const raw = template.html;
-                                                            const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(raw);
-                                                            if (!hasRealImages) return raw;
-                                                            const noOnError = raw
-                                                                .replace(/\s+onerror="[^"]*"/gi, '')
-                                                                .replace(/\s+onerror='[^']*'/gi, '');
-                                                            const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
-                                                                const lower = block.toLowerCase();
-                                                                return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
-                                                                    ? ''
-                                                                    : block;
-                                                            });
-                                                            return stripFallbackScripts;
-                                                        })()}
-  <script>
-    (function(){
-      function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }
-      function ph(img){ var alt=(img.getAttribute('alt')||'Image'); var text=encodeURIComponent(alt.replace(/[^a-zA-Z0-9\s]/g,'').substring(0,20)||'Image'); return 'https://placehold.co/600x400?text='+text; }
-      function apply(img){
-        if (isTrusted(img.src)) { img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); }; return; }
-        if (!img.complete || img.naturalWidth === 0) { img.src = ph(img); }
-        img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); };
-      }
-      function run(){ document.querySelectorAll('img').forEach(apply); }
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
-      setTimeout(run, 800);
-    })();
-  </script>
-</body>
-</html>`}
+                                                    key={`full-preview-${template.name}-${index}`}
+                                                    srcDoc={templateIframeHTML[template.name]}
                                                     className="w-full h-full"
                                                     sandbox="allow-scripts"
                                                     style={{

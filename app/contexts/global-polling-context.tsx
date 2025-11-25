@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect } from 'react'
 import { useGlobalJobPolling } from '@/hooks/use-global-job-polling'
 import { useQueryClient } from '@tanstack/react-query'
 import { logger } from '@/lib/utils/logger'
+import { jobKeys } from '@/lib/hooks/use-jobs'
 
 interface GlobalPollingContextType {
   isPolling: boolean
@@ -31,20 +32,24 @@ export function GlobalPollingProvider({ children }: { children: React.ReactNode 
       interval: 5000, // Poll every 5 seconds for better responsiveness
       onJobUpdate: (jobId, status, progress) => {
         logger.log(`🔄 Global polling: Job ${jobId} status updated to ${status}`)
-        // Invalidate TanStack Query cache to trigger refetch
+        // Invalidate only the jobs list queries, not all job-related queries
         try {
-          queryClient.invalidateQueries({ queryKey: ['jobs'] })
-          logger.log(`🔄 Invalidated TanStack Query cache for jobs`)
+          queryClient.invalidateQueries({ queryKey: jobKeys.lists(), exact: false })
+          // Also invalidate the specific job detail if it exists
+          queryClient.invalidateQueries({ queryKey: jobKeys.detail(jobId), exact: true })
+          logger.log(`🔄 Invalidated TanStack Query cache for jobs list and job ${jobId}`)
         } catch (error) {
           logger.error('Error refreshing jobs:', error)
         }
       },
       onJobComplete: (jobId, result) => {
         logger.log(`✅ Global polling: Job ${jobId} completed`)
-        // Invalidate TanStack Query cache to trigger refetch
+        // Invalidate only the jobs list queries, not all job-related queries
         try {
-          queryClient.invalidateQueries({ queryKey: ['jobs'] })
-          logger.log(`✅ Invalidated TanStack Query cache for jobs`)
+          queryClient.invalidateQueries({ queryKey: jobKeys.lists(), exact: false })
+          // Also invalidate the specific job detail if it exists
+          queryClient.invalidateQueries({ queryKey: jobKeys.detail(jobId), exact: true })
+          logger.log(`✅ Invalidated TanStack Query cache for jobs list and job ${jobId}`)
         } catch (error) {
           logger.error('Error refreshing jobs:', error)
         }

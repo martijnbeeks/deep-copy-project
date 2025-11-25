@@ -20,9 +20,9 @@ export function useJobs(filters?: { status?: string; search?: string }) {
       const response = await internalApiClient.getJobs(filters) as { jobs: JobWithTemplate[] }
       return response.jobs
     },
-    staleTime: 0, // Data is immediately stale - always refetch
-    gcTime: 30 * 1000, // Keep in cache for only 30 seconds
-    refetchInterval: 10000, // Refetch every 10 seconds for real-time updates
+    staleTime: 30 * 1000, // Data is fresh for 30 seconds - won't refetch on navigation if data is fresh
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchInterval: 10000, // Refetch every 10 seconds for real-time updates (only when component is mounted)
   })
 }
 
@@ -34,16 +34,16 @@ export function useJob(id: string) {
       return await internalApiClient.getJob(id) as JobWithResult
     },
     enabled: !!id,
-    staleTime: 0, // Data is immediately stale - always refetch
-    gcTime: 30 * 1000, // Keep in cache for only 30 seconds
-    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
+    staleTime: 30 * 1000, // Data is fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates (only when component is mounted)
   })
 }
 
 // Create job mutation
 export function useCreateJob() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
     mutationFn: async (jobData: {
       title: string
@@ -68,9 +68,9 @@ export function useCreateJob() {
 // Update job mutation
 export function useUpdateJob() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; [key: string]: any }) => {
+    mutationFn: async ({ id, ...updates }: { id: string;[key: string]: any }) => {
       const response = await internalApiClient.updateJob(id, updates) as { job?: JobWithTemplate } | JobWithTemplate
       return (response as any)?.job || response
     },
@@ -85,7 +85,7 @@ export function useUpdateJob() {
 // Delete job mutation
 export function useDeleteJob() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
     mutationFn: async (id: string) => {
       return await internalApiClient.deleteJob(id)
@@ -100,7 +100,7 @@ export function useDeleteJob() {
 // Invalidate jobs cache
 export function useInvalidateJobs() {
   const queryClient = useQueryClient()
-  
+
   return () => {
     queryClient.invalidateQueries({ queryKey: jobKeys.all })
   }

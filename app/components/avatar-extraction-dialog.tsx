@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -38,7 +38,7 @@ interface AvatarExtractionDialogProps {
   isLoading?: boolean
 }
 
-export function AvatarExtractionDialog({
+function AvatarExtractionDialogComponent({
   isOpen,
   onClose,
   onAvatarsSelected,
@@ -928,3 +928,6 @@ export function AvatarExtractionDialog({
     </Dialog>
   )
 }
+
+// Memoize the component to prevent unnecessary re-renders
+export const AvatarExtractionDialog = memo(AvatarExtractionDialogComponent)

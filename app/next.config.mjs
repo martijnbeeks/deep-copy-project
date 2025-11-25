@@ -7,7 +7,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    unoptimized: false, // Enable image optimization for better caching (works for local images too)
   },
   // Disable caching in development
   ...(process.env.NODE_ENV === 'development' && {

@@ -1,27 +1,32 @@
 "use client"
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
+
+// Dynamically import devtools only in development
+const ReactQueryDevtools = process.env.NODE_ENV === 'development'
+  ? dynamic(() => import('@tanstack/react-query-devtools').then((mod) => mod.ReactQueryDevtools), {
+    ssr: false,
+  })
+  : () => null
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 0, // Data is never stale - always refetch
-        gcTime: 0, // Don't keep in cache
+        staleTime: 30 * 1000, // Data is fresh for 30 seconds - won't refetch if data is less than 30s old
+        gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes (was cacheTime in v4)
         retry: 1,
-        refetchOnWindowFocus: true, // Always refetch on window focus
-        refetchOnMount: true, // Always refetch on mount
+        refetchOnWindowFocus: false, // Don't refetch on window focus (you have polling for real-time updates)
+        refetchOnMount: false, // Only refetch if data is stale (respects staleTime)
         refetchOnReconnect: true, // Refetch when reconnected
-        // Don't cache any queries
         meta: {
           persist: false
         }
       },
       mutations: {
         retry: 1,
-        // Don't cache mutations
         meta: {
           persist: false
         }

@@ -42,10 +42,16 @@ class InternalApiClient {
       headers['Authorization'] = `Bearer ${userEmail}`
     }
 
+    // Only use no-store for mutations or status endpoints that need real-time data
+    // GET requests for static/semi-static data can use default caching
+    const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method || 'GET')
+    const isStatusEndpoint = endpoint.includes('/status') || endpoint.includes('/result')
+    const shouldCache = !isMutation && !isStatusEndpoint
+
     const response = await fetch(url, {
       ...options,
       headers,
-      cache: 'no-store'
+      cache: shouldCache ? 'default' : 'no-store'
     })
 
     if (!response.ok) {
@@ -73,7 +79,7 @@ class InternalApiClient {
   }
 
   async getJob(jobId: string) {
-    return this.request(`/api/jobs/${jobId}?t=${Date.now()}`)
+    return this.request(`/api/jobs/${jobId}`)
   }
 
   async createJob(jobData: any) {

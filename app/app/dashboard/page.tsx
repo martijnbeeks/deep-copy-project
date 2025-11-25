@@ -80,16 +80,9 @@ export default function DashboardPage() {
     return null
   }
 
-  // Filter jobs based on search and status
-  const filteredJobs = jobs.filter((job: any) => {
-    const matchesSearch = !searchTerm ||
-      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.brand_info.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesStatus = statusFilter === "all" || job.status === statusFilter
-
-    return matchesSearch && matchesStatus
-  })
+  // Jobs are already filtered by the API via useJobs hook filters
+  // No need for client-side filtering - use jobs directly
+  const filteredJobs = jobs
 
 
   const getStatusBadge = (status: Job["status"]) => {

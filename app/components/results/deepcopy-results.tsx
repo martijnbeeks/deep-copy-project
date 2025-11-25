@@ -8,7 +8,7 @@ import { MarkdownContent } from "@/components/results/markdown-content"
 import { TemplateGrid } from "@/components/results/template-grid"
 import { FileText, BarChart3, Code, BookOpen, User, Target, Calendar, Clock, Users, MapPin, DollarSign, Briefcase, Sparkles, AlertTriangle, Star, Eye, TrendingUp, Brain, Loader2, CheckCircle2, Download, Globe, DownloadCloud } from "lucide-react"
 import JSZip from "jszip"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, memo } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { TemplatePreview } from "@/components/template-preview"
@@ -190,7 +190,7 @@ function capitalizeFirst(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
-export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, templateId, customerAvatars, salesPageUrl }: DeepCopyResultsProps) {
+function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, templateId, customerAvatars, salesPageUrl }: DeepCopyResultsProps) {
   const [templates, setTemplates] = useState<Array<{ name: string, type: string, html: string, angle?: string, timestamp?: string, templateId?: string }>>([])
   const [templatesLoading, setTemplatesLoading] = useState(true)
   const [selectedTemplate, setSelectedTemplate] = useState<{ name: string; html_content: string; description?: string; category?: string } | null>(null)
@@ -223,6 +223,59 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
   const fullResult = result.metadata?.full_result
   const originalJobId = result.metadata?.deepcopy_job_id
+
+  // Memoize HTML processing function for iframes
+  const createPreviewHTML = useMemo(() => {
+    return (htmlContent: string) => {
+      const raw = htmlContent;
+      const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(raw);
+      if (!hasRealImages) return raw;
+      const noOnError = raw
+        .replace(/\s+onerror="[^"]*"/gi, '')
+        .replace(/\s+onerror='[^']*'/gi, '');
+      const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+        const lower = block.toLowerCase();
+        return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+          ? ''
+          : block;
+      });
+      return stripFallbackScripts;
+    }
+  }, []);
+
+  // Memoize iframe HTML for each template
+  const templateIframeHTML = useMemo(() => {
+    return templates.reduce((acc, template) => {
+      const key = `${template.name}-${template.angle || ''}`;
+      acc[key] = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Template Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  ${createPreviewHTML(template.html)}
+  <script>
+    (function(){
+      function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }
+      function ph(img){ var alt=(img.getAttribute('alt')||'Image'); var text=encodeURIComponent(alt.replace(/[^a-zA-Z0-9\s]/g,'').substring(0,20)||'Image'); return 'https://placehold.co/600x400?text='+text; }
+      function apply(img){
+        if (isTrusted(img.src)) { img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); }; return; }
+        if (!img.complete || img.naturalWidth === 0) { img.src = ph(img); }
+        img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); };
+      }
+      function run(){ document.querySelectorAll('img').forEach(apply); }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+      setTimeout(run, 800);
+    })();
+  </script>
+</body>
+</html>`;
+      return acc;
+    }, {} as Record<string, string>);
+  }, [templates, createPreviewHTML]);
 
   // Helper functions for Map state updates (DRY: used multiple times)
   const updateGeneratingAngle = (angleString: string, jobId: string) => {
@@ -1987,46 +2040,8 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                 <div className="relative h-48 bg-background overflow-hidden border-b border-border/50">
                                   <div className="absolute inset-0 overflow-hidden">
                                     <iframe
-                                      srcDoc={`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Template Preview</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body>
-  ${(() => {
-                                          const raw = template.html;
-                                          const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(raw);
-                                          if (!hasRealImages) return raw;
-                                          const noOnError = raw
-                                            .replace(/\s+onerror="[^"]*"/gi, '')
-                                            .replace(/\s+onerror='[^']*'/gi, '');
-                                          const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
-                                            const lower = block.toLowerCase();
-                                            return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
-                                              ? ''
-                                              : block;
-                                          });
-                                          return stripFallbackScripts;
-                                        })()}
-  <script>
-    (function(){
-      function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }
-      function ph(img){ var alt=(img.getAttribute('alt')||'Image'); var text=encodeURIComponent(alt.replace(/[^a-zA-Z0-9\s]/g,'').substring(0,20)||'Image'); return 'https://placehold.co/600x400?text='+text; }
-      function apply(img){
-        if (isTrusted(img.src)) { img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); }; return; }
-        if (!img.complete || img.naturalWidth === 0) { img.src = ph(img); }
-        img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); };
-      }
-      function run(){ document.querySelectorAll('img').forEach(apply); }
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
-      setTimeout(run, 800);
-    })();
-  </script>
-</body>
-</html>`}
+                                      key={`preview-${template.name}-${template.angle || ''}-${index}`}
+                                      srcDoc={templateIframeHTML[`${template.name}-${template.angle || ''}`]}
                                       className="w-full h-full"
                                       style={{
                                         border: 'none',
@@ -2622,3 +2637,6 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
     </div>
   )
 }
+
+// Memoize the component to prevent unnecessary re-renders
+export const DeepCopyResults = memo(DeepCopyResultsComponent)

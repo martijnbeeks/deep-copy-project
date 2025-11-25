@@ -138,14 +138,26 @@ class DeepCopyClient {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = await this.getAccessToken()
     logger.log(`🔑 Using token: ${token.substring(0, 20)}...`)
-    const fullUrl = `${this.config.apiUrl}${endpoint}?t=${Date.now()}`
+    
+    // Only add cache-busting timestamp for mutations or status checks
+    const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method || 'GET')
+    const isStatusEndpoint = endpoint.includes('/status') || endpoint.includes('/result')
+    const shouldBustCache = isMutation || isStatusEndpoint
+    const cacheParam = shouldBustCache ? `?t=${Date.now()}` : ''
+    
+    const fullUrl = `${this.config.apiUrl}${endpoint}${cacheParam}`
     logger.log(`🌐 Making request to: ${fullUrl}`)
+    
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${token}`,
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
       ...(options.headers as Record<string, string> || {})
+    }
+
+    // Only add aggressive cache headers for mutations or status endpoints
+    if (shouldBustCache) {
+      headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+      headers['Pragma'] = 'no-cache'
+      headers['Expires'] = '0'
     }
 
     // Only add Content-Type for requests with body (POST, PUT, PATCH)
@@ -155,7 +167,7 @@ class DeepCopyClient {
 
     const response = await fetch(fullUrl, {
       ...options,
-      cache: 'no-store',
+      cache: shouldBustCache ? 'no-store' : 'default',
       headers
     })
 
