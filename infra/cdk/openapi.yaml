@@ -1002,7 +1002,7 @@ components:
           description: Job status
     AvatarExtractionResponse:
       type: object
-      required: [success, url, job_id, timestamp_iso, avatars, company_type, product_description]
+      required: [success, url, job_id, timestamp_iso, avatars, company_type, product_description, product_image]
       properties:
         success:
           type: boolean

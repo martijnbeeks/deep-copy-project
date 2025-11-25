@@ -8,6 +8,8 @@ import json
 import os
 import base64
 import requests
+import io
+from PIL import Image
 from botocore.exceptions import ClientError
 from openai import OpenAI
 import boto3
@@ -66,7 +68,7 @@ else:
             pass
 
 
-def save_fullpage_png(url: str, out_file: str = "page.png"):
+def save_fullpage_png(url: str) -> bytes:
     with sync_playwright() as p:
         launch_args = {
             "headless": True,
@@ -91,13 +93,67 @@ def save_fullpage_png(url: str, out_file: str = "page.png"):
         page.goto(url, wait_until="networkidle")
 
         # Take a full-page screenshot
-        page.screenshot(path=out_file, full_page=True)
+        screenshot_bytes = page.screenshot(full_page=True)
 
-        logger.info(f"Saved full-page screenshot to {out_file}")
+        logger.info(f"Captured full-page screenshot for {url}")
 
         page.close()
         context.close()
-        return out_file
+        return screenshot_bytes
+
+
+def compress_image_if_needed(image_bytes: bytes, max_size_mb: float = 0.5) -> bytes:
+    """
+    Compress image if it exceeds the max size.
+    Resize and reduce quality iteratively until it fits.
+    """
+    max_bytes = int(max_size_mb * 1024 * 1024)
+    if len(image_bytes) <= max_bytes:
+        return image_bytes
+        
+    logger.info(f"Image size {len(image_bytes)} exceeds limit of {max_bytes}. Compressing...")
+    
+    try:
+        img = Image.open(io.BytesIO(image_bytes))
+        
+        # Convert to RGB if necessary (e.g. PNG with transparency to JPEG)
+        if img.mode in ('RGBA', 'P'):
+             img = img.convert('RGB')
+             
+        # Iteratively reduce quality/size
+        quality = 90
+        output_io = io.BytesIO()
+        
+        while True:
+            output_io.seek(0)
+            output_io.truncate()
+            img.save(output_io, format='JPEG', quality=quality)
+            current_size = output_io.tell()
+            
+            if current_size <= max_bytes or quality <= 10:
+                break
+                
+            # Reduce quality
+            quality -= 10
+            
+            # If quality is getting low, also resize
+            if quality < 60:
+                 width, height = img.size
+                 new_width = int(width * 0.8)
+                 new_height = int(height * 0.8)
+                 # Ensure we don't shrink to 0
+                 if new_width < 1 or new_height < 1:
+                     break
+                 img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        
+        compressed_bytes = output_io.getvalue()
+        logger.info(f"Compressed image to {len(compressed_bytes)} bytes")
+        return compressed_bytes
+        
+    except Exception as e:
+        logger.error(f"Failed to compress image: {e}")
+        # Return original if compression fails
+        return image_bytes
     
     
 def json_type_to_python(
@@ -292,15 +348,6 @@ class DeepCopy:
         except Exception as e:
             logger.error(f"Error getting secrets: {e}")
             raise
-        
-    def encode_image(self, image_path):
-        """Encode image to base64"""
-        try:
-            with open(image_path, "rb") as image_file:
-                return base64.b64encode(image_file.read()).decode("utf-8")
-        except Exception as e:
-            logger.error(f"Error encoding image: {e}")
-            raise
     
     def analyze_research_page(self, sales_page_url, customer_avatars):
         """Analyze the sales page using GPT-5 Vision
@@ -313,19 +360,14 @@ class DeepCopy:
             base64_image = None
             logger.info(f"Capturing page: {sales_page_url}")
             try:
-                image_path = save_fullpage_png(sales_page_url)
-                logger.info(f"Image captured at: {image_path}")
-                base64_image = self.encode_image(image_path)
+                screenshot_bytes = save_fullpage_png(sales_page_url)
+                # Compress if needed (max 500KB)
+                compressed_bytes = compress_image_if_needed(screenshot_bytes, max_size_mb=0.48)
+                logger.info(f"Image captured for {sales_page_url}. Original: {len(screenshot_bytes)}, Compressed: {len(compressed_bytes)}")
+                base64_image = base64.b64encode(compressed_bytes).decode("utf-8")
             except Exception as e:
                 logger.error(f"Failed to capture or encode image from {sales_page_url}: {e}")
                 raise
-            finally:
-                # Clean up the image file if it was created
-                try:
-                    if 'image_path' in locals() and image_path and os.path.exists(image_path):
-                        os.remove(image_path)
-                except Exception as cleanup_exc:
-                    logger.warning(f"Failed to clean up image file {image_path}: {cleanup_exc}")
             
             # Format avatars for the prompt
             def format_avatar(avatar, index):

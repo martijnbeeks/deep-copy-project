@@ -154,15 +154,6 @@ def capture_page_as_image_bytes(url: str) -> bytes:
         full_page = screenshot_mode != "viewport"
 
         screenshot_bytes = page.screenshot(full_page=full_page)
-        save_path = os.environ.get("SAVE_SCREENSHOT_PATH", "page_screenshot.png")
-        if save_path:
-            try:
-                with open(save_path, "wb") as f:
-                    f.write(screenshot_bytes)
-                logger.info(f"Saved screenshot to {save_path}")
-            except Exception as write_err:
-                logger.warning(f"Failed to save screenshot to {save_path}: {write_err}")
-        print(f"Page load took {time.time() - page_load_start:.2f}s")
 
         # Take a full-page screenshot and return bytes
         logger.info("Capturing screenshot")

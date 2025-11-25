@@ -84,8 +84,10 @@ curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
 
 # GET /avatars/{id}/result - Get avatar extraction results
 curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
-  "${API_URL}avatars/YOUR_JOB_ID/result" | jq '.'
+  "${API_URL}avatars/YOUR_JOB_ID/result" | jq '.' > result.json
 
+
+49facbfe-11ee-4f39-8084-bb02f1c6050a
 
 # ============================================================================
 # Swipe File Generation API

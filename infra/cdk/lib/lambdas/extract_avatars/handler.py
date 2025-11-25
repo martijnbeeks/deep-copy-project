@@ -163,6 +163,8 @@ def lambda_handler(event, context):
             'job_id': job_id,
             'timestamp_iso': datetime.now(timezone.utc).isoformat(),
             'avatars': [avatar.model_dump() for avatar in avatars.avatars],
+            'company_type': str(avatars.company_type),
+            'product_description': str(avatars.product_description),
             "product_image": image_base64
         }
 
