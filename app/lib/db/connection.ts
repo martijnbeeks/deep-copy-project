@@ -1,17 +1,16 @@
 import { Pool } from 'pg'
 
 // Support both connection string (DATABASE_URL) and individual env vars
-// Neon DB requires SSL, so we enable it for Neon connections
 const getPoolConfig = () => {
   // If DATABASE_URL is provided, use it directly (Neon provides this format)
   if (process.env.DATABASE_URL) {
     return {
       connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DATABASE_URL.includes('neon.tech') 
-        ? { rejectUnauthorized: false } 
-        : process.env.DATABASE_URL.includes('render.com')
+      ssl: process.env.DATABASE_URL.includes('neon.tech')
         ? { rejectUnauthorized: false }
-        : false,
+        : process.env.DATABASE_URL.includes('render.com')
+          ? { rejectUnauthorized: false }
+          : false,
       max: 10,
       idleTimeoutMillis: 60000,
       connectionTimeoutMillis: 10000,
@@ -24,7 +23,7 @@ const getPoolConfig = () => {
   // Fallback to individual env vars (for backward compatibility)
   const isNeon = process.env.DB_HOST?.includes('neon.tech')
   const isRender = process.env.DB_HOST?.includes('render.com')
-  
+
   return {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432'),
@@ -68,12 +67,12 @@ export const query = async (text: string, params?: any[]) => {
       return res
     } catch (error: any) {
       lastError = error
-      
+
       // If it's a connection error, retry
-      if (error.code === 'ECONNRESET' || 
-          error.code === 'ENOTFOUND' || 
-          error.message?.includes('Connection terminated') ||
-          error.message?.includes('timeout')) {
+      if (error.code === 'ECONNRESET' ||
+        error.code === 'ENOTFOUND' ||
+        error.message?.includes('Connection terminated') ||
+        error.message?.includes('timeout')) {
         retries--
         if (retries > 0) {
           console.log(`Database query failed, retrying... (${retries} attempts left)`)
@@ -81,11 +80,11 @@ export const query = async (text: string, params?: any[]) => {
           continue
         }
       }
-      
+
       // If it's not a connection error or we're out of retries, throw immediately
       throw error
     }
   }
-  
+
   throw lastError
 }
