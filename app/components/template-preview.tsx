@@ -167,7 +167,9 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <span className="px-1.5 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground rounded-full">
-            {template.category || 'General'}
+            {template.category 
+              ? template.category.charAt(0).toUpperCase() + template.category.slice(1).toLowerCase()
+              : 'General'}
           </span>
         </div>
       </div>

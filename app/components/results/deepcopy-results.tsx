@@ -211,6 +211,8 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
   const [openAngleItem, setOpenAngleItem] = useState<string | undefined>(undefined)
   const [isGeneratingRefined, setIsGeneratingRefined] = useState(false)
   const [selectedAngleFilter, setSelectedAngleFilter] = useState<string>("all")
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>("all")
+  const [modalTypeFilter, setModalTypeFilter] = useState<string>("all")
   const [openMarketingAngle, setOpenMarketingAngle] = useState<string | undefined>(undefined)
   const { templates: availableTemplates, fetchTemplates, isLoading: availableTemplatesLoading } = useTemplatesStore()
   const { toast } = useToast()
@@ -284,6 +286,30 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
       return false;
     });
+  };
+
+  // Helper function to filter templates by type (advertorial/listical)
+  const filterTemplatesByType = (
+    templatesList: Array<{ name: string; type: string; html: string; angle?: string; timestamp?: string; templateId?: string }>,
+    typeFilter: string
+  ) => {
+    if (typeFilter === "all") return templatesList;
+
+    return templatesList.filter((template) => {
+      const fileType = getFileType(template.templateId, advertorialType);
+      return fileType.toLowerCase() === typeFilter.toLowerCase();
+    });
+  };
+
+  // Combined filter function for both angle and type
+  const filterTemplates = (
+    templatesList: Array<{ name: string; type: string; html: string; angle?: string; timestamp?: string; templateId?: string }>,
+    angleFilter: string,
+    typeFilter: string
+  ) => {
+    let filtered = filterTemplatesByAngle(templatesList, angleFilter);
+    filtered = filterTemplatesByType(filtered, typeFilter);
+    return filtered;
   };
 
   // Load generated angles and templates from database on mount
@@ -786,15 +812,8 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
   const handleDownloadAll = async () => {
     try {
-      // Get filtered templates based on current filter
-      const templatesToDownload = selectedAngleFilter === "all"
-        ? templates
-        : templates.filter(t => {
-          if (t.angle === selectedAngleFilter) return true;
-          if (t.angle?.includes(selectedAngleFilter)) return true;
-          if (selectedAngleFilter.includes(t.angle || '')) return true;
-          return false;
-        });
+      // Get filtered templates based on current filters (angle and type)
+      const templatesToDownload = filterTemplates(templates, selectedAngleFilter, selectedTypeFilter);
 
       if (templatesToDownload.length === 0) {
         toast({
@@ -1850,11 +1869,13 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                           <h3 className="text-lg font-semibold">Generated Prelanders</h3>
                           <p className="text-sm text-muted-foreground">
                             {(() => {
-                              const filteredCount = filterTemplatesByAngle(templates, selectedAngleFilter).length;
+                              const filteredCount = filterTemplates(templates, selectedAngleFilter, selectedTypeFilter).length;
 
                               if (templates.length === 0) {
                                 return 'No templates generated yet';
                               }
+
+                              const parts: string[] = [];
                               if (selectedAngleFilter !== "all") {
                                 // Get the title for the selected angle
                                 const selectedAngle = fullResult?.results?.marketing_angles?.find((ma: any) => {
@@ -1864,13 +1885,38 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                 const angleTitle = selectedAngle && typeof selectedAngle === 'object'
                                   ? selectedAngle.title
                                   : selectedAngleFilter;
-                                return `${filteredCount} of ${templates.length} template${templates.length !== 1 ? 's' : ''} (${angleTitle})`;
+                                parts.push(angleTitle);
+                              }
+                              if (selectedTypeFilter !== "all") {
+                                parts.push(formatFileType(selectedTypeFilter));
+                              }
+
+                              if (parts.length > 0) {
+                                return `${filteredCount} of ${templates.length} template${templates.length !== 1 ? 's' : ''} (${parts.join(', ')})`;
                               }
                               return `${templates.length} template${templates.length !== 1 ? 's' : ''} generated`;
                             })()}
                           </p>
                         </div>
                         <div className="flex items-center gap-3">
+                          {/* Type Filter */}
+                          {templates.length > 0 && (
+                            <div className="w-[180px] min-w-0 max-w-[180px]">
+                              <Select value={selectedTypeFilter} onValueChange={setSelectedTypeFilter}>
+                                <SelectTrigger
+                                  className="!w-full !max-w-full [&_[data-slot=select-value]]:!max-w-[calc(180px-3rem)] [&_[data-slot=select-value]]:!truncate [&_[data-slot=select-value]]:!block [&_[data-slot=select-value]]:!min-w-0"
+                                >
+                                  <FileText className="h-4 w-4 mr-2 flex-shrink-0" />
+                                  <SelectValue placeholder="Filter by type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">All Types</SelectItem>
+                                  <SelectItem value="advertorial">Advertorial</SelectItem>
+                                  <SelectItem value="listicle">Listical</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
                           {/* Angle Filter */}
                           {templates.length > 0 && (() => {
                             // Only use angles from the API response (marketing_angles)
@@ -1934,8 +1980,8 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                         {/* Existing templates */}
                         {(() => {
-                          // Filter templates by selected angle
-                          let filteredTemplates = filterTemplatesByAngle(templates, selectedAngleFilter);
+                          // Filter templates by selected angle and type
+                          let filteredTemplates = filterTemplates(templates, selectedAngleFilter, selectedTypeFilter);
 
                           // Sort templates by angle index to group same angles together and maintain order
                           filteredTemplates = [...filteredTemplates].sort((a, b) => {
@@ -1981,7 +2027,9 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                               <div className="col-span-full text-center py-12">
                                 <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                                 <p className="text-muted-foreground">
-                                  No templates found for the selected angle.
+                                  {selectedAngleFilter !== "all" || selectedTypeFilter !== "all"
+                                    ? "No templates found for the selected filters."
+                                    : "No templates found for the selected angle."}
                                 </p>
                               </div>
                             );
@@ -2082,21 +2130,26 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                         <div className="space-y-2">
                                           {/* Number Badge and File Type */}
                                           <div className="flex items-center gap-2 flex-wrap">
-                                            {angleIndex >= 0 && (
+                                            {/*angleIndex >= 0 && (
                                               <Badge variant="outline" className="text-xs font-semibold bg-muted text-foreground border-border w-fit">
                                                 #{angleIndex + 1}
                                               </Badge>
-                                            )}
+                                            )*/}
                                             <Badge variant="outline" className="text-xs font-semibold bg-primary/10 text-primary border-primary/20 w-fit">
                                               {formatFileType(fileType)}
                                             </Badge>
                                           </div>
                                           {/* Title with Icon */}
-                                          <div className="flex items-start gap-2">
-                                            {angleIndex >= 0 && (
+                                          <div className="flex items-center gap-2">
+                                            {/*angleIndex >= 0 && (
                                               <div className="bg-primary/10 rounded-full p-1.5 flex-shrink-0 mt-0.5">
                                                 <Target className="h-4 w-4 text-primary" />
                                               </div>
+                                            )*/}
+                                            {angleIndex >= 0 && (
+                                              <Badge variant="outline" className="text-xs font-semibold bg-muted text-foreground border-border w-fit">
+                                                #{angleIndex + 1}
+                                              </Badge>
                                             )}
                                             <h4 className="font-semibold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors flex-1">
                                               {getAngleTitle(template.angle, template.name)}
@@ -2295,18 +2348,40 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
           setSelectedTemplateForRefinement([])
           setSelectedAngleForRefinement(null)
           setTemplateModalStep(1)
+          setModalTypeFilter("all")
         }
       }}>
         <DialogContent className="!max-w-[95vw] !max-h-[95vh] !w-[95vw] !h-[95vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {templateModalStep === 1 ? 'Step 1: Select a Template' : 'Step 2: Select Marketing Angle'}
-            </DialogTitle>
-            <DialogDescription>
-              {templateModalStep === 1
-                ? 'Choose a template to generate a refined prelander'
-                : 'Choose a marketing angle for your selected template'}
-            </DialogDescription>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <DialogTitle>
+                  {templateModalStep === 1 ? 'Step 1: Select a Template' : 'Step 2: Select Marketing Angle'}
+                </DialogTitle>
+                <DialogDescription>
+                  {templateModalStep === 1
+                    ? 'Choose a template to generate a refined prelander'
+                    : 'Choose a marketing angle for your selected template'}
+                </DialogDescription>
+              </div>
+              {templateModalStep === 1 && availableTemplates.length > 0 && (
+                <div className="w-[180px] min-w-0 max-w-[180px] flex-shrink-0">
+                  <Select value={modalTypeFilter} onValueChange={setModalTypeFilter}>
+                    <SelectTrigger
+                      className="!w-full !max-w-full [&_[data-slot=select-value]]:!max-w-[calc(180px-3rem)] [&_[data-slot=select-value]]:!truncate [&_[data-slot=select-value]]:!block [&_[data-slot=select-value]]:!min-w-0"
+                    >
+                      <FileText className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <SelectValue placeholder="Filter by type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="advertorial">Advertorial</SelectItem>
+                      <SelectItem value="listicle">Listical</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
           </DialogHeader>
 
           {availableTemplatesLoading ? (
@@ -2324,33 +2399,66 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
               <div className="space-y-6">
                 {/* Template Grid */}
                 <div className="space-y-4">
-                  {selectedTemplateForRefinement.length > 0 && (
-                    <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
-                      <p className="text-sm font-medium text-foreground mb-1">
-                        {selectedTemplateForRefinement.length} template{selectedTemplateForRefinement.length !== 1 ? 's' : ''} selected
-                      </p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {selectedTemplateForRefinement.map((templateId) => {
-                          const template = availableTemplates.find(t => t.id === templateId)
-                          return (
-                            <Badge key={templateId} variant="secondary" className="text-xs">
-                              {template?.name || templateId}
-                            </Badge>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {availableTemplates.map((template) => (
-                      <TemplatePreview
-                        key={template.id}
-                        template={template}
-                        isSelected={selectedTemplateForRefinement.includes(template.id)}
-                        onClick={() => handleTemplateSelect(template.id)}
-                      />
-                    ))}
-                  </div>
+                  {(() => {
+                    // Filter templates by type
+                    const filteredTemplates = modalTypeFilter === "all"
+                      ? availableTemplates
+                      : availableTemplates.filter(template => {
+                        const templateType = template.category?.toLowerCase() === 'listicle' ? 'listicle' : 'advertorial';
+                        return templateType === modalTypeFilter.toLowerCase();
+                      });
+
+                    return (
+                      <>
+                        {selectedTemplateForRefinement.length > 0 && (
+                          <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+                            <p className="text-sm font-medium text-foreground mb-1">
+                              {selectedTemplateForRefinement.length} template{selectedTemplateForRefinement.length !== 1 ? 's' : ''} selected
+                              {modalTypeFilter !== "all" && (
+                                <span className="text-muted-foreground">
+                                  {' '}({filteredTemplates.length} {formatFileType(modalTypeFilter)} template{filteredTemplates.length !== 1 ? 's' : ''} available)
+                                </span>
+                              )}
+                            </p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {selectedTemplateForRefinement.map((templateId) => {
+                                const template = availableTemplates.find(t => t.id === templateId)
+                                return (
+                                  <Badge key={templateId} variant="secondary" className="text-xs">
+                                    {template?.name || templateId}
+                                  </Badge>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        {modalTypeFilter !== "all" && (
+                          <div className="text-sm text-muted-foreground">
+                            Showing {filteredTemplates.length} of {availableTemplates.length} template{availableTemplates.length !== 1 ? 's' : ''} ({formatFileType(modalTypeFilter)})
+                          </div>
+                        )}
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                          {filteredTemplates.length === 0 ? (
+                            <div className="col-span-full text-center py-12">
+                              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                              <p className="text-muted-foreground">
+                                No templates found for the selected type.
+                              </p>
+                            </div>
+                          ) : (
+                            filteredTemplates.map((template) => (
+                              <TemplatePreview
+                                key={template.id}
+                                template={template}
+                                isSelected={selectedTemplateForRefinement.includes(template.id)}
+                                onClick={() => handleTemplateSelect(template.id)}
+                              />
+                            ))
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
                   {selectedTemplateForRefinement.length > 0 && (
                     <div className="flex justify-end pt-2">
                       <Button
