@@ -209,7 +209,6 @@ class DeepCopyClient {
     return this.makeRequest('avatars/extract', {
       method: 'POST',
       body: JSON.stringify(request),
-      // Add timeout for avatar extraction
       signal: AbortSignal.timeout(30000) // 30 second timeout
     })
   }
