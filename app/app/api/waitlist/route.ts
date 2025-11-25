@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db/connection'
+import { handleApiError, createSuccessResponse, createValidationErrorResponse } from '@/lib/middleware/error-handler'
+import { isValidEmail } from '@/lib/utils/validation'
+import { logger } from '@/lib/utils/logger'
 
 // Create waitlist table if it doesn't exist
 async function ensureWaitlistTable() {
@@ -14,7 +17,7 @@ async function ensureWaitlistTable() {
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `)
-    
+
     // Add company column if it doesn't exist (for existing tables)
     try {
       await query(`
@@ -24,7 +27,7 @@ async function ensureWaitlistTable() {
     } catch (error) {
       // Column might already exist, ignore error
     }
-    
+
     // Update name column to be NOT NULL if it's nullable (for existing tables)
     try {
       await query(`
@@ -36,7 +39,7 @@ async function ensureWaitlistTable() {
     }
   } catch (error) {
     // Table might already exist, ignore error
-    console.log('Waitlist table check:', error)
+    logger.log('Waitlist table check:', error)
   }
 }
 
@@ -49,26 +52,16 @@ export async function POST(request: NextRequest) {
     const { email, name, company } = await request.json()
 
     if (!email) {
-      return NextResponse.json(
-        { error: 'Email is required' },
-        { status: 400 }
-      )
+      return createValidationErrorResponse('Email is required')
     }
 
     if (!name || !name.trim()) {
-      return NextResponse.json(
-        { error: 'Name is required' },
-        { status: 400 }
-      )
+      return createValidationErrorResponse('Name is required')
     }
 
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
-      )
+    if (!isValidEmail(email)) {
+      return createValidationErrorResponse('Invalid email format')
     }
 
     // Check if email already exists
@@ -78,12 +71,9 @@ export async function POST(request: NextRequest) {
     )
 
     if (existing.rows.length > 0) {
-      return NextResponse.json(
-        { 
-          error: 'This email is already on the waitlist',
-          message: 'You\'re already on our waitlist! We\'ll notify you when we launch.'
-        },
-        { status: 409 }
+      return createValidationErrorResponse(
+        'This email is already on the waitlist',
+        409
       )
     }
 
@@ -95,29 +85,20 @@ export async function POST(request: NextRequest) {
       [email.toLowerCase().trim(), name.trim(), company?.trim() || null]
     )
 
-    return NextResponse.json({
+    return createSuccessResponse({
       success: true,
       message: 'Successfully added to waitlist',
       waitlist: result.rows[0]
     })
   } catch (error) {
-    console.error('Error adding to waitlist:', error)
-    
     // Check if it's a unique constraint violation
     if (error instanceof Error && error.message.includes('unique')) {
-      return NextResponse.json(
-        { 
-          error: 'This email is already on the waitlist',
-          message: 'You\'re already on our waitlist! We\'ll notify you when we launch.'
-        },
-        { status: 409 }
+      return createValidationErrorResponse(
+        'This email is already on the waitlist',
+        409
       )
     }
-
-    return NextResponse.json(
-      { error: 'Failed to add to waitlist. Please try again.' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -130,16 +111,12 @@ export async function GET(request: NextRequest) {
       'SELECT id, email, name, company, created_at FROM waitlist ORDER BY created_at DESC'
     )
 
-    return NextResponse.json({
+    return createSuccessResponse({
       waitlist: result.rows,
       count: result.rows.length
     })
   } catch (error) {
-    console.error('Error fetching waitlist:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch waitlist' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 

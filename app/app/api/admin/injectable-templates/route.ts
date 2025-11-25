@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { 
-  getInjectableTemplates, 
+import {
+  getInjectableTemplates,
   getInjectableTemplateById,
-  createInjectableTemplate, 
+  createInjectableTemplate,
   updateInjectableTemplate,
-  deleteInjectableTemplate 
+  deleteInjectableTemplate
 } from '@/lib/db/queries'
 import { verifyAdminAuth, createAuthResponse } from '@/lib/auth/admin-auth'
+import { handleApiError, createSuccessResponse, createValidationErrorResponse } from '@/lib/middleware/error-handler'
+import { logger } from '@/lib/utils/logger'
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,14 +21,13 @@ export async function GET(request: NextRequest) {
       // Fetch specific template by ID
       templates = await getInjectableTemplateById(id)
     } else {
-      // Fetch templates by type
-      templates = await getInjectableTemplates(type)
+      // Fetch templates by type (convert null to undefined)
+      templates = await getInjectableTemplates(type ?? undefined)
     }
-    
-    return NextResponse.json(templates)
+
+    return createSuccessResponse(templates)
   } catch (error) {
-    console.error('Error fetching injectable templates:', error)
-    return NextResponse.json({ error: 'Failed to fetch injectable templates' }, { status: 500 })
+    return handleApiError(error)
   }
 }
 
@@ -41,18 +42,17 @@ export async function POST(request: NextRequest) {
     const { id, name, type, htmlContent, description } = body
 
     if (!name || !type || !htmlContent) {
-      return NextResponse.json({ error: 'Name, type, and HTML content are required' }, { status: 400 })
+      return createValidationErrorResponse('Name, type, and HTML content are required')
     }
 
     if (!['listicle', 'advertorial'].includes(type)) {
-      return NextResponse.json({ error: 'Type must be either "listicle" or "advertorial"' }, { status: 400 })
+      return createValidationErrorResponse('Type must be either "listicle" or "advertorial"')
     }
 
     const template = await createInjectableTemplate(name, type, htmlContent, description, id)
-    return NextResponse.json({ template })
+    return createSuccessResponse({ template })
   } catch (error) {
-    console.error('Error creating injectable template:', error)
-    return NextResponse.json({ error: 'Failed to create injectable template' }, { status: 500 })
+    return handleApiError(error)
   }
 }
 
@@ -67,32 +67,32 @@ export async function PUT(request: NextRequest) {
     const { id, name, type, htmlContent, description, is_active } = body
 
     if (!id) {
-      return NextResponse.json({ error: 'Template ID is required' }, { status: 400 })
+      return createValidationErrorResponse('Template ID is required')
     }
 
     if (!name || !type || !htmlContent) {
-      return NextResponse.json({ error: 'Name, type, and HTML content are required' }, { status: 400 })
+      return createValidationErrorResponse('Name, type, and HTML content are required')
     }
 
     if (!['listicle', 'advertorial'].includes(type)) {
-      return NextResponse.json({ error: 'Type must be either "listicle" or "advertorial"' }, { status: 400 })
+      return createValidationErrorResponse('Type must be either "listicle" or "advertorial"')
     }
 
     const template = await updateInjectableTemplate(id, {
       name,
       html_content: htmlContent,
       description,
+      advertorial_type: type,
       is_active: is_active !== undefined ? is_active : true
     })
 
     if (!template) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 })
+      return createValidationErrorResponse('Template not found', 404)
     }
 
-    return NextResponse.json({ template })
+    return createSuccessResponse({ template })
   } catch (error) {
-    console.error('Error updating injectable template:', error)
-    return NextResponse.json({ error: 'Failed to update injectable template' }, { status: 500 })
+    return handleApiError(error)
   }
 }
 
@@ -106,18 +106,17 @@ export async function DELETE(request: NextRequest) {
   const id = searchParams.get('id')
 
   if (!id) {
-    return NextResponse.json({ error: 'Template ID is required' }, { status: 400 })
+    return createValidationErrorResponse('Template ID is required')
   }
 
   try {
     const success = await deleteInjectableTemplate(id)
     if (!success) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 })
+      return createValidationErrorResponse('Template not found', 404)
     }
 
-    return NextResponse.json({ success: true, message: 'Injectable template deleted successfully' })
+    return createSuccessResponse({ success: true, message: 'Injectable template deleted successfully' })
   } catch (error) {
-    console.error('Error deleting injectable template:', error)
-    return NextResponse.json({ error: 'Failed to delete injectable template' }, { status: 500 })
+    return handleApiError(error)
   }
 }

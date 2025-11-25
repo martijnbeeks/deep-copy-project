@@ -8,29 +8,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { useTemplatesStore } from "@/stores/templates-store"
+import { useTemplates } from "@/lib/hooks/use-templates"
 import { TemplatePreview } from "@/components/template-preview"
 import { Search, Filter, FileText } from "lucide-react"
 
 export default function TemplatesPage() {
   const router = useRouter()
-  // Same source as create page - use isLoading from store
-  const { templates, fetchTemplates, isLoading: templatesLoading, preloadTemplates } = useTemplatesStore()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
+  
+  // Get filters from UI store
+  const { filters, setFilters } = useTemplatesStore()
+  
+  // Use TanStack Query for data fetching
+  const { data: templates = [], isLoading: templatesLoading } = useTemplates({
+    category: selectedCategory !== 'all' ? selectedCategory : undefined,
+    search: searchTerm || undefined
+  })
   
   // Pagination state - same as create page
   const [currentPage, setCurrentPage] = useState(1)
   const templatesPerPage = 9
-
-  // Preload templates early for better UX - Same as create page
-  useEffect(() => {
-    preloadTemplates()
-  }, [preloadTemplates])
-
-  // Fetch templates - Same as create page (fetches from same API endpoint)
-  useEffect(() => {
-    fetchTemplates()
-  }, [fetchTemplates])
 
   // Filter templates - same logic as before
   const filteredTemplates = templates.filter(template => {

@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useEffect } from 'react'
 import { useGlobalJobPolling } from '@/hooks/use-global-job-polling'
-import { useJobsStore } from '@/stores/jobs-store'
 import { useQueryClient } from '@tanstack/react-query'
+import { logger } from '@/lib/utils/logger'
 
 interface GlobalPollingContextType {
   isPolling: boolean
@@ -15,12 +15,11 @@ interface GlobalPollingContextType {
 const GlobalPollingContext = createContext<GlobalPollingContextType | undefined>(undefined)
 
 export function GlobalPollingProvider({ children }: { children: React.ReactNode }) {
-  console.log('🔧 GlobalPollingProvider: Initializing...')
+  logger.log('🔧 GlobalPollingProvider: Initializing...')
   try {
-    const { fetchJobs } = useJobsStore()
     const queryClient = useQueryClient()
-    console.log('🔧 GlobalPollingProvider: Context initialized successfully')
-    
+    logger.log('🔧 GlobalPollingProvider: Context initialized successfully')
+
     const {
       isPolling,
       pollingJobsCount,
@@ -31,39 +30,35 @@ export function GlobalPollingProvider({ children }: { children: React.ReactNode 
     } = useGlobalJobPolling({
       interval: 5000, // Poll every 5 seconds for better responsiveness
       onJobUpdate: (jobId, status, progress) => {
-        console.log(`🔄 Global polling: Job ${jobId} status updated to ${status}`)
-        // Refresh both Zustand store and TanStack Query cache
+        logger.log(`🔄 Global polling: Job ${jobId} status updated to ${status}`)
+        // Invalidate TanStack Query cache to trigger refetch
         try {
-          fetchJobs()
-          // Invalidate TanStack Query cache to trigger refetch
           queryClient.invalidateQueries({ queryKey: ['jobs'] })
-          console.log(`🔄 Invalidated TanStack Query cache for jobs`)
+          logger.log(`🔄 Invalidated TanStack Query cache for jobs`)
         } catch (error) {
-          console.error('Error refreshing jobs:', error)
+          logger.error('Error refreshing jobs:', error)
         }
       },
       onJobComplete: (jobId, result) => {
-        console.log(`✅ Global polling: Job ${jobId} completed`)
-        // Refresh both Zustand store and TanStack Query cache
+        logger.log(`✅ Global polling: Job ${jobId} completed`)
+        // Invalidate TanStack Query cache to trigger refetch
         try {
-          fetchJobs()
-          // Invalidate TanStack Query cache to trigger refetch
           queryClient.invalidateQueries({ queryKey: ['jobs'] })
-          console.log(`✅ Invalidated TanStack Query cache for jobs`)
+          logger.log(`✅ Invalidated TanStack Query cache for jobs`)
         } catch (error) {
-          console.error('Error refreshing jobs:', error)
+          logger.error('Error refreshing jobs:', error)
         }
       }
     })
 
     // Auto-start polling when there are jobs to poll
     useEffect(() => {
-      console.log(`🔧 GlobalPollingProvider: pollingJobsCount=${pollingJobsCount}, isPolling=${isPolling}`)
+      logger.log(`🔧 GlobalPollingProvider: pollingJobsCount=${pollingJobsCount}, isPolling=${isPolling}`)
       if (pollingJobsCount > 0 && !isPolling) {
-        console.log('🚀 Starting global polling for', pollingJobsCount, 'jobs')
+        logger.log('🚀 Starting global polling for', pollingJobsCount, 'jobs')
         startPolling()
       } else if (pollingJobsCount === 0 && isPolling) {
-        console.log('⏹️ Stopping global polling - no jobs to poll')
+        logger.log('⏹️ Stopping global polling - no jobs to poll')
         stopPolling()
       }
     }, [pollingJobsCount, isPolling, startPolling, stopPolling])
@@ -79,19 +74,19 @@ export function GlobalPollingProvider({ children }: { children: React.ReactNode 
       </GlobalPollingContext.Provider>
     )
   } catch (error) {
-    console.error('Error in GlobalPollingProvider:', error)
+    logger.error('Error in GlobalPollingProvider:', error)
     // Fallback: render children without polling
     return <>{children}</>
   }
 }
 
 export function useGlobalPolling() {
-  console.log('🔧 useGlobalPolling: Called')
+  logger.log('🔧 useGlobalPolling: Called')
   const context = useContext(GlobalPollingContext)
   if (context === undefined) {
-    console.error('❌ useGlobalPolling: Context not available - not within GlobalPollingProvider')
+    logger.error('❌ useGlobalPolling: Context not available - not within GlobalPollingProvider')
     throw new Error('useGlobalPolling must be used within a GlobalPollingProvider')
   }
-  console.log('✅ useGlobalPolling: Context available')
+  logger.log('✅ useGlobalPolling: Context available')
   return context
 }

@@ -1,34 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getJobsByUserId, createJob, updateJobStatus, createResult } from '@/lib/db/queries'
-import { deepCopyClient } from '@/lib/api/deepcopy-client'
+import { deepCopyClient } from '@/lib/clients/deepcopy-client'
+import { requireAuth, createAuthErrorResponse } from '@/lib/auth/user-auth'
+import { handleApiError, createSuccessResponse, createValidationErrorResponse } from '@/lib/middleware/error-handler'
+import { logger } from '@/lib/utils/logger'
+import { isDevMode } from '@/lib/utils/env'
+import { getDeepCopyAccessToken } from '@/lib/auth/deepcopy-auth'
+
+const DEEPCOPY_API_URL = 'https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/'
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    const userEmail = authHeader?.replace('Bearer ', '') || 'demo@example.com'
-
-    const { getUserByEmail } = await import('@/lib/db/queries')
-    const user = await getUserByEmail(userEmail)
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
+    const authResult = await requireAuth(request)
+    if (authResult.error) {
+      return createAuthErrorResponse(authResult)
     }
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') || undefined
     const search = searchParams.get('search') || undefined
 
-    const jobs = await getJobsByUserId(user.id, { status, search })
+    const jobs = await getJobsByUserId(authResult.user.id, { status, search })
 
-    return NextResponse.json({ jobs })
+    return createSuccessResponse({ jobs })
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to fetch jobs' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -39,35 +35,23 @@ export async function POST(request: NextRequest) {
       brand_info,
       sales_page_url,
       target_approach,
-      avatars
+      avatars,
+      product_image
     } = await request.json()
 
     if (!title) {
-      return NextResponse.json(
-        { error: 'Title is required' },
-        { status: 400 }
-      )
+      return createValidationErrorResponse('Title is required')
     }
 
     if (!target_approach) {
-      return NextResponse.json(
-        { error: 'Target approach is required' },
-        { status: 400 }
-      )
+      return createValidationErrorResponse('Target approach is required')
     }
 
-    const authHeader = request.headers.get('authorization')
-    const userEmail = authHeader?.replace('Bearer ', '') || 'demo@example.com'
-
-    const { getUserByEmail } = await import('@/lib/db/queries')
-    const user = await getUserByEmail(userEmail)
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
+    const authResult = await requireAuth(request)
+    if (authResult.error) {
+      return createAuthErrorResponse(authResult)
     }
+    const user = authResult.user
 
     // Check for duplicate jobs (same title created within last 30 seconds)
     const { checkDuplicateJob } = await import('@/lib/db/queries')
@@ -88,6 +72,7 @@ export async function POST(request: NextRequest) {
     const selectedAvatars = avatars?.filter((a: any) => a.is_researched === true) || []
 
     // Submit job to DeepCopy API first to get the job ID
+    // Use /dev/jobs in dev mode, /jobs in prod
     let deepCopyJobId: string
     try {
       const jobPayload: any = {
@@ -99,12 +84,35 @@ export async function POST(request: NextRequest) {
         jobPayload.customer_avatars = selectedAvatars
       }
 
-      const deepCopyResponse = await deepCopyClient.submitJob(jobPayload)
+      // Determine endpoint based on environment
+      const endpoint = isDevMode() ? 'dev/jobs' : 'jobs'
+      const accessToken = await getDeepCopyAccessToken()
 
+      logger.log(`🔧 ${isDevMode() ? 'DEV MODE' : 'PRODUCTION'}: Submitting job to ${endpoint}`)
+
+      const response = await fetch(`${DEEPCOPY_API_URL}${endpoint}?t=${Date.now()}`, {
+        method: 'POST',
+        cache: 'no-store',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        body: JSON.stringify(jobPayload)
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`DeepCopy API responded with status: ${response.status} - ${errorText}`)
+      }
+
+      const deepCopyResponse = await response.json()
       deepCopyJobId = deepCopyResponse.jobId
 
     } catch (apiError) {
-      console.error('❌ DeepCopy API Error:', apiError)
+      logger.error('❌ DeepCopy API Error:', apiError)
       return NextResponse.json(
         { error: 'Failed to submit job to DeepCopy API', details: apiError instanceof Error ? apiError.message : String(apiError) },
         { status: 500 }
@@ -123,19 +131,15 @@ export async function POST(request: NextRequest) {
       target_approach,
       avatars: avatars || [],
       execution_id: deepCopyJobId,
-      custom_id: deepCopyJobId // Use DeepCopy job ID as the primary key
+      custom_id: deepCopyJobId, // Use DeepCopy job ID as the primary key
+      screenshot: product_image || undefined // Store screenshot from avatar extraction (product_image)
     })
 
     // Update job status to processing
     await updateJobStatus(job.id, 'processing')
 
-    // Generate screenshot asynchronously (don't block job creation)
-    if (sales_page_url) {
-      const { generateScreenshot } = await import('@/lib/utils/screenshot')
-      generateScreenshot(job.id, sales_page_url).catch(err =>
-        console.error('Screenshot generation failed:', err)
-      )
-    }
+    // Screenshot will be extracted from API response (product_image) when results are stored
+    // No need to generate screenshot using Playwright anymore
 
     // Immediately check the job status to get initial progress
     try {
@@ -162,13 +166,9 @@ export async function POST(request: NextRequest) {
     }
 
 
-    return NextResponse.json(job)
+    return createSuccessResponse(job)
   } catch (error) {
-    console.error('❌ Job Creation Error:', error)
-    return NextResponse.json(
-      { error: 'Failed to create job', details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -186,6 +186,8 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
       generated_at: new Date().toISOString()
     })
 
+    // Screenshot is already stored from avatar extraction (product_image) when job is created
+    // No need to extract from job results since product_image comes from avatar API, not job results
 
   } catch (error) {
     throw error

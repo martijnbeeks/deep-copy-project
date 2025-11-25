@@ -15,26 +15,37 @@ import Link from "next/link"
 import { FileText, AlertCircle, Zap, Eye, Search, Filter, Calendar, ExternalLink, ArrowUp, Edit2, Trash2 } from "lucide-react"
 import { SalesPagePreview } from "@/components/sales-page-preview"
 import { useToast } from "@/hooks/use-toast"
-import { useAuthStore } from "@/stores/auth-store"
-import { useJobs, useCreateJob, useUpdateJob } from "@/lib/hooks/use-jobs"
+import { useRequireAuth } from "@/hooks/use-require-auth"
+import { useJobs, useCreateJob, useUpdateJob, useDeleteJob } from "@/lib/hooks/use-jobs"
 import { useSimplePolling } from "@/hooks/use-simple-polling"
-import { Job } from "@/lib/db/types"
+import { useJobsStore } from "@/stores/jobs-store"
+import { Job, JobWithTemplate } from "@/lib/db/types"
+import { isProcessingStatus } from "@/lib/utils/job-status"
+import { logger } from "@/lib/utils/logger"
+import { internalApiClient } from "@/lib/clients/internal-client"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 
 export default function DashboardPage() {
-  const { user, isAuthenticated } = useAuthStore()
+  const { user, isReady } = useRequireAuth()
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const { toast } = useToast()
 
-  // Use TanStack Query for data fetching
-  const { data: jobs = [], isLoading, error: queryError, refetch } = useJobs()
+  // Get filters from UI store
+  const { filters, setFilters } = useJobsStore()
+
+  // Use TanStack Query for data fetching with filters
+  const { data: jobs = [], isLoading, error: queryError, refetch } = useJobs({
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    search: searchTerm || undefined
+  })
   const createJobMutation = useCreateJob()
   const updateJobMutation = useUpdateJob()
+  const deleteJobMutation = useDeleteJob()
 
   // Edit dialog state
   const [editingJob, setEditingJob] = useState<any | null>(null)
@@ -49,55 +60,23 @@ export default function DashboardPage() {
   // Use simple polling for processing jobs (hits DeepCopy API directly)
   const { isPolling } = useSimplePolling(jobs)
 
-  // Count processing jobs (handle both uppercase and lowercase)
-  const processingJobsCount = jobs.filter(job =>
-    job.status?.toLowerCase() === 'submitted' ||
-    job.status?.toLowerCase() === 'processing' ||
-    job.status?.toLowerCase() === 'running' ||
-    job.status?.toLowerCase() === 'pending'
-  ).length
+  // Count processing jobs using utility
+  const processingJobsCount = jobs.filter(job => isProcessingStatus(job.status)).length
 
-  // Log when jobs data changes
+  // Log when jobs data changes (development only)
   useEffect(() => {
-    const submittedJobs = jobs.filter(j => j.status?.toLowerCase() === 'submitted')
-    const processingJobs = jobs.filter(j =>
-      j.status?.toLowerCase() === 'processing' ||
-      j.status?.toLowerCase() === 'running' ||
-      j.status?.toLowerCase() === 'pending'
-    )
+    const processingJobs = jobs.filter(j => isProcessingStatus(j.status))
     const completedJobs = jobs.filter(j => j.status?.toLowerCase() === 'completed')
     const failedJobs = jobs.filter(j => j.status?.toLowerCase() === 'failed')
 
-    console.log(`📊 Dashboard: Jobs updated - ${jobs.length} total`)
-    console.log(`  - Submitted: ${submittedJobs.length}`)
-    console.log(`  - Processing: ${processingJobs.length}`)
-    console.log(`  - Completed: ${completedJobs.length}`)
-    console.log(`  - Failed: ${failedJobs.length}`)
-
-    // Log ALL jobs with their statuses for debugging
-    console.log(`📋 All jobs:`, jobs.map(j => ({ id: j.id, title: j.title, status: j.status })))
-
-    if (submittedJobs.length > 0) {
-      console.log(`📤 Submitted jobs:`, submittedJobs.map(j => ({ id: j.id, title: j.title, status: j.status })))
-    }
-
-    if (processingJobs.length > 0) {
-      console.log(`🔄 Processing jobs:`, processingJobs.map(j => ({ id: j.id, title: j.title, status: j.status })))
-    }
-
-    if (failedJobs.length > 0) {
-      console.log(`❌ Failed jobs:`, failedJobs.map(j => ({ id: j.id, title: j.title, status: j.status })))
-    }
+    logger.log(`📊 Dashboard: Jobs updated - ${jobs.length} total`)
+    logger.log(`  - Processing: ${processingJobs.length}`)
+    logger.log(`  - Completed: ${completedJobs.length}`)
+    logger.log(`  - Failed: ${failedJobs.length}`)
   }, [jobs])
 
-  useEffect(() => {
-    if (!isAuthenticated || !user) {
-      router.replace("/login")
-    }
-  }, [isAuthenticated, user, router])
-
   // Early return if not authenticated to prevent skeleton loader
-  if (!isAuthenticated || !user) {
+  if (!isReady) {
     return null
   }
 
@@ -178,14 +157,22 @@ export default function DashboardPage() {
     setError(null)
 
     try {
-      const job = await createJobMutation.mutateAsync(data)
+      const job = await createJobMutation.mutateAsync(data) as { job?: JobWithTemplate } | JobWithTemplate
 
       toast({
         title: "Pipeline created successfully",
         description: "Your AI content generation has started.",
       })
 
-      router.push(`/jobs/${job.job.id}`)
+      // Handle both response formats: { job: ... } or direct job object
+      const jobId = (job as any)?.job?.id || (job as any)?.id
+      if (jobId) {
+        router.push(`/jobs/${jobId}`)
+      } else {
+        // Fallback: refetch and navigate to jobs list
+        refetch()
+        router.push('/dashboard')
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to create pipeline"
 
@@ -272,24 +259,12 @@ export default function DashboardPage() {
 
     try {
       setIsDeleting(true)
-      const response = await fetch(`/api/jobs/${deletingJob.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to delete job')
-      }
+      await deleteJobMutation.mutateAsync(deletingJob.id)
 
       toast({
         title: "Project deleted successfully",
         description: "The project has been permanently removed.",
       })
-
-      // Refetch jobs to update the list
-      refetch()
 
       setIsDeleteDialogOpen(false)
       setDeletingJob(null)

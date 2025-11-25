@@ -11,14 +11,16 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, AlertCircle, Info, Zap, CheckCircle, Globe, Package, MessageSquare, FileText, Search, BarChart } from "lucide-react"
-import { useJobsStore } from "@/stores/jobs-store"
-import { useAuthStore } from "@/stores/auth-store"
+import { useRequireAuth } from "@/hooks/use-require-auth"
+import { useCreateJob } from "@/lib/hooks/use-jobs"
 import { useRouter } from "next/navigation"
 import { Sidebar, SidebarTrigger } from "@/components/dashboard/sidebar"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { AvatarExtractionDialog } from "@/components/avatar-extraction-dialog"
 import { useAutoPolling } from "@/hooks/use-auto-polling"
 import { useToast } from "@/hooks/use-toast"
+import { isValidUrl } from "@/lib/utils/validation"
+import { logger } from "@/lib/utils/logger"
 
 interface CustomerAvatar {
   persona_name: string
@@ -42,6 +44,7 @@ interface PipelineFormData {
   sales_page_url: string
   target_approach?: string
   avatars?: CustomerAvatar[]  // Single source of truth - all avatars with is_researched flag
+  product_image?: string  // Base64 screenshot from avatar extraction
 }
 
 // Helper to get selected avatars
@@ -55,8 +58,8 @@ const getFirstSelectedAvatar = (avatars?: CustomerAvatar[]): CustomerAvatar | un
 }
 
 export default function CreatePage() {
-  const { createJob } = useJobsStore()
-  const { user, isAuthenticated } = useAuthStore()
+  const { user, isAuthenticated, isReady } = useRequireAuth()
+  const createJobMutation = useCreateJob()
   const router = useRouter()
 
   // Use auto-polling for processing jobs (hits DeepCopy API directly)
@@ -97,26 +100,8 @@ export default function CreatePage() {
     marketTrends: false,
   })
 
-  // URL validation function
-  const isValidUrl = (url: string): boolean => {
-    if (!url || url.trim().length === 0) return false
-    try {
-      const urlObj = new URL(url)
-      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:'
-    } catch {
-      return false
-    }
-  }
-
-  useEffect(() => {
-    if (!isAuthenticated || !user) {
-      router.replace("/login")
-      return
-    }
-  }, [isAuthenticated, user, router])
-
   // Early return if not authenticated to prevent skeleton loader
-  if (!isAuthenticated || !user) {
+  if (!isReady) {
     return null
   }
 
@@ -210,10 +195,13 @@ export default function CreatePage() {
     // For "known" approach, proceed with normal submission
     try {
       setIsLoading(true)
-      const createdJob = await createJob({
+      const createdJob = await createJobMutation.mutateAsync({
         ...dataToSubmit,
         brand_info: dataToSubmit.brand_info || '', // Ensure brand_info is always a string
         advertorial_type: 'Advertorial', // Default value since it's required by the API
+        target_approach: dataToSubmit.target_approach || 'explore',
+        avatars: dataToSubmit.avatars || [],
+        product_image: dataToSubmit.product_image, // Pass product_image from avatar extraction
       })
 
       // Set job ID for polling
@@ -435,7 +423,7 @@ export default function CreatePage() {
       // Reset loading state (polling happens in background)
       setIsLoading(false)
     } catch (error) {
-      console.error('Job creation error:', error)
+      logger.error('Job creation error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to create job'
 
       // Show error toast
@@ -464,19 +452,20 @@ export default function CreatePage() {
     await submitForm(false)
   }
 
-  const handleAvatarsSelected = async (selectedAvatars: any[], allAvatars: any[], shouldClose: boolean = true, autoSubmit: boolean = false) => {
+  const handleAvatarsSelected = async (selectedAvatars: any[], allAvatars: any[], shouldClose: boolean = true, autoSubmit: boolean = false, productImage?: string) => {
     try {
       // Mark selected avatars as researched
       const avatarsWithResearch = allAvatars.map(avatar => ({
         ...avatar,
-        is_researched: selectedAvatars.some(selected => 
+        is_researched: selectedAvatars.some(selected =>
           selected.persona_name === avatar.persona_name
         ) ? true : (avatar.is_researched || false)
       }))
 
       const updatedFormData: PipelineFormData = {
         ...formData,
-        avatars: avatarsWithResearch  // Single array with all avatars
+        avatars: avatarsWithResearch,  // Single array with all avatars
+        product_image: productImage || formData.product_image  // Store product_image from avatar extraction
       }
 
       setFormData(updatedFormData)
@@ -494,7 +483,7 @@ export default function CreatePage() {
         }, 50)
       }
     } catch (error) {
-      console.error('Error updating avatars:', error)
+      logger.error('Error updating avatars:', error)
       toast({
         title: "Error",
         description: "Failed to update avatar selection. Please try again.",
@@ -671,20 +660,20 @@ export default function CreatePage() {
                         {/* Conditional Content Based on Approach */}
                         {formData.target_approach === 'explore' && (
                           <div className="space-y-4">
-                            <div 
+                            <div
                               className="p-4 rounded-lg border"
                               style={{
                                 backgroundColor: 'rgba(93, 113, 242, 0.1)',
                                 borderColor: 'rgba(93, 113, 242, 0.3)'
                               }}
                             >
-                              <h4 
+                              <h4
                                 className="font-medium text-sm mb-3"
                                 style={{ color: '#5d71f2' }}
                               >
                                 AI Avatar Discovery
                               </h4>
-                              <p 
+                              <p
                                 className="text-sm mb-4"
                                 style={{ color: 'rgba(93, 113, 242, 0.9)' }}
                               >
@@ -692,7 +681,7 @@ export default function CreatePage() {
                                 No manual selection needed - just provide your sales page URL and we'll do the research for you.
                               </p>
                               <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(93, 113, 242, 0.85)' }}>
-                                <div 
+                                <div
                                   className="w-2 h-2 rounded-full"
                                   style={{ backgroundColor: '#5d71f2' }}
                                 ></div>
@@ -739,19 +728,19 @@ export default function CreatePage() {
                                     onChange={(e) => {
                                       const currentAvatars = formData.avatars || []
                                       const firstAvatar = getFirstSelectedAvatar(formData.avatars)
-                                      const updatedAvatars = firstAvatar 
-                                        ? currentAvatars.map(a => 
-                                            a.is_researched ? { ...a, persona_name: e.target.value } : a
-                                          )
-                                        : [{ 
-                                            persona_name: e.target.value,
-                                            description: '',
-                                            age_range: '',
-                                            gender: '',
-                                            key_buying_motivation: '',
-                                            is_researched: true
-                                          }, ...currentAvatars]
-                                      
+                                      const updatedAvatars = firstAvatar
+                                        ? currentAvatars.map(a =>
+                                          a.is_researched ? { ...a, persona_name: e.target.value } : a
+                                        )
+                                        : [{
+                                          persona_name: e.target.value,
+                                          description: '',
+                                          age_range: '',
+                                          gender: '',
+                                          key_buying_motivation: '',
+                                          is_researched: true
+                                        }, ...currentAvatars]
+
                                       setFormData((prev) => ({ ...prev, avatars: updatedAvatars }))
                                     }}
                                     disabled={isLoading}
@@ -769,19 +758,19 @@ export default function CreatePage() {
                                     onChange={(e) => {
                                       const currentAvatars = formData.avatars || []
                                       const firstAvatar = getFirstSelectedAvatar(formData.avatars)
-                                      const updatedAvatars = firstAvatar 
-                                        ? currentAvatars.map(a => 
-                                            a.is_researched ? { ...a, description: e.target.value } : a
-                                          )
-                                        : [{ 
-                                            persona_name: '',
-                                            description: e.target.value,
-                                            age_range: '',
-                                            gender: '',
-                                            key_buying_motivation: '',
-                                            is_researched: true
-                                          }, ...currentAvatars]
-                                      
+                                      const updatedAvatars = firstAvatar
+                                        ? currentAvatars.map(a =>
+                                          a.is_researched ? { ...a, description: e.target.value } : a
+                                        )
+                                        : [{
+                                          persona_name: '',
+                                          description: e.target.value,
+                                          age_range: '',
+                                          gender: '',
+                                          key_buying_motivation: '',
+                                          is_researched: true
+                                        }, ...currentAvatars]
+
                                       setFormData((prev) => ({ ...prev, avatars: updatedAvatars }))
                                     }}
                                     rows={3}
@@ -800,19 +789,19 @@ export default function CreatePage() {
                                       onValueChange={(value) => {
                                         const currentAvatars = formData.avatars || []
                                         const firstAvatar = getFirstSelectedAvatar(formData.avatars)
-                                        const updatedAvatars = firstAvatar 
-                                          ? currentAvatars.map(a => 
-                                              a.is_researched ? { ...a, age_range: value } : a
-                                            )
-                                          : [{ 
-                                              persona_name: '',
-                                              description: '',
-                                              age_range: value,
-                                              gender: '',
-                                              key_buying_motivation: '',
-                                              is_researched: true
-                                            }, ...currentAvatars]
-                                        
+                                        const updatedAvatars = firstAvatar
+                                          ? currentAvatars.map(a =>
+                                            a.is_researched ? { ...a, age_range: value } : a
+                                          )
+                                          : [{
+                                            persona_name: '',
+                                            description: '',
+                                            age_range: value,
+                                            gender: '',
+                                            key_buying_motivation: '',
+                                            is_researched: true
+                                          }, ...currentAvatars]
+
                                         setFormData((prev) => ({ ...prev, avatars: updatedAvatars }))
                                       }}
                                       disabled={isLoading}
@@ -839,19 +828,19 @@ export default function CreatePage() {
                                       onValueChange={(value) => {
                                         const currentAvatars = formData.avatars || []
                                         const firstAvatar = getFirstSelectedAvatar(formData.avatars)
-                                        const updatedAvatars = firstAvatar 
-                                          ? currentAvatars.map(a => 
-                                              a.is_researched ? { ...a, gender: value } : a
-                                            )
-                                          : [{ 
-                                              persona_name: '',
-                                              description: '',
-                                              age_range: '',
-                                              gender: value,
-                                              key_buying_motivation: '',
-                                              is_researched: true
-                                            }, ...currentAvatars]
-                                        
+                                        const updatedAvatars = firstAvatar
+                                          ? currentAvatars.map(a =>
+                                            a.is_researched ? { ...a, gender: value } : a
+                                          )
+                                          : [{
+                                            persona_name: '',
+                                            description: '',
+                                            age_range: '',
+                                            gender: value,
+                                            key_buying_motivation: '',
+                                            is_researched: true
+                                          }, ...currentAvatars]
+
                                         setFormData((prev) => ({ ...prev, avatars: updatedAvatars }))
                                       }}
                                       disabled={isLoading}
@@ -878,19 +867,19 @@ export default function CreatePage() {
                                     onChange={(e) => {
                                       const currentAvatars = formData.avatars || []
                                       const firstAvatar = getFirstSelectedAvatar(formData.avatars)
-                                      const updatedAvatars = firstAvatar 
-                                        ? currentAvatars.map(a => 
-                                            a.is_researched ? { ...a, key_buying_motivation: e.target.value } : a
-                                          )
-                                        : [{ 
-                                            persona_name: '',
-                                            description: '',
-                                            age_range: '',
-                                            gender: '',
-                                            key_buying_motivation: e.target.value,
-                                            is_researched: true
-                                          }, ...currentAvatars]
-                                      
+                                      const updatedAvatars = firstAvatar
+                                        ? currentAvatars.map(a =>
+                                          a.is_researched ? { ...a, key_buying_motivation: e.target.value } : a
+                                        )
+                                        : [{
+                                          persona_name: '',
+                                          description: '',
+                                          age_range: '',
+                                          gender: '',
+                                          key_buying_motivation: e.target.value,
+                                          is_researched: true
+                                        }, ...currentAvatars]
+
                                       setFormData((prev) => ({ ...prev, avatars: updatedAvatars }))
                                     }}
                                     rows={2}

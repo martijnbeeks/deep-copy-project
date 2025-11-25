@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getTemplates } from '@/lib/db/queries'
+import { handleApiError, createSuccessResponse } from '@/lib/middleware/error-handler'
+import { logger } from '@/lib/utils/logger'
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,12 +11,9 @@ export async function GET(request: NextRequest) {
 
     const templates = await getTemplates({ category, search })
 
-    return NextResponse.json({ templates })
+    return createSuccessResponse({ templates })
   } catch (error) {
-    console.error('Templates fetch error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch templates' },
-      { status: 500 }
-    )
+    logger.error('Templates fetch error:', error)
+    return handleApiError(error)
   }
 }

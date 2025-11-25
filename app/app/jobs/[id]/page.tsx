@@ -7,19 +7,20 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { ArrowLeft, RefreshCw, Download, Eye, Menu, ChevronLeft, ChevronRight, Trash2, Globe, Sparkles, Users, Zap, CheckCircle, Loader2 } from "lucide-react"
 import Link from "next/link"
-import { useAuthStore } from "@/stores/auth-store"
-import { useJobsStore } from "@/stores/jobs-store"
+import { useRequireAuth } from "@/hooks/use-require-auth"
 import { useSidebar } from "@/contexts/sidebar-context"
-import { useJob } from "@/lib/hooks/use-jobs"
+import { useJob, useDeleteJob } from "@/lib/hooks/use-jobs"
 import { JobWithResult } from "@/lib/db/types"
 import { JobDetailsSkeleton } from "@/components/ui/skeleton-loaders"
 import { useJobPolling } from "@/hooks/use-job-polling"
 import { useAutoPolling } from "@/hooks/use-auto-polling"
 import { useToast } from "@/hooks/use-toast"
+import { isProcessingStatus } from "@/lib/utils/job-status"
 
 export default function JobDetailPage({ params }: { params: { id: string } }) {
-  const { user, isAuthenticated } = useAuthStore()
+  const { user, isReady } = useRequireAuth()
   const router = useRouter()
+  const deleteJobMutation = useDeleteJob()
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const { toast } = useToast()
@@ -43,7 +44,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     maxAttempts
   } = useJobPolling({
     jobId: params.id,
-    enabled: currentJob?.status === 'processing' || currentJob?.status === 'pending',
+    enabled: currentJob ? isProcessingStatus(currentJob.status) : false,
     interval: 5000, // Poll every 5 seconds
     maxAttempts: 120, // Max 10 minutes
     onStatusChange: (status, progress) => {
@@ -57,21 +58,14 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     }
   })
 
-  useEffect(() => {
-    if (!isAuthenticated || !user) {
-      router.replace("/login")
-      return
-    }
-  }, [isAuthenticated, user, router])
-
   // Early return if not authenticated to prevent skeleton loader
-  if (!isAuthenticated || !user) {
+  if (!isReady) {
     return null
   }
 
   // Show research loading modal if job is processing
   useEffect(() => {
-    if (currentJob && (currentJob.status === 'processing' || currentJob.status === 'pending')) {
+    if (currentJob && isProcessingStatus(currentJob.status)) {
       setShowResearchLoading(true)
       setResearchProgress(currentJob.progress || 0)
       
@@ -140,16 +134,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
 
     try {
       setIsDeleting(true)
-      const response = await fetch(`/api/jobs/${currentJob.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to delete job')
-      }
+      await deleteJobMutation.mutateAsync(currentJob.id)
 
       toast({
         title: "Job deleted successfully",

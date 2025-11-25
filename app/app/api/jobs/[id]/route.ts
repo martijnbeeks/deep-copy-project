@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getJobById, deleteJobById, updateJob } from '@/lib/db/queries'
+import { requireAuth, createAuthErrorResponse } from '@/lib/auth/user-auth'
+import { handleApiError, createSuccessResponse, createValidationErrorResponse } from '@/lib/middleware/error-handler'
 
 export async function GET(
   request: NextRequest,
@@ -7,41 +9,21 @@ export async function GET(
 ) {
   try {
     const jobId = params.id
-    const authHeader = request.headers.get('authorization')
-    const userEmail = authHeader?.replace('Bearer ', '') || 'demo@example.com'
-    
-    const { getUserByEmail } = await import('@/lib/db/queries')
-    const user = await getUserByEmail(userEmail)
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
+    const authResult = await requireAuth(request)
+    if (authResult.error) {
+      return createAuthErrorResponse(authResult)
     }
 
-    const job = await getJobById(jobId, user.id)
+    const job = await getJobById(jobId, authResult.user.id)
     if (!job) {
-      return NextResponse.json(
-        { error: 'Job not found' },
-        { status: 404 }
-      )
+      return createValidationErrorResponse('Job not found')
     }
 
-    const response = NextResponse.json(job)
-    
-    // Add cache-busting headers to prevent Vercel/CDN caching
-    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
-    response.headers.set('Pragma', 'no-cache')
-    response.headers.set('Expires', '0')
+    const response = createSuccessResponse(job)
     response.headers.set('X-Timestamp', Date.now().toString())
-    
     return response
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to fetch job' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -51,26 +33,15 @@ export async function PATCH(
 ) {
   try {
     const jobId = params.id
-    const authHeader = request.headers.get('authorization')
-    const userEmail = authHeader?.replace('Bearer ', '') || 'demo@example.com'
-    
-    const { getUserByEmail } = await import('@/lib/db/queries')
-    const user = await getUserByEmail(userEmail)
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
+    const authResult = await requireAuth(request)
+    if (authResult.error) {
+      return createAuthErrorResponse(authResult)
     }
 
     // First check if the job exists and belongs to the user
-    const existingJob = await getJobById(jobId, user.id)
+    const existingJob = await getJobById(jobId, authResult.user.id)
     if (!existingJob) {
-      return NextResponse.json(
-        { error: 'Job not found' },
-        { status: 404 }
-      )
+      return createValidationErrorResponse('Job not found')
     }
 
     const body = await request.json()
@@ -83,29 +54,19 @@ export async function PATCH(
     if (sales_page_url !== undefined) updates.sales_page_url = sales_page_url
 
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json(
-        { error: 'No valid fields to update' },
-        { status: 400 }
-      )
+      return createValidationErrorResponse('No valid fields to update')
     }
 
     // Update the job
-    const updatedJob = await updateJob(jobId, user.id, updates)
+    const updatedJob = await updateJob(jobId, authResult.user.id, updates)
     
     if (!updatedJob) {
-      return NextResponse.json(
-        { error: 'Failed to update job' },
-        { status: 500 }
-      )
+      throw new Error('Failed to update job')
     }
 
-    return NextResponse.json({ job: updatedJob })
+    return createSuccessResponse({ job: updatedJob })
   } catch (error) {
-    console.error('Error updating job:', error)
-    return NextResponse.json(
-      { error: 'Failed to update job' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -115,36 +76,22 @@ export async function DELETE(
 ) {
   try {
     const jobId = params.id
-    const authHeader = request.headers.get('authorization')
-    const userEmail = authHeader?.replace('Bearer ', '') || 'demo@example.com'
-    
-    const { getUserByEmail } = await import('@/lib/db/queries')
-    const user = await getUserByEmail(userEmail)
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
+    const authResult = await requireAuth(request)
+    if (authResult.error) {
+      return createAuthErrorResponse(authResult)
     }
 
     // First check if the job exists and belongs to the user
-    const job = await getJobById(jobId, user.id)
+    const job = await getJobById(jobId, authResult.user.id)
     if (!job) {
-      return NextResponse.json(
-        { error: 'Job not found' },
-        { status: 404 }
-      )
+      return createValidationErrorResponse('Job not found')
     }
 
     // Delete the job
-    await deleteJobById(jobId, user.id)
+    await deleteJobById(jobId, authResult.user.id)
     
-    return NextResponse.json({ success: true })
+    return createSuccessResponse({ success: true })
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to delete job' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

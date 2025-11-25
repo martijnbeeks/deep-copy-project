@@ -1,49 +1,31 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { ArrowLeft, Download, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useAuthStore } from "@/stores/auth-store"
-import { useJobsStore } from "@/stores/jobs-store"
+import { useRequireAuth } from "@/hooks/use-require-auth"
+import { useJob } from "@/lib/hooks/use-jobs"
 
 export default function PreviewPage({ params }: { params: { id: string } }) {
-  const { user, isAuthenticated } = useAuthStore()
-  const { currentJob, fetchJob } = useJobsStore()
+  const { user, isReady } = useRequireAuth()
+  const { data: currentJob, isLoading } = useJob(params.id)
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(true)
   const [copied, setCopied] = useState(false)
 
-  useEffect(() => {
-    if (!isAuthenticated || !user) {
-      router.replace("/login")
-      return
-    }
-
-    const loadJob = async () => {
-      try {
-        await fetchJob(params.id)
-        setIsLoading(false)
-      } catch (error) {
-        setIsLoading(false)
-      }
-    }
-
-    loadJob()
-  }, [isAuthenticated, user, router, params.id])
-
   // Early return if not authenticated to prevent skeleton loader
-  if (!isAuthenticated || !user) {
+  if (!isReady) {
     return null
   }
 
   const handleDownload = () => {
-    if (currentJob?.result?.html_content) {
-      const blob = new Blob([currentJob.result.html_content], { type: 'text/html' })
+    const htmlContent = currentJob?.result?.html_content || currentJob?.result?.metadata?.html_content
+    if (htmlContent) {
+      const blob = new Blob([htmlContent], { type: 'text/html' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${currentJob.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`
+      a.download = `${(currentJob?.title || 'preview').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -52,9 +34,10 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
   }
 
   const handleCopyHTML = async () => {
-    if (currentJob?.result?.html_content) {
+    const htmlContent = currentJob?.result?.html_content || currentJob?.result?.metadata?.html_content
+    if (htmlContent) {
       try {
-        await navigator.clipboard.writeText(currentJob.result.html_content)
+        await navigator.clipboard.writeText(htmlContent)
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
       } catch (err) {
@@ -63,7 +46,7 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
     }
   }
 
-  if (!user || isLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -71,7 +54,8 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
     )
   }
 
-  if (!currentJob || !currentJob.result) {
+  const htmlContent = currentJob?.result?.html_content || currentJob?.result?.metadata?.html_content
+  if (!currentJob || !htmlContent) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -120,9 +104,9 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
 
       {/* Full Screen HTML Render */}
       <div className="w-full h-screen">
-        <div 
+        <div
           className="w-full h-full"
-          dangerouslySetInnerHTML={{ __html: currentJob.result.html_content }}
+          dangerouslySetInnerHTML={{ __html: htmlContent }}
         />
       </div>
     </div>

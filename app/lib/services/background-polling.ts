@@ -1,5 +1,5 @@
 import { query } from '@/lib/db/connection'
-import { deepCopyClient } from '@/lib/api/deepcopy-client'
+import { deepCopyClient } from '@/lib/clients/deepcopy-client'
 import { updateJobStatus, createResult, getRandomInjectableTemplate } from '@/lib/db/queries'
 import { processJobResults } from '@/lib/utils/template-injection'
 
@@ -24,7 +24,7 @@ export class BackgroundPollingService {
     }
 
     this.isRunning = true
-    
+
     // Check for jobs every 30 seconds
     this.pollInterval = setInterval(() => {
       this.checkAllJobs()
@@ -40,7 +40,7 @@ export class BackgroundPollingService {
     }
 
     this.isRunning = false
-    
+
     if (this.pollInterval) {
       clearInterval(this.pollInterval)
       this.pollInterval = null
@@ -62,9 +62,9 @@ export class BackgroundPollingService {
         WHERE status IN ('pending', 'processing')
         ORDER BY updated_at DESC
       `)
-      
+
       const jobsToPoll = result.rows
-      
+
       for (const job of jobsToPoll) {
         // Only start polling if not already polling
         if (!backgroundPollingManager.has(job.id)) {
@@ -72,69 +72,69 @@ export class BackgroundPollingService {
           this.startJobPolling(job.id, job.id)
         }
       }
-      
+
     } catch (error) {
       // Error in background polling check
     }
   }
 
   private startJobPolling(jobId: string, deepCopyJobId: string) {
-    
+
     let pollCount = 0
     const maxPolls = 60 // Maximum 15 minutes of polling (60 * 15 seconds)
-    
+
     const poll = async () => {
       try {
         pollCount++
-        
+
         const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
-        
-        
+
+
         if (statusResponse.status === 'SUCCEEDED') {
           // Job completed - get results and store them
-          
+
           const result = await deepCopyClient.getJobResult(deepCopyJobId)
           await this.storeJobResults(jobId, result, deepCopyJobId)
           await updateJobStatus(jobId, 'completed', 100)
-          
-          
+
+
           // Stop polling
           backgroundPollingManager.delete(jobId)
           return
-          
+
         } else if (statusResponse.status === 'FAILED') {
           // Job failed
           await updateJobStatus(jobId, 'failed')
-          
-          
+
+
           // Stop polling
           backgroundPollingManager.delete(jobId)
           return
-          
+
         } else if (['RUNNING', 'SUBMITTED', 'PENDING'].includes(statusResponse.status)) {
           // Job still processing - update progress and continue
-          const progress = statusResponse.status === 'SUBMITTED' ? 25 : 
-                         statusResponse.status === 'RUNNING' ? 50 : 30
+          const progress = statusResponse.status === 'SUBMITTED' ? 25 :
+            statusResponse.status === 'RUNNING' ? 50 : 30
           await updateJobStatus(jobId, 'processing', progress)
-          
+
           // Continue polling if we haven't reached max polls
           if (pollCount < maxPolls) {
             const timeoutId = setTimeout(poll, 15000) // Poll every 15 seconds
             backgroundPollingManager.set(jobId, timeoutId)
           } else {
-            
+
             backgroundPollingManager.delete(jobId)
           }
-          
+
         } else {
           // Unknown status - mark as failed
           await updateJobStatus(jobId, 'failed')
-          
+
           backgroundPollingManager.delete(jobId)
         }
-        
+
       } catch (error) {
-        
+
         backgroundPollingManager.delete(jobId)
       }
     }
@@ -148,21 +148,21 @@ export class BackgroundPollingService {
     try {
       // Get job details to determine advertorial type
       const jobResult = await query('SELECT advertorial_type FROM jobs WHERE id = $1', [localJobId])
-      
+
       if (jobResult.rows.length === 0) {
         throw new Error('Job not found')
       }
-      
+
       const advertorialType = jobResult.rows[0].advertorial_type as 'listicle' | 'advertorial'
-      
-        // Process results using template injection system
-        const { combinedHtml } = await processJobResults(result, advertorialType, getRandomInjectableTemplate)
-        const htmlContent = combinedHtml
-      
+
+      // Process results using template injection system
+      const { combinedHtml } = await processJobResults(result, advertorialType, getRandomInjectableTemplate)
+      const htmlContent = combinedHtml
+
       // Extract HTML templates count for metadata
       const htmlTemplates = this.extractHTMLTemplates(result)
       const templateCount = htmlTemplates.length
-      
+
       // Store the result with full metadata
       await createResult(localJobId, htmlContent, {
         deepcopy_job_id: deepCopyJobId,
@@ -174,25 +174,28 @@ export class BackgroundPollingService {
         html_templates_count: templateCount,
         template_used: advertorialType
       })
-      
-      
-      
+
+      // Screenshot is stored from avatar extraction (product_image) when job is created
+      // product_image comes from avatar API, not from job results
+
+
+
     } catch (error) {
-      
+
     }
   }
 
   // Extract HTML templates from DeepCopy results
-  private extractHTMLTemplates(results: any): Array<{name: string, type: string, html: string, timestamp: string, angle?: string}> {
-    const templates: Array<{name: string, type: string, html: string, timestamp: string, angle?: string}> = []
-    
+  private extractHTMLTemplates(results: any): Array<{ name: string, type: string, html: string, timestamp: string, angle?: string }> {
+    const templates: Array<{ name: string, type: string, html: string, timestamp: string, angle?: string }> = []
+
     try {
       // Check if results has swipe_results array
       if (results.swipe_results && Array.isArray(results.swipe_results)) {
         results.swipe_results.forEach((swipe: any, index: number) => {
           // Extract angle information
           const angle = swipe.angle || swipe.angle_name || swipe.angle_type || `Angle ${index + 1}`
-          
+
           // Extract HTML from each swipe result
           if (swipe.html) {
             templates.push({
@@ -203,7 +206,7 @@ export class BackgroundPollingService {
               angle: angle
             })
           }
-          
+
           // Check for nested HTML in content field (this is the main one the user mentioned)
           if (swipe.content && typeof swipe.content === 'string') {
             // Check if content contains HTML
@@ -217,7 +220,7 @@ export class BackgroundPollingService {
               })
             }
           }
-          
+
           // Check for HTML in other potential fields
           const htmlFields = ['html_content', 'generated_html', 'template_html', 'output_html', 'rendered_html', 'final_html']
           htmlFields.forEach(field => {
@@ -233,7 +236,7 @@ export class BackgroundPollingService {
           })
         })
       }
-      
+
       // Also check for HTML in other result fields
       if (results.html_content && typeof results.html_content === 'string' && results.html_content.includes('<html')) {
         templates.push({
@@ -243,7 +246,7 @@ export class BackgroundPollingService {
           timestamp: results.timestamp_iso || new Date().toISOString()
         })
       }
-      
+
       // Check for HTML in results.results
       if (results.results && typeof results.results === 'object') {
         const htmlFields = ['html_content', 'generated_html', 'template_html', 'output_html']
@@ -258,13 +261,13 @@ export class BackgroundPollingService {
           }
         })
       }
-      
-      
-      
+
+
+
     } catch (error) {
-      
+
     }
-    
+
     return templates
   }
 
@@ -272,7 +275,7 @@ export class BackgroundPollingService {
   private createResultsHTML(results: any, sections: string[]) {
     // Extract HTML templates from swipe_results
     const htmlTemplates = this.extractHTMLTemplates(results)
-    
+
     return `
 <!DOCTYPE html>
 <html lang="en">

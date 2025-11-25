@@ -69,20 +69,19 @@ interface JobStatus {
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [isMigrating, setIsMigrating] = useState(false)
   const [users, setUsers] = useState<User[]>([])
   const [templates, setTemplates] = useState<Template[]>([])
   const [injectableTemplates, setInjectableTemplates] = useState<InjectableTemplate[]>([])
   const [jobs, setJobs] = useState<Job[]>([])
   const [stats, setStats] = useState<DatabaseStats | null>(null)
   const [jobStatuses, setJobStatuses] = useState<JobStatus[]>([])
-  
+
   // Form states
   const [newUser, setNewUser] = useState({ email: '', password: '', name: '' })
   const [newTemplate, setNewTemplate] = useState({ id: '', name: '', description: '', category: '', htmlContent: '' })
   const [newInjectableTemplate, setNewInjectableTemplate] = useState({ id: '', name: '', type: 'listicle' as 'listicle' | 'advertorial', description: '', htmlContent: '' })
   const [templateFile, setTemplateFile] = useState<File | null>(null)
-  
+
   // Dialog states
   const [userDialogOpen, setUserDialogOpen] = useState(false)
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
@@ -103,9 +102,13 @@ export default function AdminPage() {
   }, [])
 
   // Helper function to get auth headers
-  const getAuthHeaders = () => {
+  const getAuthHeaders = (): Record<string, string> => {
     const sessionToken = sessionStorage.getItem('adminSessionToken')
-    return sessionToken ? { 'x-admin-session': sessionToken } : {}
+    const headers: Record<string, string> = {}
+    if (sessionToken) {
+      headers['x-admin-session'] = sessionToken
+    }
+    return headers
   }
 
   // Load all data
@@ -119,27 +122,27 @@ export default function AdminPage() {
         fetch('/api/admin/jobs', { headers: getAuthHeaders() }),
         fetch('/api/admin/stats', { headers: getAuthHeaders() })
       ])
-      
+
       if (usersRes.ok) {
         const usersData = await usersRes.json()
         setUsers(usersData.users)
       }
-      
+
       if (templatesRes.ok) {
         const templatesData = await templatesRes.json()
         setTemplates(templatesData.templates)
       }
-      
+
       if (injectableTemplatesRes.ok) {
         const injectableTemplatesData = await injectableTemplatesRes.json()
         setInjectableTemplates(injectableTemplatesData)
       }
-      
+
       if (jobsRes.ok) {
         const jobsData = await jobsRes.json()
         setJobs(jobsData.jobs)
       }
-      
+
       if (statsRes.ok) {
         const statsData = await statsRes.json()
         setStats(statsData.stats)
@@ -157,43 +160,6 @@ export default function AdminPage() {
     }
   }
 
-  // Migration function
-  const runMigration = async () => {
-    setIsMigrating(true)
-    try {
-      const response = await fetch('/api/migrate-jobs', {
-        method: 'POST',
-        headers: getAuthHeaders()
-      })
-      
-      const result = await response.json()
-      
-      if (result.success) {
-        toast({
-          title: "Migration Successful",
-          description: `Processed ${result.summary.successCount} jobs successfully. ${result.summary.errorCount} failed.`,
-        })
-        
-        // Reload data to show updated stats
-        loadData()
-      } else {
-        toast({
-          title: "Migration Failed",
-          description: result.error || "Unknown error occurred",
-          variant: "destructive"
-        })
-      }
-    } catch (error) {
-      console.error('Migration error:', error)
-      toast({
-        title: "Migration Error",
-        description: "Failed to run migration",
-        variant: "destructive"
-      })
-    } finally {
-      setIsMigrating(false)
-    }
-  }
 
   // User management
   const createUser = async () => {
@@ -209,7 +175,7 @@ export default function AdminPage() {
     try {
       const response = await fetch('/api/admin/users', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           ...getAuthHeaders()
         },
@@ -294,7 +260,7 @@ export default function AdminPage() {
     try {
       const response = await fetch('/api/admin/templates', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           ...getAuthHeaders()
         },
@@ -572,31 +538,23 @@ export default function AdminPage() {
       <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-6xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
-          <div>
+            <div>
               <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground mt-2">
+              <p className="text-muted-foreground mt-2">
                 Manage users, templates, and view database statistics
-            </p>
-          </div>
+              </p>
+            </div>
             <div className="flex items-center gap-2">
               <Button onClick={loadData} disabled={loading} className="flex items-center gap-2">
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-              <Button 
-                onClick={runMigration} 
-                disabled={isMigrating || loading} 
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-              >
-                <Database className={`h-4 w-4 ${isMigrating ? 'animate-spin' : ''}`} />
-                {isMigrating ? 'Migrating...' : 'Migrate Jobs'}
-              </Button>
               <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2">
                 <LogOut className="h-4 w-4" />
                 Logout
-                </Button>
-                  </div>
-              </div>
+              </Button>
+            </div>
+          </div>
 
           {/* Stats Overview */}
           {stats && (
@@ -650,8 +608,8 @@ export default function AdminPage() {
 
           {/* Job Status Breakdown */}
           {jobStatuses.length > 0 && (
-          <Card>
-            <CardHeader>
+            <Card>
+              <CardHeader>
                 <CardTitle>Job Status Breakdown</CardTitle>
               </CardHeader>
               <CardContent>
@@ -666,14 +624,14 @@ export default function AdminPage() {
             </Card>
           )}
 
-        {/* Main Management Tabs */}
-        <Tabs defaultValue="users" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="templates">Templates</TabsTrigger>
-            <TabsTrigger value="injectable-templates">Injectable Templates</TabsTrigger>
-            <TabsTrigger value="jobs">Jobs</TabsTrigger>
-          </TabsList>
+          {/* Main Management Tabs */}
+          <Tabs defaultValue="users" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="users">Users</TabsTrigger>
+              <TabsTrigger value="templates">Templates</TabsTrigger>
+              <TabsTrigger value="injectable-templates">Injectable Templates</TabsTrigger>
+              <TabsTrigger value="jobs">Jobs</TabsTrigger>
+            </TabsList>
 
             {/* Users Tab */}
             <TabsContent value="users" className="space-y-4">
@@ -738,7 +696,7 @@ export default function AdminPage() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-            </CardHeader>
+                </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {users.map((user) => (
@@ -750,7 +708,7 @@ export default function AdminPage() {
                             Created: {new Date(user.created_at).toLocaleDateString()}
                           </p>
                         </div>
-                <Button 
+                        <Button
                           variant="destructive"
                           size="sm"
                           onClick={() => deleteUser(user.id)}
@@ -758,20 +716,20 @@ export default function AdminPage() {
                         >
                           <Trash2 className="h-3 w-3" />
                           Delete
-                </Button>
-                  </div>
+                        </Button>
+                      </div>
                     ))}
                     {users.length === 0 && (
                       <p className="text-center text-muted-foreground py-8">No users found</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Templates Tab */}
             <TabsContent value="templates" className="space-y-4">
-          <Card>
+              <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
                     <CardTitle>Template Management</CardTitle>
@@ -813,7 +771,7 @@ export default function AdminPage() {
                             placeholder="My Template"
                           />
                         </div>
-                    <div>
+                        <div>
                           <Label htmlFor="templateId">Template ID (Optional)</Label>
                           <Input
                             id="templateId"
@@ -824,8 +782,8 @@ export default function AdminPage() {
                           <p className="text-xs text-muted-foreground mt-1">
                             Enter a custom ID or leave empty to auto-generate one
                           </p>
-                    </div>
-                    <div>
+                        </div>
+                        <div>
                           <Label htmlFor="templateDescription">Description</Label>
                           <Input
                             id="templateDescription"
@@ -833,8 +791,8 @@ export default function AdminPage() {
                             onChange={(e) => setNewTemplate(prev => ({ ...prev, description: e.target.value }))}
                             placeholder="Brief description of the template"
                           />
-                    </div>
-                    <div>
+                        </div>
+                        <div>
                           <Label htmlFor="templateCategory">Category</Label>
                           <Select value={newTemplate.category} onValueChange={(value) => setNewTemplate(prev => ({ ...prev, category: value }))}>
                             <SelectTrigger>
@@ -847,8 +805,8 @@ export default function AdminPage() {
                               <SelectItem value="other">Other</SelectItem>
                             </SelectContent>
                           </Select>
-                    </div>
-                    <div>
+                        </div>
+                        <div>
                           <Label htmlFor="templateContent">HTML Content</Label>
                           <Textarea
                             id="templateContent"
@@ -870,8 +828,8 @@ export default function AdminPage() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-            </CardHeader>
-            <CardContent>
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-2">
                     {templates.map((template) => (
                       <div key={template.id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -892,8 +850,8 @@ export default function AdminPage() {
                             <span className="text-xs text-muted-foreground">
                               Created: {new Date(template.created_at).toLocaleDateString()}
                             </span>
-                </div>
-                </div>
+                          </div>
+                        </div>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
@@ -911,15 +869,15 @@ export default function AdminPage() {
                             <Trash2 className="h-3 w-3" />
                             Delete
                           </Button>
-                </div>
-                </div>
+                        </div>
+                      </div>
                     ))}
                     {templates.length === 0 && (
                       <p className="text-center text-muted-foreground py-8">No templates found</p>
                     )}
-              </div>
-            </CardContent>
-          </Card>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Injectable Templates Tab */}
@@ -929,12 +887,12 @@ export default function AdminPage() {
                   <div>
                     <CardTitle>Injectable Template Management</CardTitle>
                     <CardDescription>
-                      Create, edit, and manage templates for dynamic content injection. 
+                      Create, edit, and manage templates for dynamic content injection.
                       Simply upload HTML files or paste content - no complex validation required!
                     </CardDescription>
                   </div>
-                  <Button 
-                    onClick={handleCreateNewTemplate} 
+                  <Button
+                    onClick={handleCreateNewTemplate}
                     className="flex items-center gap-2"
                     type="button"
                   >
@@ -967,9 +925,9 @@ export default function AdminPage() {
                           <div className="font-medium">Start with Templates</div>
                           <div>Use pre-built swipe templates</div>
                         </div>
+                      </div>
                     </div>
                   </div>
-                </div>
 
                   <div className="space-y-2">
                     {injectableTemplates?.map((template) => (
@@ -1025,22 +983,22 @@ export default function AdminPage() {
                     {injectableTemplates?.length === 0 && (
                       <p className="text-center text-muted-foreground py-8">No injectable templates found</p>
                     )}
-              </div>
-            </CardContent>
-          </Card>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Jobs Tab */}
             <TabsContent value="jobs" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
                     <Briefcase className="h-5 w-5" />
                     Job Management
-              </CardTitle>
+                  </CardTitle>
                   <CardDescription>View and delete jobs</CardDescription>
-            </CardHeader>
-            <CardContent>
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-2">
                     {jobs.map((job) => (
                       <div key={job.id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -1061,8 +1019,8 @@ export default function AdminPage() {
                             <span className="text-xs text-muted-foreground">
                               Created: {new Date(job.created_at).toLocaleDateString()}
                             </span>
-                </div>
-                </div>
+                          </div>
+                        </div>
                         <Button
                           variant="destructive"
                           size="sm"
@@ -1072,65 +1030,65 @@ export default function AdminPage() {
                           <Trash2 className="h-3 w-3" />
                           Delete
                         </Button>
-                </div>
+                      </div>
                     ))}
                     {jobs.length === 0 && (
                       <p className="text-center text-muted-foreground py-8">No jobs found</p>
                     )}
-              </div>
-            </CardContent>
-          </Card>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
 
-      {/* Template Editor Dialog */}
-      <Dialog open={templateEditorOpen} onOpenChange={setTemplateEditorOpen}>
-        <DialogContent className="max-w-7xl max-h-[95vh] flex flex-col">
-          <DialogHeader className="flex-shrink-0">
-            <DialogTitle>
-              {editingTemplate?.id ? 'Edit Template' : 'Create New Template'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingTemplate?.id ? 'Edit your injectable template' : 'Create a new injectable template - simply upload HTML or paste content'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto min-h-0">
-            {editingTemplate && (
-              <TemplateEditor
-                template={{
-                  name: editingTemplate.name,
-                  type: editingTemplate.type,
-                  description: editingTemplate.description || '',
-                  htmlContent: editingTemplate.html_content
-                }}
-                onSave={handleSaveTemplate}
-                onCancel={() => {
-                  setTemplateEditorOpen(false)
-                  setEditingTemplate(null)
-                }}
-                onPreview={handlePreviewTemplateContent}
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+          {/* Template Editor Dialog */}
+          <Dialog open={templateEditorOpen} onOpenChange={setTemplateEditorOpen}>
+            <DialogContent className="max-w-7xl max-h-[95vh] flex flex-col">
+              <DialogHeader className="flex-shrink-0">
+                <DialogTitle>
+                  {editingTemplate?.id ? 'Edit Template' : 'Create New Template'}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingTemplate?.id ? 'Edit your injectable template' : 'Create a new injectable template - simply upload HTML or paste content'}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {editingTemplate && (
+                  <TemplateEditor
+                    template={{
+                      name: editingTemplate.name,
+                      type: editingTemplate.type,
+                      description: editingTemplate.description || '',
+                      htmlContent: editingTemplate.html_content
+                    }}
+                    onSave={handleSaveTemplate}
+                    onCancel={() => {
+                      setTemplateEditorOpen(false)
+                      setEditingTemplate(null)
+                    }}
+                    onPreview={handlePreviewTemplateContent}
+                  />
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
 
-      {/* Template Preview Dialog */}
-      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle>
-              Template Preview: {previewTemplate?.name || previewInjectableTemplate?.name}
-            </DialogTitle>
-            <DialogDescription>
-              Preview of the HTML template content
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 overflow-auto">
-            {(previewTemplate || previewInjectableTemplate) && (
-              <div className="space-y-4">
-                <iframe
-                  srcDoc={`<!DOCTYPE html>
+          {/* Template Preview Dialog */}
+          <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+            <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+              <DialogHeader>
+                <DialogTitle>
+                  Template Preview: {previewTemplate?.name || previewInjectableTemplate?.name}
+                </DialogTitle>
+                <DialogDescription>
+                  Preview of the HTML template content
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex-1 overflow-auto">
+                {(previewTemplate || previewInjectableTemplate) && (
+                  <div className="space-y-4">
+                    <iframe
+                      srcDoc={`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1140,42 +1098,42 @@ export default function AdminPage() {
 </head>
 <body>
   ${(() => {
-    const raw = (previewTemplate?.html_content || previewInjectableTemplate?.html_content) || '';
-    const name = (previewTemplate?.name || previewInjectableTemplate?.name) || '';
-    const isJavvy = /javvy/i.test(name) || /\bL00002\b/i.test(name) || /javvy/i.test(raw) || /\bL00002\b/i.test(raw);
-    if (!isJavvy) return raw;
-    const noOnError = raw
-      .replace(/\s+onerror="[^"]*"/gi, '')
-      .replace(/\s+onerror='[^']*'/gi, '');
-    const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
-      const lower = block.toLowerCase();
-      return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
-        ? ''
-        : block;
-    });
-    return stripFallbackScripts;
-  })()}
+                          const raw = (previewTemplate?.html_content || previewInjectableTemplate?.html_content) || '';
+                          const name = (previewTemplate?.name || previewInjectableTemplate?.name) || '';
+                          const isJavvy = /javvy/i.test(name) || /\bL00002\b/i.test(name) || /javvy/i.test(raw) || /\bL00002\b/i.test(raw);
+                          if (!isJavvy) return raw;
+                          const noOnError = raw
+                            .replace(/\s+onerror="[^"]*"/gi, '')
+                            .replace(/\s+onerror='[^']*'/gi, '');
+                          const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+                            const lower = block.toLowerCase();
+                            return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+                              ? ''
+                              : block;
+                          });
+                          return stripFallbackScripts;
+                        })()}
 </body>
 </html>`}
-                  className="w-full h-[70vh] border rounded-lg"
-                  title={`Preview of ${previewTemplate?.name || previewInjectableTemplate?.name}`}
-                />
-                {previewInjectableTemplate && (
-                  <TemplateTester
-                    htmlContent={previewInjectableTemplate.html_content}
-                    templateName={previewInjectableTemplate.name}
-                  />
+                      className="w-full h-[70vh] border rounded-lg"
+                      title={`Preview of ${previewTemplate?.name || previewInjectableTemplate?.name}`}
+                    />
+                    {previewInjectableTemplate && (
+                      <TemplateTester
+                        htmlContent={previewInjectableTemplate.html_content}
+                        templateName={previewInjectableTemplate.name}
+                      />
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPreviewDialogOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setPreviewDialogOpen(false)}>
+                  Close
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </main>
     </div>

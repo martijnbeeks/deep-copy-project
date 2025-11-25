@@ -32,7 +32,7 @@ interface ExtractedAvatar {
 interface AvatarExtractionDialogProps {
   isOpen: boolean
   onClose: () => void
-  onAvatarsSelected: (selected: ExtractedAvatar[], all: ExtractedAvatar[], shouldClose?: boolean, autoSubmit?: boolean) => void
+  onAvatarsSelected: (selected: ExtractedAvatar[], all: ExtractedAvatar[], shouldClose?: boolean, autoSubmit?: boolean, productImage?: string) => void
   salesPageUrl: string
   formData: any
   isLoading?: boolean
@@ -106,9 +106,8 @@ export function AvatarExtractionDialog({
     if (accessToken && tokenExpiresAt && now < tokenExpiresAt) {
       return accessToken
     }
-    const res = await fetch('/api/avatars/token', { cache: 'no-store' })
-    if (!res.ok) throw new Error('Failed to get access token')
-    const data = await res.json()
+    const { internalApiClient } = await import('@/lib/clients/internal-client')
+    const data = await internalApiClient.getAvatarToken() as { access_token: string; expires_in: number }
     const expiresAt = Date.now() + Math.max(0, (data.expires_in - 30)) * 1000
     setAccessToken(data.access_token)
     setTokenExpiresAt(expiresAt)
@@ -156,21 +155,10 @@ export function AvatarExtractionDialog({
     setTimeout(() => setLoadingStage(4), 60000)   // Stage 4 at 60s
 
     try {
-      // Step 1: Submit avatar extraction job to AWS (exact cURL equivalent)
+      // Step 1: Submit avatar extraction job via internal API
       setLoadingStage(1)
-      const response = await fetchWithAuth('https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/extract', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ url: salesPageUrl })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to submit avatar extraction job')
-      }
-
-      const data = await response.json()
+      const { internalApiClient } = await import('@/lib/clients/internal-client')
+      const data = await internalApiClient.extractAvatars(salesPageUrl) as { jobId?: string; job_id?: string }
 
       const jobId = data.jobId || data.job_id
       if (!jobId) {
@@ -198,38 +186,23 @@ export function AvatarExtractionDialog({
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        // Check status (exact cURL equivalent)
-        const statusResponse = await fetchWithAuth(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/jobs/${jobId}`, {
-          method: 'GET'
-        })
-
-        if (!statusResponse.ok) {
-          throw new Error(`Status check failed: ${statusResponse.status}`)
-        }
-
-        const statusData = await statusResponse.json()
+        // Check status via internal API
+        const { internalApiClient } = await import('@/lib/clients/internal-client')
+        const statusData = await internalApiClient.getAvatarStatus(jobId) as { status: string }
 
         if (statusData.status === 'SUCCEEDED') {
           setLoadingStage(4)
           setLoadingProgress(95)
 
           // Only fetch results after SUCCEEDED
-          const resultResponse = await fetchWithAuth(`https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/avatars/${jobId}/result`, {
-            method: 'GET'
-          })
-
-          if (!resultResponse.ok) {
-            throw new Error(`Result fetch failed: ${resultResponse.status}`)
-          }
-
-          const resultData = await resultResponse.json()
+          const resultData = await internalApiClient.getAvatarResult(jobId) as { success?: boolean; avatars?: any[]; product_image?: string }
 
           if (resultData.success && resultData.avatars && resultData.avatars.length > 0) {
             clearInterval(progressInterval)
             setLoadingProgress(100)
             setTimeout(() => {
               // Mark the first avatar as broad persona when target_approach is "explore"
-              const processedAvatars = resultData.avatars.map((avatar: ExtractedAvatar, index: number) => ({
+              const processedAvatars = (resultData.avatars || []).map((avatar: ExtractedAvatar, index: number) => ({
                 ...avatar,
                 // Mark first avatar as broad persona if target_approach is "explore"
                 is_broad_avatar: index === 0 && formData?.target_approach === 'explore' ? true : avatar.is_broad_avatar,
@@ -240,10 +213,14 @@ export function AvatarExtractionDialog({
               setLoadingProgress(0)
               setLoadingStage(0)
 
+              // Extract product_image (Base64 screenshot) from avatar extraction result
+              const productImage = resultData.product_image || undefined
+
               // Save extracted avatars to parent immediately so they persist even if modal is closed
               // Pass empty array for selected avatars since user hasn't selected yet
               // Pass false for shouldClose to keep the modal open for user to select avatars
-              onAvatarsSelected([], processedAvatars, false)
+              // Pass product_image so it can be stored when job is created
+              onAvatarsSelected([], processedAvatars, false, false, productImage)
 
               // Show verification dialog after extraction
               setShowVerification(true)
@@ -252,7 +229,7 @@ export function AvatarExtractionDialog({
           } else {
             throw new Error('No avatars found in results')
           }
-        } else if (statusData.status === 'FAILED') {
+        } else if ((statusData as { status: string }).status === 'FAILED') {
           throw new Error('Avatar extraction job failed')
         } else {
           // Still processing - update stage based on attempt

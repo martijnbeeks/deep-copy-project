@@ -13,9 +13,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { TemplatePreview } from "@/components/template-preview"
 import { useToast } from "@/hooks/use-toast"
-import { useTemplatesStore } from "@/stores/templates-store"
+import { useTemplates } from "@/lib/hooks/use-templates"
 import { extractContentFromSwipeResult, injectContentIntoTemplate } from "@/lib/utils/template-injection"
-import { JobResult, SwipeResult, Listicle, Advertorial, Angle } from "@/lib/api/deepcopy-client"
+import { JobResult, SwipeResult, Listicle, Advertorial, Angle } from "@/lib/clients/deepcopy-client"
+import { internalApiClient } from "@/lib/clients/internal-client"
+import { Template } from "@/lib/db/types"
+import { logger } from "@/lib/utils/logger"
 
 interface DeepCopyResult extends JobResult {
   // This now matches the JobResult interface from the API client
@@ -214,7 +217,8 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>("all")
   const [modalTypeFilter, setModalTypeFilter] = useState<string>("all")
   const [openMarketingAngle, setOpenMarketingAngle] = useState<string | undefined>(undefined)
-  const { templates: availableTemplates, fetchTemplates, isLoading: availableTemplatesLoading } = useTemplatesStore()
+  // Use TanStack Query for templates data
+  const { data: availableTemplates = [], isLoading: availableTemplatesLoading } = useTemplates()
   const { toast } = useToast()
 
   const fullResult = result.metadata?.full_result
@@ -318,17 +322,17 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
       if (jobId) {
         try {
           // Load generated angles from database
-          const anglesResponse = await fetch(`/api/jobs/${jobId}/generated-angles`)
-          if (anglesResponse.ok) {
-            const angles = await anglesResponse.json()
+          try {
+            const angles = await internalApiClient.getGeneratedAngles(jobId)
             setGeneratedAngles(new Set(angles))
+          } catch (error) {
+            logger.error('Failed to load generated angles:', error)
           }
 
           // Load templates from database
-          const templatesResponse = await fetch(`/api/jobs/${jobId}/injected-templates`)
-          if (templatesResponse.ok) {
-            const injectedTemplates = await templatesResponse.json()
-            if (injectedTemplates && injectedTemplates.length > 0) {
+          try {
+            const injectedTemplates = await internalApiClient.getInjectedTemplates(jobId) as any[]
+            if (injectedTemplates && Array.isArray(injectedTemplates) && injectedTemplates.length > 0) {
               const templates = injectedTemplates.map((injected: any) => ({
                 name: `${injected.template_id} - ${injected.angle_name}`,
                 type: 'Marketing Angle',
@@ -348,14 +352,13 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
               setTemplates(templates)
             }
-            // Always set loading to false after checking database
-            setTemplatesLoading(false)
-          } else {
-            // If API call fails, still set loading to false
-            setTemplatesLoading(false)
+          } catch (error) {
+            logger.error('Failed to load templates:', error)
           }
+          // Always set loading to false after checking database
+          setTemplatesLoading(false)
         } catch (error) {
-          console.error('Error loading data from database:', error)
+          logger.error('Error loading data from database:', error)
           setTemplatesLoading(false)
         }
       } else {
@@ -375,12 +378,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
       try {
         await new Promise(resolve => setTimeout(resolve, pollInterval))
 
-        const response = await fetch(`/api/swipe-files/${swipeFileJobId}`)
-        if (!response.ok) {
-          throw new Error(`Status check failed: ${response.status}`)
-        }
-
-        const statusData = await response.json()
+        const statusData = await internalApiClient.getSwipeFileStatus(swipeFileJobId) as { status: string }
 
         // Update status for this specific angle
         setAngleStatuses(prev => {
@@ -391,31 +389,16 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
         if (statusData.status === 'SUCCEEDED') {
           // Fetch results
-          const resultResponse = await fetch(`/api/swipe-files/${swipeFileJobId}/result`)
-          if (!resultResponse.ok) {
-            throw new Error(`Result fetch failed: ${resultResponse.status}`)
-          }
-
-          const swipeFileResponse = await resultResponse.json()
+          const swipeFileResponse = await internalApiClient.getSwipeFileResult(swipeFileJobId)
 
           // Process swipe file response - inject into templates and store
           try {
-            const processResponse = await fetch('/api/swipe-files/process', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                jobId: jobId, // Use the local job ID from props
-                angle,
-                swipeFileResponse
-              })
-            })
-
-            if (!processResponse.ok) {
-              throw new Error('Failed to process swipe file response')
-            }
-
-            const processResult = await processResponse.json()
-            console.log(`✅ Processed ${processResult.processed} templates for angle "${angle}"`)
+            const processResult = await internalApiClient.processSwipeFile({
+              jobId: jobId!, // Use the local job ID from props
+              angle,
+              swipeFileResponse
+            }) as { processed: number }
+            logger.log(`✅ Processed ${processResult.processed} templates for angle "${angle}"`)
 
             // Mark this angle as generated
             setGeneratedAngles(prev => {
@@ -433,42 +416,36 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
             // Reload templates and generated angles from database
             try {
               // Reload generated angles
-              const anglesResponse = await fetch(`/api/jobs/${jobId}/generated-angles`)
-              if (anglesResponse.ok) {
-                const angles = await anglesResponse.json()
-                setGeneratedAngles(new Set(angles))
-              }
+              const angles = await internalApiClient.getGeneratedAngles(jobId!)
+              setGeneratedAngles(new Set(angles))
 
               // Reload templates
-              const templatesResponse = await fetch(`/api/jobs/${jobId}/injected-templates`)
-              if (templatesResponse.ok) {
-                const injectedTemplates = await templatesResponse.json()
-                if (injectedTemplates && injectedTemplates.length > 0) {
-                  const templates = injectedTemplates.map((injected: any) => ({
-                    name: `${injected.template_id} - ${injected.angle_name}`,
-                    type: 'Injected Template',
-                    html: injected.html_content,
-                    angle: injected.angle_name,
-                    templateId: injected.template_id,
-                    timestamp: injected.created_at
-                  }))
+              const injectedTemplates = await internalApiClient.getInjectedTemplates(jobId!) as any[]
+              if (injectedTemplates && Array.isArray(injectedTemplates) && injectedTemplates.length > 0) {
+                const templates = injectedTemplates.map((injected: any) => ({
+                  name: `${injected.template_id} - ${injected.angle_name}`,
+                  type: 'Injected Template',
+                  html: injected.html_content,
+                  angle: injected.angle_name,
+                  templateId: injected.template_id,
+                  timestamp: injected.created_at
+                }))
 
-                  templates.sort((a: any, b: any) => {
-                    if (a.angle !== b.angle) {
-                      return (a.angle || '').localeCompare(b.angle || '')
-                    }
-                    return (a.templateId || '').localeCompare(b.templateId || '')
-                  })
+                templates.sort((a: any, b: any) => {
+                  if (a.angle !== b.angle) {
+                    return (a.angle || '').localeCompare(b.angle || '')
+                  }
+                  return (a.templateId || '').localeCompare(b.templateId || '')
+                })
 
-                  setTemplates(templates)
-                }
+                setTemplates(templates)
               }
             } catch (error) {
-              console.error('Error reloading templates:', error)
+              logger.error('Error reloading templates:', error)
             }
             setTemplatesLoading(false)
           } catch (processError) {
-            console.error('Error processing swipe file response:', processError)
+            logger.error('Error processing swipe file response:', processError)
             // Still mark as generated to prevent retries, but show error
             setGeneratedAngles(prev => {
               const newSet = new Set(prev).add(angle)
@@ -482,7 +459,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
             alert('Pre-landers generated but failed to process. Please try refreshing the page.')
           }
           return
-        } else if (statusData.status === 'FAILED') {
+        } else if ((statusData as { status: string }).status === 'FAILED') {
           // Remove from generating map on failure
           setGeneratingAngles(prev => {
             const newMap = new Map(prev)
@@ -493,7 +470,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
         }
       } catch (err) {
         if (attempt === maxAttempts) {
-          console.error('Swipe file polling error:', err)
+          logger.error('Swipe file polling error:', err)
           // Remove from generating map on timeout
           setGeneratingAngles(prev => {
             const newMap = new Map(prev)
@@ -538,20 +515,18 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
           if (templateId) {
             // Try to fetch the specific injectable template with the same ID
-            const specificResponse = await fetch(`/api/admin/injectable-templates?id=${templateId}`)
-            const specificTemplates = await specificResponse.json()
+            const specificTemplates = await internalApiClient.getAdminInjectableTemplates({ id: templateId }) as any[]
 
-            if (specificTemplates.length > 0) {
+            if (Array.isArray(specificTemplates) && specificTemplates.length > 0) {
               injectableTemplate = specificTemplates[0]
             }
           }
 
           // Fallback: fetch by type if specific template not found
           if (!injectableTemplate) {
-            const response = await fetch(`/api/admin/injectable-templates?type=${templateType}`)
-            const injectableTemplates = await response.json()
+            const injectableTemplates = await internalApiClient.getAdminInjectableTemplates({ type: templateType }) as any[]
 
-            if (injectableTemplates.length > 0) {
+            if (Array.isArray(injectableTemplates) && injectableTemplates.length > 0) {
               injectableTemplate = injectableTemplates[0]
             }
           }
@@ -578,7 +553,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                   timestamp: result.metadata?.generated_at || new Date().toISOString()
                 })
               } catch (error) {
-                console.error(`Error processing angle ${index + 1}:`, error)
+                logger.error(`Error processing angle ${index + 1}:`, error)
               }
             })
           } else {
@@ -586,7 +561,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
             return await extractFromCarousel()
           }
         } catch (error) {
-          console.error('Error fetching injectable templates:', error)
+          logger.error('Error fetching injectable templates:', error)
           // Fallback to old carousel method
           return await extractFromCarousel()
         }
@@ -603,7 +578,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
       return templates
 
     } catch (error) {
-      console.error('Error in template extraction:', error)
+      logger.error('Error in template extraction:', error)
       return templates
     }
   }
@@ -691,7 +666,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
 
       return templates
     } catch (error) {
-      console.error('Error in carousel extraction:', error)
+      logger.error('Error in carousel extraction:', error)
       return templates
     }
   }
@@ -711,7 +686,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
             setTemplatesLoading(false)
           }
         } catch (error) {
-          console.error('Error loading templates:', error)
+          logger.error('Error loading templates:', error)
           setTemplatesLoading(false)
         }
       }
@@ -725,7 +700,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
   const handleExploreTemplates = async () => {
     setShowTemplateModal(true)
     // Use the same store as /templates page
-    await fetchTemplates()
+    // Templates are automatically fetched by useTemplates hook
   }
 
   // Handler for template selection
@@ -856,7 +831,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
         description: `Downloading ${templatesToDownload.length} template${templatesToDownload.length !== 1 ? 's' : ''} as ZIP file.`,
       });
     } catch (error) {
-      console.error('Failed to download templates:', error);
+      logger.error('Failed to download templates:', error);
       toast({
         title: "Download failed",
         description: "Failed to create ZIP file. Please try again.",
@@ -866,7 +841,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
   };
 
   const handleTemplateSelect = (templateId: string) => {
-    console.log('Template selected:', templateId)
+    logger.log('Template selected:', templateId)
     setSelectedTemplateForRefinement(prev => {
       if (prev.includes(templateId)) {
         // Deselect if already selected
@@ -892,28 +867,17 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
     setIsGeneratingRefined(true)
     try {
       // Call swipe-files/generate endpoint with original_job_id, select_angle, and swipe_file_ids array
-      const response = await fetch('/api/swipe-files/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          original_job_id: originalJobId,
-          select_angle: angle,
-          swipe_file_ids: templateIds // Array of template IDs in format L00001, A00003, etc.
-        })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to generate pre-landers')
-      }
-
-      const data = await response.json()
+      const data = await internalApiClient.generateSwipeFiles({
+        original_job_id: originalJobId,
+        select_angle: angle,
+        swipe_file_ids: templateIds // Array of template IDs in format L00001, A00003, etc.
+      }) as { jobId?: string }
 
       // Track this angle as generating (similar to the swipe file generation flow)
       if (data.jobId) {
         setGeneratingAngles(prev => {
           const newMap = new Map(prev)
-          newMap.set(angle, data.jobId)
+          newMap.set(angle, data.jobId!)
           return newMap
         })
         setAngleStatuses(prev => {
@@ -923,7 +887,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
         })
 
         // Start polling for this specific angle
-        pollSwipeFileStatus(data.jobId, angle)
+        pollSwipeFileStatus(data.jobId!, angle)
       }
 
       // Close modal and reset
@@ -1551,29 +1515,19 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                                             updateAngleStatus(angleString, 'SUBMITTED');
 
                                             try {
-                                              const response = await fetch('/api/swipe-files/generate', {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({
-                                                  original_job_id: originalJobId,
-                                                  select_angle: angleString
-                                                })
-                                              });
-
-                                              if (!response.ok) {
-                                                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-                                                throw new Error(errorData.error || 'Failed to generate pre-landers');
-                                              }
-
-                                              const data = await response.json();
+                                              const data = await internalApiClient.generateSwipeFiles({
+                                                original_job_id: originalJobId,
+                                                select_angle: angleString
+                                              }) as { jobId?: string };
 
                                               // Track this angle as generating
-                                              updateGeneratingAngle(angleString, data.jobId);
-
-                                              // Start polling for this specific angle
-                                              pollSwipeFileStatus(data.jobId, angleString);
+                                              if (data.jobId) {
+                                                updateGeneratingAngle(angleString, data.jobId);
+                                                // Start polling for this specific angle
+                                                pollSwipeFileStatus(data.jobId, angleString);
+                                              }
                                             } catch (error) {
-                                              console.error('Error generating pre-landers:', error);
+                                              logger.error('Error generating pre-landers:', error);
                                               // Remove from generating map on error
                                               removeGeneratingAngle(angleString);
                                               removeAngleStatus(angleString);
@@ -1759,28 +1713,19 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                             // Add to generating map
                             setIsGeneratingSwipeFiles(true);
                             try {
-                              const response = await fetch('/api/swipe-files/generate', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  original_job_id: originalJobId,
-                                  select_angle: selectedAngle
-                                })
-                              });
-
-                              if (!response.ok) {
-                                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-                                throw new Error(errorData.error || 'Failed to generate pre-landers');
-                              }
-
-                              const data = await response.json();
+                              const data = await internalApiClient.generateSwipeFiles({
+                                original_job_id: originalJobId,
+                                select_angle: selectedAngle
+                              }) as { jobId?: string };
 
                               // Track this angle as generating
-                              setGeneratingAngles(prev => {
-                                const newMap = new Map(prev)
-                                newMap.set(selectedAngle, data.jobId)
-                                return newMap
-                              })
+                              if (data.jobId) {
+                                setGeneratingAngles(prev => {
+                                  const newMap = new Map(prev)
+                                  newMap.set(selectedAngle, data.jobId!)
+                                  return newMap
+                                })
+                              }
                               setAngleStatuses(prev => {
                                 const newMap = new Map(prev)
                                 newMap.set(selectedAngle, 'SUBMITTED')
@@ -2403,7 +2348,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                     // Filter templates by type
                     const filteredTemplates = modalTypeFilter === "all"
                       ? availableTemplates
-                      : availableTemplates.filter(template => {
+                      : availableTemplates.filter((template: Template) => {
                         const templateType = template.category?.toLowerCase() === 'listicle' ? 'listicle' : 'advertorial';
                         return templateType === modalTypeFilter.toLowerCase();
                       });
@@ -2421,8 +2366,8 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                               )}
                             </p>
                             <div className="flex flex-wrap gap-2 mt-2">
-                              {selectedTemplateForRefinement.map((templateId) => {
-                                const template = availableTemplates.find(t => t.id === templateId)
+                              {selectedTemplateForRefinement.map((templateId: string) => {
+                                const template = availableTemplates.find((t: Template) => t.id === templateId)
                                 return (
                                   <Badge key={templateId} variant="secondary" className="text-xs">
                                     {template?.name || templateId}
@@ -2446,7 +2391,7 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                               </p>
                             </div>
                           ) : (
-                            filteredTemplates.map((template) => (
+                            filteredTemplates.map((template: Template) => (
                               <TemplatePreview
                                 key={template.id}
                                 template={template}
@@ -2480,8 +2425,8 @@ export function DeepCopyResults({ result, jobTitle, jobId, advertorialType, temp
                 <div className="p-4 bg-muted rounded-lg border border-border">
                   <p className="text-sm text-muted-foreground mb-2">Selected Templates ({selectedTemplateForRefinement.length})</p>
                   <div className="flex flex-wrap gap-2">
-                    {selectedTemplateForRefinement.map((templateId) => {
-                      const template = availableTemplates.find(t => t.id === templateId)
+                    {selectedTemplateForRefinement.map((templateId: string) => {
+                      const template = availableTemplates.find((t: Template) => t.id === templateId)
                       return (
                         <Badge key={templateId} variant="secondary" className="text-sm">
                           {template?.name || templateId}

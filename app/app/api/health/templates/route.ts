@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db/connection'
+import { handleApiError, createSuccessResponse } from '@/lib/middleware/error-handler'
+import { logger } from '@/lib/utils/logger'
 
 export async function GET(request: NextRequest) {
     try {
-        console.log(`🔍 Health check for template system`)
+        logger.log(`🔍 Health check for template system`)
 
-        const health = {
+        const health: {
+            timestamp: string
+            status: string
+            components: any
+            summary?: {
+                totalComponents: number
+                healthyComponents: number
+                degradedComponents: number
+                unhealthyComponents: number
+            }
+        } = {
             timestamp: new Date().toISOString(),
             status: 'healthy',
             components: {} as any
@@ -189,7 +201,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(health, { status: statusCode })
 
     } catch (error) {
-        console.error('❌ Health check error:', error)
+        logger.error('❌ Health check error:', error)
         return NextResponse.json(
             {
                 timestamp: new Date().toISOString(),

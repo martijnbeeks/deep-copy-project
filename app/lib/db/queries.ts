@@ -67,26 +67,27 @@ export const createJob = async (jobData: {
   parent_job_id?: string
   avatar_persona_name?: string
   is_avatar_job?: boolean
+  screenshot?: string
 }): Promise<Job> => {
   if (jobData.custom_id) {
     // Use custom ID (DeepCopy job ID) as the primary key
     const result = await query(
       'INSERT INTO jobs (id, user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id, parent_job_id, avatar_persona_name, is_avatar_job, screenshot) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *',
       [
-        jobData.custom_id, 
-        jobData.user_id, 
-        jobData.title, 
-        jobData.brand_info, 
-        jobData.sales_page_url, 
-        jobData.template_id, 
-        jobData.advertorial_type, 
-        jobData.target_approach, 
-        JSON.stringify(jobData.avatars || []), 
+        jobData.custom_id,
+        jobData.user_id,
+        jobData.title,
+        jobData.brand_info,
+        jobData.sales_page_url,
+        jobData.template_id,
+        jobData.advertorial_type,
+        jobData.target_approach,
+        JSON.stringify(jobData.avatars || []),
         jobData.execution_id,
         jobData.parent_job_id || null,
         jobData.avatar_persona_name || null,
         jobData.is_avatar_job || false,
-        null // screenshot - will be populated later
+        jobData.screenshot || null // screenshot from avatar extraction (product_image)
       ]
     )
     return result.rows[0]
@@ -95,19 +96,19 @@ export const createJob = async (jobData: {
     const result = await query(
       'INSERT INTO jobs (user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id, parent_job_id, avatar_persona_name, is_avatar_job, screenshot) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *',
       [
-        jobData.user_id, 
-        jobData.title, 
-        jobData.brand_info, 
-        jobData.sales_page_url, 
-        jobData.template_id, 
-        jobData.advertorial_type, 
-        jobData.target_approach, 
-        JSON.stringify(jobData.avatars || []), 
+        jobData.user_id,
+        jobData.title,
+        jobData.brand_info,
+        jobData.sales_page_url,
+        jobData.template_id,
+        jobData.advertorial_type,
+        jobData.target_approach,
+        JSON.stringify(jobData.avatars || []),
         jobData.execution_id,
         jobData.parent_job_id || null,
         jobData.avatar_persona_name || null,
         jobData.is_avatar_job || false,
-        null // screenshot - will be populated later
+        jobData.screenshot || null // screenshot from avatar extraction (product_image)
       ]
     )
     return result.rows[0]
@@ -295,7 +296,7 @@ export const updateJobStatus = async (id: string, status: string, progress?: num
         FROM information_schema.columns 
         WHERE table_name = 'jobs' AND column_name = 'completed_at'
       `)
-      
+
       if (columnCheck.rows.length > 0) {
         updates.push('completed_at = NOW()')
       }
@@ -311,13 +312,17 @@ export const updateJobExecutionId = async (id: string, execution_id: string): Pr
   await query('UPDATE jobs SET execution_id = $2, updated_at = NOW() WHERE id = $1', [id, execution_id])
 }
 
+export const updateJobScreenshot = async (id: string, screenshot: string): Promise<void> => {
+  await query('UPDATE jobs SET screenshot = $2, updated_at = NOW() WHERE id = $1', [id, screenshot])
+}
+
 export const updateJob = async (id: string, userId: string, updates: Partial<Pick<Job, 'title' | 'brand_info' | 'sales_page_url'>>): Promise<Job | null> => {
   const fields = Object.keys(updates).filter(key => updates[key as keyof typeof updates] !== undefined)
   if (fields.length === 0) return null
 
   const setClause = fields.map((field, index) => `${field} = $${index + 3}`).join(', ')
   const values = fields.map(field => updates[field as keyof typeof updates])
-  
+
   const result = await query(
     `UPDATE jobs SET ${setClause}, updated_at = NOW() WHERE id = $1 AND user_id = $2 RETURNING *`,
     [id, userId, ...values]
@@ -328,10 +333,10 @@ export const updateJob = async (id: string, userId: string, updates: Partial<Pic
 export const deleteJobById = async (id: string, userId: string): Promise<void> => {
   // First delete the associated result if it exists
   await query('DELETE FROM results WHERE job_id = $1', [id])
-  
+
   // Then delete the job
   const result = await query('DELETE FROM jobs WHERE id = $1 AND user_id = $2', [id, userId])
-  
+
   if (result.rowCount === 0) {
     throw new Error('Job not found or does not belong to user')
   }
@@ -371,7 +376,7 @@ export const getInjectableTemplates = async (type?: 'listicle' | 'advertorial'):
 // This maps the template selection to the actual swipe file ID used by DeepCopy API
 export const getInjectableTemplateIdForType = async (advertorialType: string): Promise<string | null> => {
   const result = await query(
-    'SELECT id FROM injectable_templates WHERE advertorial_type = $1 ORDER BY created_at DESC LIMIT 1', 
+    'SELECT id FROM injectable_templates WHERE advertorial_type = $1 ORDER BY created_at DESC LIMIT 1',
     [advertorialType]
   )
   return result.rows[0]?.id || null
@@ -383,30 +388,30 @@ export const getInjectableTemplateIdForTemplate = async (templateId: string): Pr
   // First get the template to determine its category/type
   const templateResult = await query('SELECT category FROM templates WHERE id = $1', [templateId])
   const template = templateResult.rows[0]
-  
+
   if (!template) {
     return null
   }
-  
+
   // Map template category to advertorial type
   const advertorialType = template.category === 'listicle' ? 'listicle' : 'advertorial'
-  
+
   // Get the injectable template with the SAME ID as the template
   const injectableResult = await query(
-    'SELECT id FROM injectable_templates WHERE id = $1 AND advertorial_type = $2', 
+    'SELECT id FROM injectable_templates WHERE id = $1 AND advertorial_type = $2',
     [templateId, advertorialType]
   )
-  
+
   if (injectableResult.rows[0]) {
     return injectableResult.rows[0].id
   }
-  
+
   // Fallback: Get the most recent injectable template for this type if exact match not found
   const fallbackResult = await query(
-    'SELECT id FROM injectable_templates WHERE advertorial_type = $1 ORDER BY created_at DESC LIMIT 1', 
+    'SELECT id FROM injectable_templates WHERE advertorial_type = $1 ORDER BY created_at DESC LIMIT 1',
     [advertorialType]
   )
-  
+
   return fallbackResult.rows[0]?.id || null
 }
 
@@ -434,14 +439,14 @@ export const createInjectableTemplate = async (
 
 export const updateInjectableTemplate = async (
   id: string,
-  updates: Partial<Pick<InjectableTemplate, 'name' | 'html_content' | 'description' | 'advertorial_type'>>
+  updates: Partial<Pick<InjectableTemplate, 'name' | 'html_content' | 'description' | 'advertorial_type' | 'is_active'>>
 ): Promise<InjectableTemplate | null> => {
   const fields = Object.keys(updates).filter(key => updates[key as keyof typeof updates] !== undefined)
   if (fields.length === 0) return null
 
   const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(', ')
   const values = fields.map(field => updates[field as keyof typeof updates])
-  
+
   const result = await query(
     `UPDATE injectable_templates SET ${setClause}, updated_at = NOW() WHERE id = $1 RETURNING *`,
     [id, ...values]
@@ -451,7 +456,7 @@ export const updateInjectableTemplate = async (
 
 export const deleteInjectableTemplate = async (id: string): Promise<boolean> => {
   const result = await query('DELETE FROM injectable_templates WHERE id = $1', [id])
-  return result.rowCount > 0
+  return (result.rowCount ?? 0) > 0
 }
 
 // Job result queries
@@ -464,12 +469,12 @@ export const updateJobResult = async (jobId: string, updates: { html_content?: s
     const value = updates[field as keyof typeof updates]
     return field === 'metadata' ? JSON.stringify(value) : value
   })
-  
+
   const result = await query(
     `UPDATE results SET ${setClause} WHERE job_id = $1`,
     [jobId, ...values]
   )
-  return result.rowCount > 0
+  return (result.rowCount ?? 0) > 0
 }
 
 // Injected templates queries
@@ -492,10 +497,10 @@ export const createInjectedTemplate = async (
       created_at TIMESTAMP DEFAULT NOW()
     )
   `)
-  
+
   // Use provided angleIndex or default to 1
   const finalAngleIndex = angleIndex || 1
-  
+
   const result = await query(
     'INSERT INTO injected_templates (job_id, angle_index, angle_name, html_content, template_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
     [jobId, finalAngleIndex, angleName, htmlContent, templateId]

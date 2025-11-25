@@ -4,33 +4,22 @@ import { Sidebar, SidebarTrigger } from "@/components/dashboard/sidebar"
 import { DeepCopyResults } from "@/components/results/deepcopy-results"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { useEffect, useState, useCallback } from "react"
+import { useEffect } from "react"
 import { Download, ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { useAuthStore } from "@/stores/auth-store"
-import { useJobsStore } from "@/stores/jobs-store"
+import { useRequireAuth } from "@/hooks/use-require-auth"
+import { useJob } from "@/lib/hooks/use-jobs"
 import { ContentViewerSkeleton } from "@/components/ui/skeleton-loaders"
 import { useJobPolling } from "@/hooks/use-job-polling"
+import { isProcessingStatus } from "@/lib/utils/job-status"
 
 
 export default function ResultDetailPage({ params }: { params: { id: string } }) {
-  const { user, isAuthenticated } = useAuthStore()
-  const { currentJob, fetchJob } = useJobsStore()
+  const { user, isReady } = useRequireAuth()
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(true)
-  const [isRefreshing, setIsRefreshing] = useState(false)
-
-  const loadJob = useCallback(async () => {
-    try {
-      setIsRefreshing(true)
-      await fetchJob(params.id)
-      setIsLoading(false)
-    } catch (error) {
-      setIsLoading(false)
-    } finally {
-      setIsRefreshing(false)
-    }
-  }, [fetchJob, params.id])
+  
+  // Use TanStack Query for data fetching
+  const { data: currentJob, isLoading, refetch } = useJob(params.id)
 
   // Use client-side polling for job status updates
   const {
@@ -40,34 +29,26 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
     maxAttempts
   } = useJobPolling({
     jobId: params.id,
-    enabled: currentJob?.status === 'processing' || currentJob?.status === 'pending',
+    enabled: currentJob ? isProcessingStatus(currentJob.status) : false,
     interval: 5000, // Poll every 5 seconds
     maxAttempts: 120, // Max 10 minutes
     onStatusChange: (status, progress) => {
-      loadJob()
+      refetch()
     },
     onComplete: (result) => {
-      loadJob()
+      refetch()
     },
     onError: (error) => {
       // Silently handle polling errors
     }
   })
 
-  useEffect(() => {
-    if (!isAuthenticated || !user) {
-      router.replace("/login")
-      return
-    }
-    loadJob()
-  }, [isAuthenticated, user, router, loadJob])
-
   // Early return if not authenticated to prevent skeleton loader
-  if (!isAuthenticated || !user) {
+  if (!isReady) {
     return null
   }
 
-  if (!user || isLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-screen bg-background overflow-hidden">
         <Sidebar />

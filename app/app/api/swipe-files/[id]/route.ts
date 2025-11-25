@@ -1,50 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { getDeepCopyAccessToken } from '@/lib/auth/deepcopy-auth'
+import { handleApiError, createValidationErrorResponse, createSuccessResponse } from '@/lib/middleware/error-handler'
 
-async function getAccessToken(): Promise<string> {
-  const clientId = process.env.DEEPCOPY_CLIENT_ID || '5mbatc7uv35hr23qip437s2ai5'
-  const clientSecret = process.env.DEEPCOPY_CLIENT_SECRET || '1msm19oltu7241134t5vujtldr4uvum7hvn6cj7n1s3tg1ar02k5'
-  const tokenEndpoint = 'https://deepcopy-613663743323-eu-west-1.auth.eu-west-1.amazoncognito.com/oauth2/token'
-
-  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
-  const body = new URLSearchParams({
-    grant_type: 'client_credentials',
-    scope: 'https://deep-copy.api/read https://deep-copy.api/write'
-  })
-
-  const response = await fetch(tokenEndpoint, {
-    method: 'POST',
-    cache: 'no-store',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': `Basic ${auth}`,
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    },
-    body: body.toString()
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`Token request failed: ${response.status} ${response.statusText} - ${errorText}`)
-  }
-
-  const data = await response.json()
-  return data.access_token
-}
+const DEEPCOPY_API_URL = 'https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params
 
     if (!id) {
-      return NextResponse.json({ error: 'Swipe file job ID is required' }, { status: 400 })
+      return createValidationErrorResponse('Swipe file job ID is required')
     }
 
-    const accessToken = await getAccessToken()
-    const apiUrl = 'https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/'
+    const accessToken = await getDeepCopyAccessToken()
 
-    const response = await fetch(`${apiUrl}swipe-files/${id}?t=${Date.now()}`, {
+    const response = await fetch(`${DEEPCOPY_API_URL}swipe-files/${id}?t=${Date.now()}`, {
       method: 'GET',
       cache: 'no-store',
       headers: {
@@ -58,22 +28,17 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     if (!response.ok) {
       if (response.status === 404) {
-        return NextResponse.json({ error: 'Swipe file job not found' }, { status: 404 })
+        return createValidationErrorResponse('Swipe file job not found')
       }
       const errorText = await response.text()
       throw new Error(`Swipe file status API responded with status: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()
-    return NextResponse.json(data)
+    return createSuccessResponse(data)
 
   } catch (error) {
-    console.error('Swipe file status error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to get swipe file status'
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 

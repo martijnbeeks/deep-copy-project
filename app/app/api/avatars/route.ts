@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db/connection'
+import { handleApiError, createSuccessResponse, createValidationErrorResponse } from '@/lib/middleware/error-handler'
+import { requireAuth, createAuthErrorResponse } from '@/lib/auth/user-auth'
+import { logger } from '@/lib/utils/logger'
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    const userEmail = authHeader?.replace('Bearer ', '') || 'demo@example.com'
-    
-    const { getUserByEmail } = await import('@/lib/db/queries')
-    const user = await getUserByEmail(userEmail)
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
+    const authResult = await requireAuth(request)
+    if (authResult.error) {
+      return createAuthErrorResponse(authResult)
     }
+    const user = authResult.user
 
     // Get jobId from query params if provided
     const { searchParams } = new URL(request.url)
@@ -80,13 +76,9 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    return NextResponse.json({ avatars: allAvatars })
+    return createSuccessResponse({ avatars: allAvatars })
   } catch (error) {
-    console.error('Failed to fetch avatars:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch avatars', details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Eye, Clock, CheckCircle, AlertCircle } from "lucide-react"
 import Link from "next/link"
-import { useJobsStore } from "@/stores/jobs-store"
+import { useJobs } from "@/lib/hooks/use-jobs"
 import { JobWithTemplate } from "@/lib/db/types"
 import { RecentJobsSkeleton } from "@/components/ui/skeleton-loaders"
 
@@ -24,7 +24,7 @@ const getStatusIcon = (status: JobWithTemplate["status"]) => {
 
 const getStatusBadge = (status: JobWithTemplate["status"]) => {
   const normalizedStatus = status?.toLowerCase()
-  
+
   const variants = {
     completed: "default",
     processing: "secondary",
@@ -44,7 +44,7 @@ const getStatusBadge = (status: JobWithTemplate["status"]) => {
 }
 
 export function RecentJobs() {
-  const { jobs, isLoading } = useJobsStore()
+  const { data: jobs = [], isLoading } = useJobs()
   const recentJobs = jobs.slice(0, 5) // Show only the 5 most recent jobs
 
   if (isLoading) {
@@ -64,7 +64,7 @@ export function RecentJobs() {
               <p>No jobs yet. Create your first AI content!</p>
             </div>
           ) : (
-            recentJobs.map((job) => (
+            recentJobs.map((job: JobWithTemplate) => (
               <div key={job.id} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center gap-3">
                   {getStatusIcon(job.status)}

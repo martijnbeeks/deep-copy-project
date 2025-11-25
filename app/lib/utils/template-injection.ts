@@ -35,9 +35,9 @@ function sanitizeBodyContent(text: string, maxLength?: number): string {
     .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
     .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '') // Remove event handlers
     .replace(/javascript:/gi, '') // Remove javascript: protocol
-    // Keep safe HTML tags as-is
-    // The safe tags (<br>, <p>, <ul>, <li>, <strong>, <em>, <b>, <i>) are already in the text
-  
+  // Keep safe HTML tags as-is
+  // The safe tags (<br>, <p>, <ul>, <li>, <strong>, <em>, <b>, <i>) are already in the text
+
   // Truncation removed - display full content
   return sanitized
 }
@@ -454,17 +454,17 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
   // 2. Already the full_advertorial object itself (passed directly from process route)
   // 3. Nested content property (old format: { content: {...} })
   // 4. Already parsed content object
-  let swipeContent = {}
-  
+  let swipeContent: any = {}
+
   // Check if this is a wrapper with full_advertorial property
   if (swipeResult.full_advertorial && typeof swipeResult.full_advertorial === 'object') {
     swipeContent = swipeResult.full_advertorial
-  } 
+  }
   // Check if this is already the full_advertorial object itself (has typical advertorial structure)
   else if (swipeResult.hero || swipeResult.section1 || swipeResult.topbar || swipeResult.alert) {
     // Already the content object itself (no nesting) - this is what we get from process route
     swipeContent = swipeResult
-  } 
+  }
   // Check for nested content property (old format)
   else if (swipeResult.content) {
     if (typeof swipeResult.content === 'string') {
@@ -492,16 +492,16 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     // Hero section - handle both old format and Listicle/Advertorial format
     hero: {
       headline: sanitizeTextContent(
-        swipeContent.hero?.headline || 
-        swipeContent.title || 
-        'Transform Your Daily Routine', 
+        swipeContent.hero?.headline ||
+        swipeContent.title ||
+        'Transform Your Daily Routine',
         100
       ),
       subheadline: sanitizeTextContent(
-        swipeContent.hero?.subheadline || 
+        swipeContent.hero?.subheadline ||
         (isListicle ? swipeContent.summary : null) ||
         (isAdvertorial ? swipeContent.subtitle : null) ||
-        'Discover the solution that thousands are already using', 
+        'Discover the solution that thousands are already using',
         200
       ),
       image: sanitizeUrl(swipeContent.hero?.image || 'https://placehold.co/600x400?text=Hero+Image'),
@@ -511,9 +511,9 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     // Author section - handle both formats
     author: {
       name: sanitizeTextContent(
-        swipeContent.author?.name || 
+        swipeContent.author?.name ||
         (isListicle ? swipeContent.author : null) ||
-        'Health Expert', 
+        'Health Expert',
         50
       ),
       image: sanitizeUrl(swipeContent.author?.image || 'https://placehold.co/100x100?text=Author'),
@@ -535,9 +535,9 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     // Breadcrumbs - exact field mapping (handle both string and object formats)
     breadcrumbs: {
       text: sanitizeTextContent(
-        typeof swipeContent.breadcrumbs === 'string' 
-          ? swipeContent.breadcrumbs 
-          : swipeContent.breadcrumbs?.text || 'Home > Health > Products', 
+        typeof swipeContent.breadcrumbs === 'string'
+          ? swipeContent.breadcrumbs
+          : swipeContent.breadcrumbs?.text || 'Home > Health > Products',
         200
       )
     },
@@ -545,10 +545,10 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     // Story intro - handle both formats
     story: {
       intro: sanitizeBodyContent(
-        swipeContent.story?.intro || 
+        swipeContent.story?.intro ||
         (isListicle ? swipeContent.summary : null) ||
         (isAdvertorial ? swipeContent.body?.substring(0, 300) : null) ||
-        'Here\'s what you need to know about this breakthrough solution...', 
+        'Here\'s what you need to know about this breakthrough solution...',
         300
       )
     },
@@ -556,18 +556,18 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     // Sections 1-12 - use real API data, handle Listicle format (listicles array)
     section1: {
       title: sanitizeTextContent(
-        swipeContent.section1?.title || 
-        swipeContent.section1?.headline || 
+        swipeContent.section1?.title ||
+        swipeContent.section1?.headline ||
         (isListicle && swipeContent.listicles?.[0] ? swipeContent.listicles[0].title : null) ||
-        'The Problem You Face', 
+        'The Problem You Face',
         100
       ),
       body: sanitizeBodyContent(
-        swipeContent.section1?.body || 
-        swipeContent.section1?.description || 
+        swipeContent.section1?.body ||
+        swipeContent.section1?.description ||
         (isListicle && swipeContent.listicles?.[0] ? swipeContent.listicles[0].description : null) ||
         (isAdvertorial ? swipeContent.body?.substring(0, 500) : null) ||
-        'Many people struggle with this issue daily, affecting their quality of life.', 
+        'Many people struggle with this issue daily, affecting their quality of life.',
         500
       ),
       image: sanitizeUrl(swipeContent.section1?.image || 'https://placehold.co/600x400?text=Problem+Image'),
@@ -575,18 +575,18 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     },
     section2: {
       title: sanitizeTextContent(
-        swipeContent.section2?.title || 
-        swipeContent.section2?.headline || 
+        swipeContent.section2?.title ||
+        swipeContent.section2?.headline ||
         (isListicle && swipeContent.listicles?.[1] ? swipeContent.listicles[1].title : null) ||
-        'The Science Behind It', 
+        'The Science Behind It',
         100
       ),
       body: sanitizeBodyContent(
-        swipeContent.section2?.body || 
-        swipeContent.section2?.description || 
+        swipeContent.section2?.body ||
+        swipeContent.section2?.description ||
         (isListicle && swipeContent.listicles?.[1] ? swipeContent.listicles[1].description : null) ||
         (isAdvertorial ? swipeContent.body?.substring(500, 1000) : null) ||
-        'Research shows that this approach has been proven effective in clinical studies.', 
+        'Research shows that this approach has been proven effective in clinical studies.',
         500
       ),
       image: sanitizeUrl(swipeContent.section2?.image || 'https://placehold.co/600x400?text=Science+Image'),
@@ -594,18 +594,18 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     },
     section3: {
       title: sanitizeTextContent(
-        swipeContent.section3?.title || 
-        swipeContent.section3?.headline || 
+        swipeContent.section3?.title ||
+        swipeContent.section3?.headline ||
         (isListicle && swipeContent.listicles?.[2] ? swipeContent.listicles[2].title : null) ||
-        'How It Works', 
+        'How It Works',
         100
       ),
       body: sanitizeBodyContent(
-        swipeContent.section3?.body || 
-        swipeContent.section3?.description || 
+        swipeContent.section3?.body ||
+        swipeContent.section3?.description ||
         (isListicle && swipeContent.listicles?.[2] ? swipeContent.listicles[2].description : null) ||
         (isAdvertorial ? swipeContent.body?.substring(1000, 1500) : null) ||
-        'Our solution works by targeting the root cause of the problem.', 
+        'Our solution works by targeting the root cause of the problem.',
         500
       ),
       image: sanitizeUrl(swipeContent.section3?.image || 'https://placehold.co/600x400?text=How+It+Works'),
@@ -613,18 +613,18 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     },
     section4: {
       title: sanitizeTextContent(
-        swipeContent.section4?.title || 
-        swipeContent.section4?.headline || 
+        swipeContent.section4?.title ||
+        swipeContent.section4?.headline ||
         (isListicle && swipeContent.listicles?.[3] ? swipeContent.listicles[3].title : null) ||
-        'Real Results', 
+        'Real Results',
         100
       ),
       body: sanitizeBodyContent(
-        swipeContent.section4?.body || 
-        swipeContent.section4?.description || 
+        swipeContent.section4?.body ||
+        swipeContent.section4?.description ||
         (isListicle && swipeContent.listicles?.[3] ? swipeContent.listicles[3].description : null) ||
         (isAdvertorial ? swipeContent.body?.substring(1500, 2000) : null) ||
-        'Thousands of users have experienced significant improvements.', 
+        'Thousands of users have experienced significant improvements.',
         500
       ),
       image: sanitizeUrl(swipeContent.section4?.image || 'https://placehold.co/600x400?text=Results+Image'),
@@ -632,18 +632,18 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     },
     section5: {
       title: sanitizeTextContent(
-        swipeContent.section5?.title || 
-        swipeContent.section5?.headline || 
+        swipeContent.section5?.title ||
+        swipeContent.section5?.headline ||
         (isListicle && swipeContent.listicles?.[4] ? swipeContent.listicles[4].title : null) ||
-        'What Makes Us Different', 
+        'What Makes Us Different',
         100
       ),
       body: sanitizeBodyContent(
-        swipeContent.section5?.body || 
-        swipeContent.section5?.description || 
+        swipeContent.section5?.body ||
+        swipeContent.section5?.description ||
         (isListicle && swipeContent.listicles?.[4] ? swipeContent.listicles[4].description : null) ||
         (isAdvertorial ? swipeContent.body?.substring(2000, 2500) : null) ||
-        'Our unique approach sets us apart from other solutions.', 
+        'Our unique approach sets us apart from other solutions.',
         500
       ),
       image: sanitizeUrl(swipeContent.section5?.image || 'https://placehold.co/600x400?text=Difference+Image'),
@@ -651,18 +651,18 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     },
     section6: {
       title: sanitizeTextContent(
-        swipeContent.section6?.title || 
-        swipeContent.section6?.headline || 
+        swipeContent.section6?.title ||
+        swipeContent.section6?.headline ||
         (isListicle && swipeContent.listicles?.[5] ? swipeContent.listicles[5].title : null) ||
-        'Easy to Use', 
+        'Easy to Use',
         100
       ),
       body: sanitizeBodyContent(
-        swipeContent.section6?.body || 
-        swipeContent.section6?.description || 
+        swipeContent.section6?.body ||
+        swipeContent.section6?.description ||
         (isListicle && swipeContent.listicles?.[5] ? swipeContent.listicles[5].description : null) ||
         (isAdvertorial ? swipeContent.body?.substring(2500, 3000) : null) ||
-        'Simple application process that fits into your daily routine.', 
+        'Simple application process that fits into your daily routine.',
         500
       ),
       image: sanitizeUrl(swipeContent.section6?.image || 'https://placehold.co/600x400?text=Easy+Use'),
@@ -670,18 +670,18 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     },
     section7: {
       title: sanitizeTextContent(
-        swipeContent.section7?.title || 
-        swipeContent.section7?.headline || 
+        swipeContent.section7?.title ||
+        swipeContent.section7?.headline ||
         (isListicle && swipeContent.listicles?.[6] ? swipeContent.listicles[6].title : null) ||
-        'Safety First', 
+        'Safety First',
         100
       ),
       body: sanitizeBodyContent(
-        swipeContent.section7?.body || 
-        swipeContent.section7?.description || 
+        swipeContent.section7?.body ||
+        swipeContent.section7?.description ||
         (isListicle && swipeContent.listicles?.[6] ? swipeContent.listicles[6].description : null) ||
         (isAdvertorial ? swipeContent.body?.substring(3000, 3500) : null) ||
-        'Made with high-quality, safe ingredients you can trust.', 
+        'Made with high-quality, safe ingredients you can trust.',
         500
       ),
       image: sanitizeUrl(swipeContent.section7?.image || 'https://placehold.co/600x400?text=Safety+Image'),
@@ -689,18 +689,18 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     },
     section8: {
       title: sanitizeTextContent(
-        swipeContent.section8?.title || 
-        swipeContent.section8?.headline || 
+        swipeContent.section8?.title ||
+        swipeContent.section8?.headline ||
         (isListicle && swipeContent.listicles?.[7] ? swipeContent.listicles[7].title : null) ||
-        'Customer Stories', 
+        'Customer Stories',
         100
       ),
       body: sanitizeBodyContent(
-        swipeContent.section8?.body || 
-        swipeContent.section8?.description || 
+        swipeContent.section8?.body ||
+        swipeContent.section8?.description ||
         (isListicle && swipeContent.listicles?.[7] ? swipeContent.listicles[7].description : null) ||
         (isAdvertorial ? swipeContent.body?.substring(3500, 4000) : null) ||
-        'Hear from real customers who have transformed their lives.', 
+        'Hear from real customers who have transformed their lives.',
         500
       ),
       image: sanitizeUrl(swipeContent.section8?.image || 'https://placehold.co/600x400?text=Testimonials'),
@@ -708,18 +708,18 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     },
     section9: {
       title: sanitizeTextContent(
-        swipeContent.section9?.title || 
-        swipeContent.section9?.headline || 
+        swipeContent.section9?.title ||
+        swipeContent.section9?.headline ||
         (isListicle && swipeContent.listicles?.[8] ? swipeContent.listicles[8].title : null) ||
-        'Expert Endorsement', 
+        'Expert Endorsement',
         100
       ),
       body: sanitizeBodyContent(
-        swipeContent.section9?.body || 
-        swipeContent.section9?.description || 
+        swipeContent.section9?.body ||
+        swipeContent.section9?.description ||
         (isListicle && swipeContent.listicles?.[8] ? swipeContent.listicles[8].description : null) ||
         (isAdvertorial ? swipeContent.body?.substring(4000, 4500) : null) ||
-        'Recommended by healthcare professionals and experts.', 
+        'Recommended by healthcare professionals and experts.',
         500
       ),
       image: sanitizeUrl(swipeContent.section9?.image || 'https://placehold.co/600x400?text=Expert+Endorsement'),
@@ -727,18 +727,18 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     },
     section10: {
       title: sanitizeTextContent(
-        swipeContent.section10?.title || 
-        swipeContent.section10?.headline || 
+        swipeContent.section10?.title ||
+        swipeContent.section10?.headline ||
         (isListicle && swipeContent.listicles?.[9] ? swipeContent.listicles[9].title : null) ||
-        'Risk-Free Trial', 
+        'Risk-Free Trial',
         100
       ),
       body: sanitizeBodyContent(
-        swipeContent.section10?.body || 
-        swipeContent.section10?.description || 
+        swipeContent.section10?.body ||
+        swipeContent.section10?.description ||
         (isListicle && swipeContent.listicles?.[9] ? swipeContent.listicles[9].description : null) ||
         (isAdvertorial ? swipeContent.body?.substring(4500, 5000) : null) ||
-        'Try it risk-free with our satisfaction guarantee.', 
+        'Try it risk-free with our satisfaction guarantee.',
         500
       ),
       image: sanitizeUrl(swipeContent.section10?.image || 'https://placehold.co/600x400?text=Risk+Free'),
@@ -746,18 +746,18 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     },
     section11: {
       title: sanitizeTextContent(
-        swipeContent.section11?.title || 
-        swipeContent.section11?.headline || 
+        swipeContent.section11?.title ||
+        swipeContent.section11?.headline ||
         (isListicle && swipeContent.listicles?.[10] ? swipeContent.listicles[10].title : null) ||
-        'Limited Time Offer', 
+        'Limited Time Offer',
         100
       ),
       body: sanitizeBodyContent(
-        swipeContent.section11?.body || 
-        swipeContent.section11?.description || 
+        swipeContent.section11?.body ||
+        swipeContent.section11?.description ||
         (isListicle && swipeContent.listicles?.[10] ? swipeContent.listicles[10].description : null) ||
         (isAdvertorial ? swipeContent.body?.substring(5000, 5500) : null) ||
-        'Special pricing available for a limited time only.', 
+        'Special pricing available for a limited time only.',
         500
       ),
       image: sanitizeUrl(swipeContent.section11?.image || 'https://placehold.co/600x400?text=Special+Offer'),
@@ -765,20 +765,20 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     },
     section12: {
       title: sanitizeTextContent(
-        swipeContent.section12?.title || 
-        swipeContent.section12?.headline || 
+        swipeContent.section12?.title ||
+        swipeContent.section12?.headline ||
         (isListicle && swipeContent.listicles?.[11] ? swipeContent.listicles[11].title : null) ||
         (isListicle && swipeContent.conclusion ? 'Conclusion' : null) ||
-        'Get Started Today', 
+        'Get Started Today',
         100
       ),
       body: sanitizeBodyContent(
-        swipeContent.section12?.body || 
-        swipeContent.section12?.description || 
+        swipeContent.section12?.body ||
+        swipeContent.section12?.description ||
         (isListicle && swipeContent.listicles?.[11] ? swipeContent.listicles[11].description : null) ||
         (isListicle && swipeContent.conclusion ? swipeContent.conclusion : null) ||
         (isAdvertorial ? swipeContent.body?.substring(5500) : null) ||
-        'Don\'t wait - start your journey to better health today.', 
+        'Don\'t wait - start your journey to better health today.',
         500
       ),
       image: sanitizeUrl(swipeContent.section12?.image || 'https://placehold.co/600x400?text=Get+Started'),
@@ -788,18 +788,18 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     // CTA section - handle both formats (object with primary/secondary or direct string)
     cta: {
       primary: sanitizeTextContent(
-        swipeContent.cta?.primary || 
+        swipeContent.cta?.primary ||
         (typeof swipeContent.cta === 'string' ? swipeContent.cta : null) ||
-        swipeContent.hero?.cta || 
+        swipeContent.hero?.cta ||
         (isListicle ? swipeContent.cta : null) ||
         (isAdvertorial ? swipeContent.cta : null) ||
-        'Get Started Now', 
+        'Get Started Now',
         200
       ),
       primaryUrl: '#order',
       secondary: sanitizeTextContent(
-        swipeContent.cta?.secondary || 
-        'Learn More', 
+        swipeContent.cta?.secondary ||
+        'Learn More',
         200
       ),
       secondaryUrl: '#learn'
@@ -807,8 +807,6 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
 
     // Sidebar section - exact field mapping with comprehensive fallbacks
     sidebar: {
-      title: sanitizeTextContent(swipeContent.sidebar?.title || swipeContent.sidebar?.ctaHeadline || 'Special Offer', 100),
-      subtitle: sanitizeTextContent(swipeContent.sidebar?.subtitle || 'Get Started Today', 100),
       ctaHeadline: sanitizeTextContent(swipeContent.sidebar?.ctaHeadline || swipeContent.sidebar?.title || swipeContent.cta?.primary || 'Special Offer', 100),
       ctaButton: sanitizeTextContent(swipeContent.sidebar?.ctaButton || swipeContent.cta?.primary || 'Get Started', 100),
       ctaUrl: '#order',
@@ -819,10 +817,10 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     // Sticky CTA - use real data from API with comprehensive fallbacks
     sticky: {
       cta: sanitizeTextContent(
-        swipeContent.sticky?.cta || 
-        swipeContent.cta?.primary || 
+        swipeContent.sticky?.cta ||
+        swipeContent.cta?.primary ||
         (typeof swipeContent.cta === 'string' ? swipeContent.cta : null) ||
-        'Get Started Now', 
+        'Get Started Now',
         200
       ),
       ctaUrl: '#order'

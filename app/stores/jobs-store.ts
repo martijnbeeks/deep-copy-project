@@ -1,183 +1,47 @@
 import { create } from 'zustand'
-import { subscribeWithSelector } from 'zustand/middleware'
-import { Job, JobWithTemplate, JobWithResult } from '@/lib/db/types'
-import { useAuthStore } from './auth-store'
+import { persist } from 'zustand/middleware'
 
-// Polling is now handled by the background service
+/**
+ * Jobs UI State Store
+ * Only holds UI state (filters, selected items, etc.)
+ * Server data is managed by TanStack Query via use-jobs.ts hooks
+ */
 
-// Debounce utility for performance
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeout)
-    timeout = setTimeout(() => func(...args), wait)
-  }
-}
-
-interface JobsState {
-  jobs: JobWithTemplate[]
-  currentJob: JobWithResult | null
-  isLoading: boolean
-  error: string | null
+interface JobsUIState {
+  // UI-only state
   filters: {
     status?: string
     search?: string
   }
+  selectedJobId: string | null
 }
 
-interface JobsActions {
-  setJobs: (jobs: JobWithTemplate[]) => void
-  addJob: (job: JobWithTemplate) => void
-  updateJob: (id: string, updates: Partial<Job>) => void
-  setCurrentJob: (job: JobWithResult | null) => void
-  setLoading: (loading: boolean) => void
-  setError: (error: string | null) => void
-  setFilters: (filters: Partial<JobsState['filters']>) => void
-  fetchJobs: () => Promise<void>
-  fetchJob: (id: string) => Promise<void>
-  createJob: (jobData: {
-    title: string
-    brand_info: string
-    sales_page_url?: string
-    template_id?: string
-    advertorial_type: string
-    target_approach?: string
-    avatars?: any[]
-  }) => Promise<JobWithTemplate>
-  pollJobStatus: (jobId: string) => void
-  stopPolling: (jobId: string) => void
-  stopAllPolling: () => void
+interface JobsUIActions {
+  setFilters: (filters: Partial<JobsUIState['filters']>) => void
+  setSelectedJobId: (id: string | null) => void
+  clearFilters: () => void
 }
 
-export const useJobsStore = create<JobsState & JobsActions>()(
-  subscribeWithSelector((set, get) => ({
-  jobs: [],
-  currentJob: null,
-  isLoading: false,
-  error: null,
-  filters: {},
+export const useJobsStore = create<JobsUIState & JobsUIActions>()(
+  persist(
+    (set) => ({
+      filters: {},
+      selectedJobId: null,
 
-  setJobs: (jobs) => set({ jobs }),
-  addJob: (job) => set((state) => ({ jobs: [job, ...state.jobs] })),
-  updateJob: (id, updates) => set((state) => ({
-    jobs: state.jobs.map(job => 
-      job.id === id ? { ...job, ...updates } : job
-    ),
-    currentJob: state.currentJob?.id === id 
-      ? { ...state.currentJob, ...updates }
-      : state.currentJob
-  })),
-  setCurrentJob: (job) => set({ currentJob: job }),
-  setLoading: (isLoading) => set({ isLoading }),
-  setError: (error) => set({ error }),
-  setFilters: (filters) => set((state) => ({ 
-    filters: { ...state.filters, ...filters } 
-  })),
+      setFilters: (filters) => set((state) => ({
+        filters: { ...state.filters, ...filters }
+      })),
 
-  fetchJobs: async () => {
-    set({ isLoading: true, error: null })
-    try {
-      const { user } = useAuthStore.getState()
-      const userEmail = user?.email || 'demo@example.com'
-      
-      const { filters } = get()
-      const params = new URLSearchParams()
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value)
-      })
+      setSelectedJobId: (id) => set({ selectedJobId: id }),
 
-      const response = await fetch(`/api/jobs?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${userEmail}`
-        }
-      })
-      if (!response.ok) throw new Error('Failed to fetch jobs')
-      
-      const { jobs } = await response.json()
-      set({ jobs, isLoading: false })
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to fetch jobs',
-        isLoading: false 
-      })
+      clearFilters: () => set({ filters: {} }),
+    }),
+    {
+      name: 'jobs-ui-storage',
+      partialize: (state) => ({
+        filters: state.filters,
+        // Don't persist selectedJobId
+      }),
     }
-  },
-
-  fetchJob: async (id: string) => {
-    set({ isLoading: true, error: null })
-    try {
-      const { user } = useAuthStore.getState()
-      const userEmail = user?.email || 'demo@example.com'
-      
-      const response = await fetch(`/api/jobs/${id}?t=${Date.now()}`, {
-        headers: {
-          'Authorization': `Bearer ${userEmail}`,
-          'Cache-Control': 'no-cache'
-        }
-      })
-      if (!response.ok) throw new Error('Failed to fetch job')
-      
-      const job = await response.json()
-      set({ currentJob: job, isLoading: false })
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to fetch job',
-        isLoading: false 
-      })
-    }
-  },
-
-  createJob: async (jobData) => {
-    set({ isLoading: true, error: null })
-    try {
-      const { user } = useAuthStore.getState()
-      const userEmail = user?.email || 'demo@example.com'
-      
-      const response = await fetch('/api/jobs', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userEmail}`
-        },
-        body: JSON.stringify(jobData),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create job')
-      }
-
-      const job = await response.json()
-      
-      set((state) => ({ 
-        jobs: [job, ...state.jobs],
-        isLoading: false 
-      }))
-      
-      return job
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to create job',
-        isLoading: false 
-      })
-      throw error
-    }
-  },
-
-  pollJobStatus: (jobId: string) => {
-    // Background polling is now handled by the background service
-    // This function is kept for compatibility but does nothing
-  },
-
-  stopPolling: (jobId: string) => {
-    // Background polling is now handled by the background service
-  },
-
-  stopAllPolling: () => {
-    // Background polling is now handled by the background service
-  },
-}))
+  )
 )

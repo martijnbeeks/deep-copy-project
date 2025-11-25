@@ -27,14 +27,14 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
       const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(htmlContent);
       const processed = hasRealImages
         ? htmlContent
-            .replace(/\s+onerror="[^"]*"/gi, '')
-            .replace(/\s+onerror='[^']*'/gi, '')
-            .replace(/<script[\s\S]*?<\/script>/gi, (block) => {
-              const lower = block.toLowerCase();
-              return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
-                ? ''
-                : block;
-            })
+          .replace(/\s+onerror="[^"]*"/gi, '')
+          .replace(/\s+onerror='[^']*'/gi, '')
+          .replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+            const lower = block.toLowerCase();
+            return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+              ? ''
+              : block;
+          })
         : htmlContent;
 
       // Just wrap in basic HTML structure with Tailwind -- do not replace or alter image URLs!
@@ -72,14 +72,14 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
       const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(htmlContent);
       const processed = hasRealImages
         ? htmlContent
-            .replace(/\s+onerror="[^"]*"/gi, '')
-            .replace(/\s+onerror='[^']*'/gi, '')
-            .replace(/<script[\s\S]*?<\/script>/gi, (block) => {
-              const lower = block.toLowerCase();
-              return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
-                ? ''
-                : block;
-            })
+          .replace(/\s+onerror="[^"]*"/gi, '')
+          .replace(/\s+onerror='[^']*'/gi, '')
+          .replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+            const lower = block.toLowerCase();
+            return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+              ? ''
+              : block;
+          })
         : htmlContent;
 
       // Just wrap in basic HTML structure (no .replace)
@@ -131,7 +131,7 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
       const handleLoad = () => {
         setIsLoaded(true)
       }
-      
+
       iframe.addEventListener('load', handleLoad)
       return () => iframe.removeEventListener('load', handleLoad)
     }
@@ -140,18 +140,17 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
   return (
     <div
       key={template.id}
-      className={`relative cursor-pointer rounded-xl border-2 p-2 md:p-3 transition-all h-[280px] md:h-[320px] flex flex-col ${
-        isSelected
+      className={`relative cursor-pointer rounded-xl border-2 p-2 md:p-3 transition-all h-[280px] md:h-[320px] flex flex-col ${isSelected
           ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
           : 'border-border bg-card'
-      }`}
+        }`}
       onClick={(e) => {
         // Don't navigate if:
         // 1. Preview dialog is currently open or closing
         // 2. Click is on a button (like "Full Preview")
         const target = e.target as HTMLElement
         const isButton = target.closest('button') !== null
-        
+
         // Only prevent click if preview dialog is open, not parent modals
         if (!isDialogOpen && !isDialogClosing && !isButton) {
           e.stopPropagation()
@@ -167,7 +166,7 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <span className="px-1.5 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground rounded-full">
-            {template.category 
+            {template.category
               ? template.category.charAt(0).toUpperCase() + template.category.slice(1).toLowerCase()
               : 'General'}
           </span>
@@ -176,7 +175,7 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
 
       {/* Preview Area */}
       <div className="flex-1 relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border">
-        
+
         <iframe
           key={template.id}
           ref={iframeRef}
@@ -196,8 +195,8 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
 
       {/* Action Buttons */}
       <div className="flex items-center justify-between mt-3">
-        <Dialog 
-          open={isDialogOpen} 
+        <Dialog
+          open={isDialogOpen}
           onOpenChange={(open) => {
             setIsDialogOpen(open)
             if (!open) {
@@ -222,7 +221,7 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
               Full Preview
             </button>
           </DialogTrigger>
-          <DialogContent 
+          <DialogContent
             className="!max-w-[98vw] !max-h-[98vh] !w-[98vw] !h-[98vh] overflow-hidden"
             onInteractOutside={(e) => {
               // Prevent the click from bubbling to parent onClick
@@ -246,8 +245,8 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
                 key={`full-${template.id}`}
                 srcDoc={createFullPreviewHTML(template.html_content)}
                 className="w-full h-full border-0"
-                style={{ 
-                  width: '100%', 
+                style={{
+                  width: '100%',
                   height: 'calc(98vh - 120px)',
                   border: 'none'
                 }}

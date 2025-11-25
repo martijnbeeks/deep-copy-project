@@ -1,8 +1,7 @@
 "use client"
 
-import { useAuthStore } from "@/stores/auth-store"
-import { useJobsStore } from "@/stores/jobs-store"
-import { useSidebar } from "@/contexts/sidebar-context"
+import { useRequireAuth } from "@/hooks/use-require-auth"
+import { useJobs } from "@/lib/hooks/use-jobs"
 import { Sidebar, SidebarTrigger } from "@/components/dashboard/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,46 +18,40 @@ import { useEffect, useState } from "react"
 import { Eye, Search, Filter, Download, BarChart3, FileText, Calendar, Menu, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { JobWithTemplate } from "@/lib/db/types"
+import { logger } from "@/lib/utils/logger"
 
 export default function ResultsPage() {
-  const { user } = useAuthStore()
-  const { jobs, isLoading, error, fetchJobs } = useJobsStore()
+  const { user, isReady } = useRequireAuth()
+  const { data: jobs = [], isLoading, error } = useJobs()
   const router = useRouter()
-  const [filteredResults, setFilteredResults] = useState(jobs.filter(job => job.status === 'completed'))
+  const [filteredResults, setFilteredResults] = useState<JobWithTemplate[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [contentTypeFilter, setContentTypeFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [selectedTemplate, setSelectedTemplate] = useState<{ name: string; html_content: string; description?: string; category?: string } | null>(null)
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
-  useEffect(() => {
-    if (!user) {
-      router.replace("/login")
-      return
-    }
-
-    fetchJobs()
-  }, [user, router])
 
   // Early return if not authenticated to prevent skeleton loader
-  if (!user) {
+  if (!isReady) {
     return null
   }
 
   useEffect(() => {
-    const completedJobs = jobs.filter(job => job.status === 'completed')
+    const completedJobs = jobs.filter((job: JobWithTemplate) => job.status === 'completed')
     let filtered = completedJobs
 
     if (searchTerm) {
       filtered = filtered.filter(
-        (job) =>
+        (job: JobWithTemplate) =>
           job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.brand_info.toLowerCase().includes(searchTerm.toLowerCase()),
+          (job.brand_info || '').toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
     if (contentTypeFilter !== "all") {
-      filtered = filtered.filter((job) => job.template?.category === contentTypeFilter)
+      filtered = filtered.filter((job: JobWithTemplate) => job.template?.category === contentTypeFilter)
     }
 
     setFilteredResults(filtered)
@@ -255,7 +248,7 @@ export default function ResultsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {jobs.filter(job => job.status === 'completed').length}
+                    {jobs.filter((job: JobWithTemplate) => job.status === 'completed').length}
                   </div>
                   <p className="text-xs text-muted-foreground">Completed jobs</p>
                 </CardContent>
@@ -267,7 +260,7 @@ export default function ResultsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {jobs.length > 0 ? Math.round((jobs.filter(job => job.status === 'completed').length / jobs.length) * 100) : 0}%
+                    {jobs.length > 0 ? Math.round((jobs.filter((job: JobWithTemplate) => job.status === 'completed').length / jobs.length) * 100) : 0}%
                   </div>
                   <p className="text-xs text-muted-foreground">Success rate</p>
                 </CardContent>
@@ -279,7 +272,7 @@ export default function ResultsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {jobs.filter((job) => new Date(job.created_at).getMonth() === new Date().getMonth()).length}
+                    {jobs.filter((job: JobWithTemplate) => new Date(job.created_at).getMonth() === new Date().getMonth()).length}
                   </div>
                   <p className="text-xs text-muted-foreground">New jobs this month</p>
                 </CardContent>
@@ -349,7 +342,7 @@ export default function ResultsPage() {
               />
             ) : (
               <div className="grid gap-3 md:gap-4">
-                {filteredResults.map((job) => (
+                {filteredResults.map((job: JobWithTemplate) => (
                   <Card key={job.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4 md:p-6">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -392,16 +385,16 @@ export default function ResultsPage() {
                                           })
                                           setIsTemplateModalOpen(true)
                                         } else {
-                                          console.warn('Template not found or has no html_content')
+                                          logger.warn('Template not found or has no html_content')
                                         }
                                       }
                                     } catch (error) {
-                                      console.error('Error fetching template:', error)
+                                      logger.error('Error fetching template:', error)
                                     } finally {
                                       setIsLoadingTemplate(false)
                                     }
                                   } else {
-                                    console.warn('No template_id available')
+                                    logger.warn('No template_id available')
                                   }
                                 }}
                                 disabled={isLoadingTemplate}

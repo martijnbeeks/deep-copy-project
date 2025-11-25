@@ -1,4 +1,4 @@
-import { deepCopyClient } from '@/lib/api/deepcopy-client'
+import { deepCopyClient } from '@/lib/clients/deepcopy-client'
 import { updateJobStatus, createResult, getRandomInjectableTemplate } from '@/lib/db/queries'
 import { processJobResults } from '@/lib/utils/template-injection'
 
@@ -85,6 +85,9 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
       timestamp_iso: result.timestamp_iso || null,
       html_templates_count: templateCount
     })
+
+    // Screenshot is stored from avatar extraction (product_image) when job is created
+    // product_image comes from avatar API, not from job results
     
   } catch (error) {
     console.error('Error storing job results:', error)

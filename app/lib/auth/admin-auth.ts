@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db/connection'
+import { logger } from '@/lib/utils/logger'
 
 // Simple admin authentication middleware
 export async function verifyAdminAuth(request: NextRequest) {
@@ -31,7 +32,7 @@ export async function verifyAdminAuth(request: NextRequest) {
       return { error: 'Invalid session token' }
     }
   } catch (error) {
-    console.error('Auth verification error:', error)
+    logger.error('Auth verification error:', error)
     return { error: 'Authentication failed' }
   }
 }

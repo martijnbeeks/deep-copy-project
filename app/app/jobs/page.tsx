@@ -1,12 +1,13 @@
 "use client"
 
-import { useAuthStore } from "@/stores/auth-store"
+import { useRequireAuth } from "@/hooks/use-require-auth"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useSidebar } from "@/contexts/sidebar-context"
 import { useJobs, useInvalidateJobs } from "@/lib/hooks/use-jobs"
 import { useAutoPolling } from "@/hooks/use-auto-polling"
 import { useSimplePolling } from "@/hooks/use-simple-polling"
 import { Job } from "@/lib/db/types"
+import { isProcessingStatus } from "@/lib/utils/job-status"
 import { Sidebar, SidebarTrigger } from "@/components/dashboard/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,30 +25,29 @@ import { Eye, Search, Filter, Plus, FileText, AlertCircle, Menu, ChevronLeft, Ch
 import Link from "next/link"
 
 export default function JobsPage() {
-  const { user } = useAuthStore()
+  const { user, isReady } = useRequireAuth()
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
 
-  // Use TanStack Query for data fetching
-  const { data: jobs = [], isLoading, error, refetch } = useJobs()
+  // Get filters from UI store
+  const { filters, setFilters } = useJobsStore()
+
+  // Use TanStack Query for data fetching with filters
+  const { data: jobs = [], isLoading, error, refetch } = useJobs({
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    search: searchTerm || undefined
+  })
   const invalidateJobs = useInvalidateJobs()
 
   // Use auto-polling for processing jobs (hits DeepCopy API directly)
   const { processingJobsCount } = useAutoPolling()
-  
+
   // Use simple polling for processing jobs (hits DeepCopy API directly)
   const { isPolling } = useSimplePolling(jobs)
 
-  useEffect(() => {
-    if (!user) {
-      router.replace("/login")
-      return
-    }
-  }, [user, router])
-
   // Early return if not authenticated to prevent skeleton loader
-  if (!user) {
+  if (!isReady) {
     return null
   }
 
@@ -310,7 +310,7 @@ export default function JobsPage() {
 
 const getStatusBadge = (status: Job["status"]) => {
   const normalizedStatus = status?.toLowerCase()
-  
+
   const variants = {
     completed: "default",
     processing: "secondary",

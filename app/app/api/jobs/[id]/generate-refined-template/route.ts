@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db/connection'
 import { getInjectableTemplateById, createInjectedTemplate, getInjectableTemplateIdForTemplate } from '@/lib/db/queries'
 import { extractContentFromSwipeResult, injectContentIntoTemplate } from '@/lib/utils/template-injection'
+import { handleApiError, createSuccessResponse, createValidationErrorResponse } from '@/lib/middleware/error-handler'
+import { logger } from '@/lib/utils/logger'
 
 export async function POST(
   request: NextRequest,
@@ -12,10 +14,7 @@ export async function POST(
     const { templateId, angle } = await request.json()
 
     if (!templateId || !angle) {
-      return NextResponse.json(
-        { error: 'templateId and angle are required' },
-        { status: 400 }
-      )
+      return createValidationErrorResponse('templateId and angle are required')
     }
 
     // Get job result data
@@ -25,10 +24,7 @@ export async function POST(
     )
 
     if (resultQuery.rows.length === 0) {
-      return NextResponse.json(
-        { error: 'Job result not found' },
-        { status: 404 }
-      )
+      return createValidationErrorResponse('Job result not found', 404)
     }
 
     const metadata = resultQuery.rows[0].metadata
@@ -71,28 +67,28 @@ export async function POST(
     const marketingAngleIndex = marketingAngles.findIndex((ma: any) => {
       if (typeof ma === 'string') {
         const normalizedMA = normalize(ma)
-        return normalizedMA === normalizedSelectedAngle || 
-               normalizedMA === normalizedSelectedDescription ||
-               normalizedMA.includes(normalizedSelectedAngle) || 
-               normalizedSelectedAngle.includes(normalizedMA) ||
-               normalizedMA.includes(normalizedSelectedDescription) ||
-               normalizedSelectedDescription.includes(normalizedMA)
+        return normalizedMA === normalizedSelectedAngle ||
+          normalizedMA === normalizedSelectedDescription ||
+          normalizedMA.includes(normalizedSelectedAngle) ||
+          normalizedSelectedAngle.includes(normalizedMA) ||
+          normalizedMA.includes(normalizedSelectedDescription) ||
+          normalizedSelectedDescription.includes(normalizedMA)
       }
-      
+
       // For object format, check both angle and title properties
       const maAngle = ma.angle ? normalize(ma.angle) : ''
       const maTitle = ma.title ? normalize(ma.title) : ''
-      
+
       // Match against full selected angle or extracted description
-      return (maAngle && (maAngle === normalizedSelectedAngle || 
-                          maAngle === normalizedSelectedDescription ||
-                          maAngle.includes(normalizedSelectedAngle) ||
-                          normalizedSelectedAngle.includes(maAngle) ||
-                          maAngle.includes(normalizedSelectedDescription) ||
-                          normalizedSelectedDescription.includes(maAngle))) ||
-             (maTitle && (maTitle === normalizedSelectedAngle ||
-                          normalizedSelectedAngle.includes(maTitle) ||
-                          maTitle.includes(normalizedSelectedAngle)))
+      return (maAngle && (maAngle === normalizedSelectedAngle ||
+        maAngle === normalizedSelectedDescription ||
+        maAngle.includes(normalizedSelectedAngle) ||
+        normalizedSelectedAngle.includes(maAngle) ||
+        maAngle.includes(normalizedSelectedDescription) ||
+        normalizedSelectedDescription.includes(maAngle))) ||
+        (maTitle && (maTitle === normalizedSelectedAngle ||
+          normalizedSelectedAngle.includes(maTitle) ||
+          maTitle.includes(normalizedSelectedAngle)))
     })
 
     if (marketingAngleIndex >= 0 && swipeResults[marketingAngleIndex]) {
@@ -105,13 +101,13 @@ export async function POST(
         if (!swipeAngle) return false
         const normalizedSwipe = normalize(swipeAngle)
         return normalizedSwipe === normalizedSelectedAngle ||
-               normalizedSwipe === normalizedSelectedDescription ||
-               normalizedSwipe.includes(normalizedSelectedAngle) ||
-               normalizedSelectedAngle.includes(normalizedSwipe) ||
-               normalizedSwipe.includes(normalizedSelectedDescription) ||
-               normalizedSelectedDescription.includes(normalizedSwipe)
+          normalizedSwipe === normalizedSelectedDescription ||
+          normalizedSwipe.includes(normalizedSelectedAngle) ||
+          normalizedSelectedAngle.includes(normalizedSwipe) ||
+          normalizedSwipe.includes(normalizedSelectedDescription) ||
+          normalizedSelectedDescription.includes(normalizedSwipe)
       })
-      
+
       if (foundIndex >= 0) {
         swipeResult = swipeResults[foundIndex]
         angleIndex = foundIndex
@@ -124,28 +120,20 @@ export async function POST(
         index: idx,
         angle: swipe?.angle || swipe?.angle_name || `Angle ${idx + 1}`,
       }))
-      
+
       const availableMarketingAngles = marketingAngles.map((ma: any, idx: number) => {
         if (typeof ma === 'string') return { index: idx, text: ma }
         return { index: idx, title: ma.title, angle: ma.angle }
       })
-      
-      console.error('❌ Angle matching failed:')
-      console.error('Selected angle:', angle)
-      console.error('Available swipe angles:', JSON.stringify(availableAngles, null, 2))
-      console.error('Available marketing angles:', JSON.stringify(availableMarketingAngles, null, 2))
-      
-      return NextResponse.json(
-        { 
-          error: `Marketing angle "${angle}" not found in job results`,
-          debug: {
-            selectedAngle: angle,
-            availableSwipeAngles: availableAngles.map(a => a.angle),
-            marketingAnglesCount: marketingAngles.length,
-            swipeResultsCount: swipeResults.length
-          }
-        },
-        { status: 404 }
+
+      logger.error('❌ Angle matching failed:')
+      logger.error('Selected angle:', angle)
+      logger.error('Available swipe angles:', JSON.stringify(availableAngles, null, 2))
+      logger.error('Available marketing angles:', JSON.stringify(availableMarketingAngles, null, 2))
+
+      return createValidationErrorResponse(
+        `Marketing angle "${angle}" not found in job results`,
+        404
       )
     }
 
@@ -158,14 +146,14 @@ export async function POST(
 
     // Get injectable template
     let injectableTemplates = await getInjectableTemplateById(templateId)
-    
+
     if (!injectableTemplates || injectableTemplates.length === 0) {
       const injectableTemplateId = await getInjectableTemplateIdForTemplate(templateId)
       if (injectableTemplateId) {
         injectableTemplates = await getInjectableTemplateById(injectableTemplateId)
       }
     }
-    
+
     if (!injectableTemplates || injectableTemplates.length === 0) {
       const fallbackResult = await query(
         `SELECT * FROM injectable_templates WHERE advertorial_type = $1 ORDER BY created_at DESC LIMIT 1`,
@@ -175,12 +163,9 @@ export async function POST(
         injectableTemplates = fallbackResult.rows
       }
     }
-    
+
     if (!injectableTemplates || injectableTemplates.length === 0) {
-      return NextResponse.json(
-        { error: `No injectable template found for template ${templateId}` },
-        { status: 404 }
-      )
+      return createValidationErrorResponse(`No injectable template found for template ${templateId}`, 404)
     }
 
     const injectableTemplate = injectableTemplates[0]
@@ -203,7 +188,7 @@ export async function POST(
       finalAngleIndex
     )
 
-    return NextResponse.json({
+    return createSuccessResponse({
       success: true,
       template: {
         id: storedTemplate.id,
@@ -213,14 +198,7 @@ export async function POST(
       }
     })
   } catch (error) {
-    console.error('Error generating refined template:', error)
-    return NextResponse.json(
-      { 
-        error: 'Failed to generate refined template',
-        details: error instanceof Error ? error.message : String(error)
-      },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 

@@ -13,10 +13,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Plus, X, AlertCircle, Eye } from "lucide-react"
-import { useTemplatesStore } from "@/stores/templates-store"
-import { useJobsStore } from "@/stores/jobs-store"
+import { useTemplates } from "@/lib/hooks/use-templates"
+import { useCreateJob } from "@/lib/hooks/use-jobs"
 import { useAuthStore } from "@/stores/auth-store"
 import { TemplatePreview } from "@/components/template-preview"
+import { Template } from "@/lib/db/types"
+import { logger } from "@/lib/utils/logger"
 
 interface PipelineFormData {
   title: string
@@ -35,9 +37,13 @@ interface PipelineFormProps {
 }
 
 export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps) {
-  const { templates, fetchTemplates, selectedTemplate, setSelectedTemplate } = useTemplatesStore()
-  const { createJob } = useJobsStore()
+  // Use TanStack Query for templates data
+  const { data: templates = [], isLoading: templatesLoading } = useTemplates()
+  const createJobMutation = useCreateJob()
   const { user } = useAuthStore()
+
+  // Local state for selected template
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
 
   const [formData, setFormData] = useState<PipelineFormData>({
     title: "",
@@ -50,10 +56,6 @@ export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps)
     gender: "",
   })
   const [errors, setErrors] = useState<Partial<Record<keyof PipelineFormData, string>>>({})
-
-  useEffect(() => {
-    fetchTemplates()
-  }, [fetchTemplates])
 
   // Check if all required fields are empty
   const isFormEmpty = (): boolean => {
@@ -105,8 +107,16 @@ export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps)
       if (onSubmit) {
         await onSubmit(formData)
       } else {
-        // Use store directly if no onSubmit prop
-        await createJob(formData)
+        // Use mutation if no onSubmit prop
+        await createJobMutation.mutateAsync({
+          title: formData.title,
+          brand_info: formData.brand_info,
+          sales_page_url: formData.sales_page_url,
+          template_id: formData.template_id,
+          advertorial_type: formData.advertorial_type || 'Advertorial',
+          target_approach: 'explore',
+          avatars: [],
+        })
       }
 
       // Reset form on success
@@ -123,12 +133,12 @@ export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps)
       setSelectedTemplate(null)
       setErrors({})
     } catch (error) {
-      console.error('Form submission error:', error)
+      logger.error('Form submission error:', error)
     }
   }
 
   const handleTemplateChange = (templateId: string) => {
-    const template = templates.find(t => t.id === templateId)
+    const template = templates.find((t: Template) => t.id === templateId)
     setFormData(prev => ({ ...prev, template_id: templateId }))
     setSelectedTemplate(template || null)
     if (errors.template_id) setErrors(prev => ({ ...prev, template_id: undefined }))
@@ -250,14 +260,24 @@ export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps)
               Select Template <span className="text-destructive">*</span>
             </Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {templates.map((template) => (
-                <TemplatePreview
-                  key={template.id}
-                  template={template}
-                  isSelected={formData.template_id === template.id}
-                  onClick={() => handleTemplateChange(template.id)}
-                />
-              ))}
+              {templatesLoading ? (
+                <div className="col-span-full text-center py-8 text-muted-foreground">
+                  Loading templates...
+                </div>
+              ) : templates.length === 0 ? (
+                <div className="col-span-full text-center py-8 text-muted-foreground">
+                  No templates available
+                </div>
+              ) : (
+                templates.map((template: Template) => (
+                  <TemplatePreview
+                    key={template.id}
+                    template={template}
+                    isSelected={formData.template_id === template.id}
+                    onClick={() => handleTemplateChange(template.id)}
+                  />
+                ))
+              )}
             </div>
             {errors.template_id && (
               <p className="text-sm text-destructive flex items-center gap-1">
