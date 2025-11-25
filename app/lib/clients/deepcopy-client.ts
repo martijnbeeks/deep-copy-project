@@ -138,16 +138,16 @@ class DeepCopyClient {
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = await this.getAccessToken()
     logger.log(`🔑 Using token: ${token.substring(0, 20)}...`)
-    
+
     // Only add cache-busting timestamp for mutations or status checks
     const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method || 'GET')
     const isStatusEndpoint = endpoint.includes('/status') || endpoint.includes('/result')
     const shouldBustCache = isMutation || isStatusEndpoint
     const cacheParam = shouldBustCache ? `?t=${Date.now()}` : ''
-    
+
     const fullUrl = `${this.config.apiUrl}${endpoint}${cacheParam}`
     logger.log(`🌐 Making request to: ${fullUrl}`)
-    
+
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${token}`,
       ...(options.headers as Record<string, string> || {})
@@ -198,7 +198,6 @@ class DeepCopyClient {
   }
 
   async getJobStatus(jobId: string): Promise<JobStatusResponse> {
-    // Don't add timestamp here - makeRequest will add it
     return this.makeRequest<JobStatusResponse>(`jobs/${jobId}`)
   }
 
