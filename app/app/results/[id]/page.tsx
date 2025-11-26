@@ -98,11 +98,11 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => router.push('/dashboard')}
+                    onClick={() => router.push(`/avatars/${params.id}`)}
                     className="flex items-center gap-2"
                   >
                     <ArrowLeft className="h-4 w-4" />
-                    Back to Dashboard
+                    Back to Avatars
                   </Button>
                   {currentJob && (
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary">

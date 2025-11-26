@@ -10,19 +10,22 @@ import { useAuthStore } from '@/stores/auth-store'
  * Returns auth state and a ready flag
  */
 export function useRequireAuth() {
-  const { user, isAuthenticated } = useAuthStore()
+  const { user, isAuthenticated, isLoading } = useAuthStore()
   const router = useRouter()
   
   useEffect(() => {
+    // Don't redirect if we're still loading the auth state (during hydration)
+    if (isLoading) return
+    
     if (!isAuthenticated || !user) {
       router.replace("/login")
     }
-  }, [isAuthenticated, user, router])
+  }, [isAuthenticated, user, router, isLoading])
   
   return { 
     user, 
     isAuthenticated, 
-    isReady: isAuthenticated && !!user 
+    isReady: !isLoading && isAuthenticated && !!user 
   }
 }
 

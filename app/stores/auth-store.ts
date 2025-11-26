@@ -23,7 +23,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
-      isLoading: false,
+      isLoading: true, // Start as loading to prevent premature redirects
       error: null,
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
@@ -78,6 +78,12 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         } : null,
         isAuthenticated: state.isAuthenticated 
       }),
+      onRehydrateStorage: () => (state) => {
+        // Set loading to false after rehydration is complete
+        if (state) {
+          state.isLoading = false
+        }
+      },
     }
   )
 )

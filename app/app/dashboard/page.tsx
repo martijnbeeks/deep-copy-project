@@ -385,7 +385,7 @@ export default function DashboardPage() {
                     <div
                       key={job.id}
                       className="group relative cursor-pointer rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all h-[240px] md:h-[260px] flex flex-col overflow-hidden"
-                      onClick={() => router.push(`/avatars?jobId=${job.id}`)}
+                      onClick={() => router.push(`/avatars/${job.id}`)}
                     >
                       {/* Preview Area */}
                       <div className="flex-1 relative bg-gray-50 dark:bg-gray-900 overflow-hidden min-h-0">
