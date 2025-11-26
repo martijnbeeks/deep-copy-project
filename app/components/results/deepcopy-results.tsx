@@ -15,13 +15,14 @@ import { TemplatePreview } from "@/components/template-preview"
 import { useToast } from "@/hooks/use-toast"
 import { useTemplates } from "@/lib/hooks/use-templates"
 import { extractContentFromSwipeResult, injectContentIntoTemplate } from "@/lib/utils/template-injection"
-import { JobResult, SwipeResult, Listicle, Advertorial, Angle } from "@/lib/clients/deepcopy-client"
+import { MarketingAngleResult, SwipeResult, Listicle, Advertorial, Angle } from "@/lib/clients/deepcopy-client"
 import { internalApiClient } from "@/lib/clients/internal-client"
 import { Template } from "@/lib/db/types"
 import { logger } from "@/lib/utils/logger"
+import { capitalizeFirst } from "@/lib/utils/avatar-utils"
 
-interface DeepCopyResult extends JobResult {
-  // This now matches the JobResult interface from the API client
+interface DeepCopyResult extends MarketingAngleResult {
+  // This now matches the MarketingAngleResult interface from the API client
 }
 
 interface DeepCopyResultsProps {
@@ -120,11 +121,11 @@ function AngleListSection({
 
   return (
     <div className={className}>
-      <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-2">{title}</h6>
+      <h6 className="text-xs font-semibold text-foreground uppercase mb-2">{title}</h6>
       <ul className="space-y-1">
         {items.map((item, idx) => (
-          <li key={idx} className="text-sm text-foreground flex items-start gap-2">
-            <span className="text-primary mt-1.5">•</span>
+          <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+            <span className="text-primary">•</span>
             <span>{item}</span>
           </li>
         ))}
@@ -184,11 +185,6 @@ function formatFileType(type: string): string {
   return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
-// Helper function to capitalize first letter of a string
-function capitalizeFirst(str: string): string {
-  if (!str) return str;
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-}
 
 function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, templateId, customerAvatars, salesPageUrl }: DeepCopyResultsProps) {
   const [templates, setTemplates] = useState<Array<{ name: string, type: string, html: string, angle?: string, timestamp?: string, templateId?: string }>>([])
@@ -254,6 +250,19 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Template Preview</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Disable interactions on all clickable elements */
+    a, button, input, select, textarea, [onclick], [role="button"], 
+    [tabindex]:not([tabindex="-1"]), label[for] {
+      pointer-events: none !important;
+      cursor: default !important;
+    }
+    /* Allow scrolling */
+    body, html {
+      overflow: auto !important;
+      pointer-events: auto !important;
+    }
+  </style>
 </head>
 <body>
   ${createPreviewHTML(template.html)}
@@ -586,7 +595,7 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
 
           if (injectableTemplate) {
             // Process each swipe result
-            swipeResults.forEach((swipeResult, index) => {
+            swipeResults.forEach((swipeResult: SwipeResult, index: number) => {
               try {
                 // extractContentFromSwipeResult now handles both string and object formats
                 // Pass the swipeResult as-is
@@ -1481,7 +1490,7 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                             value={openMarketingAngle}
                             onValueChange={setOpenMarketingAngle}
                           >
-                            {fullResult.results.marketing_angles.map((angle, index) => {
+                            {fullResult.results.marketing_angles.map((angle: string | Angle, index: number) => {
                               const { angleObj, angleTitle, angleDescription, angleString } = parseAngle(angle);
                               const isGenerated = generatedAngles.has(angleString);
                               const isGenerating = generatingAngles.has(angleString);
@@ -1540,14 +1549,14 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                                         <div className="space-y-4">
                                           {angleObj?.target_age_range && (
                                             <div>
-                                              <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Age Range</h6>
-                                              <p className="text-sm text-foreground">{angleObj.target_age_range}</p>
+                                              <h6 className="text-xs font-semibold text-foreground uppercase mb-1">Target Age Range</h6>
+                                              <p className="text-sm text-muted-foreground">{angleObj.target_age_range}</p>
                                             </div>
                                           )}
                                           {angleObj?.target_audience && (
                                             <div>
-                                              <h6 className="text-xs font-semibold text-muted-foreground uppercase mb-1">Target Audience</h6>
-                                              <p className="text-sm text-foreground">{angleObj.target_audience}</p>
+                                              <h6 className="text-xs font-semibold text-foreground uppercase mb-1">Target Audience</h6>
+                                              <p className="text-sm text-muted-foreground">{angleObj.target_audience}</p>
                                             </div>
                                           )}
                                           <AngleListSection title="Pain Points" items={angleObj?.pain_points} />
@@ -1946,11 +1955,14 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                                     </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="all">All Angles</SelectItem>
-                                      {angleEntries.map(([description, { title }]) => {
+                                      {angleEntries.map(([description, { title }], index: number) => {
                                         // Truncate title if too long for display
                                         const displayTitle = title.length > 35 ? title.substring(0, 32) + '...' : title;
                                         return (
                                           <SelectItem key={description} value={description}>
+                                            <Badge variant="outline" className="text-xs font-semibold mr-2 bg-muted text-foreground border-border">
+                                              #{index + 1}
+                                            </Badge>
                                             {displayTitle}
                                           </SelectItem>
                                         );
@@ -2286,6 +2298,18 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
     * { box-sizing: border-box; }
     img { max-width: 100%; height: auto; }
     .container { max-width: 95vw; margin: 0 auto; }
+    
+    /* Disable interactions on all clickable elements */
+    a, button, input, select, textarea, [onclick], [role="button"], 
+    [tabindex]:not([tabindex="-1"]), label[for] {
+      pointer-events: none !important;
+      cursor: default !important;
+    }
+    /* Allow scrolling */
+    body, html {
+      overflow: auto !important;
+      pointer-events: auto !important;
+    }
   </style>
 </head>
 <body>

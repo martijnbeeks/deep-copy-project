@@ -21,6 +21,7 @@ import { useAutoPolling } from "@/hooks/use-auto-polling"
 import { useToast } from "@/hooks/use-toast"
 import { isValidUrl } from "@/lib/utils/validation"
 import { logger } from "@/lib/utils/logger"
+import { INITIAL_SOURCE_STATUS, COMPLETED_SOURCE_STATUS, resetSourceStatus, completeSourceStatus, type SourceStatus } from "@/lib/constants/research-sources"
 
 interface CustomerAvatar {
   persona_name: string
@@ -91,14 +92,7 @@ export default function CreatePage() {
   const [currentMarketingAngleId, setCurrentMarketingAngleId] = useState<string | null>(null)
 
   // Individual source completion status
-  const [sourceStatus, setSourceStatus] = useState({
-    webSearch: false,
-    amazonReviews: false,
-    redditDiscussions: false,
-    industryBlogs: false,
-    competitorAnalysis: false,
-    marketTrends: false,
-  })
+  const [sourceStatus, setSourceStatus] = useState<SourceStatus>(INITIAL_SOURCE_STATUS)
 
   // Early return if not authenticated to prevent skeleton loader
   if (!isReady) {
@@ -213,14 +207,7 @@ export default function CreatePage() {
       setResearchStage(0)
 
       // Reset source status
-      setSourceStatus({
-        webSearch: false,
-        amazonReviews: false,
-        redditDiscussions: false,
-        industryBlogs: false,
-        competitorAnalysis: false,
-        marketTrends: false,
-      })
+      setSourceStatus(resetSourceStatus())
 
       // Start slow progress animation that accommodates variable processing times (5-8+ minutes)
       // Progress increases slowly to reach ~85% over 8 minutes, then waits for completion
@@ -292,14 +279,7 @@ export default function CreatePage() {
               setResearchProgress(100)
 
               // Mark all sources as complete
-              setSourceStatus({
-                webSearch: true,
-                amazonReviews: true,
-                redditDiscussions: true,
-                industryBlogs: true,
-                competitorAnalysis: true,
-                marketTrends: true,
-              })
+              setSourceStatus(completeSourceStatus())
 
               // Wait a moment then redirect to results
               setTimeout(() => {
@@ -309,14 +289,7 @@ export default function CreatePage() {
                 setCurrentMarketingAngleId(null)
 
                 // Reset source status
-                setSourceStatus({
-                  webSearch: false,
-                  amazonReviews: false,
-                  redditDiscussions: false,
-                  industryBlogs: false,
-                  competitorAnalysis: false,
-                  marketTrends: false,
-                })
+                setSourceStatus(resetSourceStatus())
 
                 // Reset form
                 setFormData({
@@ -341,14 +314,7 @@ export default function CreatePage() {
               setCurrentMarketingAngleId(null)
 
               // Reset source status
-              setSourceStatus({
-                webSearch: false,
-                amazonReviews: false,
-                redditDiscussions: false,
-                industryBlogs: false,
-                competitorAnalysis: false,
-                marketTrends: false,
-              })
+              setSourceStatus(resetSourceStatus())
 
               toast({
                 title: "Error",
@@ -372,14 +338,7 @@ export default function CreatePage() {
               setCurrentMarketingAngleId(null)
 
               // Reset source status
-              setSourceStatus({
-                webSearch: false,
-                amazonReviews: false,
-                redditDiscussions: false,
-                industryBlogs: false,
-                competitorAnalysis: false,
-                marketTrends: false,
-              })
+              setSourceStatus(resetSourceStatus())
 
               toast({
                 title: "Error",

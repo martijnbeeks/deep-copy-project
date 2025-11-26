@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { getGenderIcon } from "@/lib/utils/avatar-utils"
 
 interface ExtractedAvatar {
   persona_name: string
@@ -288,14 +289,6 @@ function AvatarExtractionDialogComponent({
     }
   }
 
-  const getGenderIcon = (gender: string) => {
-    switch (gender.toLowerCase()) {
-      case 'male': return '👨'
-      case 'female': return '👩'
-      case 'both': return '👥'
-      default: return '👤'
-    }
-  }
 
   const formatGender = (gender: string) => {
     const lowerGender = gender.toLowerCase()

@@ -470,6 +470,18 @@ export default function ResultsPage() {
     * { box-sizing: border-box; }
     img { max-width: 100%; height: auto; }
     .container { max-width: 1200px; margin: 0 auto; }
+    
+    /* Disable interactions on all clickable elements */
+    a, button, input, select, textarea, [onclick], [role="button"], 
+    [tabindex]:not([tabindex="-1"]), label[for] {
+      pointer-events: none !important;
+      cursor: default !important;
+    }
+    /* Allow scrolling */
+    body, html {
+      overflow: auto !important;
+      pointer-events: auto !important;
+    }
   </style>
 </head>
 <body>

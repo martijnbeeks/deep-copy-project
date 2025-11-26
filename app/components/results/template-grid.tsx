@@ -98,6 +98,19 @@ export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Template Preview</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Disable interactions on all clickable elements */
+    a, button, input, select, textarea, [onclick], [role="button"], 
+    [tabindex]:not([tabindex="-1"]), label[for] {
+      pointer-events: none !important;
+      cursor: default !important;
+    }
+    /* Allow scrolling */
+    body, html {
+      overflow: auto !important;
+      pointer-events: auto !important;
+    }
+  </style>
 </head>
 <body>
   ${createPreviewHTML(template.html)}

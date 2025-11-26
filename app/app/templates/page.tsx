@@ -3,42 +3,32 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/dashboard/sidebar"
-import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { useTemplatesStore } from "@/stores/templates-store"
 import { useTemplates } from "@/lib/hooks/use-templates"
 import { TemplatePreview } from "@/components/template-preview"
-import { Search, Filter, FileText } from "lucide-react"
+import { Filter, FileText } from "lucide-react"
 
 export default function TemplatesPage() {
   const router = useRouter()
-  const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
-  
+
   // Get filters from UI store
   const { filters, setFilters } = useTemplatesStore()
-  
-  // Use TanStack Query for data fetching
-  const { data: templates = [], isLoading: templatesLoading } = useTemplates({
-    category: selectedCategory !== 'all' ? selectedCategory : undefined,
-    search: searchTerm || undefined
-  })
-  
+
+  // Use TanStack Query for data fetching - fetch all templates once
+  const { data: allTemplates = [], isLoading: templatesLoading } = useTemplates()
+
   // Pagination state - same as create page
   const [currentPage, setCurrentPage] = useState(1)
   const templatesPerPage = 9
 
-  // Filter templates - same logic as before
-  const filteredTemplates = templates.filter(template => {
-    const matchesSearch = !searchTerm || 
-      template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      template.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    
+  // Client-side filtering - filter all templates by category
+  const filteredTemplates = allTemplates.filter(template => {
     const matchesCategory = selectedCategory === "all" || template.category === selectedCategory
-    
-    return matchesSearch && matchesCategory
+    return matchesCategory
   })
 
   // Pagination logic - same as create page
@@ -56,6 +46,11 @@ export default function TemplatesPage() {
     }
   }
 
+  // Reset to first page when category changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedCategory])
+
   const handleTemplateSelect = (templateId: string) => {
     router.push(`/create?template=${templateId}`)
   }
@@ -65,26 +60,17 @@ export default function TemplatesPage() {
       <Sidebar />
       <main className="flex-1 overflow-auto ml-16">
         <div className="max-w-7xl mx-auto p-6 space-y-6">
-          <div className="text-center space-y-2">
+          {/*<div className="text-center space-y-2">
             <h1 className="text-3xl font-bold">Choose a Template</h1>
             <p className="text-muted-foreground">
               Select a template to start creating your content
             </p>
-          </div>
+          </div>*/}
 
-          {/* Search and Filter */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search templates..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+          {/* Category Filter */}
+          <div className="flex justify-start">
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-full sm:w-48">
+              <SelectTrigger className="w-48">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
@@ -100,10 +86,10 @@ export default function TemplatesPage() {
           <Card className="border-0 shadow-sm">
             <CardContent className="p-8">
               <div className="space-y-6">
-                <div className="text-center space-y-2">
+                {/*<div className="text-center space-y-2">
                   <h3 className="text-xl font-semibold text-foreground">Available Templates</h3>
                   <p className="text-sm text-muted-foreground">Click on any template to preview and select it</p>
-                </div>
+                </div>*/}
 
                 {/* Templates Grid - Same as create page using TemplatePreview */}
                 {templatesLoading ? (
@@ -173,7 +159,7 @@ export default function TemplatesPage() {
             </CardContent>
           </Card>
         </div>
-      </main>
-    </div>
+      </main >
+    </div >
   )
 }

@@ -12,6 +12,8 @@ import { useEffect, useState, Suspense } from "react"
 import { Users, CheckCircle, Calendar, User, ArrowLeft, Loader2, Globe, Package, MessageSquare, FileText, BarChart, Info, Search } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
 import { useToast } from "@/hooks/use-toast"
+import { INITIAL_SOURCE_STATUS, COMPLETED_SOURCE_STATUS, resetSourceStatus, completeSourceStatus, type SourceStatus } from "@/lib/constants/research-sources"
+import { getGenderIcon, capitalizeFirst } from "@/lib/utils/avatar-utils"
 
 interface Avatar {
     persona_name: string
@@ -53,14 +55,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
     const [researchStage, setResearchStage] = useState(0)
     const [currentJobId, setCurrentJobId] = useState<string | null>(null)
     const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null)
-    const [sourceStatus, setSourceStatus] = useState({
-        webSearch: false,
-        amazonReviews: false,
-        redditDiscussions: false,
-        industryBlogs: false,
-        competitorAnalysis: false,
-        marketTrends: false,
-    })
+    const [sourceStatus, setSourceStatus] = useState<SourceStatus>(INITIAL_SOURCE_STATUS)
 
     useEffect(() => {
         // Don't redirect if we're still loading the auth state (during hydration)
@@ -138,14 +133,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
             setCurrentJobId(null)
 
             // Reset source status
-            setSourceStatus({
-                webSearch: false,
-                amazonReviews: false,
-                redditDiscussions: false,
-                industryBlogs: false,
-                competitorAnalysis: false,
-                marketTrends: false,
-            })
+            setSourceStatus(resetSourceStatus())
 
             // Start progress animation
             const startTime = Date.now()
@@ -238,14 +226,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                 setResearchProgress(100)
 
                                 // Mark all sources as complete
-                                setSourceStatus({
-                                    webSearch: true,
-                                    amazonReviews: true,
-                                    redditDiscussions: true,
-                                    industryBlogs: true,
-                                    competitorAnalysis: true,
-                                    marketTrends: true,
-                                })
+                                setSourceStatus(completeSourceStatus())
 
                                 // Wait a moment then redirect to results
                                 setTimeout(() => {
@@ -257,14 +238,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                     setSelectedAvatarForDetails(null)
 
                                     // Reset source status
-                                    setSourceStatus({
-                                        webSearch: false,
-                                        amazonReviews: false,
-                                        redditDiscussions: false,
-                                        industryBlogs: false,
-                                        competitorAnalysis: false,
-                                        marketTrends: false,
-                                    })
+                                    setSourceStatus(resetSourceStatus())
 
                                     // Redirect to avatar job's results page
                                     router.push(`/results/${avatarJobId}`)
@@ -279,14 +253,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                 setSelectedAvatar(null)
                                 setSelectedAvatarForDetails(null)
 
-                                setSourceStatus({
-                                    webSearch: false,
-                                    amazonReviews: false,
-                                    redditDiscussions: false,
-                                    industryBlogs: false,
-                                    competitorAnalysis: false,
-                                    marketTrends: false,
-                                })
+                                setSourceStatus(resetSourceStatus())
 
                                 toast({
                                     title: "Error",
@@ -311,14 +278,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                 setSelectedAvatar(null)
                                 setSelectedAvatarForDetails(null)
 
-                                setSourceStatus({
-                                    webSearch: false,
-                                    amazonReviews: false,
-                                    redditDiscussions: false,
-                                    industryBlogs: false,
-                                    competitorAnalysis: false,
-                                    marketTrends: false,
-                                })
+                                setSourceStatus(resetSourceStatus())
 
                                 toast({
                                     title: "Error",
@@ -368,14 +328,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                 setSelectedAvatar(null)
                 setSelectedAvatarForDetails(null)
 
-                setSourceStatus({
-                    webSearch: false,
-                    amazonReviews: false,
-                    redditDiscussions: false,
-                    industryBlogs: false,
-                    competitorAnalysis: false,
-                    marketTrends: false,
-                })
+                setSourceStatus(resetSourceStatus())
 
                 toast({
                     title: "Error",
@@ -391,20 +344,6 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
     // No filtering needed - show all avatars for this job
     const filteredAvatars = avatars
 
-    const getGenderIcon = (gender: string) => {
-        switch (gender.toLowerCase()) {
-            case 'male': return '👨'
-            case 'female': return '👩'
-            case 'both': return '👥'
-            default: return '👤'
-        }
-    }
-
-    // Helper function to capitalize first letter of gender
-    const capitalizeFirst = (str: string): string => {
-        if (!str) return str;
-        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-    }
 
     if (!user) {
         return (
