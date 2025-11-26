@@ -4,20 +4,20 @@ import { internalApiClient } from '@/lib/clients/internal-client'
 import { useJobsStore } from '@/stores/jobs-store'
 
 // Query keys
-export const jobKeys = {
-  all: ['jobs'] as const,
-  lists: () => [...jobKeys.all, 'list'] as const,
-  list: (filters?: { status?: string; search?: string }) => [...jobKeys.lists(), { filters }] as const,
-  details: () => [...jobKeys.all, 'detail'] as const,
-  detail: (id: string) => [...jobKeys.details(), id] as const,
+export const marketingAngleKeys = {
+  all: ['marketing-angles'] as const,
+  lists: () => [...marketingAngleKeys.all, 'list'] as const,
+  list: (filters?: { status?: string; search?: string }) => [...marketingAngleKeys.lists(), { filters }] as const,
+  details: () => [...marketingAngleKeys.all, 'detail'] as const,
+  detail: (id: string) => [...marketingAngleKeys.details(), id] as const,
 }
 
-// Fetch all jobs - uses TanStack Query directly, no Zustand
-export function useJobs(filters?: { status?: string; search?: string }) {
+// Fetch all marketing angles - uses TanStack Query directly, no Zustand
+export function useMarketingAngles(filters?: { status?: string; search?: string }) {
   return useQuery<JobWithTemplate[]>({
-    queryKey: jobKeys.list(filters),
+    queryKey: marketingAngleKeys.list(filters),
     queryFn: async () => {
-      const response = await internalApiClient.getJobs(filters) as { jobs: JobWithTemplate[] }
+      const response = await internalApiClient.getMarketingAngles(filters) as { jobs: JobWithTemplate[] }
       return response.jobs
     },
     staleTime: 30 * 1000, // Data is fresh for 30 seconds - won't refetch on navigation if data is fresh
@@ -26,12 +26,12 @@ export function useJobs(filters?: { status?: string; search?: string }) {
   })
 }
 
-// Fetch single job - uses TanStack Query directly, no Zustand
-export function useJob(id: string) {
+// Fetch single marketing angle - uses TanStack Query directly, no Zustand
+export function useMarketingAngle(id: string) {
   return useQuery<JobWithResult>({
-    queryKey: jobKeys.detail(id),
+    queryKey: marketingAngleKeys.detail(id),
     queryFn: async () => {
-      return await internalApiClient.getJob(id) as JobWithResult
+      return await internalApiClient.getMarketingAngle(id) as JobWithResult
     },
     enabled: !!id,
     staleTime: 30 * 1000, // Data is fresh for 30 seconds
@@ -40,12 +40,12 @@ export function useJob(id: string) {
   })
 }
 
-// Create job mutation
-export function useCreateJob() {
+// Create marketing angle mutation
+export function useCreateMarketingAngle() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (jobData: {
+    mutationFn: async (marketingAngleData: {
       title: string
       brand_info: string
       sales_page_url?: string
@@ -55,53 +55,63 @@ export function useCreateJob() {
       avatars?: any[]
       product_image?: string
     }) => {
-      const response = await internalApiClient.createJob(jobData) as { job?: JobWithTemplate } | JobWithTemplate
+      const response = await internalApiClient.createMarketingAngle(marketingAngleData) as { job?: JobWithTemplate } | JobWithTemplate
       return (response as any)?.job || response
     },
     onSuccess: () => {
-      // Invalidate and refetch jobs list
-      queryClient.invalidateQueries({ queryKey: jobKeys.lists() })
+      // Invalidate and refetch marketing angles list
+      queryClient.invalidateQueries({ queryKey: marketingAngleKeys.lists() })
     },
   })
 }
 
-// Update job mutation
-export function useUpdateJob() {
+// Update marketing angle mutation
+export function useUpdateMarketingAngle() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string;[key: string]: any }) => {
-      const response = await internalApiClient.updateJob(id, updates) as { job?: JobWithTemplate } | JobWithTemplate
+      const response = await internalApiClient.updateMarketingAngle(id, updates) as { job?: JobWithTemplate } | JobWithTemplate
       return (response as any)?.job || response
     },
     onSuccess: (data, variables) => {
       // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: jobKeys.detail(variables.id) })
-      queryClient.invalidateQueries({ queryKey: jobKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: marketingAngleKeys.detail(variables.id) })
+      queryClient.invalidateQueries({ queryKey: marketingAngleKeys.lists() })
     },
   })
 }
 
-// Delete job mutation
-export function useDeleteJob() {
+// Delete marketing angle mutation
+export function useDeleteMarketingAngle() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (id: string) => {
-      return await internalApiClient.deleteJob(id)
+      return await internalApiClient.deleteMarketingAngle(id)
     },
     onSuccess: () => {
-      // Invalidate jobs list
-      queryClient.invalidateQueries({ queryKey: jobKeys.lists() })
+      // Invalidate marketing angles list
+      queryClient.invalidateQueries({ queryKey: marketingAngleKeys.lists() })
     },
   })
 }
 
-// Invalidate jobs cache
-export function useInvalidateJobs() {
+// Invalidate marketing angles cache
+export function useInvalidateMarketingAngles() {
   const queryClient = useQueryClient()
 
   return () => {
-    queryClient.invalidateQueries({ queryKey: jobKeys.all })
+    queryClient.invalidateQueries({ queryKey: marketingAngleKeys.all })
   }
 }
+
+// Legacy exports for backward compatibility during transition
+export const useJobs = useMarketingAngles
+export const useJob = useMarketingAngle
+export const useCreateJob = useCreateMarketingAngle
+export const useUpdateJob = useUpdateMarketingAngle
+export const useDeleteJob = useDeleteMarketingAngle
+export const useInvalidateJobs = useInvalidateMarketingAngles
+export const jobKeys = marketingAngleKeys
+

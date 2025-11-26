@@ -79,7 +79,6 @@ export class BackgroundPollingService {
   }
 
   private startJobPolling(jobId: string, deepCopyJobId: string) {
-
     let pollCount = 0
     const maxPolls = 60 // Maximum 15 minutes of polling (60 * 15 seconds)
 
@@ -87,16 +86,13 @@ export class BackgroundPollingService {
       try {
         pollCount++
 
-        const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
-
+        const statusResponse = await deepCopyClient.getMarketingAngleStatus(deepCopyJobId)
 
         if (statusResponse.status === 'SUCCEEDED') {
-          // Job completed - get results and store them
-
-          const result = await deepCopyClient.getJobResult(deepCopyJobId)
+          // Marketing angle completed - get results and store them
+          const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
           await this.storeJobResults(jobId, result, deepCopyJobId)
           await updateJobStatus(jobId, 'completed', 100)
-
 
           // Stop polling
           backgroundPollingManager.delete(jobId)
@@ -105,7 +101,6 @@ export class BackgroundPollingService {
         } else if (statusResponse.status === 'FAILED') {
           // Job failed
           await updateJobStatus(jobId, 'failed')
-
 
           // Stop polling
           backgroundPollingManager.delete(jobId)
@@ -122,19 +117,16 @@ export class BackgroundPollingService {
             const timeoutId = setTimeout(poll, 15000) // Poll every 15 seconds
             backgroundPollingManager.set(jobId, timeoutId)
           } else {
-
             backgroundPollingManager.delete(jobId)
           }
 
         } else {
           // Unknown status - mark as failed
           await updateJobStatus(jobId, 'failed')
-
           backgroundPollingManager.delete(jobId)
         }
 
       } catch (error) {
-
         backgroundPollingManager.delete(jobId)
       }
     }

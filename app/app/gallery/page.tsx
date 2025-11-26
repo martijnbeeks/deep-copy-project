@@ -110,7 +110,6 @@ export default function ResultsGalleryPage() {
       }
       return 'https://placehold.co/600x400?text=Template+Preview';
     } catch (error) {
-      console.error('Error generating thumbnail:', error);
       return 'https://placehold.co/600x400?text=Template+Preview';
     }
   };
@@ -128,11 +127,9 @@ export default function ResultsGalleryPage() {
     try {
       // Wait for user to be available
       if (!user) {
-        console.log('User not available, waiting...')
         return
       }
 
-      console.log('Fetching all templates for user:', user.email)
 
       // Use the original gallery API but with better error handling
       const response = await fetch(`/api/gallery/templates?page=1&limit=1000`, {
@@ -143,20 +140,16 @@ export default function ResultsGalleryPage() {
 
       if (response.ok) {
         const data = await response.json()
-        console.log('Fetched templates:', data.templates?.length || 0, 'templates')
 
         if (data.templates && data.templates.length > 0) {
           setAllTemplates(data.templates)
         } else {
-          console.log('No templates found')
           setAllTemplates([])
         }
       } else {
-        console.error('Failed to fetch templates:', response.status, response.statusText)
         setAllTemplates([])
       }
     } catch (error) {
-      console.error('Error loading gallery data:', error)
       setAllTemplates([])
     } finally {
       setIsLoading(false)
@@ -174,7 +167,6 @@ export default function ResultsGalleryPage() {
         description: "Template HTML copied to clipboard.",
       })
     } catch (error) {
-      console.error('Error copying template:', error)
       toast({
         title: "Error",
         description: "Failed to copy template to clipboard.",

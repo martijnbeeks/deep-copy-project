@@ -248,10 +248,6 @@ export function extractContentFromAngle(results: any, swipe: any, angleIndex: nu
   const swipeContent = swipe.content ? JSON.parse(swipe.content) : {}
   const listicles = swipeContent.listicles || []
 
-  console.log(`🔍 Extracting content for angle ${angleIndex + 1}: ${swipe.angle}`)
-  console.log('- Swipe content:', swipeContent)
-  console.log('- Listicles count:', listicles.length)
-  console.log('- First listicle:', listicles[0])
 
   // Extract key information
   const projectName = results.project_name || 'Nerve Relief™'
@@ -471,7 +467,6 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
       try {
         swipeContent = JSON.parse(swipeResult.content)
       } catch (e) {
-        console.warn('Failed to parse swipe content as JSON:', e)
         swipeContent = {}
       }
     } else {
@@ -945,7 +940,6 @@ export function extractContentFromResults(results: any): ContentData {
           allListicles.push(...swipeContent.listicles)
         }
       } catch (e) {
-        console.warn(`Failed to parse swipe content ${index}:`, e)
       }
     }
   })
@@ -954,13 +948,6 @@ export function extractContentFromResults(results: any): ContentData {
   const firstSwipe = swipeResults[0] || {}
   const swipeContent = firstSwipe.content ? JSON.parse(firstSwipe.content) : {}
 
-  console.log('🔍 Extracting content from API results:')
-  console.log('- Summary length:', summary.length)
-  console.log('- Swipe results count:', swipeResults.length)
-  console.log('- All angles:', allAngles)
-  console.log('- Total listicles from all angles:', allListicles.length)
-  console.log('- First 3 listicles:', allListicles.slice(0, 3).map(l => ({ title: l.title, number: l.number })))
-  console.log('- Using listicles 0-14 for sections 1-15')
 
   // Extract key information
   const projectName = results.project_name || 'Nerve Relief™'
@@ -1262,7 +1249,6 @@ export function injectContentIntoTemplate(template: InjectableTemplate, content:
 
     // Validate template has content
     if (!htmlContent || htmlContent.trim().length === 0) {
-      console.warn('⚠️ Template has no HTML content, using fallback')
       return createFallbackTemplate(content)
     }
 
@@ -1385,15 +1371,12 @@ export function injectContentIntoTemplate(template: InjectableTemplate, content:
     return htmlContent
 
   } catch (error) {
-    console.error('❌ Error in injectContentIntoTemplate:', error)
-    console.warn('⚠️ Falling back to basic template generation')
     return createFallbackTemplate(content)
   }
 }
 
 // Create a fallback template when injection fails
 function createFallbackTemplate(content: ContentData): string {
-  console.log('🔧 Creating fallback template')
 
   return `
 <!DOCTYPE html>
@@ -1513,7 +1496,6 @@ function createFallbackTemplate(content: ContentData): string {
 
 // Refined deduplication function to remove duplicates while preserving HTML structure
 function aggressiveDeduplication(htmlContent: string): string {
-  console.log('🧹 Starting refined deduplication...')
 
   let cleanedContent = htmlContent
 
@@ -1531,7 +1513,6 @@ function aggressiveDeduplication(htmlContent: string): string {
   for (const pattern of disclaimerPatterns) {
     const matches = cleanedContent.match(pattern)
     if (matches && matches.length > 1) {
-      console.log(`🗑️ Removing ${matches.length - 1} duplicate disclaimers`)
       // Keep only the first occurrence
       cleanedContent = cleanedContent.replace(pattern, (match, offset) => {
         return offset === cleanedContent.indexOf(match) ? match : ''
@@ -1551,7 +1532,6 @@ function aggressiveDeduplication(htmlContent: string): string {
   for (const pattern of ctaPatterns) {
     const matches = cleanedContent.match(pattern)
     if (matches && matches.length > 1) {
-      console.log(`🗑️ Removing ${matches.length - 1} duplicate CTAs`)
       // Keep only the first occurrence
       cleanedContent = cleanedContent.replace(pattern, (match, offset) => {
         return offset === cleanedContent.indexOf(match) ? match : ''
@@ -1574,7 +1554,6 @@ function aggressiveDeduplication(htmlContent: string): string {
         const textRegex = new RegExp(`<[^>]*>${escapedText}<\/[^>]*>`, 'g')
         const allMatches = cleanedContent.match(textRegex) || []
         if (allMatches.length > 1) {
-          console.log(`🗑️ Removing duplicate text content: "${text.substring(0, 50)}..."`)
           cleanedContent = cleanedContent.replace(textRegex, (textMatch, offset) => {
             return offset === cleanedContent.indexOf(textMatch) ? textMatch : ''
           })
@@ -1591,7 +1570,6 @@ function aggressiveDeduplication(htmlContent: string): string {
   const uniqueButtons = [...new Set(buttons)]
 
   if (buttons.length !== uniqueButtons.length) {
-    console.log(`🗑️ Removing ${buttons.length - uniqueButtons.length} duplicate buttons`)
     // Keep only unique buttons
     let newContent = cleanedContent
     for (const button of buttons) {
@@ -1605,7 +1583,6 @@ function aggressiveDeduplication(htmlContent: string): string {
     cleanedContent = newContent
   }
 
-  console.log('✅ Refined deduplication completed')
   return cleanedContent
 }
 
@@ -2146,20 +2123,10 @@ export async function processJobResults(
   getRandomInjectableTemplate: (type: 'listicle' | 'advertorial') => Promise<InjectableTemplate | null>
 ): Promise<{ templates: Array<{ angle: string, html: string }>, combinedHtml: string }> {
   try {
-    console.log(`🚀 Processing job results for advertorial type: ${advertorialType}`)
-    console.log('📊 Results structure:', {
-      hasSummary: !!results.summary,
-      hasSwipeResults: !!results.swipe_results,
-      swipeResultsCount: results.swipe_results?.length || 0,
-      projectName: results.project_name
-    })
-
     // Get a random template for the specified type
     const template = await getRandomInjectableTemplate(advertorialType)
 
     if (!template) {
-      console.error(`No ${advertorialType} template found in database`)
-      console.warn('⚠️ Creating fallback template without injectable template')
 
       // Create fallback content and return it
       const fallbackContent = extractContentFromResults(results)
@@ -2171,7 +2138,6 @@ export async function processJobResults(
       }
     }
 
-    console.log(`✅ Found template: ${template.name} (${template.advertorial_type})`)
 
     // Process each marketing angle separately
     const swipeResults = results.swipe_results || []
@@ -2190,13 +2156,10 @@ export async function processJobResults(
     // Generate one HTML file for each marketing angle
     for (let i = 0; i < swipeResults.length; i++) {
       const swipe = swipeResults[i]
-      console.log(`\n🎯 Processing angle ${i + 1}/${swipeResults.length}: ${swipe.angle}`)
 
       try {
         // Extract content for this specific angle
         const content = extractContentFromAngle(results, swipe, i)
-        console.log(`📝 Angle ${i + 1} content keys:`, Object.keys(content))
-        console.log(`📝 Angle ${i + 1} hero headline:`, content.hero.headline)
 
         // Inject content into template
         const angleHtml = injectContentIntoTemplate(template, content)
@@ -2204,17 +2167,14 @@ export async function processJobResults(
           angle: swipe.angle || `Angle ${i + 1}`,
           html: angleHtml
         })
-        console.log(`✅ Angle ${i + 1} HTML generated. Length: ${angleHtml.length}`)
 
       } catch (error) {
-        console.error(`❌ Error processing angle ${i + 1}:`, error)
         // Continue with other angles even if one fails
       }
     }
 
     // Ensure we always have at least one template
     if (generatedTemplates.length === 0) {
-      console.warn('⚠️ No templates generated, creating fallback')
       const fallbackContent = extractContentFromResults(results)
       const fallbackHtml = createFallbackTemplate(fallbackContent)
       generatedTemplates.push({ angle: 'Fallback', html: fallbackHtml })
@@ -2223,15 +2183,12 @@ export async function processJobResults(
     // Create carousel HTML that displays all templates
     const carouselHtml = createCarouselHtml(generatedTemplates)
 
-    console.log(`🎉 Generated ${generatedTemplates.length} templates with carousel display`)
     return {
       templates: generatedTemplates,
       combinedHtml: carouselHtml
     }
 
   } catch (error) {
-    console.error('❌ Error in processJobResults:', error)
-    console.warn('⚠️ Returning fallback template due to error')
 
     // Always return a fallback template even on error
     try {
@@ -2243,7 +2200,6 @@ export async function processJobResults(
         combinedHtml: fallbackHtml
       }
     } catch (fallbackError) {
-      console.error('❌ Even fallback template failed:', fallbackError)
       // Last resort - return a basic HTML template
       const basicHtml = `
         <!DOCTYPE html>

@@ -16,9 +16,9 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || undefined
     const search = searchParams.get('search') || undefined
 
-    const jobs = await getJobsByUserId(authResult.user.id, { status, search })
+    const marketingAngles = await getJobsByUserId(authResult.user.id, { status, search })
 
-    return createSuccessResponse({ jobs })
+    return createSuccessResponse({ jobs: marketingAngles })
   } catch (error) {
     return handleApiError(error)
   }
@@ -49,16 +49,16 @@ export async function POST(request: NextRequest) {
     }
     const user = authResult.user
 
-    // Check for duplicate jobs (same title created within last 30 seconds)
+    // Check for duplicate marketing angles (same title created within last 30 seconds)
     const { checkDuplicateJob } = await import('@/lib/db/queries')
-    const duplicateJob = await checkDuplicateJob(user.id, title)
+    const duplicateMarketingAngle = await checkDuplicateJob(user.id, title)
 
-    if (duplicateJob) {
+    if (duplicateMarketingAngle) {
       return NextResponse.json(
         {
-          error: 'Duplicate job detected',
-          message: `A job with the title "${title}" was created recently. Please wait a moment before creating another job with the same title.`,
-          duplicateJobId: duplicateJob.id
+          error: 'Duplicate marketing angle detected',
+          message: `A marketing angle with the title "${title}" was created recently. Please wait a moment before creating another marketing angle with the same title.`,
+          duplicateJobId: duplicateMarketingAngle.id
         },
         { status: 409 } // Conflict status
       )
@@ -92,9 +92,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create job in database with the DeepCopy job ID as the primary ID
+    // Create marketing angle in database with the DeepCopy job ID as the primary ID
     const brandInfoSafe = typeof brand_info === 'string' ? brand_info : ''
-    const job = await createJob({
+    const marketingAngle = await createJob({
       user_id: user.id,
       title,
       brand_info: brandInfoSafe,
@@ -108,8 +108,8 @@ export async function POST(request: NextRequest) {
       screenshot: product_image || undefined // Store screenshot from avatar extraction (product_image)
     })
 
-    // Update job status to processing
-    await updateJobStatus(job.id, 'processing')
+    // Update marketing angle status to processing
+    await updateJobStatus(marketingAngle.id, 'processing')
 
     // Screenshot will be extracted from API response (product_image) when results are stored
     // No need to generate screenshot using Playwright anymore
@@ -121,36 +121,36 @@ export async function POST(request: NextRequest) {
       if (statusResponse.status === 'SUCCEEDED') {
         // Marketing angle completed immediately - get results and store them
         const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
-        await storeJobResults(job.id, result, deepCopyJobId)
-        await updateJobStatus(job.id, 'completed', 100)
+        await storeMarketingAngleResults(marketingAngle.id, result, deepCopyJobId)
+        await updateJobStatus(marketingAngle.id, 'completed', 100)
 
       } else if (statusResponse.status === 'FAILED') {
-        // Job failed immediately
-        await updateJobStatus(job.id, 'failed')
+        // Marketing angle failed immediately
+        await updateJobStatus(marketingAngle.id, 'failed')
 
       } else if (['RUNNING', 'SUBMITTED', 'PENDING'].includes(statusResponse.status)) {
-        // Job is processing - update progress
+        // Marketing angle is processing - update progress
         const progress = statusResponse.status === 'SUBMITTED' ? 25 :
           statusResponse.status === 'RUNNING' ? 50 : 30
-        await updateJobStatus(job.id, 'processing', progress)
+        await updateJobStatus(marketingAngle.id, 'processing', progress)
       }
     } catch (statusError) {
-      // Continue with job creation even if status check fails
+      // Continue with marketing angle creation even if status check fails
     }
 
 
-    return createSuccessResponse(job)
+    return createSuccessResponse(marketingAngle)
   } catch (error) {
     return handleApiError(error)
   }
 }
 
-// Store job results in database
-async function storeJobResults(localJobId: string, result: any, deepCopyJobId: string) {
+// Store marketing angle results in database
+async function storeMarketingAngleResults(localMarketingAngleId: string, result: any, deepCopyJobId: string) {
   try {
 
     // Store the complete JSON result as metadata
-    await createResult(localJobId, '', {
+    await createResult(localMarketingAngleId, '', {
       deepcopy_job_id: deepCopyJobId,
       full_result: result,
       project_name: result.project_name,
@@ -159,11 +159,10 @@ async function storeJobResults(localJobId: string, result: any, deepCopyJobId: s
       generated_at: new Date().toISOString()
     })
 
-    // Screenshot is already stored from avatar extraction (product_image) when job is created
-    // No need to extract from job results since product_image comes from avatar API, not job results
+    // Screenshot is already stored from avatar extraction (product_image) when marketing angle is created
+    // No need to extract from marketing angle results since product_image comes from avatar API, not marketing angle results
 
   } catch (error) {
     throw error
   }
 }
-

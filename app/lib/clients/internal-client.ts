@@ -35,7 +35,7 @@ class InternalApiClient {
     // Add auth token if available (prefer token, fallback to email)
     const token = this.getAuthToken()
     const userEmail = this.getUserEmail()
-    
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
     } else if (userEmail) {
@@ -68,78 +68,107 @@ class InternalApiClient {
     return response.json()
   }
 
-  // ==================== JOBS API ====================
-  
-  async getJobs(filters?: { status?: string; search?: string }) {
+  // ==================== MARKETING ANGLES API ====================
+
+  async getMarketingAngles(filters?: { status?: string; search?: string }) {
     const params = new URLSearchParams()
     if (filters?.status) params.append('status', filters.status)
     if (filters?.search) params.append('search', filters.search)
     const query = params.toString() ? `?${params}` : ''
-    return this.request(`/api/jobs${query}`)
+    return this.request(`/api/marketing-angles${query}`)
   }
 
-  async getJob(jobId: string) {
-    return this.request(`/api/jobs/${jobId}`)
+  async getMarketingAngle(marketingAngleId: string) {
+    return this.request(`/api/marketing-angles/${marketingAngleId}`)
   }
 
-  async createJob(jobData: any) {
-    return this.request('/api/jobs', {
+  async createMarketingAngle(marketingAngleData: any) {
+    return this.request('/api/marketing-angles', {
       method: 'POST',
-      body: JSON.stringify(jobData)
+      body: JSON.stringify(marketingAngleData)
     })
   }
 
-  async updateJob(jobId: string, updates: any) {
-    return this.request(`/api/jobs/${jobId}`, {
+  async updateMarketingAngle(marketingAngleId: string, updates: any) {
+    return this.request(`/api/marketing-angles/${marketingAngleId}`, {
       method: 'PATCH',
       body: JSON.stringify(updates)
     })
   }
 
-  async deleteJob(jobId: string) {
-    return this.request(`/api/jobs/${jobId}`, {
+  async deleteMarketingAngle(marketingAngleId: string) {
+    return this.request(`/api/marketing-angles/${marketingAngleId}`, {
       method: 'DELETE'
     })
   }
 
+  async getMarketingAngleStatus(marketingAngleId: string) {
+    return this.request(`/api/marketing-angles/${marketingAngleId}/status`)
+  }
+
+  async getMarketingAngleResult(marketingAngleId: string) {
+    return this.request(`/api/marketing-angles/${marketingAngleId}/result`)
+  }
+
+  // Legacy methods that still point to old /api/jobs routes for backward compatibility
+  async getJobs(filters?: { status?: string; search?: string }) {
+    return this.getMarketingAngles(filters)
+  }
+
+  async getJob(jobId: string) {
+    return this.getMarketingAngle(jobId)
+  }
+
+  async createJob(jobData: any) {
+    return this.createMarketingAngle(jobData)
+  }
+
+  async updateJob(jobId: string, updates: any) {
+    return this.updateMarketingAngle(jobId, updates)
+  }
+
+  async deleteJob(jobId: string) {
+    return this.deleteMarketingAngle(jobId)
+  }
+
   async getJobStatus(jobId: string) {
-    return this.request(`/api/jobs/${jobId}/status`)
+    return this.getMarketingAngleStatus(jobId)
   }
 
   async getJobResult(jobId: string) {
-    return this.request(`/api/jobs/${jobId}/result`)
+    return this.getMarketingAngleResult(jobId)
   }
 
-  async getGeneratedAngles(jobId: string) {
-    return this.request<string[]>(`/api/jobs/${jobId}/generated-angles`)
+  async getGeneratedAngles(marketingAngleId: string) {
+    return this.request<string[]>(`/api/marketing-angles/${marketingAngleId}/generated-angles`)
   }
 
-  async getInjectedTemplates(jobId: string) {
-    return this.request(`/api/jobs/${jobId}/injected-templates`)
+  async getInjectedTemplates(marketingAngleId: string) {
+    return this.request(`/api/marketing-angles/${marketingAngleId}/injected-templates`)
   }
 
-  async updateGeneratedAngles(jobId: string, angles: string[]) {
-    return this.request(`/api/jobs/${jobId}/update-generated-angles`, {
+  async updateGeneratedAngles(marketingAngleId: string, angles: string[]) {
+    return this.request(`/api/marketing-angles/${marketingAngleId}/update-generated-angles`, {
       method: 'POST',
       body: JSON.stringify({ angles })
     })
   }
 
-  async generateRefinedTemplate(jobId: string, data: any) {
-    return this.request(`/api/jobs/${jobId}/generate-refined-template`, {
+  async generateRefinedTemplate(marketingAngleId: string, data: any) {
+    return this.request(`/api/marketing-angles/${marketingAngleId}/generate-refined-template`, {
       method: 'POST',
       body: JSON.stringify(data)
     })
   }
 
-  async retryTemplates(jobId: string) {
-    return this.request(`/api/jobs/${jobId}/retry-templates`, {
+  async retryTemplates(marketingAngleId: string) {
+    return this.request(`/api/marketing-angles/${marketingAngleId}/retry-templates`, {
       method: 'POST'
     })
   }
 
-  async processJobResults(jobId: string) {
-    return this.request(`/api/jobs/${jobId}/process-results`, {
+  async processMarketingAngleResults(marketingAngleId: string) {
+    return this.request(`/api/marketing-angles/${marketingAngleId}/process-results`, {
       method: 'POST'
     })
   }
@@ -209,8 +238,8 @@ class InternalApiClient {
 
   // ==================== POLLING API ====================
 
-  async pollJobs() {
-    return this.request('/api/poll-jobs', {
+  async pollMarketingAngles() {
+    return this.request('/api/poll-marketing-angles', {
       method: 'POST'
     })
   }

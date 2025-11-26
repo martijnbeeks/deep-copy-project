@@ -44,7 +44,6 @@ const pool = new Pool(getPoolConfig())
 
 // Add connection event handlers for debugging
 pool.on('connect', (client) => {
-  console.log('New database client connected')
 })
 
 pool.on('error', (err, client) => {
@@ -52,7 +51,6 @@ pool.on('error', (err, client) => {
 })
 
 pool.on('remove', (client) => {
-  console.log('Database client removed from pool')
 })
 
 export default pool
@@ -75,7 +73,6 @@ export const query = async (text: string, params?: any[]) => {
         error.message?.includes('timeout')) {
         retries--
         if (retries > 0) {
-          console.log(`Database query failed, retrying... (${retries} attempts left)`)
           await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second before retry
           continue
         }

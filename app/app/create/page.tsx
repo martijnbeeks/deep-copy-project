@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, AlertCircle, Info, Zap, CheckCircle, Globe, Package, MessageSquare, FileText, Search, BarChart } from "lucide-react"
 import { useRequireAuth } from "@/hooks/use-require-auth"
-import { useCreateJob } from "@/lib/hooks/use-jobs"
+import { useCreateMarketingAngle } from "@/lib/hooks/use-jobs"
 import { useRouter } from "next/navigation"
 import { Sidebar, SidebarTrigger } from "@/components/dashboard/sidebar"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
@@ -59,10 +59,10 @@ const getFirstSelectedAvatar = (avatars?: CustomerAvatar[]): CustomerAvatar | un
 
 export default function CreatePage() {
   const { user, isAuthenticated, isReady } = useRequireAuth()
-  const createJobMutation = useCreateJob()
+  const createMarketingAngleMutation = useCreateMarketingAngle()
   const router = useRouter()
 
-  // Use auto-polling for processing jobs (hits DeepCopy API directly)
+  // Use auto-polling for processing marketing angles (hits DeepCopy API directly)
   const { processingJobsCount } = useAutoPolling()
   const { toast } = useToast()
 
@@ -88,7 +88,7 @@ export default function CreatePage() {
   const [showResearchLoading, setShowResearchLoading] = useState(false)
   const [researchProgress, setResearchProgress] = useState(0)
   const [researchStage, setResearchStage] = useState(0)
-  const [currentJobId, setCurrentJobId] = useState<string | null>(null)
+  const [currentMarketingAngleId, setCurrentMarketingAngleId] = useState<string | null>(null)
 
   // Individual source completion status
   const [sourceStatus, setSourceStatus] = useState({
@@ -195,7 +195,7 @@ export default function CreatePage() {
     // For "known" approach, proceed with normal submission
     try {
       setIsLoading(true)
-      const createdJob = await createJobMutation.mutateAsync({
+      const createdMarketingAngle = await createMarketingAngleMutation.mutateAsync({
         ...dataToSubmit,
         brand_info: dataToSubmit.brand_info || '', // Ensure brand_info is always a string
         advertorial_type: 'Advertorial', // Default value since it's required by the API
@@ -204,8 +204,8 @@ export default function CreatePage() {
         product_image: dataToSubmit.product_image, // Pass product_image from avatar extraction
       })
 
-      // Set job ID for polling
-      setCurrentJobId(createdJob.id)
+      // Set marketing angle ID for polling
+      setCurrentMarketingAngleId(createdMarketingAngle.id)
 
       // Show research generation loading dialog
       setShowResearchLoading(true)
@@ -250,14 +250,14 @@ export default function CreatePage() {
       setTimeout(() => setResearchStage(3), 180000)  // Stage 3 at 3min
       setTimeout(() => setResearchStage(4), 300000)  // Stage 4 at 5min
 
-      // Poll for job status
-      const pollJobStatus = async () => {
+      // Poll for marketing angle status
+      const pollMarketingAngleStatus = async () => {
         const maxAttempts = 180 // Max 15 minutes (180 * 5s) to accommodate longer processing
         const pollInterval = 5000 // Poll every 5 seconds
 
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           try {
-            const response = await fetch(`/api/jobs/${createdJob.id}/status`, {
+            const response = await fetch(`/api/marketing-angles/${createdMarketingAngle.id}/status`, {
               method: 'GET',
               headers: {
                 'Content-Type': 'application/json',
@@ -306,7 +306,7 @@ export default function CreatePage() {
                 setShowResearchLoading(false)
                 setResearchProgress(0)
                 setResearchStage(0)
-                setCurrentJobId(null)
+                setCurrentMarketingAngleId(null)
 
                 // Reset source status
                 setSourceStatus({
@@ -330,7 +330,7 @@ export default function CreatePage() {
                 setGeneralError(null)
 
                 // Redirect to results page
-                router.push(`/results/${createdJob.id}`)
+                router.push(`/results/${createdMarketingAngle.id}`)
               }, 1000)
               return
             } else if (status === 'failed' || status === 'failure') {
@@ -338,7 +338,7 @@ export default function CreatePage() {
               setShowResearchLoading(false)
               setResearchProgress(0)
               setResearchStage(0)
-              setCurrentJobId(null)
+              setCurrentMarketingAngleId(null)
 
               // Reset source status
               setSourceStatus({
@@ -352,7 +352,7 @@ export default function CreatePage() {
 
               toast({
                 title: "Error",
-                description: "Job processing failed. Please try again.",
+                description: "Marketing angle processing failed. Please try again.",
                 variant: "destructive",
               })
               return
@@ -369,7 +369,7 @@ export default function CreatePage() {
               setShowResearchLoading(false)
               setResearchProgress(0)
               setResearchStage(0)
-              setCurrentJobId(null)
+              setCurrentMarketingAngleId(null)
 
               // Reset source status
               setSourceStatus({
@@ -383,7 +383,7 @@ export default function CreatePage() {
 
               toast({
                 title: "Error",
-                description: "Failed to check job status. Please check your jobs page.",
+                description: "Failed to check marketing angle status. Please check your marketing angles page.",
                 variant: "destructive",
               })
               return
@@ -398,7 +398,7 @@ export default function CreatePage() {
         setShowResearchLoading(false)
         setResearchProgress(0)
         setResearchStage(0)
-        setCurrentJobId(null)
+        setCurrentMarketingAngleId(null)
 
         // Reset source status
         setSourceStatus({
@@ -412,19 +412,18 @@ export default function CreatePage() {
 
         toast({
           title: "Processing Taking Longer",
-          description: "Your job is still processing. This can take 5-8 minutes or more. Please check your jobs page for updates.",
+          description: "Your marketing angle is still processing. This can take 5-8 minutes or more. Please check your marketing angles page for updates.",
           variant: "default",
         })
       }
 
       // Start polling
-      pollJobStatus()
+      pollMarketingAngleStatus()
 
       // Reset loading state (polling happens in background)
       setIsLoading(false)
     } catch (error) {
-      logger.error('Job creation error:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create job'
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create marketing angle'
 
       // Show error toast
       toast({
@@ -433,10 +432,10 @@ export default function CreatePage() {
         variant: "destructive",
       })
 
-      // Check if it's a duplicate job error
+      // Check if it's a duplicate marketing angle error
       if (errorMessage.includes('Duplicate job detected')) {
         setErrors({
-          title: 'A job with this title was created recently. Please wait a moment or use a different title.'
+          title: 'A marketing angle with this title was created recently. Please wait a moment or use a different title.'
         })
         setGeneralError(errorMessage)
       } else {
@@ -483,7 +482,6 @@ export default function CreatePage() {
         }, 50)
       }
     } catch (error) {
-      logger.error('Error updating avatars:', error)
       toast({
         title: "Error",
         description: "Failed to update avatar selection. Please try again.",
@@ -1067,7 +1065,7 @@ export default function CreatePage() {
               </div>
             </div>
 
-            {/* Compiling Message - Show when all sources are complete but job is still processing */}
+            {/* Compiling Message - Show when all sources are complete but marketing angle is still processing */}
             {sourceStatus.webSearch &&
               sourceStatus.amazonReviews &&
               sourceStatus.redditDiscussions &&

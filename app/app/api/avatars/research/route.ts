@@ -75,7 +75,16 @@ export async function POST(request: NextRequest) {
         customer_avatars: [selectedAvatar] // Only the selected avatar
       }
 
-      const deepCopyResponse = await deepCopyClient.submitJob(jobPayload)
+      const deepCopyResponse = await deepCopyClient.submitMarketingAngle({
+        title: jobPayload.project_name,
+        brand_info: '',
+        sales_page_url: jobPayload.sales_page_url,
+        target_approach: 'aggressive',
+        avatars: jobPayload.customer_avatars?.map((avatar: any) => ({
+          persona_name: avatar.persona_name,
+          is_researched: avatar.is_researched || true
+        })) || []
+      })
       deepCopyJobId = deepCopyResponse.jobId
     } catch (apiError) {
       logger.error('❌ DeepCopy API Error:', apiError)
@@ -116,10 +125,10 @@ export async function POST(request: NextRequest) {
 
     // Check initial status
     try {
-      const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
+      const statusResponse = await deepCopyClient.getMarketingAngleStatus(deepCopyJobId)
 
       if (statusResponse.status === 'SUCCEEDED') {
-        const result = await deepCopyClient.getJobResult(deepCopyJobId)
+        const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
         await createResult(avatarJob.id, '', {
           deepcopy_job_id: deepCopyJobId,
           full_result: result,

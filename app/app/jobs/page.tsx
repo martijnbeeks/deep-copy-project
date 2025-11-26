@@ -3,7 +3,7 @@
 import { useRequireAuth } from "@/hooks/use-require-auth"
 import { useJobsStore } from "@/stores/jobs-store"
 import { useSidebar } from "@/contexts/sidebar-context"
-import { useJobs, useInvalidateJobs } from "@/lib/hooks/use-jobs"
+import { useMarketingAngles, useInvalidateMarketingAngles } from "@/lib/hooks/use-jobs"
 import { useAutoPolling } from "@/hooks/use-auto-polling"
 import { useSimplePolling } from "@/hooks/use-simple-polling"
 import { Job } from "@/lib/db/types"
@@ -24,7 +24,7 @@ import { useEffect, useState, useCallback } from "react"
 import { Eye, Search, Filter, Plus, FileText, AlertCircle, Menu, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react"
 import Link from "next/link"
 
-export default function JobsPage() {
+export default function MarketingAnglesPage() {
   const { user, isReady } = useRequireAuth()
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
@@ -34,30 +34,30 @@ export default function JobsPage() {
   const { filters, setFilters } = useJobsStore()
 
   // Use TanStack Query for data fetching with filters
-  const { data: jobs = [], isLoading, error, refetch } = useJobs({
+  const { data: marketingAngles = [], isLoading, error, refetch } = useMarketingAngles({
     status: statusFilter !== 'all' ? statusFilter : undefined,
     search: searchTerm || undefined
   })
-  const invalidateJobs = useInvalidateJobs()
+  const invalidateMarketingAngles = useInvalidateMarketingAngles()
 
   // Use auto-polling for processing jobs (hits DeepCopy API directly)
   const { processingJobsCount } = useAutoPolling()
 
-  // Use simple polling for processing jobs (hits DeepCopy API directly)
-  const { isPolling } = useSimplePolling(jobs)
+  // Use simple polling for processing marketing angles (hits DeepCopy API directly)
+  const { isPolling } = useSimplePolling(marketingAngles)
 
   // Early return if not authenticated to prevent skeleton loader
   if (!isReady) {
     return null
   }
 
-  // Filter jobs based on search and status
-  const filteredJobs = jobs.filter((job: any) => {
+  // Filter marketing angles based on search and status
+  const filteredMarketingAngles = marketingAngles.filter((marketingAngle: any) => {
     const matchesSearch = !searchTerm ||
-      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.brand_info.toLowerCase().includes(searchTerm.toLowerCase())
+      marketingAngle.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      marketingAngle.brand_info.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesStatus = statusFilter === "all" || job.status === statusFilter
+    const matchesStatus = statusFilter === "all" || marketingAngle.status === statusFilter
 
     return matchesSearch && matchesStatus
   })
@@ -183,7 +183,7 @@ export default function JobsPage() {
           <Card className="w-full max-w-md border-destructive">
             <CardContent className="p-6 text-center">
               <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Failed to load jobs</h3>
+              <h3 className="text-lg font-semibold mb-2">Failed to load marketing angles</h3>
               <p className="text-muted-foreground mb-4">{error instanceof Error ? error.message : 'Unknown error'}</p>
               <Button onClick={() => refetch()}>Try Again</Button>
             </CardContent>
@@ -203,15 +203,15 @@ export default function JobsPage() {
             <div className="flex items-start justify-between mb-4 md:mb-6 gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-2xl md:text-3xl font-bold">All Jobs</h1>
+                  <h1 className="text-2xl md:text-3xl font-bold">All Marketing Angles</h1>
                 </div>
-                <p className="text-sm md:text-base text-muted-foreground mt-1">Manage and monitor your AI content generation tasks</p>
+                <p className="text-sm md:text-base text-muted-foreground mt-1">Manage and monitor your AI marketing angle generation tasks</p>
               </div>
               <div className="flex gap-2">
                 <Link href="/dashboard">
                   <Button className="text-sm md:text-base">
                     <Plus className="h-4 w-4 mr-2" />
-                    <span className="hidden sm:inline">New Job</span>
+                    <span className="hidden sm:inline">New Marketing Angle</span>
                     <span className="sm:hidden">New</span>
                   </Button>
                 </Link>
@@ -222,8 +222,8 @@ export default function JobsPage() {
 
             <Card className="mb-4 md:mb-6">
               <CardHeader>
-                <CardTitle>Filter Jobs</CardTitle>
-                <CardDescription>Search and filter your content generation jobs</CardDescription>
+                <CardTitle>Filter Marketing Angles</CardTitle>
+                <CardDescription>Search and filter your marketing angle generation tasks</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -231,7 +231,7 @@ export default function JobsPage() {
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
-                        placeholder="Search jobs..."
+                        placeholder="Search marketing angles..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10"
@@ -255,39 +255,39 @@ export default function JobsPage() {
               </CardContent>
             </Card>
 
-            {filteredJobs.length === 0 ? (
+            {filteredMarketingAngles.length === 0 ? (
               <EmptyState
                 icon={FileText}
-                title="No jobs found"
+                title="No marketing angles found"
                 description={
                   searchTerm || statusFilter !== "all"
                     ? "Try adjusting your search or filter criteria"
-                    : "Create your first AI content generation job to get started"
+                    : "Create your first AI marketing angle to get started"
                 }
                 action={{
-                  label: "Create New Job",
+                  label: "Create New Marketing Angle",
                   onClick: () => router.push("/dashboard"),
                 }}
               />
             ) : (
               <div className="grid gap-3 md:gap-4">
-                {filteredJobs.map((job: any) => (
-                  <Card key={job.id} className="hover:shadow-md transition-shadow">
+                {filteredMarketingAngles.map((marketingAngle: any) => (
+                  <Card key={marketingAngle.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4 md:p-6">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                            <h3 className="text-base md:text-lg font-semibold break-words">{job.title}</h3>
-                            {getStatusBadge(job.status)}
+                            <h3 className="text-base md:text-lg font-semibold break-words">{marketingAngle.title}</h3>
+                            {getStatusBadge(marketingAngle.status)}
                           </div>
                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs md:text-sm text-muted-foreground">
-                            <span className="capitalize">{job.template?.name || 'AI Generated'}</span>
+                            <span className="capitalize">{marketingAngle.template?.name || 'AI Generated'}</span>
                             <span className="hidden sm:inline">•</span>
-                            <span>{new Date(job.created_at).toLocaleDateString()}</span>
+                            <span>{new Date(marketingAngle.created_at).toLocaleDateString()}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Link href={`/jobs/${job.id}`}>
+                          <Link href={`/jobs/${marketingAngle.id}`}>
                             <Button variant="outline" size="sm" className="w-full sm:w-auto">
                               <Eye className="h-4 w-4 mr-2" />
                               <span className="hidden sm:inline">View Details</span>

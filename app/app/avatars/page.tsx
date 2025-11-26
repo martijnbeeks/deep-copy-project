@@ -111,7 +111,6 @@ function AvatarsContent() {
         })
       }
     } catch (error) {
-      console.error('Error fetching avatars:', error)
       toast({
         title: "Error",
         description: "Failed to load avatars. Please try again.",
@@ -369,7 +368,6 @@ function AvatarsContent() {
 
       } catch (error) {
         clearInterval(progressInterval)
-        console.error('Error starting research:', error)
         setShowResearchLoading(false)
         setResearchProgress(0)
         setResearchStage(0)

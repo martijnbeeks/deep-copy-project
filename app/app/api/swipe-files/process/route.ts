@@ -148,7 +148,6 @@ export async function POST(request: NextRequest) {
           storedId: storedTemplate.id
         })
 
-        console.log(`✅ Processed template ${templateId} for angle "${angle}"`)
       } catch (error) {
         console.error(`❌ Error processing template ${templateId}:`, error)
         errors.push({

@@ -6,7 +6,6 @@ import { logger } from '@/lib/utils/logger'
 
 export async function POST(request: NextRequest) {
   try {
-    logger.log('🔄 Server-side polling: Starting...')
 
     // Get all jobs that need polling (submitted, pending, processing, running)
     const jobs = await query(`
@@ -16,7 +15,6 @@ export async function POST(request: NextRequest) {
       ORDER BY updated_at DESC
     `)
 
-    logger.log(`📊 Found ${jobs.rows.length} processing jobs to poll`)
 
     if (jobs.rows.length === 0) {
       return createSuccessResponse({ message: 'No processing jobs found' })
@@ -26,11 +24,9 @@ export async function POST(request: NextRequest) {
 
     for (const job of jobs.rows) {
       try {
-        logger.log(`🔍 Polling job ${job.id}...`)
 
         // Poll DeepCopy API
-        const data = await deepCopyClient.getJobStatus(job.id)
-        logger.log(`📊 Job ${job.id}: ${data.status}${data.progress !== undefined ? ` (${data.progress}%)` : ''}`)
+        const data = await deepCopyClient.getMarketingAngleStatus(job.id)
 
         // Map DeepCopy status to our database status
         let mappedStatus = data.status
@@ -47,7 +43,6 @@ export async function POST(request: NextRequest) {
           WHERE id = $3
         `, [mappedStatus, data.progress || 0, job.id])
 
-        logger.log(`✅ Updated job ${job.id} status from ${job.status} to ${data.status}`)
 
         results.push({
           jobId: job.id,
@@ -58,7 +53,6 @@ export async function POST(request: NextRequest) {
 
         // If job completed, trigger result processing
         if (mappedStatus === 'COMPLETED') {
-          logger.log(`✅ Job ${job.id} completed, triggering result processing...`)
 
           // Call the status endpoint to process results
           try {
@@ -70,9 +64,7 @@ export async function POST(request: NextRequest) {
               }
             })
 
-            if (statusResponse.ok) {
-              logger.log(`✅ Result processing triggered for job ${job.id}`)
-            } else {
+            if (!statusResponse.ok) {
               logger.error(`❌ Failed to trigger result processing for job ${job.id}`)
             }
           } catch (error) {
@@ -90,7 +82,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    logger.log(`✅ Server-side polling completed: ${results.filter(r => r.updated).length}/${results.length} jobs updated`)
 
     return createSuccessResponse({
       message: 'Polling completed',

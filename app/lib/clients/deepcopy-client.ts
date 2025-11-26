@@ -1,4 +1,6 @@
 import { logger } from '@/lib/utils/logger'
+import { isDevMode } from '@/lib/utils/env'
+import { getDeepCopyAccessToken } from '@/lib/auth/deepcopy-auth'
 
 interface DeepCopyConfig {
   apiUrl: string
@@ -26,19 +28,18 @@ interface CustomerAvatar {
   objections?: string[]
   failed_alternatives?: string[]
   is_broad_avatar?: boolean
-  is_researched?: boolean  // Mark if user selected this avatar
+  is_researched?: boolean
 }
 
-interface SubmitJobRequest {
-  sales_page_url?: string
-  project_name?: string
-  swipe_file_id?: string
-  advertorial_type: string // Required field
-  customer_avatars?: CustomerAvatar[]
-  // Deprecated fields for backward compatibility
-  persona?: string
-  age_range?: string
-  gender?: string
+interface SubmitMarketingAngleRequest {
+  title: string
+  brand_info?: string
+  sales_page_url: string
+  target_approach: string
+  avatars?: {
+    persona_name: string
+    is_researched: boolean
+  }[]
 }
 
 interface SubmitJobResponse {
@@ -65,7 +66,7 @@ interface Angle {
   copy_approach?: string[]
 }
 
-interface JobResult {
+interface MarketingAngleResult {
   project_name: string
   timestamp_iso: string
   job_id: string
@@ -80,7 +81,7 @@ interface JobResult {
     marketing_philosophy_analysis?: string
     summary?: string
     swipe_results?: SwipeResult[]
-    marketing_angles?: (string | Angle)[] // Support both old (string) and new (Angle) formats
+    marketing_angles?: (string | Angle)[]
   }
 }
 
@@ -116,10 +117,22 @@ interface AvatarExtractionRequest {
   url: string
 }
 
-interface AvatarExtractionResponse {
+// Updated to match OpenAPI spec
+interface AvatarExtractionResult {
   success: boolean
   url: string
+  job_id: string
+  timestamp_iso: string
   avatars: CustomerAvatar[]
+  company_type: string
+  product_description: string
+  product_image?: string
+}
+
+interface SwipeFileGenerationRequest {
+  original_job_id: string
+  select_angle: string
+  swipe_file_ids?: string[]
 }
 
 class DeepCopyClient {
@@ -129,110 +142,104 @@ class DeepCopyClient {
     this.config = config
   }
 
-  private async getAccessToken(): Promise<string> {
-    // Use shared auth utility
-    const { getDeepCopyAccessToken } = await import('@/lib/auth/deepcopy-auth')
-    return getDeepCopyAccessToken()
-  }
-
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const token = await this.getAccessToken()
-    logger.log(`🔑 Using token: ${token.substring(0, 20)}...`)
+    const token = await getDeepCopyAccessToken()
+    const fullUrl = `${this.config.apiUrl}${endpoint}`
 
-    // Only add cache-busting timestamp for mutations or status checks
-    const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method || 'GET')
-    const isStatusEndpoint = endpoint.includes('/status') || endpoint.includes('/result')
-    const shouldBustCache = isMutation || isStatusEndpoint
-    const cacheParam = shouldBustCache ? `?t=${Date.now()}` : ''
 
-    const fullUrl = `${this.config.apiUrl}${endpoint}${cacheParam}`
-    logger.log(`🌐 Making request to: ${fullUrl}`)
+    logger.debug(`DeepCopy API Request [${endpoint}]:`, {
+      url: fullUrl,
+      method: options.method || 'GET',
+      body: options.body ? JSON.parse(options.body as string) : undefined
+    })
+
 
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
       ...(options.headers as Record<string, string> || {})
-    }
-
-    // Only add aggressive cache headers for mutations or status endpoints
-    if (shouldBustCache) {
-      headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-      headers['Pragma'] = 'no-cache'
-      headers['Expires'] = '0'
-    }
-
-    // Only add Content-Type for requests with body (POST, PUT, PATCH)
-    if (options.body && ['POST', 'PUT', 'PATCH'].includes(options.method || 'POST')) {
-      headers['Content-Type'] = 'application/json'
     }
 
     const response = await fetch(fullUrl, {
       ...options,
-      cache: shouldBustCache ? 'no-store' : 'default',
       headers
     })
 
-    logger.log(`📊 Response status: ${response.status} ${response.statusText}`)
-
     if (!response.ok) {
       const errorText = await response.text()
-      logger.error(`❌ API Error: ${response.status} ${response.statusText} - ${errorText}`)
-      logger.error(`❌ Request URL: ${fullUrl}`)
-      logger.error(`❌ Request headers:`, headers)
-      throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`)
+      logger.error(`API Error [${endpoint}]: ${response.status} - ${errorText}`)
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`)
     }
 
-    // Handle different content types
     const contentType = response.headers.get('content-type')
-    if (contentType?.includes('application/json')) {
-      return response.json()
-    } else {
-      return response.text() as T
-    }
+    const responseData: T = contentType?.includes('application/json')
+      ? await response.json()
+      : await response.text() as T
+
+    logger.debug(`DeepCopy API Response [${endpoint}]:`, !!responseData)
+
+    return responseData
   }
 
-  async submitJob(jobData: SubmitJobRequest): Promise<SubmitJobResponse> {
-    return this.makeRequest('jobs', {
-      method: 'POST',
-      body: JSON.stringify(jobData)
-    })
-  }
-
-  async getJobStatus(jobId: string): Promise<JobStatusResponse> {
-    return this.makeRequest<JobStatusResponse>(`jobs/${jobId}`)
-  }
-
-  async getJobResult(jobId: string): Promise<JobResult> {
-    return this.makeRequest(`jobs/${jobId}/result`)
-  }
-
-  async extractAvatars(request: AvatarExtractionRequest): Promise<AvatarExtractionResponse> {
-    return this.makeRequest('avatars/extract', {
-      method: 'POST',
-      body: JSON.stringify(request),
-      signal: AbortSignal.timeout(30000) // 30 second timeout
-    })
-  }
-
-  async generateSwipeFiles(originalJobId: string, selectAngle: string): Promise<SubmitJobResponse> {
-    return this.makeRequest('swipe-files/generate', {
+  // Marketing Angle Jobs
+  async submitMarketingAngle(data: SubmitMarketingAngleRequest): Promise<SubmitJobResponse> {
+    const endpoint = isDevMode() ? 'dev/jobs' : 'jobs'
+    return this.makeRequest(endpoint, {
       method: 'POST',
       body: JSON.stringify({
-        original_job_id: originalJobId,
-        select_angle: selectAngle
+        title: data.title,
+        brand_info: data.brand_info || '',
+        sales_page_url: data.sales_page_url,
+        target_approach: data.target_approach,
+        avatars: data.avatars || []
       })
     })
   }
 
-  async getSwipeFileStatus(swipeFileJobId: string): Promise<JobStatusResponse> {
-    return this.makeRequest<JobStatusResponse>(`swipe-files/${swipeFileJobId}`)
+  async getMarketingAngleStatus(jobId: string): Promise<JobStatusResponse> {
+    return this.makeRequest(`jobs/${jobId}`)
   }
 
-  async getSwipeFileResult(swipeFileJobId: string): Promise<any> {
-    return this.makeRequest(`swipe-files/${swipeFileJobId}/result`)
+  async getMarketingAngleResult(jobId: string): Promise<MarketingAngleResult> {
+    return this.makeRequest(`jobs/${jobId}/result`)
+  }
+
+  // Avatar Extraction (follows async pattern like other jobs)
+  async submitAvatarExtraction(request: AvatarExtractionRequest): Promise<SubmitJobResponse> {
+    const endpoint = isDevMode() ? 'dev/avatars/extract' : 'avatars/extract'
+    return this.makeRequest(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(request)
+    })
+  }
+
+  async getAvatarExtractionStatus(jobId: string): Promise<JobStatusResponse> {
+    return this.makeRequest(`avatars/${jobId}`)
+  }
+
+  async getAvatarExtractionResult(jobId: string): Promise<AvatarExtractionResult> {
+    return this.makeRequest(`avatars/${jobId}/result`)
+  }
+
+  // Swipe File Generation
+  async submitSwipeFileGeneration(request: SwipeFileGenerationRequest): Promise<SubmitJobResponse> {
+    const endpoint = isDevMode() ? 'dev/swipe-files/generate' : 'swipe-files/generate'
+    return this.makeRequest(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(request)
+    })
+  }
+
+  async getSwipeFileStatus(jobId: string): Promise<JobStatusResponse> {
+    return this.makeRequest(`swipe-files/${jobId}`)
+  }
+
+  async getSwipeFileResult(jobId: string): Promise<any> {
+    return this.makeRequest(`swipe-files/${jobId}/result`)
   }
 }
 
-// Create a singleton instance with production configuration
+// Singleton instance
 export const deepCopyClient = new DeepCopyClient({
   apiUrl: 'https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/',
   tokenEndpoint: 'https://deepcopy-613663743323-eu-west-1.auth.eu-west-1.amazoncognito.com/oauth2/token',
@@ -240,5 +247,18 @@ export const deepCopyClient = new DeepCopyClient({
   clientSecret: process.env.DEEPCOPY_CLIENT_SECRET || '1msm19oltu7241134t5vujtldr4uvum7hvn6cj7n1s3tg1ar02k5'
 })
 
-export type { SubmitJobRequest, SubmitJobResponse, JobStatusResponse, JobResult, SwipeResult, Listicle, ListicleItem, Advertorial, CustomerAvatar, AvatarExtractionRequest, AvatarExtractionResponse, Angle }
-
+export type {
+  SubmitMarketingAngleRequest,
+  SubmitJobResponse,
+  JobStatusResponse,
+  MarketingAngleResult,
+  SwipeResult,
+  Listicle,
+  ListicleItem,
+  Advertorial,
+  CustomerAvatar,
+  AvatarExtractionRequest,
+  AvatarExtractionResult,
+  SwipeFileGenerationRequest,
+  Angle
+}
