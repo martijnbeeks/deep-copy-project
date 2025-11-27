@@ -314,11 +314,14 @@ function AvatarExtractionDialogComponent({
 
   const formatGender = (gender: string) => {
     const lowerGender = gender.toLowerCase()
+
     if (lowerGender === 'both') {
       return 'Male & Female'
     }
-    return gender.toUpperCase()
+
+    return lowerGender.charAt(0).toUpperCase() + lowerGender.slice(1)
   }
+
 
   const getAgeBadgeColor = (ageRange: string) => {
     if (ageRange.includes('25-34') || ageRange.includes('30-50')) return 'bg-blue-100 text-blue-800'
