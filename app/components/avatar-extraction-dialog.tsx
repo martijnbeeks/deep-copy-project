@@ -30,6 +30,14 @@ interface ExtractedAvatar {
   failed_alternatives?: string[]
 }
 
+interface AvatarApiResponse {
+  success?: boolean
+  avatars?: ExtractedAvatar[]
+  product_image?: string
+  company_type?: string
+  product_description?: string
+}
+
 interface AvatarExtractionDialogProps {
   isOpen: boolean
   onClose: () => void
@@ -66,10 +74,10 @@ function AvatarExtractionDialogComponent({
   // Sync verification form data with formData prop
   useEffect(() => {
     if (formData) {
-      setVerificationFormData({
-        companyType: formData.companyType || "",
-        productDescription: formData.productDescription || ""
-      })
+      setVerificationFormData(prev => ({
+        companyType: formData.companyType || prev.companyType || "",
+        productDescription: formData.productDescription || prev.productDescription || ""
+      }))
     }
   }, [formData])
 
@@ -196,7 +204,7 @@ function AvatarExtractionDialogComponent({
           setLoadingProgress(95)
 
           // Only fetch results after SUCCEEDED
-          const resultData = await internalApiClient.getAvatarResult(jobId) as { success?: boolean; avatars?: any[]; product_image?: string }
+          const resultData = await internalApiClient.getAvatarResult(jobId) as AvatarApiResponse
 
           if (resultData.success && resultData.avatars && resultData.avatars.length > 0) {
             clearInterval(progressInterval)
@@ -216,6 +224,20 @@ function AvatarExtractionDialogComponent({
 
               // Extract product_image (Base64 screenshot) from avatar extraction result
               const productImage = resultData.product_image || undefined
+
+              // Update verification form data with API response values
+              console.log('API Response Data:', {
+                company_type: resultData.company_type,
+                product_description: resultData.product_description,
+                full_result: resultData
+              })
+
+              if (resultData.company_type || resultData.product_description) {
+                setVerificationFormData(prev => ({
+                  companyType: resultData.company_type || prev.companyType || "",
+                  productDescription: resultData.product_description || prev.productDescription || ""
+                }))
+              }
 
               // Save extracted avatars to parent immediately so they persist even if modal is closed
               // Pass empty array for selected avatars since user hasn't selected yet

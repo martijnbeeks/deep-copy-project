@@ -1847,7 +1847,7 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                       <FileText className="w-5 h-5 text-primary-foreground" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-foreground">Generated Prelanders</h2>
+                      <h2 className="text-2xl font-bold text-foreground">Generated Pre-landers</h2>
                       <p className="text-sm text-muted-foreground">Generated marketing templates and angles</p>
                     </div>
                   </div>
