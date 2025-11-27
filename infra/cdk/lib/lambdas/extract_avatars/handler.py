@@ -12,6 +12,7 @@ Saves results to S3 and updates DynamoDB job status.
 import os
 import json
 import logging
+import base64
 import boto3
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -155,6 +156,10 @@ def lambda_handler(event, context):
             
             avatars = future_avatars.result()
             image_base64 = future_image.result()
+            
+        # Check if image_base64 is a string and not bytes
+        if isinstance(image_base64, bytes):
+            image_base64 = base64.b64encode(image_base64).decode("utf-8")
 
         # Prepare results
         results = {

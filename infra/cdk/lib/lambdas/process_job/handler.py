@@ -90,7 +90,19 @@ def save_fullpage_png(url: str) -> bytes:
         page = context.new_page()
 
         # Load the page
-        page.goto(url, wait_until="networkidle")
+        try:
+            # Use domcontentloaded first with a longer timeout (60s)
+            page.goto(url, wait_until="domcontentloaded", timeout=60000)
+            
+            # Try to wait for network idle, but proceed if it times out (some sites never idle)
+            try:
+                page.wait_for_load_state("networkidle", timeout=30000)
+            except Exception:
+                logger.warning(f"Timeout waiting for network idle on {url}, proceeding with screenshot")
+                
+        except Exception as e:
+            logger.error(f"Failed to load page {url}: {e}")
+            raise e
 
         # Take a full-page screenshot
         screenshot_bytes = page.screenshot(full_page=True)
@@ -977,7 +989,7 @@ if __name__ == "__main__":
     event["project_name"] = os.environ.get("project_name", "test")
     event["content_dir"] = os.environ.get("content_dir", "content/")
     event["customer_avatars"] = os.environ.get("customer_avatars", [])
-    event["sales_page_url"] = os.environ.get("sales_page_url", "https://www.sciatiease.com/sciatiease.php")
+    event["sales_page_url"] = os.environ.get("sales_page_url", "https://naxir.co/products/steadystrap")
     
     # Inject jobId and result prefix
     event["job_id"] = os.environ.get("JOB_ID") or event.get("job_id") or str(uuid.uuid4())
