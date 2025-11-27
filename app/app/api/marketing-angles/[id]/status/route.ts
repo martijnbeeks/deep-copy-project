@@ -62,15 +62,42 @@ export async function GET(
 
     // Update our database with the status
     if (statusResponse.status === 'SUCCEEDED') {
-      await updateJobStatus(marketingAngleId, 'completed', 100)
-
-      // Get results and store them
+      // Get results and store them first, before marking as completed
       try {
+        logger.log(`🔄 Fetching results for marketing angle ${marketingAngleId}`)
         const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
+
+        logger.log(`🔄 Storing results for marketing angle ${marketingAngleId}`)
         await storeJobResults(marketingAngleId, result, deepCopyJobId)
+
+        // Only mark as completed after successful result storage
+        await updateJobStatus(marketingAngleId, 'completed', 100)
+        logger.log(`✅ Successfully completed marketing angle ${marketingAngleId}`)
+
       } catch (resultError) {
         logger.error('❌ Error fetching/storing marketing angle results:', resultError)
-        // Continue even if result fetching fails
+        logger.error('❌ Full error details:', {
+          error: resultError instanceof Error ? resultError.message : String(resultError),
+          stack: resultError instanceof Error ? resultError.stack : undefined,
+          marketingAngleId,
+          deepCopyJobId
+        })
+
+        // Mark as failed if we can't store results
+        await updateJobStatus(marketingAngleId, 'failed')
+
+        // Return error response instead of continuing
+        const errorResponse = createSuccessResponse({
+          status: 'failed',
+          progress: 0,
+          updated_at: new Date().toISOString(),
+          deepcopy_status: statusResponse.status,
+          deepcopy_response: statusResponse,
+          error: 'Failed to fetch or store marketing angle results',
+          error_details: resultError instanceof Error ? resultError.message : String(resultError)
+        })
+        errorResponse.headers.set('X-Timestamp', Date.now().toString())
+        return errorResponse
       }
 
     } else if (statusResponse.status === 'FAILED') {
@@ -119,6 +146,20 @@ export async function GET(
             logger.log('📊 Template generation result:', templateResult)
           } else {
             logger.error('❌ No result data found in database for marketing angle:', marketingAngleId)
+            logger.log('🔄 Attempting to re-fetch results from DeepCopy API...')
+
+            // Try to re-fetch and store results if they're missing
+            try {
+              const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
+              await storeJobResults(marketingAngleId, result, deepCopyJobId)
+              logger.log('✅ Successfully re-fetched and stored missing results')
+
+              // Try template generation again
+              const templateResult = await generateAndStoreInjectedTemplates(marketingAngleId, result)
+              logger.log('📊 Template generation result after re-fetch:', templateResult)
+            } catch (refetchError) {
+              logger.error('❌ Failed to re-fetch results from DeepCopy API:', refetchError)
+            }
           }
         } catch (error) {
           logger.error('❌ Error generating templates for completed marketing angle:', error)
