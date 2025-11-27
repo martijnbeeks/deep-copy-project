@@ -221,7 +221,7 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
           <p className="text-xs text-muted-foreground break-words line-clamp-1">{template.description || 'No description available'}</p>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          <span className="px-1.5 py-0.5 text-xs font-medium bg-secondary text-secondary-foreground rounded-full">
+          <span className="px-1.5 py-0.5 text-xs font-medium bg-primary/10 border border-primary/20 text-primary rounded-full">
             {template.category
               ? template.category.charAt(0).toUpperCase() + template.category.slice(1).toLowerCase()
               : 'General'}

@@ -285,11 +285,17 @@ export default function DashboardPage() {
         <main className="flex-1 overflow-auto ml-16">
           <div className="p-4 md:p-6 pb-24 md:pb-28">
             <div className="mb-6">
-              <div className="flex items-center gap-3">
-                <SidebarTrigger />
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">Dashboard</h1>
-                  <p className="text-sm text-muted-foreground">Welcome back, {user.name}!</p>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <SidebarTrigger />
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-2xl md:text-3xl font-bold text-foreground">Dashboard</h1>
+                    <p className="text-sm text-muted-foreground">Welcome back, {user.name}!</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 rounded-lg border border-primary/20">
+                  <div className="w-2 h-2 rounded-full bg-primary"></div>
+                  <span className="text-sm font-medium text-primary">Organization</span>
                 </div>
               </div>
             </div>
@@ -316,7 +322,7 @@ export default function DashboardPage() {
                     <div className="flex-1 relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
-                        placeholder="Search jobs by title or brand..."
+                        placeholder="Search jobs by project name..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10 h-10 bg-background"

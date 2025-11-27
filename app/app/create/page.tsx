@@ -666,18 +666,18 @@ export default function CreatePage() {
 
                         {formData.target_approach === 'known' && (
                           <div className="space-y-4">
-                            <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-                              <h4 className="font-medium text-sm mb-3 text-green-900 dark:text-green-100">
+                            <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+                              <h4 className="font-medium text-sm mb-3 text-primary">
                                 Define Your Target Persona
                               </h4>
-                              <p className="text-sm text-green-800 dark:text-green-200 mb-4">
+                              <p className="text-sm text-primary/90 mb-4">
                                 Describe your specific target customer persona with all required details:
                               </p>
 
                               <div className="space-y-4">
                                 <div className="space-y-2">
-                                  <Label className="text-sm font-medium text-green-900 dark:text-green-100">
-                                    Persona Name <span className="text-red-500">*</span>
+                                  <Label className="text-sm font-medium text-foreground">
+                                    Persona Name <span className="text-destructive">*</span>
                                   </Label>
                                   <Input
                                     placeholder="e.g., Health-conscious professionals, Tech-savvy millennials, Busy parents..."
@@ -701,13 +701,13 @@ export default function CreatePage() {
                                       setFormData((prev) => ({ ...prev, avatars: updatedAvatars }))
                                     }}
                                     disabled={isLoading}
-                                    className="h-11 text-sm border-green-200 dark:border-green-800 focus-visible:ring-green-500"
+                                    className="h-11 text-sm border-primary/20 focus-visible:ring-primary"
                                   />
                                 </div>
 
                                 <div className="space-y-2">
-                                  <Label className="text-sm font-medium text-green-900 dark:text-green-100">
-                                    Description <span className="text-red-500">*</span>
+                                  <Label className="text-sm font-medium text-foreground">
+                                    Description <span className="text-destructive">*</span>
                                   </Label>
                                   <Textarea
                                     placeholder="Describe their lifestyle, motivations, and key challenges in 1-2 sentences..."
@@ -732,14 +732,14 @@ export default function CreatePage() {
                                     }}
                                     rows={3}
                                     disabled={isLoading}
-                                    className="text-sm border-green-200 dark:border-green-800 focus-visible:ring-green-500"
+                                    className="text-sm border-primary/20 focus-visible:ring-primary"
                                   />
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-green-900 dark:text-green-100">
-                                      Age Range <span className="text-red-500">*</span>
+                                    <Label className="text-sm font-medium text-foreground">
+                                      Age Range <span className="text-destructive">*</span>
                                     </Label>
                                     <Select
                                       value={getFirstSelectedAvatar(formData.avatars)?.age_range || ''}
@@ -763,7 +763,7 @@ export default function CreatePage() {
                                       }}
                                       disabled={isLoading}
                                     >
-                                      <SelectTrigger className="h-11 text-sm border-green-200 dark:border-green-800 focus-visible:ring-green-500">
+                                      <SelectTrigger className="h-11 text-sm border-primary/20 focus-visible:ring-primary">
                                         <SelectValue placeholder="Select age range" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -777,8 +777,8 @@ export default function CreatePage() {
                                     </Select>
                                   </div>
                                   <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-green-900 dark:text-green-100">
-                                      Gender <span className="text-red-500">*</span>
+                                    <Label className="text-sm font-medium text-foreground">
+                                      Gender <span className="text-destructive">*</span>
                                     </Label>
                                     <Select
                                       value={getFirstSelectedAvatar(formData.avatars)?.gender || ''}
@@ -802,7 +802,7 @@ export default function CreatePage() {
                                       }}
                                       disabled={isLoading}
                                     >
-                                      <SelectTrigger className="h-11 text-sm border-green-200 dark:border-green-800 focus-visible:ring-green-500">
+                                      <SelectTrigger className="h-11 text-sm border-primary/20 focus-visible:ring-primary">
                                         <SelectValue placeholder="Select gender" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -815,8 +815,8 @@ export default function CreatePage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                  <Label className="text-sm font-medium text-green-900 dark:text-green-100">
-                                    Key Buying Motivation <span className="text-red-500">*</span>
+                                  <Label className="text-sm font-medium text-foreground">
+                                    Key Buying Motivation <span className="text-destructive">*</span>
                                   </Label>
                                   <Textarea
                                     placeholder="What drives them to purchase this product? What problem does it solve for them?"
@@ -841,7 +841,7 @@ export default function CreatePage() {
                                     }}
                                     rows={2}
                                     disabled={isLoading}
-                                    className="text-sm border-green-200 dark:border-green-800 focus-visible:ring-green-500"
+                                    className="text-sm border-primary/20 focus-visible:ring-primary"
                                   />
                                 </div>
                               </div>

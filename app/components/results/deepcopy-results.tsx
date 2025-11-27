@@ -205,7 +205,7 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
   // Template exploration state
   const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [templateModalStep, setTemplateModalStep] = useState<1 | 2>(1) // 1 = template selection, 2 = angle selection
-  const [selectedTemplateForRefinement, setSelectedTemplateForRefinement] = useState<string[]>([])
+  const [selectedTemplateForRefinement, setSelectedTemplateForRefinement] = useState<string | null>(null)
   const [selectedAngleForRefinement, setSelectedAngleForRefinement] = useState<string | null>(null)
   const [openAngleItem, setOpenAngleItem] = useState<string | undefined>(undefined)
   const [isGeneratingRefined, setIsGeneratingRefined] = useState(false)
@@ -905,12 +905,12 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
   const handleTemplateSelect = (templateId: string) => {
     logger.log('Template selected:', templateId)
     setSelectedTemplateForRefinement(prev => {
-      if (prev.includes(templateId)) {
+      if (prev === templateId) {
         // Deselect if already selected
-        return prev.filter(id => id !== templateId)
+        return null
       } else {
-        // Add to selection
-        return [...prev, templateId]
+        // Select this template (replace any previous selection)
+        return templateId
       }
     })
   }
@@ -954,7 +954,7 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
 
       // Close modal and reset
       setShowTemplateModal(false)
-      setSelectedTemplateForRefinement([])
+      setSelectedTemplateForRefinement(null)
       setSelectedAngleForRefinement(null)
       setTemplateModalStep(1)
 
@@ -1504,16 +1504,16 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                                   value={itemValue}
                                   className="border-none"
                                 >
-                                  <Card className={`p-0 transition-all hover:shadow-md cursor-pointer ${isGenerated
-                                    ? 'border-2 border-green-500 bg-green-50/50 dark:bg-green-950/20'
-                                    : 'border border-border hover:border-primary/50'
-                                    }`}>
-                                    <div
-                                      className="p-4"
-                                      onClick={() => {
-                                        setOpenMarketingAngle(isOpen ? undefined : itemValue);
-                                      }}
-                                    >
+                                  <Card
+                                    className={`p-0 transition-all hover:shadow-md cursor-pointer ${isGenerated
+                                      ? 'border-2 border-green-500 bg-green-50/50 dark:bg-green-950/20'
+                                      : 'border border-border hover:border-primary/50'
+                                      }`}
+                                    onClick={() => {
+                                      setOpenMarketingAngle(isOpen ? undefined : itemValue);
+                                    }}
+                                  >
+                                    <div className="p-4">
                                       <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2 flex-1">
                                           <AngleStatusIcon isGenerated={isGenerated} isGenerating={isGenerating} />
@@ -1835,7 +1835,7 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
           </div>
         )*/}
 
-      {/* Generated Prelanders */}
+      {/* Generated Pre-landers */}
       <div className="mb-12">
         <Accordion type="single" collapsible>
           <AccordionItem value="html-templates">
@@ -1873,7 +1873,7 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                       )}
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h3 className="text-lg font-semibold">Generated Prelanders</h3>
+                          <h3 className="text-lg font-semibold">Generated Pre-landers</h3>
                           <p className="text-sm text-muted-foreground">
                             {(() => {
                               const filteredCount = filterTemplates(templates, selectedAngleFilter, selectedTypeFilter).length;
@@ -2329,7 +2329,7 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
         setShowTemplateModal(open)
         if (!open) {
           // Reset state when modal closes
-          setSelectedTemplateForRefinement([])
+          setSelectedTemplateForRefinement(null)
           setSelectedAngleForRefinement(null)
           setTemplateModalStep(1)
           setModalTypeFilter("all")
@@ -2344,7 +2344,7 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                 </DialogTitle>
                 <DialogDescription>
                   {templateModalStep === 1
-                    ? 'Choose a template to generate a refined prelander'
+                    ? 'Choose a template to generate a refined pre-lander'
                     : 'Choose a marketing angle for your selected template'}
                 </DialogDescription>
               </div>
@@ -2394,10 +2394,10 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
 
                     return (
                       <>
-                        {selectedTemplateForRefinement.length > 0 && (
+                        {selectedTemplateForRefinement && (
                           <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
                             <p className="text-sm font-medium text-foreground mb-1">
-                              {selectedTemplateForRefinement.length} template{selectedTemplateForRefinement.length !== 1 ? 's' : ''} selected
+                              1 template selected
                               {modalTypeFilter !== "all" && (
                                 <span className="text-muted-foreground">
                                   {' '}({filteredTemplates.length} {formatFileType(modalTypeFilter)} template{filteredTemplates.length !== 1 ? 's' : ''} available)
@@ -2405,14 +2405,14 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                               )}
                             </p>
                             <div className="flex flex-wrap gap-2 mt-2">
-                              {selectedTemplateForRefinement.map((templateId: string) => {
-                                const template = availableTemplates.find((t: Template) => t.id === templateId)
+                              {(() => {
+                                const template = availableTemplates.find((t: Template) => t.id === selectedTemplateForRefinement)
                                 return (
-                                  <Badge key={templateId} variant="secondary" className="text-xs">
-                                    {template?.name || templateId}
+                                  <Badge key={selectedTemplateForRefinement} variant="secondary" className="text-xs">
+                                    {template?.name || selectedTemplateForRefinement}
                                   </Badge>
                                 )
-                              })}
+                              })()}
                             </div>
                           </div>
                         )}
@@ -2434,7 +2434,7 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                               <TemplatePreview
                                 key={template.id}
                                 template={template}
-                                isSelected={selectedTemplateForRefinement.includes(template.id)}
+                                isSelected={selectedTemplateForRefinement === template.id}
                                 onClick={() => handleTemplateSelect(template.id)}
                               />
                             ))
@@ -2443,13 +2443,13 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                       </>
                     );
                   })()}
-                  {selectedTemplateForRefinement.length > 0 && (
+                  {selectedTemplateForRefinement && (
                     <div className="flex justify-end pt-2">
                       <Button
                         onClick={() => setTemplateModalStep(2)}
-                        disabled={selectedTemplateForRefinement.length === 0}
+                        disabled={!selectedTemplateForRefinement}
                       >
-                        Continue with {selectedTemplateForRefinement.length} template{selectedTemplateForRefinement.length !== 1 ? 's' : ''}
+                        Continue with selected template
                       </Button>
                     </div>
                   )}
@@ -2460,18 +2460,18 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
             // Step 2: Angle Selection
             <div className="space-y-6">
               {/* Show selected templates info */}
-              {selectedTemplateForRefinement.length > 0 && (
+              {selectedTemplateForRefinement && (
                 <div className="p-4 bg-muted rounded-lg border border-border">
-                  <p className="text-sm text-muted-foreground mb-2">Selected Templates ({selectedTemplateForRefinement.length})</p>
+                  <p className="text-sm text-muted-foreground mb-2">Selected Template</p>
                   <div className="flex flex-wrap gap-2">
-                    {selectedTemplateForRefinement.map((templateId: string) => {
-                      const template = availableTemplates.find((t: Template) => t.id === templateId)
+                    {(() => {
+                      const template = availableTemplates.find((t: Template) => t.id === selectedTemplateForRefinement)
                       return (
-                        <Badge key={templateId} variant="secondary" className="text-sm">
-                          {template?.name || templateId}
+                        <Badge key={selectedTemplateForRefinement} variant="secondary" className="text-sm">
+                          {template?.name || selectedTemplateForRefinement}
                         </Badge>
                       )
-                    })}
+                    })()}
                   </div>
                 </div>
               )}
@@ -2633,14 +2633,14 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                 </Button>
                 <Button
                   onClick={() => {
-                    if (selectedTemplateForRefinement.length > 0 && selectedAngleForRefinement) {
+                    if (selectedTemplateForRefinement && selectedAngleForRefinement) {
                       handleGenerateRefinedTemplate(
-                        selectedTemplateForRefinement,
+                        [selectedTemplateForRefinement], // Convert single selection to array for the API
                         selectedAngleForRefinement
                       )
                     }
                   }}
-                  disabled={isGeneratingRefined || !selectedAngleForRefinement || selectedTemplateForRefinement.length === 0}
+                  disabled={isGeneratingRefined || !selectedAngleForRefinement || !selectedTemplateForRefinement}
                   className="min-w-[180px]"
                 >
                   {isGeneratingRefined ? (
