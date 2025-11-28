@@ -1285,7 +1285,7 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                       </div>
                       <div>
                         <h2 className="text-2xl font-bold text-foreground">Avatars & Marketing Angles</h2>
-                        <p className="text-sm text-muted-foreground">Customer avatar and marketing angles</p>
+                        <p className="text-sm text-muted-foreground">Customer avatars and marketing angles</p>
                       </div>
                     </div>
                   </div>
@@ -2132,6 +2132,27 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                                             <p className="text-sm text-muted-foreground line-clamp-2">
                                               {getAngleDescription(template.angle)}
                                             </p>
+                                          )}
+                                          {/* Creation Date and Time */}
+                                          {template.timestamp && (
+                                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-2">
+                                              <Calendar className="h-3.5 w-3.5" />
+                                              <span>
+                                                {new Date(template.timestamp).toLocaleDateString('en-US', {
+                                                  month: 'short',
+                                                  day: 'numeric',
+                                                  year: 'numeric'
+                                                })}
+                                              </span>
+                                              <Clock className="h-3.5 w-3.5 ml-1" />
+                                              <span>
+                                                {new Date(template.timestamp).toLocaleTimeString('en-US', {
+                                                  hour: '2-digit',
+                                                  minute: '2-digit',
+                                                  hour12: true
+                                                })}
+                                              </span>
+                                            </div>
                                           )}
                                         </div>
                                       );
