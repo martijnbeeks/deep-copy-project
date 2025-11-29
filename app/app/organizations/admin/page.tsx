@@ -357,14 +357,41 @@ export default function OrganizationAdminPage() {
     </Card>
   )
 
-  // Show loading while checking auth or admin status
-  if (authLoading || isCheckingAdmin || isAdmin === null) {
+  // Show loading while checking auth or admin status OR loading organizations
+  if (authLoading || isCheckingAdmin || isAdmin === null || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+      <div className="flex h-screen bg-background overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 overflow-auto ml-16">
+          <div className="p-4 md:p-6 pb-24 md:pb-28">
+            <div className="max-w-6xl mx-auto space-y-6">
+              {/* Header Skeleton */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 bg-muted animate-pulse rounded" />
+                  <div className="space-y-2">
+                    <div className="h-8 w-64 bg-muted animate-pulse rounded" />
+                    <div className="h-4 w-96 bg-muted animate-pulse rounded" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Overview Skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <SkeletonCard />
+                <SkeletonCard />
+                <SkeletonCard />
+              </div>
+
+              {/* Tabs Skeleton */}
+              <div className="space-y-4">
+                <div className="h-10 w-64 bg-muted animate-pulse rounded" />
+                <SkeletonOrganizationCard />
+                <SkeletonOrganizationCard />
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
     )
   }
