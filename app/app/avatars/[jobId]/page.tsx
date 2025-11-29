@@ -9,7 +9,7 @@ import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { EmptyState } from "@/components/ui/empty-state"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, Suspense } from "react"
-import { Users, CheckCircle, Calendar, User, ArrowLeft, Loader2, Globe, Package, MessageSquare, FileText, BarChart, Info, Search } from "lucide-react"
+import { Users, CheckCircle, Calendar, User, ArrowLeft, Loader2, Info } from "lucide-react"
 import { useAuthStore } from "@/stores/auth-store"
 import { useToast } from "@/hooks/use-toast"
 import { INITIAL_SOURCE_STATUS, COMPLETED_SOURCE_STATUS, resetSourceStatus, completeSourceStatus, type SourceStatus } from "@/lib/constants/research-sources"
@@ -687,7 +687,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                 {/* Web Search */}
                                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                                     <div className="flex items-center gap-3">
-                                        <Globe className="w-5 h-5 text-muted-foreground" />
+                                        <span className="text-xl">🌐</span>
                                         <span className="text-sm font-medium text-foreground">Web Search</span>
                                     </div>
                                     {sourceStatus.webSearch ? (
@@ -702,7 +702,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                 {/* Amazon Reviews */}
                                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                                     <div className="flex items-center gap-3">
-                                        <Package className="w-5 h-5 text-muted-foreground" />
+                                        <span className="text-xl">📦</span>
                                         <span className="text-sm font-medium text-foreground">Amazon Reviews</span>
                                     </div>
                                     {sourceStatus.amazonReviews ? (
@@ -717,7 +717,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                 {/* Reddit Discussions */}
                                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                                     <div className="flex items-center gap-3">
-                                        <MessageSquare className="w-5 h-5 text-muted-foreground" />
+                                        <span className="text-xl">💬</span>
                                         <span className="text-sm font-medium text-foreground">Reddit Discussions</span>
                                     </div>
                                     {sourceStatus.redditDiscussions ? (
@@ -732,7 +732,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                 {/* Industry Blogs */}
                                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                                     <div className="flex items-center gap-3">
-                                        <FileText className="w-5 h-5 text-muted-foreground" />
+                                        <span className="text-xl">📝</span>
                                         <span className="text-sm font-medium text-foreground">Industry Blogs</span>
                                     </div>
                                     {sourceStatus.industryBlogs ? (
@@ -747,7 +747,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                 {/* Competitor Analysis */}
                                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                                     <div className="flex items-center gap-3">
-                                        <Search className="w-5 h-5 text-muted-foreground" />
+                                        <span className="text-xl">🔍</span>
                                         <span className="text-sm font-medium text-foreground">Competitor Analysis</span>
                                     </div>
                                     {sourceStatus.competitorAnalysis ? (
@@ -762,7 +762,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                 {/* Market Trends */}
                                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                                     <div className="flex items-center gap-3">
-                                        <BarChart className="w-5 h-5 text-muted-foreground" />
+                                        <span className="text-xl">📊</span>
                                         <span className="text-sm font-medium text-foreground">Market Trends</span>
                                     </div>
                                     {sourceStatus.marketTrends ? (

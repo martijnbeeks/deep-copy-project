@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, Copy, Check } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 
 interface MemberInviteDialogProps {
   organizationId: string
@@ -20,8 +20,11 @@ export function MemberInviteDialog({ organizationId, onInviteCreated, children }
   const [isLoading, setIsLoading] = useState(false)
   const [expirationDays, setExpirationDays] = useState("7")
   const [expirationHours, setExpirationHours] = useState("")
-  const [inviteUrl, setInviteUrl] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+
+  const handleNumericInput = (value: string): string => {
+    // Only allow digits
+    return value.replace(/[^0-9]/g, '')
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,11 +47,17 @@ export function MemberInviteDialog({ organizationId, onInviteCreated, children }
         throw new Error('Not authenticated')
       }
 
-      const body: any = {}
+      const body: Record<string, unknown> = {}
       if (expirationDays) {
-        body.expiration_days = parseInt(expirationDays)
+        const days = parseInt(expirationDays, 10)
+        if (!isNaN(days) && days > 0) {
+          body.expiration_days = days
+        }
       } else if (expirationHours) {
-        body.expiration_hours = parseInt(expirationHours)
+        const hours = parseInt(expirationHours, 10)
+        if (!isNaN(hours) && hours > 0) {
+          body.expiration_hours = hours
+        }
       }
 
       const response = await fetch(`/api/organizations/${organizationId}/invite`, {
@@ -66,12 +75,14 @@ export function MemberInviteDialog({ organizationId, onInviteCreated, children }
         throw new Error(data.error || 'Failed to create invite link')
       }
 
-      setInviteUrl(data.invite_url)
       toast({
         title: "Success!",
         description: "Invite link created successfully",
       })
 
+      // Close dialog and reset form
+      handleClose()
+      
       if (onInviteCreated) {
         onInviteCreated()
       }
@@ -86,21 +97,8 @@ export function MemberInviteDialog({ organizationId, onInviteCreated, children }
     }
   }
 
-  const copyToClipboard = async () => {
-    if (inviteUrl) {
-      await navigator.clipboard.writeText(inviteUrl)
-      setCopied(true)
-      toast({
-        title: "Copied!",
-        description: "Invite link copied to clipboard",
-      })
-      setTimeout(() => setCopied(false), 2000)
-    }
-  }
-
   const handleClose = () => {
     setOpen(false)
-    setInviteUrl(null)
     setExpirationDays("7")
     setExpirationHours("")
   }
@@ -110,94 +108,99 @@ export function MemberInviteDialog({ organizationId, onInviteCreated, children }
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Invite Staff Member</DialogTitle>
-          <DialogDescription>
-            Create an invite link for a new staff member to join your organization
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader className="space-y-2 pb-4">
+          <DialogTitle className="text-xl">Create Invite Link</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            Generate a new invite link for team members
           </DialogDescription>
         </DialogHeader>
-        {!inviteUrl ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label>Expiration Period</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="expirationDays">Days</Label>
+
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-6 py-2">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Expiration</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <Label htmlFor="expirationDays" className="text-sm font-medium mb-2 block">
+                    Days
+                  </Label>
                   <Input
                     id="expirationDays"
-                    type="number"
-                    min="1"
+                    type="text"
+                    inputMode="numeric"
                     value={expirationDays}
                     onChange={(e) => {
-                      setExpirationDays(e.target.value)
+                      const numericValue = handleNumericInput(e.target.value)
+                      setExpirationDays(numericValue)
                       setExpirationHours("")
                     }}
                     placeholder="7"
+                    className="h-10"
                     disabled={isLoading}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="expirationHours">Hours</Label>
+                <div className="pt-7 text-muted-foreground">or</div>
+                <div className="flex-1">
+                  <Label htmlFor="expirationHours" className="text-sm font-medium mb-2 block">
+                    Hours
+                  </Label>
                   <Input
                     id="expirationHours"
-                    type="number"
-                    min="1"
+                    type="text"
+                    inputMode="numeric"
                     value={expirationHours}
                     onChange={(e) => {
-                      setExpirationHours(e.target.value)
+                      const numericValue = handleNumericInput(e.target.value)
+                      setExpirationHours(numericValue)
                       setExpirationDays("")
                     }}
                     placeholder="24"
+                    className="h-10"
                     disabled={isLoading}
                   />
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Leave both empty for default (7 days)
+                Default: 7 days if left empty
               </p>
             </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Invite Link'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        ) : (
-          <div className="space-y-4">
-            <div>
-              <Label>Invite Link</Label>
-              <div className="flex gap-2 mt-2">
-                <Input value={inviteUrl} readOnly className="font-mono text-sm" />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={copyToClipboard}
-                >
-                  {copied ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={handleClose}>Done</Button>
-            </DialogFooter>
           </div>
-        )}
+
+          <DialogFooter className="gap-2 pt-4">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={handleClose}
+              disabled={isLoading}
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full sm:w-auto"
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Link'
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, AlertCircle, Info, Zap, CheckCircle, Globe, Package, MessageSquare, FileText, Search, BarChart } from "lucide-react"
+import { Loader2, AlertCircle, Info, Zap, CheckCircle } from "lucide-react"
 import { useRequireAuth } from "@/hooks/use-require-auth"
 import { useCreateMarketingAngle } from "@/lib/hooks/use-jobs"
 import { useRouter } from "next/navigation"
@@ -935,7 +935,7 @@ export default function CreatePage() {
                 {/* Web Search */}
                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                   <div className="flex items-center gap-3">
-                    <Globe className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-xl">🌐</span>
                     <span className="text-sm font-medium text-foreground">Web Search</span>
                   </div>
                   {sourceStatus.webSearch ? (
@@ -950,7 +950,7 @@ export default function CreatePage() {
                 {/* Amazon Reviews */}
                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                   <div className="flex items-center gap-3">
-                    <Package className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-xl">📦</span>
                     <span className="text-sm font-medium text-foreground">Amazon Reviews</span>
                   </div>
                   {sourceStatus.amazonReviews ? (
@@ -965,7 +965,7 @@ export default function CreatePage() {
                 {/* Reddit Discussions */}
                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                   <div className="flex items-center gap-3">
-                    <MessageSquare className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-xl">💬</span>
                     <span className="text-sm font-medium text-foreground">Reddit Discussions</span>
                   </div>
                   {sourceStatus.redditDiscussions ? (
@@ -980,7 +980,7 @@ export default function CreatePage() {
                 {/* Industry Blogs */}
                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                   <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-xl">📝</span>
                     <span className="text-sm font-medium text-foreground">Industry Blogs</span>
                   </div>
                   {sourceStatus.industryBlogs ? (
@@ -995,7 +995,7 @@ export default function CreatePage() {
                 {/* Competitor Analysis */}
                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                   <div className="flex items-center gap-3">
-                    <Search className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-xl">🔍</span>
                     <span className="text-sm font-medium text-foreground">Competitor Analysis</span>
                   </div>
                   {sourceStatus.competitorAnalysis ? (
@@ -1010,7 +1010,7 @@ export default function CreatePage() {
                 {/* Market Trends */}
                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                   <div className="flex items-center gap-3">
-                    <BarChart className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-xl">📊</span>
                     <span className="text-sm font-medium text-foreground">Market Trends</span>
                   </div>
                   {sourceStatus.marketTrends ? (

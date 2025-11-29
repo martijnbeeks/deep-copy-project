@@ -16,6 +16,7 @@ import { RefreshCw, CheckCircle, AlertCircle, Users, FileText, Database, Plus, T
 import { toast } from "@/hooks/use-toast"
 import { TemplateEditor } from "@/components/admin/template-editor"
 import { TemplateTester } from "@/components/admin/template-tester"
+import { AdminUsersTab } from "@/components/admin/admin-users-tab"
 
 interface UserOrganization {
   id: string
@@ -88,7 +89,6 @@ interface JobStatus {
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [users, setUsers] = useState<User[]>([])
   const [templates, setTemplates] = useState<Template[]>([])
   const [injectableTemplates, setInjectableTemplates] = useState<InjectableTemplate[]>([])
   const [jobs, setJobs] = useState<Job[]>([])
@@ -102,13 +102,11 @@ export default function AdminPage() {
   const [inviteLinkDialogOpen, setInviteLinkDialogOpen] = useState(false)
 
   // Form states
-  const [newUser, setNewUser] = useState({ email: '', password: '', name: '' })
   const [newTemplate, setNewTemplate] = useState({ id: '', name: '', description: '', category: '', htmlContent: '' })
   const [newInjectableTemplate, setNewInjectableTemplate] = useState({ id: '', name: '', type: 'listicle' as 'listicle' | 'advertorial', description: '', htmlContent: '' })
   const [templateFile, setTemplateFile] = useState<File | null>(null)
 
   // Dialog states
-  const [userDialogOpen, setUserDialogOpen] = useState(false)
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
   const [injectableTemplateDialogOpen, setInjectableTemplateDialogOpen] = useState(false)
   const [templateEditorOpen, setTemplateEditorOpen] = useState(false)
@@ -140,19 +138,13 @@ export default function AdminPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [usersRes, templatesRes, injectableTemplatesRes, jobsRes, statsRes, inviteLinksRes] = await Promise.all([
-        fetch('/api/admin/users', { headers: getAuthHeaders() }),
+      const [templatesRes, injectableTemplatesRes, jobsRes, statsRes, inviteLinksRes] = await Promise.all([
         fetch('/api/admin/templates', { headers: getAuthHeaders() }),
         fetch('/api/admin/injectable-templates', { headers: getAuthHeaders() }),
         fetch('/api/admin/jobs', { headers: getAuthHeaders() }),
         fetch('/api/admin/stats', { headers: getAuthHeaders() }),
         fetch('/api/admin/invite-links', { headers: getAuthHeaders() })
       ])
-
-      if (usersRes.ok) {
-        const usersData = await usersRes.json()
-        setUsers(usersData.users)
-      }
 
       if (templatesRes.ok) {
         const templatesData = await templatesRes.json()
@@ -192,77 +184,6 @@ export default function AdminPage() {
   }
 
 
-  // User management
-  const createUser = async () => {
-    if (!newUser.email || !newUser.password || !newUser.name) {
-      toast({
-        title: "Error",
-        description: "All fields are required",
-        variant: "destructive"
-      })
-      return
-    }
-
-    try {
-      const response = await fetch('/api/admin/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
-        body: JSON.stringify(newUser)
-      })
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "User created successfully"
-        })
-        setNewUser({ email: '', password: '', name: '' })
-        setUserDialogOpen(false)
-        loadData()
-      } else {
-        const error = await response.json()
-        throw new Error(error.error)
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create user",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const deleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user? This will also delete all their jobs and results.')) {
-      return
-    }
-
-    try {
-      const response = await fetch(`/api/admin/users?id=${userId}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      })
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "User deleted successfully"
-        })
-        loadData()
-      } else {
-        const error = await response.json()
-        throw new Error(error.error)
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete user",
-        variant: "destructive"
-      })
-    }
-  }
 
   // Template management
   const handleTemplateFile = (file: File) => {
@@ -354,7 +275,6 @@ export default function AdminPage() {
     sessionStorage.removeItem('adminSessionToken')
     sessionStorage.removeItem('adminUser')
     setIsAuthenticated(false)
-    setUsers([])
     setTemplates([])
     setJobs([])
     setStats(null)
@@ -818,215 +738,7 @@ export default function AdminPage() {
 
             {/* Users Tab */}
             <TabsContent value="users" className="space-y-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>User Management</CardTitle>
-                    <CardDescription>Add, view, and delete users</CardDescription>
-                  </div>
-                  <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2">
-                        <Plus className="h-4 w-4" />
-                        Add User
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Create New User</DialogTitle>
-                        <DialogDescription>
-                          Add a new user to the system
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="email">Email</Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            value={newUser.email}
-                            onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-                            placeholder="user@example.com"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="name">Name</Label>
-                          <Input
-                            id="name"
-                            value={newUser.name}
-                            onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))}
-                            placeholder="John Doe"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="password">Password</Label>
-                          <Input
-                            id="password"
-                            type="password"
-                            value={newUser.password}
-                            onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-                            placeholder="Enter password"
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setUserDialogOpen(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={createUser}>
-                          Create User
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </CardHeader>
-                <CardContent>
-                  {(() => {
-                    // Group users by organization
-                    const usersByOrg = new Map<string, { org: UserOrganization; users: User[] }>()
-                    const usersWithoutOrg: User[] = []
-
-                    users.forEach((user) => {
-                      // Parse organizations if it's a string (from JSON aggregation)
-                      let orgs: UserOrganization[] = []
-                      try {
-                        if (typeof user.organizations === 'string') {
-                          orgs = JSON.parse(user.organizations)
-                        } else if (Array.isArray(user.organizations)) {
-                          orgs = user.organizations
-                        }
-                      } catch (e) {
-                        console.error('Error parsing organizations:', e)
-                        orgs = []
-                      }
-
-                      // Filter out null/undefined organizations
-                      orgs = orgs.filter((org: UserOrganization) => org && org.id)
-
-                      if (orgs.length === 0) {
-                        usersWithoutOrg.push(user)
-                      } else {
-                        orgs.forEach((org: UserOrganization) => {
-                          if (!usersByOrg.has(org.id)) {
-                            usersByOrg.set(org.id, { org, users: [] })
-                          }
-                          usersByOrg.get(org.id)!.users.push(user)
-                        })
-                      }
-                    })
-
-                    const orgEntries = Array.from(usersByOrg.entries())
-                    const hasAnyUsers = users.length > 0
-
-                    if (!hasAnyUsers) {
-                      return <p className="text-center text-muted-foreground py-8">No users found</p>
-                    }
-
-                    return (
-                      <Accordion type="multiple" className="w-full">
-                        {/* Users grouped by organization */}
-                        {orgEntries.map(([orgId, { org, users: orgUsers }]) => (
-                          <AccordionItem key={orgId} value={orgId} className="border rounded-lg mb-2 px-4">
-                            <AccordionTrigger className="hover:no-underline">
-                              <div className="flex items-center gap-2 flex-1">
-                                <Building2 className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-semibold">{org.name}</span>
-                                <Badge variant="outline" className="ml-2">
-                                  {orgUsers.length} {orgUsers.length === 1 ? 'user' : 'users'}
-                                </Badge>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent>
-                              <div className="space-y-2 pt-2">
-                                {orgUsers.map((user) => {
-                                  let userOrgs: UserOrganization[] = []
-                                  try {
-                                    if (typeof user.organizations === 'string') {
-                                      userOrgs = JSON.parse(user.organizations)
-                                    } else if (Array.isArray(user.organizations)) {
-                                      userOrgs = user.organizations
-                                    }
-                                  } catch (e) {
-                                    userOrgs = []
-                                  }
-                                  const userOrg = userOrgs.find((o: UserOrganization) => o && o.id === orgId)
-
-                                  return (
-                                    <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                          <p className="font-medium">{user.name}</p>
-                                          {userOrg && (
-                                            <Badge variant={userOrg.role === 'admin' ? 'default' : 'secondary'} className="text-xs">
-                                              {userOrg.role}
-                                            </Badge>
-                                          )}
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                          Created: {new Date(user.created_at).toLocaleDateString()}
-                                        </p>
-                                      </div>
-                                      <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={() => deleteUser(user.id)}
-                                        className="flex items-center gap-1"
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                        Delete
-                                      </Button>
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        ))}
-
-                        {/* Users without organization */}
-                        {usersWithoutOrg.length > 0 && (
-                          <AccordionItem value="no-org" className="border rounded-lg mb-2 px-4">
-                            <AccordionTrigger className="hover:no-underline">
-                              <div className="flex items-center gap-2 flex-1">
-                                <Users className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-semibold">No Organization</span>
-                                <Badge variant="outline" className="ml-2">
-                                  {usersWithoutOrg.length} {usersWithoutOrg.length === 1 ? 'user' : 'users'}
-                                </Badge>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent>
-                              <div className="space-y-2 pt-2">
-                                {usersWithoutOrg.map((user) => (
-                                  <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
-                                    <div>
-                                      <p className="font-medium">{user.name}</p>
-                                      <p className="text-sm text-muted-foreground">{user.email}</p>
-                                      <p className="text-xs text-muted-foreground">
-                                        Created: {new Date(user.created_at).toLocaleDateString()}
-                                      </p>
-                                    </div>
-                                    <Button
-                                      variant="destructive"
-                                      size="sm"
-                                      onClick={() => deleteUser(user.id)}
-                                      className="flex items-center gap-1"
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                      Delete
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        )}
-                      </Accordion>
-                    )
-                  })()}
-                </CardContent>
-              </Card>
+              <AdminUsersTab />
             </TabsContent>
 
             {/* Templates Tab */}

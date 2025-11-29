@@ -10,7 +10,7 @@ import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { OfflineBanner } from "@/components/ui/offline-banner"
 import { EmptyState } from "@/components/ui/empty-state"
 import { useRouter } from "next/navigation"
-import { useEffect, useState, useMemo, useCallback } from "react"
+import React, { useEffect, useState, useMemo, useCallback, memo } from "react"
 import Link from "next/link"
 import { FileText, AlertCircle, Zap, Eye, Search, Filter, Calendar, ExternalLink, ArrowUp, Edit2, Trash2, Building2 } from "lucide-react"
 import { SalesPagePreview } from "@/components/sales-page-preview"
@@ -27,6 +27,99 @@ import { internalApiClient } from "@/lib/clients/internal-client"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
+
+// Memoized SalesPagePreview component
+const MemoizedSalesPagePreview = memo(SalesPagePreview)
+MemoizedSalesPagePreview.displayName = "MemoizedSalesPagePreview"
+
+// Job Card Component Props
+interface JobCardProps {
+  job: JobWithTemplate
+  onEdit: (job: JobWithTemplate, e: React.MouseEvent) => void
+  onDelete: (job: JobWithTemplate, e: React.MouseEvent) => void
+  onClick: (jobId: string) => void
+  onKeyDown: (e: React.KeyboardEvent, jobId: string) => void
+  getStatusBadge: (status: Job["status"]) => React.ReactNode
+}
+
+// Memoized Job Card Component
+const JobCard = memo(function JobCard({ 
+  job, 
+  onEdit, 
+  onDelete, 
+  onClick, 
+  onKeyDown,
+  getStatusBadge 
+}: JobCardProps) {
+  return (
+    <button
+      type="button"
+      className="group relative cursor-pointer rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all h-[240px] md:h-[260px] flex flex-col overflow-hidden text-left"
+      onClick={() => onClick(job.id)}
+      onKeyDown={(e) => onKeyDown(e, job.id)}
+      aria-label={`View project ${job.title}`}
+    >
+      {/* Preview Area */}
+      <div className="flex-1 relative bg-gray-50 dark:bg-gray-900 overflow-hidden min-h-0">
+        {job.sales_page_url ? (
+          <div onClick={(e) => e.stopPropagation()} className="h-full">
+            <MemoizedSalesPagePreview url={job.sales_page_url} jobId={job.id} className="w-full h-full" />
+          </div>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <FileText className="h-10 w-10 text-muted-foreground opacity-30" />
+          </div>
+        )}
+      </div>
+
+      {/* Footer - Clean and organized */}
+      <div className="p-3 bg-card border-border">
+        {/* Title and Status */}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h3 className="font-semibold text-sm text-foreground line-clamp-1 flex-1">
+            {job.title}
+          </h3>
+          <div className="flex-shrink-0">
+            {getStatusBadge(job.status)}
+          </div>
+        </div>
+
+        {/* Bottom row - Date and actions */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">
+            {new Date(job.created_at).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            })}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+              onClick={(e) => onEdit(job, e)}
+              aria-label={`Edit project ${job.title}`}
+              title="Edit"
+            >
+              <Edit2 className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
+              onClick={(e) => onDelete(job, e)}
+              aria-label={`Delete project ${job.title}`}
+              title="Delete"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </button>
+  )
+})
+
+JobCard.displayName = "JobCard"
 
 export default function DashboardPage() {
   const { user, isReady } = useRequireAuth()
@@ -47,12 +140,12 @@ export default function DashboardPage() {
   const deleteJobMutation = useDeleteJob()
 
   // Edit dialog state
-  const [editingJob, setEditingJob] = useState<any | null>(null)
+  const [editingJob, setEditingJob] = useState<JobWithTemplate | null>(null)
   const [editTitle, setEditTitle] = useState("")
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
   // Delete dialog state
-  const [deletingJob, setDeletingJob] = useState<any | null>(null)
+  const [deletingJob, setDeletingJob] = useState<JobWithTemplate | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -190,11 +283,11 @@ export default function DashboardPage() {
     )
   }
 
-  const handlePipelineSubmit = async (data: any) => {
+  const handlePipelineSubmit = useCallback(async (data: unknown) => {
     setError(null)
 
     try {
-      const job = await createJobMutation.mutateAsync(data) as { job?: JobWithTemplate } | JobWithTemplate
+      const job = await createJobMutation.mutateAsync(data as Parameters<typeof createJobMutation.mutateAsync>[0]) as { job?: JobWithTemplate } | JobWithTemplate
 
       toast({
         title: "Pipeline created successfully",
@@ -202,7 +295,7 @@ export default function DashboardPage() {
       })
 
       // Handle both response formats: { job: ... } or direct job object
-      const jobId = (job as any)?.job?.id || (job as any)?.id
+      const jobId = (job as { job?: JobWithTemplate })?.job?.id || (job as JobWithTemplate)?.id
       if (jobId) {
         router.push(`/jobs/${jobId}`)
       } else {
@@ -230,23 +323,23 @@ export default function DashboardPage() {
         })
       }
     }
-  }
+  }, [createJobMutation, toast, router, refetch])
 
-  const scrollToTop = () => {
+  const scrollToTop = useCallback(() => {
     const mainElement = document.querySelector('main')
     if (mainElement) {
       mainElement.scrollTo({ top: 0, behavior: 'smooth' })
     }
-  }
+  }, [])
 
-  const handleEditClick = (job: any, e: React.MouseEvent) => {
+  const handleEditClick = useCallback((job: JobWithTemplate, e: React.MouseEvent) => {
     e.stopPropagation()
     setEditingJob(job)
-    setEditTitle(job.title)
+    setEditTitle(job.title || "")
     setIsEditDialogOpen(true)
-  }
+  }, [])
 
-  const handleEditSave = async () => {
+  const handleEditSave = useCallback(async () => {
     if (!editingJob || !editTitle.trim()) {
       toast({
         title: "Error",
@@ -277,21 +370,21 @@ export default function DashboardPage() {
         variant: "destructive",
       })
     }
-  }
+  }, [editingJob, editTitle, updateJobMutation, toast])
 
-  const handleEditCancel = () => {
+  const handleEditCancel = useCallback(() => {
     setIsEditDialogOpen(false)
     setEditingJob(null)
     setEditTitle("")
-  }
+  }, [])
 
-  const handleDeleteClick = (job: any, e: React.MouseEvent) => {
+  const handleDeleteClick = useCallback((job: JobWithTemplate, e: React.MouseEvent) => {
     e.stopPropagation()
     setDeletingJob(job)
     setIsDeleteDialogOpen(true)
-  }
+  }, [])
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (!deletingJob) return
 
     try {
@@ -314,12 +407,23 @@ export default function DashboardPage() {
     } finally {
       setIsDeleting(false)
     }
-  }
+  }, [deletingJob, deleteJobMutation, toast])
 
-  const handleDeleteCancel = () => {
+  const handleDeleteCancel = useCallback(() => {
     setIsDeleteDialogOpen(false)
     setDeletingJob(null)
-  }
+  }, [])
+
+  const handleJobCardClick = useCallback((jobId: string) => {
+    router.push(`/avatars/${jobId}`)
+  }, [router])
+
+  const handleJobCardKeyDown = useCallback((e: React.KeyboardEvent, jobId: string) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      router.push(`/avatars/${jobId}`)
+    }
+  }, [router])
 
   return (
     <ErrorBoundary>
@@ -436,76 +540,16 @@ export default function DashboardPage() {
                     </Link>
                   </div>
                 ) : (
-                  filteredJobs.map((job: any) => (
-                    <div
+                  filteredJobs.map((job: JobWithTemplate) => (
+                    <JobCard
                       key={job.id}
-                      className="group relative cursor-pointer rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all h-[240px] md:h-[260px] flex flex-col overflow-hidden"
-                      onClick={() => router.push(`/avatars/${job.id}`)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          router.push(`/avatars/${job.id}`)
-                        }
-                      }}
-                      aria-label={`View project ${job.title}`}
-                    >
-                      {/* Preview Area */}
-                      <div className="flex-1 relative bg-gray-50 dark:bg-gray-900 overflow-hidden min-h-0">
-                        {job.sales_page_url ? (
-                          <div onClick={(e) => e.stopPropagation()} className="h-full">
-                            <SalesPagePreview url={job.sales_page_url} jobId={job.id} className="w-full h-full" />
-                          </div>
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <FileText className="h-10 w-10 text-muted-foreground opacity-30" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Footer - Clean and organized */}
-                      <div className="p-3 bg-card border-border">
-                        {/* Title and Status */}
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <h3 className="font-semibold text-sm text-foreground line-clamp-1 flex-1">
-                            {job.title}
-                          </h3>
-                          <div className="flex-shrink-0">
-                            {getStatusBadge(job.status)}
-                          </div>
-                        </div>
-
-                        {/* Bottom row - Date and actions */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(job.created_at).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
-                              onClick={(e) => handleEditClick(job, e)}
-                              title="Edit"
-                            >
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
-                              onClick={(e) => handleDeleteClick(job, e)}
-                              title="Delete"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                      job={job}
+                      onEdit={handleEditClick}
+                      onDelete={handleDeleteClick}
+                      onClick={handleJobCardClick}
+                      onKeyDown={handleJobCardKeyDown}
+                      getStatusBadge={getStatusBadge}
+                    />
                   ))
                 )}
               </div>

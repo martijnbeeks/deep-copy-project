@@ -4,11 +4,12 @@ import { useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { useAuthStore } from "@/stores/auth-store"
-import { Loader2 } from "lucide-react"
+import { RefreshCw, Shield, User, Check } from "lucide-react"
 import { UserRole } from "@/lib/db/types"
+import { Separator } from "@/components/ui/separator"
+import { cn } from "@/lib/utils"
 
 interface MemberRoleDialogProps {
   organizationId: string
@@ -103,40 +104,113 @@ export function MemberRoleDialog({
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Update Member Role</DialogTitle>
-          <DialogDescription>
-            Change the role for {memberName} ({memberEmail})
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader className="space-y-2 pb-4">
+          <DialogTitle className="text-xl">Update Member Role</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            Change the role for <span className="font-medium text-foreground">{memberName}</span>
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="normal_user">Normal User</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground mt-1">
-              Admin: Full access (read, write, create, delete)
-              <br />
-              Normal User: Read, write, create (no delete)
-            </p>
+
+        <div className="space-y-6 py-2">
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">
+              Select Role
+            </Label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setRole('admin')}
+                className={cn(
+                  "relative flex flex-col items-start p-4 rounded-lg border-2 transition-all text-left",
+                  "hover:border-primary/50 hover:bg-primary/5",
+                  role === 'admin'
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-card"
+                )}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Shield className={cn(
+                    "h-5 w-5",
+                    role === 'admin' ? "text-primary" : "text-muted-foreground"
+                  )} />
+                  <span className={cn(
+                    "font-medium text-sm",
+                    role === 'admin' ? "text-primary" : "text-foreground"
+                  )}>
+                    Admin
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Full access: read, write, create, and delete
+                </p>
+                {role === 'admin' && (
+                  <div className="absolute top-2 right-2">
+                    <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary-foreground" />
+                    </div>
+                  </div>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRole('normal_user')}
+                className={cn(
+                  "relative flex flex-col items-start p-4 rounded-lg border-2 transition-all text-left",
+                  "hover:border-primary/50 hover:bg-primary/5",
+                  role === 'normal_user'
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-card"
+                )}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <User className={cn(
+                    "h-5 w-5",
+                    role === 'normal_user' ? "text-primary" : "text-muted-foreground"
+                  )} />
+                  <span className={cn(
+                    "font-medium text-sm",
+                    role === 'normal_user' ? "text-primary" : "text-foreground"
+                  )}>
+                    Normal User
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Standard access: read, write, and create
+                </p>
+                {role === 'normal_user' && (
+                  <div className="absolute top-2 right-2">
+                    <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary-foreground" />
+                    </div>
+                  </div>
+                )}
+              </button>
+            </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
+
+        <Separator />
+
+        <DialogFooter className="gap-2 pt-4">
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => setOpen(false)}
+            disabled={isLoading}
+            className="w-full sm:w-auto"
+          >
             Cancel
           </Button>
-          <Button onClick={handleUpdate} disabled={isLoading || role === currentRole}>
+          <Button
+            onClick={handleUpdate}
+            disabled={isLoading || role === currentRole}
+            className="w-full sm:w-auto"
+          >
             {isLoading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                 Updating...
               </>
             ) : (

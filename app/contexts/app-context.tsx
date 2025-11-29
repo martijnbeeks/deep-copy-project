@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useReducer, type ReactNode } from "react"
+import { createContext, useContext, useReducer, useRef, useCallback, useEffect, type ReactNode } from "react"
 
 interface AppState {
   notifications: Array<{
@@ -15,7 +15,7 @@ interface AppState {
 }
 
 type AppAction =
-  | { type: "ADD_NOTIFICATION"; payload: Omit<AppState["notifications"][0], "id" | "timestamp"> }
+  | { type: "ADD_NOTIFICATION"; payload: AppState["notifications"][0] }
   | { type: "REMOVE_NOTIFICATION"; payload: { id: string } }
   | { type: "SET_ONLINE_STATUS"; payload: { isOnline: boolean } }
   | { type: "UPDATE_LAST_SYNC"; payload: { timestamp: number } }
@@ -30,15 +30,12 @@ const initialState: AppState = {
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case "ADD_NOTIFICATION":
+      // ID and timestamp are now provided in payload
       return {
         ...state,
         notifications: [
           ...state.notifications,
-          {
-            ...action.payload,
-            id: Math.random().toString(36).substr(2, 9),
-            timestamp: Date.now(),
-          },
+          action.payload as AppState["notifications"][0],
         ],
       }
     case "REMOVE_NOTIFICATION":
@@ -91,31 +88,58 @@ interface AppProviderProps {
 
 export function AppProvider({ children }: AppProviderProps) {
   const [state, dispatch] = useReducer(appReducer, initialState)
+  const timeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map())
 
-  const addNotification = (notification: Omit<AppState["notifications"][0], "id" | "timestamp">) => {
-    dispatch({ type: "ADD_NOTIFICATION", payload: notification })
+  // Cleanup all timeouts on unmount
+  useEffect(() => {
+    return () => {
+      timeoutRefs.current.forEach((timeout) => clearTimeout(timeout))
+      timeoutRefs.current.clear()
+    }
+  }, [])
+
+  const addNotification = useCallback((notification: Omit<AppState["notifications"][0], "id" | "timestamp">) => {
+    // Generate ID before dispatching
+    const id = Math.random().toString(36).substr(2, 9)
+    
+    dispatch({ 
+      type: "ADD_NOTIFICATION", 
+      payload: { ...notification, id, timestamp: Date.now() } 
+    })
 
     // Auto-remove notification after 5 seconds
-    setTimeout(() => {
-      dispatch({ type: "REMOVE_NOTIFICATION", payload: { id: notification.title } })
+    const timeoutId = setTimeout(() => {
+      dispatch({ type: "REMOVE_NOTIFICATION", payload: { id } })
+      timeoutRefs.current.delete(id)
     }, 5000)
-  }
+    
+    timeoutRefs.current.set(id, timeoutId)
+  }, [])
 
-  const removeNotification = (id: string) => {
+  const removeNotification = useCallback((id: string) => {
+    // Clear timeout if notification is manually removed
+    const timeoutId = timeoutRefs.current.get(id)
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+      timeoutRefs.current.delete(id)
+    }
     dispatch({ type: "REMOVE_NOTIFICATION", payload: { id } })
-  }
+  }, [])
 
-  const clearNotifications = () => {
+  const clearNotifications = useCallback(() => {
+    // Clear all timeouts
+    timeoutRefs.current.forEach((timeout) => clearTimeout(timeout))
+    timeoutRefs.current.clear()
     dispatch({ type: "CLEAR_NOTIFICATIONS" })
-  }
+  }, [])
 
-  const setOnlineStatus = (isOnline: boolean) => {
+  const setOnlineStatus = useCallback((isOnline: boolean) => {
     dispatch({ type: "SET_ONLINE_STATUS", payload: { isOnline } })
-  }
+  }, [])
 
-  const updateLastSync = () => {
+  const updateLastSync = useCallback(() => {
     dispatch({ type: "UPDATE_LAST_SYNC", payload: { timestamp: Date.now() } })
-  }
+  }, [])
 
   return (
     <AppContext.Provider

@@ -8,7 +8,7 @@ import { MemberInviteDialog } from "./member-invite-dialog"
 import { MemberApprovalDialog } from "./member-approval-dialog"
 import { MemberRoleDialog } from "./member-role-dialog"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Loader2, UserCheck, Edit } from "lucide-react"
+import { Plus, UserCheck, Edit, Mail, AtSign } from "lucide-react"
 import { UserRole, MemberStatus } from "@/lib/db/types"
 
 interface Member {
@@ -76,70 +76,61 @@ export function MembersList({ organizationId }: MembersListProps) {
   const approvedMembers = members.filter(m => m.status === 'approved')
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="border-0 shadow-none">
+      <CardHeader className="flex flex-row items-center justify-between pb-4">
         <div>
-          <CardTitle>Organization Members</CardTitle>
-          <CardDescription>Manage members and their roles</CardDescription>
+          <CardTitle className="text-lg">Organization Members</CardTitle>
+          <CardDescription className="text-sm">Manage members and their roles</CardDescription>
         </div>
         <MemberInviteDialog organizationId={organizationId} onInviteCreated={fetchMembers}>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button size="sm" className="h-9">
+            <Plus className="h-4 w-4 mr-2" />
             Invite Member
           </Button>
         </MemberInviteDialog>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         {isLoading ? (
-          <div className="space-y-6">
-            {/* Skeleton for pending members section */}
-            <div>
-              <div className="h-5 w-40 bg-muted animate-pulse rounded mb-3" />
-              <div className="space-y-2">
-                {[1, 2].map((i) => (
-                  <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex-1 space-y-2">
-                      <div className="h-5 w-32 bg-muted animate-pulse rounded" />
-                      <div className="h-4 w-48 bg-muted animate-pulse rounded" />
-                    </div>
-                    <div className="h-9 w-24 bg-muted animate-pulse rounded" />
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between py-3">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="h-10 w-10 bg-muted animate-pulse rounded-full" />
+                  <div className="space-y-2 flex-1">
+                    <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+                    <div className="h-3 w-48 bg-muted animate-pulse rounded" />
                   </div>
-                ))}
+                </div>
+                <div className="h-8 w-20 bg-muted animate-pulse rounded" />
               </div>
-            </div>
-            {/* Skeleton for approved members section */}
-            <div>
-              <div className="h-5 w-40 bg-muted animate-pulse rounded mb-3" />
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="h-5 w-32 bg-muted animate-pulse rounded" />
-                        <div className="h-5 w-20 bg-muted animate-pulse rounded" />
-                      </div>
-                      <div className="h-4 w-48 bg-muted animate-pulse rounded" />
-                    </div>
-                    <div className="h-9 w-24 bg-muted animate-pulse rounded" />
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {pendingMembers.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium mb-3">Pending Approval ({pendingMembers.length})</h3>
-                <div className="space-y-2">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+                  Pending Approval ({pendingMembers.length})
+                </h3>
+                <div className="space-y-1.5">
                   {pendingMembers.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">{member.user.name}</p>
-                        <p className="text-sm text-muted-foreground">{member.user.email}</p>
-                        {member.user.username && (
-                          <p className="text-xs text-muted-foreground">@{member.user.username}</p>
-                        )}
+                    <div 
+                      key={member.id} 
+                      className="flex items-center justify-between py-2.5 px-3 rounded-md hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-medium text-primary">
+                            {member.user.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{member.user.name}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <Mail className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                            <p className="text-xs text-muted-foreground truncate">{member.user.email}</p>
+                          </div>
+                        </div>
                       </div>
                       <MemberApprovalDialog
                         organizationId={organizationId}
@@ -149,8 +140,8 @@ export function MembersList({ organizationId }: MembersListProps) {
                         currentRole={member.role}
                         onApproved={() => fetchMembers()}
                       >
-                        <Button size="sm">
-                          <UserCheck className="mr-2 h-4 w-4" />
+                        <Button size="sm" variant="default" className="h-8 text-xs">
+                          <UserCheck className="h-3.5 w-3.5 mr-1.5" />
                           Approve
                         </Button>
                       </MemberApprovalDialog>
@@ -161,26 +152,47 @@ export function MembersList({ organizationId }: MembersListProps) {
             )}
 
             <div>
-              <h3 className="text-sm font-medium mb-3">
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
                 Approved Members ({approvedMembers.length})
               </h3>
               {approvedMembers.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">No approved members yet</p>
+                <p className="text-sm text-muted-foreground py-6 text-center">No approved members yet</p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {approvedMembers.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{member.user.name}</p>
-                          <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
-                            {member.role === 'admin' ? 'Admin' : 'Normal User'}
-                          </Badge>
+                    <div 
+                      key={member.id} 
+                      className="flex items-center justify-between py-2.5 px-3 rounded-md hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-medium text-primary">
+                            {member.user.name.charAt(0).toUpperCase()}
+                          </span>
                         </div>
-                        <p className="text-sm text-muted-foreground">{member.user.email}</p>
-                        {member.user.username && (
-                          <p className="text-xs text-muted-foreground">@{member.user.username}</p>
-                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <p className="font-medium text-sm truncate">{member.user.name}</p>
+                            <Badge 
+                              variant={member.role === 'admin' ? 'default' : 'secondary'} 
+                              className="text-[10px] px-1.5 py-0 h-5 font-medium"
+                            >
+                              {member.role === 'admin' ? 'Admin' : 'Normal User'}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1.5">
+                              <Mail className="h-3 w-3" />
+                              <span className="truncate">{member.user.email}</span>
+                            </div>
+                            {member.user.username && (
+                              <div className="flex items-center gap-1.5">
+                                <AtSign className="h-3 w-3" />
+                                <span>{member.user.username}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                       <MemberRoleDialog
                         organizationId={organizationId}
@@ -190,8 +202,8 @@ export function MembersList({ organizationId }: MembersListProps) {
                         currentRole={member.role}
                         onRoleUpdated={fetchMembers}
                       >
-                        <Button variant="outline" size="sm">
-                          <Edit className="mr-2 h-4 w-4" />
+                        <Button variant="ghost" size="sm" className="h-8 text-xs">
+                          <Edit className="h-3.5 w-3.5 mr-1.5" />
                           Edit Role
                         </Button>
                       </MemberRoleDialog>
@@ -202,7 +214,7 @@ export function MembersList({ organizationId }: MembersListProps) {
             </div>
 
             {members.length === 0 && (
-              <p className="text-center text-muted-foreground py-8">No members yet</p>
+              <p className="text-center text-muted-foreground py-8 text-sm">No members yet</p>
             )}
           </div>
         )}
