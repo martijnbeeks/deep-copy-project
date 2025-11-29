@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast"
 import { isValidUrl } from "@/lib/utils/validation"
 import { logger } from "@/lib/utils/logger"
 import { INITIAL_SOURCE_STATUS, COMPLETED_SOURCE_STATUS, resetSourceStatus, completeSourceStatus, type SourceStatus } from "@/lib/constants/research-sources"
+import { UsageLimitDialog } from "@/components/ui/usage-limit-dialog"
 
 interface CustomerAvatar {
   persona_name: string
@@ -93,6 +94,14 @@ export default function CreatePage() {
 
   // Individual source completion status
   const [sourceStatus, setSourceStatus] = useState<SourceStatus>(INITIAL_SOURCE_STATUS)
+
+  // Usage limit dialog state
+  const [showUsageLimitDialog, setShowUsageLimitDialog] = useState(false)
+  const [usageLimitData, setUsageLimitData] = useState<{
+    usageType: 'deep_research' | 'pre_lander'
+    currentUsage: number
+    limit: number
+  } | null>(null)
 
   // Early return if not authenticated to prevent skeleton loader
   if (!isReady) {
@@ -383,8 +392,21 @@ export default function CreatePage() {
       setIsLoading(false)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create marketing angle'
+      const errorWithStatus = error as Error & { status?: number; currentUsage?: number; limit?: number }
 
-      // Show error toast
+      // Check if it's a usage limit error (429)
+      if (errorWithStatus.status === 429) {
+        setUsageLimitData({
+          usageType: 'deep_research',
+          currentUsage: errorWithStatus.currentUsage || 0,
+          limit: errorWithStatus.limit || 0
+        })
+        setShowUsageLimitDialog(true)
+        setIsLoading(false)
+        return
+      }
+
+      // Show error toast for other errors
       toast({
         title: "Error",
         description: errorMessage,
@@ -392,7 +414,7 @@ export default function CreatePage() {
       })
 
       // Check if it's a duplicate marketing angle error
-      if (errorMessage.includes('Duplicate job detected')) {
+      if (errorMessage.includes('Duplicate job detected') || errorMessage.includes('Duplicate marketing angle')) {
         setErrors({
           title: 'A marketing angle with this title was created recently. Please wait a moment or use a different title.'
         })
@@ -1087,6 +1109,17 @@ export default function CreatePage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Usage Limit Dialog */}
+      {usageLimitData && (
+        <UsageLimitDialog
+          open={showUsageLimitDialog}
+          onOpenChange={setShowUsageLimitDialog}
+          usageType={usageLimitData.usageType}
+          currentUsage={usageLimitData.currentUsage}
+          limit={usageLimitData.limit}
+        />
+      )}
     </ErrorBoundary>
   )
 }

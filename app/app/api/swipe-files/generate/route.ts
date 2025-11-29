@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Usage limit exceeded',
-          message: usageCheck.error || 'You have reached your weekly limit for Pre-Lander actions.',
+          message: usageCheck.error || `You've reached your weekly limit of ${usageCheck.limit} Pre-Lander actions. Your limit resets automatically based on a rolling 7-day window.`,
           currentUsage: usageCheck.currentUsage,
           limit: usageCheck.limit
         },

@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TemplatePreview } from "@/components/template-preview"
 import { useToast } from "@/hooks/use-toast"
 import { useTemplates } from "@/lib/hooks/use-templates"
+import { UsageLimitDialog } from "@/components/ui/usage-limit-dialog"
 import { extractContentFromSwipeResult, injectContentIntoTemplate } from "@/lib/utils/template-injection"
 import { MarketingAngleResult, SwipeResult, Listicle, Advertorial, Angle } from "@/lib/clients/deepcopy-client"
 import { internalApiClient } from "@/lib/clients/internal-client"
@@ -210,6 +211,14 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
   const [openAngleItem, setOpenAngleItem] = useState<string | undefined>(undefined)
   const [isGeneratingRefined, setIsGeneratingRefined] = useState(false)
   const [selectedAngleFilter, setSelectedAngleFilter] = useState<string>("all")
+
+  // Usage limit dialog state
+  const [showUsageLimitDialog, setShowUsageLimitDialog] = useState(false)
+  const [usageLimitData, setUsageLimitData] = useState<{
+    usageType: 'deep_research' | 'pre_lander'
+    currentUsage: number
+    limit: number
+  } | null>(null)
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>("all")
   const [modalTypeFilter, setModalTypeFilter] = useState<string>("all")
   const [openMarketingAngle, setOpenMarketingAngle] = useState<string | undefined>(undefined)
@@ -321,6 +330,19 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
 
   // Helper function to show error (DRY: used multiple times)
   const showError = (error: unknown, defaultMessage: string = 'An error occurred') => {
+    const errorWithStatus = error as Error & { status?: number; currentUsage?: number; limit?: number }
+
+    // Check if it's a usage limit error (429)
+    if (errorWithStatus.status === 429) {
+      setUsageLimitData({
+        usageType: 'pre_lander',
+        currentUsage: errorWithStatus.currentUsage || 0,
+        limit: errorWithStatus.limit || 0
+      })
+      setShowUsageLimitDialog(true)
+      return
+    }
+
     const errorMessage = error instanceof Error ? error.message : defaultMessage;
     toast({
       title: "Error",
@@ -2733,6 +2755,16 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
         </DialogContent>
       </Dialog>
 
+      {/* Usage Limit Dialog */}
+      {usageLimitData && (
+        <UsageLimitDialog
+          open={showUsageLimitDialog}
+          onOpenChange={setShowUsageLimitDialog}
+          usageType={usageLimitData.usageType}
+          currentUsage={usageLimitData.currentUsage}
+          limit={usageLimitData.limit}
+        />
+      )}
     </div>
   )
 }

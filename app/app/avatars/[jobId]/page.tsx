@@ -14,6 +14,7 @@ import { useAuthStore } from "@/stores/auth-store"
 import { useToast } from "@/hooks/use-toast"
 import { INITIAL_SOURCE_STATUS, COMPLETED_SOURCE_STATUS, resetSourceStatus, completeSourceStatus, type SourceStatus } from "@/lib/constants/research-sources"
 import { getGenderIcon, capitalizeFirst } from "@/lib/utils/avatar-utils"
+import { UsageLimitDialog } from "@/components/ui/usage-limit-dialog"
 
 interface Avatar {
     persona_name: string
@@ -56,6 +57,18 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
     const [currentJobId, setCurrentJobId] = useState<string | null>(null)
     const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null)
     const [sourceStatus, setSourceStatus] = useState<SourceStatus>(INITIAL_SOURCE_STATUS)
+
+    // Usage limit dialog state
+    const [showUsageLimitDialog, setShowUsageLimitDialog] = useState(false)
+    const [usageLimitData, setUsageLimitData] = useState<{
+        usageType: 'deep_research' | 'pre_lander'
+        currentUsage: number
+        limit: number
+    } | null>(null)
+
+    // Optimistic UI state - show loading immediately
+    const [isCheckingLimit, setIsCheckingLimit] = useState(false)
+    const [pendingAvatar, setPendingAvatar] = useState<Avatar | null>(null)
 
     useEffect(() => {
         // Don't redirect if we're still loading the auth state (during hydration)
@@ -125,7 +138,12 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
             const targetJobId = (avatar as any).avatar_job_id || avatar.job_id
             router.push(`/results/${targetJobId}`)
         } else {
-            // Check usage limit BEFORE showing loading modal
+            // Optimistic UI: Show loading state immediately
+            setIsCheckingLimit(true)
+            setPendingAvatar(avatar)
+            setIsResearching(true)
+
+            // Check usage limit in the background
             try {
                 const limitCheckResponse = await fetch(`/api/usage/check?type=deep_research`, {
                     method: 'GET',
@@ -136,25 +154,35 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
 
                 if (!limitCheckResponse.ok) {
                     const errorData = await limitCheckResponse.json()
-                    toast({
-                        title: "Usage Limit Exceeded",
-                        description: errorData.error || 'You have reached your weekly limit for Deep Research actions.',
-                        variant: "destructive",
+                    setIsCheckingLimit(false)
+                    setIsResearching(false)
+                    setPendingAvatar(null)
+                    setUsageLimitData({
+                        usageType: 'deep_research',
+                        currentUsage: errorData.currentUsage || 0,
+                        limit: errorData.limit || 0
                     })
+                    setShowUsageLimitDialog(true)
                     return // Don't proceed if limit check fails
                 }
 
                 const limitCheck = await limitCheckResponse.json()
                 if (!limitCheck.allowed) {
-                    toast({
-                        title: "Usage Limit Exceeded",
-                        description: limitCheck.error || 'You have reached your weekly limit for Deep Research actions.',
-                        variant: "destructive",
+                    setIsCheckingLimit(false)
+                    setIsResearching(false)
+                    setPendingAvatar(null)
+                    setUsageLimitData({
+                        usageType: 'deep_research',
+                        currentUsage: limitCheck.currentUsage || 0,
+                        limit: limitCheck.limit || 0
                     })
+                    setShowUsageLimitDialog(true)
                     return // Don't proceed if limit is exceeded
                 }
 
-                // Only show loading modal if limit check passes
+                // Limit check passed - show research loading modal
+                setIsCheckingLimit(false)
+                setPendingAvatar(null)
                 setSelectedAvatar(avatar)
                 setShowResearchLoading(true)
                 setResearchProgress(0)
@@ -851,6 +879,34 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Usage Limit Dialog */}
+            {usageLimitData && (
+                <UsageLimitDialog
+                    open={showUsageLimitDialog}
+                    onOpenChange={setShowUsageLimitDialog}
+                    usageType={usageLimitData.usageType}
+                    currentUsage={usageLimitData.currentUsage}
+                    limit={usageLimitData.limit}
+                />
+            )}
+
+            {/* Optimistic Loading Overlay - Shows immediately while checking limit */}
+            {isCheckingLimit && pendingAvatar && (
+                <Dialog open={true} onOpenChange={() => { }}>
+                    <DialogContent className="sm:max-w-md" showCloseButton={false}>
+                        <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            <div className="text-center space-y-1">
+                                <p className="text-sm font-medium text-foreground">Preparing research...</p>
+                                <p className="text-xs text-muted-foreground">
+                                    Setting up deep research for {pendingAvatar.persona_name}
+                                </p>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
         </>
     )
 }

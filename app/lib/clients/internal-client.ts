@@ -62,7 +62,20 @@ class InternalApiClient {
       } catch {
         errorData = { error: errorText }
       }
-      throw new Error(errorData.error || `API request failed: ${response.status}`)
+      
+      // Preserve error data including status code and usage limit info
+      const error = new Error(errorData.error || errorData.message || `API request failed: ${response.status}`) as Error & {
+        status?: number
+        currentUsage?: number
+        limit?: number
+        message?: string
+      }
+      error.status = response.status
+      if (errorData.currentUsage !== undefined) error.currentUsage = errorData.currentUsage
+      if (errorData.limit !== undefined) error.limit = errorData.limit
+      if (errorData.message) error.message = errorData.message
+      
+      throw error
     }
 
     return response.json()
