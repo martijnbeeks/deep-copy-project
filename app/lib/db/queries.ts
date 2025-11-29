@@ -1,5 +1,5 @@
 import { query } from './connection'
-import { User, Template, Job, Result, JobWithTemplate, JobWithResult, InjectableTemplate } from './types'
+import { User, Template, Job, Result, JobWithTemplate, JobWithResult, InjectableTemplate, InviteLink, Organization, OrganizationMember, UserRole, MemberStatus, InviteType } from './types'
 import bcrypt from 'bcryptjs'
 
 // User queries
@@ -522,4 +522,163 @@ export const getGeneratedAnglesForJob = async (jobId: string): Promise<string[]>
     [jobId]
   )
   return result.rows.map(row => row.angle_name)
+}
+
+// Invite Link queries
+export const createInviteLink = async (data: {
+  created_by: string
+  invite_type: InviteType
+  waitlist_email?: string | null
+  organization_id?: string | null
+  expires_at: Date
+}): Promise<InviteLink> => {
+  const token = crypto.randomUUID()
+  const result = await query(
+    `INSERT INTO invite_links (token, created_by, invite_type, waitlist_email, organization_id, expires_at)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING *`,
+    [token, data.created_by, data.invite_type, data.waitlist_email || null, data.organization_id || null, data.expires_at]
+  )
+  return result.rows[0]
+}
+
+export const getInviteLinkByToken = async (token: string): Promise<InviteLink | null> => {
+  const result = await query(
+    'SELECT * FROM invite_links WHERE token = $1',
+    [token]
+  )
+  return result.rows[0] || null
+}
+
+export const markInviteLinkAsUsed = async (token: string, used_by: string): Promise<void> => {
+  await query(
+    'UPDATE invite_links SET used_at = NOW(), used_by = $2, updated_at = NOW() WHERE token = $1',
+    [token, used_by]
+  )
+}
+
+export const getInviteLinksByCreator = async (created_by: string): Promise<InviteLink[]> => {
+  const result = await query(
+    'SELECT * FROM invite_links WHERE created_by = $1 ORDER BY created_at DESC',
+    [created_by]
+  )
+  return result.rows
+}
+
+// Organization queries
+export const createOrganization = async (name: string, created_by: string): Promise<Organization> => {
+  const result = await query(
+    'INSERT INTO organizations (name, created_by) VALUES ($1, $2) RETURNING *',
+    [name, created_by]
+  )
+  return result.rows[0]
+}
+
+export const getOrganizationById = async (id: string): Promise<Organization | null> => {
+  const result = await query(
+    'SELECT * FROM organizations WHERE id = $1',
+    [id]
+  )
+  return result.rows[0] || null
+}
+
+export const getUserOrganizations = async (userId: string): Promise<Organization[]> => {
+  const result = await query(
+    `SELECT o.* FROM organizations o
+     INNER JOIN organization_members om ON o.id = om.organization_id
+     WHERE om.user_id = $1 AND om.status = 'approved'
+     ORDER BY o.created_at DESC`,
+    [userId]
+  )
+  return result.rows
+}
+
+// Organization Member queries
+export const createOrganizationMember = async (data: {
+  organization_id: string
+  user_id: string
+  role: UserRole
+  status: MemberStatus
+  invited_by?: string | null
+}): Promise<OrganizationMember> => {
+  const result = await query(
+    `INSERT INTO organization_members (organization_id, user_id, role, status, invited_by)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+    [data.organization_id, data.user_id, data.role, data.status, data.invited_by || null]
+  )
+  return result.rows[0]
+}
+
+export const getOrganizationMembers = async (organizationId: string): Promise<(OrganizationMember & { user: User })[]> => {
+  const result = await query(
+    `SELECT om.*, u.id as user_id, u.email, u.name, u.username, u.created_at as user_created_at
+     FROM organization_members om
+     INNER JOIN users u ON om.user_id = u.id
+     WHERE om.organization_id = $1
+     ORDER BY om.created_at DESC`,
+    [organizationId]
+  )
+  return result.rows.map(row => ({
+    id: row.id,
+    organization_id: row.organization_id,
+    user_id: row.user_id,
+    role: row.role,
+    status: row.status,
+    invited_by: row.invited_by,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    user: {
+      id: row.user_id,
+      email: row.email,
+      name: row.name,
+      username: row.username,
+      password_hash: '',
+      created_at: row.user_created_at,
+      updated_at: row.user_created_at
+    }
+  }))
+}
+
+export const updateOrganizationMemberStatus = async (
+  memberId: string,
+  status: MemberStatus,
+  role: UserRole
+): Promise<OrganizationMember | null> => {
+  const result = await query(
+    'UPDATE organization_members SET status = $2, role = $3, updated_at = NOW() WHERE id = $1 RETURNING *',
+    [memberId, status, role]
+  )
+  return result.rows[0] || null
+}
+
+export const getOrganizationMember = async (organizationId: string, userId: string): Promise<OrganizationMember | null> => {
+  const result = await query(
+    'SELECT * FROM organization_members WHERE organization_id = $1 AND user_id = $2',
+    [organizationId, userId]
+  )
+  return result.rows[0] || null
+}
+
+export const checkUserPermission = async (userId: string, organizationId: string, action: 'read' | 'write' | 'create' | 'delete'): Promise<boolean> => {
+  const member = await getOrganizationMember(organizationId, userId)
+  if (!member || member.status !== 'approved') {
+    return false
+  }
+  
+  if (action === 'delete') {
+    return member.role === 'admin'
+  }
+  
+  // read, write, create are allowed for both admin and normal_user
+  return true
+}
+
+export const createUserWithUsername = async (email: string, password: string, name: string, username?: string): Promise<User> => {
+  const passwordHash = await bcrypt.hash(password, 10)
+  const result = await query(
+    'INSERT INTO users (email, password_hash, name, username) VALUES ($1, $2, $3, $4) RETURNING *',
+    [email, passwordHash, name, username || null]
+  )
+  return result.rows[0]
 }

@@ -2,6 +2,7 @@ export interface User {
   id: string
   email: string
   name: string
+  username?: string | null
   password_hash: string
   created_at: string
   updated_at: string
@@ -20,6 +21,7 @@ export interface Template {
 export interface Job {
   id: string
   user_id: string
+  organization_id?: string | null
   title: string
   brand_info: string
   sales_page_url?: string
@@ -64,6 +66,43 @@ export interface InjectableTemplate {
   html_content: string
   description?: string
   is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type UserRole = 'admin' | 'normal_user'
+export type MemberStatus = 'pending' | 'approved'
+export type InviteType = 'organization_creator' | 'staff_member'
+
+export interface InviteLink {
+  id: string
+  token: string
+  created_by: string
+  invite_type: InviteType
+  waitlist_email?: string | null
+  organization_id?: string | null
+  expires_at: string
+  used_at?: string | null
+  used_by?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Organization {
+  id: string
+  name: string
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+export interface OrganizationMember {
+  id: string
+  organization_id: string
+  user_id: string
+  role: UserRole
+  status: MemberStatus
+  invited_by?: string | null
   created_at: string
   updated_at: string
 }

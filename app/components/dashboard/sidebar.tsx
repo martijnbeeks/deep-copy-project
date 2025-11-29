@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import { LayoutDashboard, LogOut, PenTool, Loader2, FileText, Sun, Moon } from "lucide-react"
+import { LayoutDashboard, LogOut, PenTool, Loader2, FileText, Sun, Moon, Building2 } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
@@ -19,7 +19,7 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
 
-const navigation = [
+const baseNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   /*{ name: "Create", href: "/create", icon: PenTool },*/
   { name: "Templates", href: "/templates", icon: FileText },
@@ -32,11 +32,49 @@ export function Sidebar() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [loadingItem, setLoadingItem] = useState<string | null>(null)
+  const [isOrgAdmin, setIsOrgAdmin] = useState(false)
+  const [checkingAdmin, setCheckingAdmin] = useState(true)
 
   // Prevent hydration mismatch
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Check if user is an organization admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user?.email) {
+        setCheckingAdmin(false)
+        return
+      }
+
+      try {
+        const response = await fetch('/api/organizations/check-admin', {
+          headers: {
+            'Authorization': `Bearer ${user.email}`,
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setIsOrgAdmin(data.isAdmin || false)
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error)
+        setIsOrgAdmin(false)
+      } finally {
+        setCheckingAdmin(false)
+      }
+    }
+
+    checkAdminStatus()
+  }, [user])
+
+  // Build navigation array based on admin status
+  const navigation = [
+    ...baseNavigation,
+    ...(isOrgAdmin ? [{ name: "Manage Organization", href: "/organizations/admin", icon: Building2 }] : [])
+  ]
 
   const handleNavigation = async (href: string) => {
     if (href === pathname) return

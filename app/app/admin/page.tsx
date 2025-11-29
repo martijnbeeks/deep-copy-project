@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { RefreshCw, CheckCircle, AlertCircle, Users, FileText, Database, Plus, Trash2, Upload, Eye, LogOut, Briefcase } from "lucide-react"
+import { RefreshCw, CheckCircle, AlertCircle, Users, FileText, Database, Plus, Trash2, Upload, Eye, LogOut, Briefcase, Copy } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { TemplateEditor } from "@/components/admin/template-editor"
 import { TemplateTester } from "@/components/admin/template-tester"
@@ -61,6 +61,16 @@ interface DatabaseStats {
   results: number
 }
 
+interface InviteLink {
+  id: string
+  token: string
+  invite_type: string
+  waitlist_email?: string | null
+  expires_at: string
+  used_at?: string | null
+  created_at: string
+}
+
 interface JobStatus {
   status: string
   count: string
@@ -75,6 +85,11 @@ export default function AdminPage() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [stats, setStats] = useState<DatabaseStats | null>(null)
   const [jobStatuses, setJobStatuses] = useState<JobStatus[]>([])
+  const [inviteLinks, setInviteLinks] = useState<InviteLink[]>([])
+  
+  // Invite link form state
+  const [newInviteLink, setNewInviteLink] = useState({ waitlist_email: '', expiration_days: '7', expiration_hours: '' })
+  const [inviteLinkDialogOpen, setInviteLinkDialogOpen] = useState(false)
 
   // Form states
   const [newUser, setNewUser] = useState({ email: '', password: '', name: '' })
@@ -115,12 +130,13 @@ export default function AdminPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [usersRes, templatesRes, injectableTemplatesRes, jobsRes, statsRes] = await Promise.all([
+      const [usersRes, templatesRes, injectableTemplatesRes, jobsRes, statsRes, inviteLinksRes] = await Promise.all([
         fetch('/api/admin/users', { headers: getAuthHeaders() }),
         fetch('/api/admin/templates', { headers: getAuthHeaders() }),
         fetch('/api/admin/injectable-templates', { headers: getAuthHeaders() }),
         fetch('/api/admin/jobs', { headers: getAuthHeaders() }),
-        fetch('/api/admin/stats', { headers: getAuthHeaders() })
+        fetch('/api/admin/stats', { headers: getAuthHeaders() }),
+        fetch('/api/admin/invite-links', { headers: getAuthHeaders() })
       ])
 
       if (usersRes.ok) {
@@ -147,6 +163,11 @@ export default function AdminPage() {
         const statsData = await statsRes.json()
         setStats(statsData.stats)
         setJobStatuses(statsData.jobStatuses)
+      }
+
+      if (inviteLinksRes.ok) {
+        const inviteLinksData = await inviteLinksRes.json()
+        setInviteLinks(inviteLinksData.invite_links || [])
       }
     } catch (error) {
       console.error('Error loading data:', error)
@@ -525,6 +546,58 @@ export default function AdminPage() {
     setPreviewDialogOpen(true)
   }
 
+  // Invite link management
+  const createInviteLink = async () => {
+    try {
+      const body: any = {}
+      if (newInviteLink.waitlist_email) {
+        body.waitlist_email = newInviteLink.waitlist_email
+      }
+      if (newInviteLink.expiration_days) {
+        body.expiration_days = parseInt(newInviteLink.expiration_days)
+      } else if (newInviteLink.expiration_hours) {
+        body.expiration_hours = parseInt(newInviteLink.expiration_hours)
+      }
+
+      const response = await fetch('/api/admin/invite-links', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify(body)
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Invite link created successfully"
+        })
+        setNewInviteLink({ waitlist_email: '', expiration_days: '7', expiration_hours: '' })
+        setInviteLinkDialogOpen(false)
+        loadData()
+      } else {
+        const error = await response.json()
+        throw new Error(error.error)
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create invite link",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const copyInviteLink = async (token: string) => {
+    const inviteUrl = `${window.location.origin}/invite/${token}`
+    await navigator.clipboard.writeText(inviteUrl)
+    toast({
+      title: "Copied!",
+      description: "Invite link copied to clipboard"
+    })
+  }
+
   if (!isAuthenticated) {
     return <AdminAuth onAuthSuccess={() => {
       setIsAuthenticated(true)
@@ -631,6 +704,7 @@ export default function AdminPage() {
               <TabsTrigger value="templates">Templates</TabsTrigger>
               <TabsTrigger value="injectable-templates">Injectable Templates</TabsTrigger>
               <TabsTrigger value="jobs">Jobs</TabsTrigger>
+              <TabsTrigger value="invite-links">Invite Links</TabsTrigger>
             </TabsList>
 
             {/* Users Tab */}
@@ -982,6 +1056,136 @@ export default function AdminPage() {
                     ))}
                     {injectableTemplates?.length === 0 && (
                       <p className="text-center text-muted-foreground py-8">No injectable templates found</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Invite Links Tab */}
+            <TabsContent value="invite-links" className="space-y-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Invite Links</CardTitle>
+                    <CardDescription>Generate invite links for waitlist users</CardDescription>
+                  </div>
+                  <Dialog open={inviteLinkDialogOpen} onOpenChange={setInviteLinkDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        Create Invite Link
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create Invite Link</DialogTitle>
+                        <DialogDescription>
+                          Generate an invite link for a user. Optionally specify a waitlist email to link it to a waitlist entry.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="waitlistEmail">Waitlist Email (Optional)</Label>
+                          <Input
+                            id="waitlistEmail"
+                            type="email"
+                            value={newInviteLink.waitlist_email}
+                            onChange={(e) => setNewInviteLink(prev => ({ ...prev, waitlist_email: e.target.value }))}
+                            placeholder="user@example.com (optional)"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Leave empty to create invite link for users not on waitlist
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="expirationDays">Expiration (Days)</Label>
+                            <Input
+                              id="expirationDays"
+                              type="number"
+                              min="1"
+                              value={newInviteLink.expiration_days}
+                              onChange={(e) => {
+                                setNewInviteLink(prev => ({ ...prev, expiration_days: e.target.value, expiration_hours: '' }))
+                              }}
+                              placeholder="7"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="expirationHours">Expiration (Hours)</Label>
+                            <Input
+                              id="expirationHours"
+                              type="number"
+                              min="1"
+                              value={newInviteLink.expiration_hours}
+                              onChange={(e) => {
+                                setNewInviteLink(prev => ({ ...prev, expiration_hours: e.target.value, expiration_days: '' }))
+                              }}
+                              placeholder="24"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Leave both empty for default (7 days)
+                        </p>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setInviteLinkDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={createInviteLink}>
+                          Create Invite Link
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {inviteLinks.map((inviteLink) => {
+                      const isExpired = new Date(inviteLink.expires_at) < new Date()
+                      const isUsed = !!inviteLink.used_at
+                      const inviteUrl = `${window.location.origin}/invite/${inviteLink.token}`
+                      
+                      return (
+                        <div key={inviteLink.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">
+                                {inviteLink.waitlist_email || 'No email'}
+                              </p>
+                              <Badge variant={isUsed ? 'secondary' : isExpired ? 'destructive' : 'default'}>
+                                {isUsed ? 'Used' : isExpired ? 'Expired' : 'Active'}
+                              </Badge>
+                              <Badge variant="outline">
+                                {inviteLink.invite_type === 'organization_creator' ? 'Org Creator' : 'Staff'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground font-mono mt-1">
+                              {inviteUrl}
+                            </p>
+                            <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                              <span>Expires: {new Date(inviteLink.expires_at).toLocaleString()}</span>
+                              {inviteLink.used_at && (
+                                <span>Used: {new Date(inviteLink.used_at).toLocaleString()}</span>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyInviteLink(inviteLink.token)}
+                            disabled={isUsed || isExpired}
+                          >
+                            <Copy className="h-3 w-3 mr-1" />
+                            Copy
+                          </Button>
+                        </div>
+                      )
+                    })}
+                    {inviteLinks.length === 0 && (
+                      <p className="text-center text-muted-foreground py-8">No invite links created yet</p>
                     )}
                   </div>
                 </CardContent>

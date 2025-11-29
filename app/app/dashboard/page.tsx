@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { FileText, AlertCircle, Zap, Eye, Search, Filter, Calendar, ExternalLink, ArrowUp, Edit2, Trash2 } from "lucide-react"
+import { FileText, AlertCircle, Zap, Eye, Search, Filter, Calendar, ExternalLink, ArrowUp, Edit2, Trash2, Building2 } from "lucide-react"
 import { SalesPagePreview } from "@/components/sales-page-preview"
 import { useToast } from "@/hooks/use-toast"
 import { useRequireAuth } from "@/hooks/use-require-auth"
@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label"
 
 export default function DashboardPage() {
   const { user, isReady } = useRequireAuth()
+  const [organizationName, setOrganizationName] = useState<string | null>(null)
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
@@ -62,6 +63,32 @@ export default function DashboardPage() {
 
   // Count processing jobs using utility
   const processingJobsCount = jobs.filter(job => isProcessingStatus(job.status)).length
+
+  // Fetch user's organization name
+  useEffect(() => {
+    const fetchOrganization = async () => {
+      if (!user?.email) return
+
+      try {
+        const response = await fetch('/api/organizations/user-organization', {
+          headers: {
+            'Authorization': `Bearer ${user.email}`,
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setOrganizationName(data.organization?.name || null)
+        }
+      } catch (error) {
+        console.error('Error fetching organization:', error)
+      }
+    }
+
+    if (user) {
+      fetchOrganization()
+    }
+  }, [user])
 
   // Log when jobs data changes (development only)
   useEffect(() => {
@@ -293,10 +320,15 @@ export default function DashboardPage() {
                     <p className="text-sm text-muted-foreground">Welcome back, {user.name}!</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 rounded-lg border border-primary/20">
-                  <div className="w-2 h-2 rounded-full bg-primary"></div>
-                  <span className="text-sm font-medium text-primary">Organization</span>
-                </div>
+                {organizationName && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 rounded-lg border border-primary/20">
+                    {/* <div className="w-2 h-2 rounded-full bg-primary"></div> */}
+                    <Building2 className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium text-primary">
+                      {organizationName.charAt(0).toUpperCase() + organizationName.slice(1)}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
