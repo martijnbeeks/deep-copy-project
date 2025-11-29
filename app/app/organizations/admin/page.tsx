@@ -311,31 +311,6 @@ export default function OrganizationAdminPage() {
                           Created {new Date(org.created_at).toLocaleDateString()}
                         </CardDescription>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <MemberInviteDialog
-                          organizationId={org.id}
-                          onInviteCreated={fetchOrganizations}
-                        >
-                          <Button size="sm">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Invite Member
-                          </Button>
-                        </MemberInviteDialog>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedOrgId(org.id)
-                            // Scroll to members section
-                            setTimeout(() => {
-                              document.getElementById(`org-${org.id}`)?.scrollIntoView({ behavior: 'smooth' })
-                            }, 100)
-                          }}
-                        >
-                          Manage
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </div>
                     </CardHeader>
                     {selectedOrgId === org.id && (
                       <CardContent id={`org-${org.id}`}>

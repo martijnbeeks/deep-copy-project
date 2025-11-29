@@ -11,16 +11,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { RefreshCw, CheckCircle, AlertCircle, Users, FileText, Database, Plus, Trash2, Upload, Eye, LogOut, Briefcase, Copy } from "lucide-react"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { RefreshCw, CheckCircle, AlertCircle, Users, FileText, Database, Plus, Trash2, Upload, Eye, LogOut, Briefcase, Copy, Building2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { TemplateEditor } from "@/components/admin/template-editor"
 import { TemplateTester } from "@/components/admin/template-tester"
+
+interface UserOrganization {
+  id: string
+  name: string
+  role: string
+  status: string
+}
 
 interface User {
   id: string
   email: string
   name: string
   created_at: string
+  organizations: UserOrganization[]
 }
 
 interface Job {
@@ -772,31 +781,150 @@ export default function AdminPage() {
                   </Dialog>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    {users.map((user) => (
-                      <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Created: {new Date(user.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteUser(user.id)}
-                          className="flex items-center gap-1"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                          Delete
-                        </Button>
-                      </div>
-                    ))}
-                    {users.length === 0 && (
-                      <p className="text-center text-muted-foreground py-8">No users found</p>
-                    )}
-                  </div>
+                  {(() => {
+                    // Group users by organization
+                    const usersByOrg = new Map<string, { org: UserOrganization; users: User[] }>()
+                    const usersWithoutOrg: User[] = []
+
+                    users.forEach((user) => {
+                      // Parse organizations if it's a string (from JSON aggregation)
+                      let orgs: UserOrganization[] = []
+                      try {
+                        if (typeof user.organizations === 'string') {
+                          orgs = JSON.parse(user.organizations)
+                        } else if (Array.isArray(user.organizations)) {
+                          orgs = user.organizations
+                        }
+                      } catch (e) {
+                        console.error('Error parsing organizations:', e)
+                        orgs = []
+                      }
+                      
+                      // Filter out null/undefined organizations
+                      orgs = orgs.filter((org: UserOrganization) => org && org.id)
+                      
+                      if (orgs.length === 0) {
+                        usersWithoutOrg.push(user)
+                      } else {
+                        orgs.forEach((org: UserOrganization) => {
+                          if (!usersByOrg.has(org.id)) {
+                            usersByOrg.set(org.id, { org, users: [] })
+                          }
+                          usersByOrg.get(org.id)!.users.push(user)
+                        })
+                      }
+                    })
+
+                    const orgEntries = Array.from(usersByOrg.entries())
+                    const hasAnyUsers = users.length > 0
+
+                    if (!hasAnyUsers) {
+                      return <p className="text-center text-muted-foreground py-8">No users found</p>
+                    }
+
+                    return (
+                      <Accordion type="multiple" className="w-full">
+                        {/* Users grouped by organization */}
+                        {orgEntries.map(([orgId, { org, users: orgUsers }]) => (
+                          <AccordionItem key={orgId} value={orgId} className="border rounded-lg mb-2 px-4">
+                            <AccordionTrigger className="hover:no-underline">
+                              <div className="flex items-center gap-2 flex-1">
+                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-semibold">{org.name}</span>
+                                <Badge variant="outline" className="ml-2">
+                                  {orgUsers.length} {orgUsers.length === 1 ? 'user' : 'users'}
+                                </Badge>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <div className="space-y-2 pt-2">
+                                {orgUsers.map((user) => {
+                                  let userOrgs: UserOrganization[] = []
+                                  try {
+                                    if (typeof user.organizations === 'string') {
+                                      userOrgs = JSON.parse(user.organizations)
+                                    } else if (Array.isArray(user.organizations)) {
+                                      userOrgs = user.organizations
+                                    }
+                                  } catch (e) {
+                                    userOrgs = []
+                                  }
+                                  const userOrg = userOrgs.find((o: UserOrganization) => o && o.id === orgId)
+                                  
+                                  return (
+                                    <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                          <p className="font-medium">{user.name}</p>
+                                          {userOrg && (
+                                            <Badge variant={userOrg.role === 'admin' ? 'default' : 'secondary'} className="text-xs">
+                                              {userOrg.role}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                          Created: {new Date(user.created_at).toLocaleDateString()}
+                                        </p>
+                                      </div>
+                                      <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => deleteUser(user.id)}
+                                        className="flex items-center gap-1"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                        Delete
+                                      </Button>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+
+                        {/* Users without organization */}
+                        {usersWithoutOrg.length > 0 && (
+                          <AccordionItem value="no-org" className="border rounded-lg mb-2 px-4">
+                            <AccordionTrigger className="hover:no-underline">
+                              <div className="flex items-center gap-2 flex-1">
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-semibold">No Organization</span>
+                                <Badge variant="outline" className="ml-2">
+                                  {usersWithoutOrg.length} {usersWithoutOrg.length === 1 ? 'user' : 'users'}
+                                </Badge>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <div className="space-y-2 pt-2">
+                                {usersWithoutOrg.map((user) => (
+                                  <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                                    <div>
+                                      <p className="font-medium">{user.name}</p>
+                                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        Created: {new Date(user.created_at).toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() => deleteUser(user.id)}
+                                      className="flex items-center gap-1"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                      Delete
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        )}
+                      </Accordion>
+                    )
+                  })()}
                 </CardContent>
               </Card>
             </TabsContent>
