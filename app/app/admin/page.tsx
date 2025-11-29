@@ -17,6 +17,7 @@ import { toast } from "@/hooks/use-toast"
 import { TemplateEditor } from "@/components/admin/template-editor"
 import { TemplateTester } from "@/components/admin/template-tester"
 import { AdminUsersTab } from "@/components/admin/admin-users-tab"
+import { UsageLimitsTab } from "@/components/admin/usage-limits-tab"
 
 interface UserOrganization {
   id: string
@@ -734,6 +735,7 @@ export default function AdminPage() {
               <TabsTrigger value="injectable-templates">Injectable Templates</TabsTrigger>
               <TabsTrigger value="jobs">Jobs</TabsTrigger>
               <TabsTrigger value="invite-links">Invite Links</TabsTrigger>
+              <TabsTrigger value="usage-limits">Usage Limits</TabsTrigger>
             </TabsList>
 
             {/* Users Tab */}
@@ -1265,6 +1267,11 @@ export default function AdminPage() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Usage Limits Tab */}
+            <TabsContent value="usage-limits" className="space-y-4">
+              <UsageLimitsTab />
             </TabsContent>
           </Tabs>
 

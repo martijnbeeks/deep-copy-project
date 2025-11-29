@@ -4,6 +4,7 @@ import { deepCopyClient } from '@/lib/clients/deepcopy-client'
 import { query } from '@/lib/db/connection'
 import { requireAuth, createAuthErrorResponse } from '@/lib/auth/user-auth'
 import { handleApiError, createValidationErrorResponse, createSuccessResponse } from '@/lib/middleware/error-handler'
+import { checkAndIncrementUsage } from '@/lib/middleware/usage-limits'
 import { logger } from '@/lib/utils/logger'
 
 export async function POST(request: NextRequest) {
@@ -64,6 +65,20 @@ export async function POST(request: NextRequest) {
         job: avatarJob,
         message: 'Avatar job already exists'
       })
+    }
+
+    // Check usage limits before creating new research job
+    const usageCheck = await checkAndIncrementUsage(user, 'deep_research')
+    if (!usageCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Usage limit exceeded',
+          message: usageCheck.error || 'You have reached your weekly limit for Deep Research actions.',
+          currentUsage: usageCheck.currentUsage,
+          limit: usageCheck.limit
+        },
+        { status: 429 } // Too Many Requests
+      )
     }
 
     // Submit NEW job to DeepCopy API with ONLY this avatar

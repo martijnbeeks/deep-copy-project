@@ -106,3 +106,23 @@ export interface OrganizationMember {
   created_at: string
   updated_at: string
 }
+
+export type UsageType = 'deep_research' | 'pre_lander'
+
+export interface OrganizationUsageLimits {
+  organization_id: string
+  deep_research_limit: number
+  pre_lander_limit: number
+  created_at: string
+  updated_at: string
+}
+
+export interface OrganizationUsageTracking {
+  id: string
+  organization_id: string
+  usage_type: UsageType
+  week_start_date: string
+  count: number
+  created_at: string
+  updated_at: string
+}

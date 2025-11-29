@@ -1,6 +1,9 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getDeepCopyAccessToken } from '@/lib/auth/deepcopy-auth'
 import { handleApiError, createValidationErrorResponse, createSuccessResponse } from '@/lib/middleware/error-handler'
+import { checkAndIncrementUsage } from '@/lib/middleware/usage-limits'
+import { getJobById } from '@/lib/db/queries'
+import { query } from '@/lib/db/connection'
 import { isDevMode } from '@/lib/utils/env'
 import { logger } from '@/lib/utils/logger'
 
@@ -13,6 +16,33 @@ export async function POST(request: NextRequest) {
 
     if (!original_job_id || !select_angle) {
       return createValidationErrorResponse('original_job_id and select_angle are required')
+    }
+
+    // Get the job to find the user
+    const job = await getJobById(original_job_id)
+    if (!job) {
+      return createValidationErrorResponse('Job not found', 404)
+    }
+
+    // Get user from job
+    const userResult = await query('SELECT * FROM users WHERE id = $1', [job.user_id])
+    if (userResult.rows.length === 0) {
+      return createValidationErrorResponse('User not found', 404)
+    }
+    const user = userResult.rows[0]
+
+    // Check usage limits before generating pre-landers
+    const usageCheck = await checkAndIncrementUsage(user, 'pre_lander')
+    if (!usageCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Usage limit exceeded',
+          message: usageCheck.error || 'You have reached your weekly limit for Pre-Lander actions.',
+          currentUsage: usageCheck.currentUsage,
+          limit: usageCheck.limit
+        },
+        { status: 429 } // Too Many Requests
+      )
     }
 
     // Determine endpoint based on environment

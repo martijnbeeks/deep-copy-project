@@ -1,5 +1,5 @@
 import { query } from './connection'
-import { User, Template, Job, Result, JobWithTemplate, JobWithResult, InjectableTemplate, InviteLink, Organization, OrganizationMember, UserRole, MemberStatus, InviteType } from './types'
+import { User, Template, Job, Result, JobWithTemplate, JobWithResult, InjectableTemplate, InviteLink, Organization, OrganizationMember, UserRole, MemberStatus, InviteType, UsageType, OrganizationUsageLimits, OrganizationUsageTracking } from './types'
 import bcrypt from 'bcryptjs'
 
 // User queries
@@ -583,11 +583,22 @@ export const deleteInviteLink = async (id: string): Promise<boolean> => {
 
 // Organization queries
 export const createOrganization = async (name: string, created_by: string): Promise<Organization> => {
+  await ensureUsageLimitsTables()
+  
   const result = await query(
     'INSERT INTO organizations (name, created_by) VALUES ($1, $2) RETURNING *',
     [name, created_by]
   )
-  return result.rows[0]
+  
+  const organization = result.rows[0]
+  
+  // Automatically create default usage limits for the new organization
+  await setOrganizationUsageLimits(organization.id, {
+    deep_research_limit: 3,
+    pre_lander_limit: 30
+  })
+  
+  return organization
 }
 
 export const getOrganizationById = async (id: string): Promise<Organization | null> => {
@@ -697,4 +708,275 @@ export const createUserWithUsername = async (email: string, password: string, na
     [email, passwordHash, name, username || null]
   )
   return result.rows[0]
+}
+
+// Usage Limits Schema Setup
+export const ensureUsageLimitsTables = async (): Promise<void> => {
+  // Create organization_usage_limits table
+  await query(`
+    CREATE TABLE IF NOT EXISTS organization_usage_limits (
+      organization_id TEXT PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
+      deep_research_limit INTEGER NOT NULL DEFAULT 3,
+      pre_lander_limit INTEGER NOT NULL DEFAULT 30,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    )
+  `)
+
+  // Create organization_usage_tracking table
+  await query(`
+    CREATE TABLE IF NOT EXISTS organization_usage_tracking (
+      id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+      organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      usage_type TEXT NOT NULL CHECK (usage_type IN ('deep_research', 'pre_lander')),
+      week_start_date DATE NOT NULL,
+      count INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE(organization_id, usage_type, week_start_date)
+    )
+  `)
+
+  // Create index for faster lookups
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_usage_tracking_org_type_date 
+    ON organization_usage_tracking(organization_id, usage_type, week_start_date)
+  `)
+}
+
+// Usage Limits Queries
+export const getOrganizationUsageLimits = async (organizationId: string): Promise<OrganizationUsageLimits | null> => {
+  await ensureUsageLimitsTables()
+  
+  const result = await query(
+    'SELECT * FROM organization_usage_limits WHERE organization_id = $1',
+    [organizationId]
+  )
+  
+  if (result.rows.length === 0) {
+    // Create default limits if they don't exist
+    await setOrganizationUsageLimits(organizationId, { deep_research_limit: 3, pre_lander_limit: 30 })
+    const newResult = await query(
+      'SELECT * FROM organization_usage_limits WHERE organization_id = $1',
+      [organizationId]
+    )
+    return newResult.rows[0] || null
+  }
+  
+  return result.rows[0]
+}
+
+export const setOrganizationUsageLimits = async (
+  organizationId: string,
+  limits: { deep_research_limit?: number; pre_lander_limit?: number }
+): Promise<OrganizationUsageLimits> => {
+  await ensureUsageLimitsTables()
+  
+  const existing = await getOrganizationUsageLimits(organizationId)
+  
+  if (existing) {
+    const updates: string[] = ['updated_at = NOW()']
+    const params: any[] = [organizationId]
+    
+    if (limits.deep_research_limit !== undefined) {
+      updates.push(`deep_research_limit = $${params.length + 1}`)
+      params.push(limits.deep_research_limit)
+    }
+    
+    if (limits.pre_lander_limit !== undefined) {
+      updates.push(`pre_lander_limit = $${params.length + 1}`)
+      params.push(limits.pre_lander_limit)
+    }
+    
+    const result = await query(
+      `UPDATE organization_usage_limits SET ${updates.join(', ')} WHERE organization_id = $1 RETURNING *`,
+      params
+    )
+    return result.rows[0]
+  } else {
+    const result = await query(
+      `INSERT INTO organization_usage_limits (organization_id, deep_research_limit, pre_lander_limit) 
+       VALUES ($1, $2, $3) RETURNING *`,
+      [
+        organizationId,
+        limits.deep_research_limit ?? 3,
+        limits.pre_lander_limit ?? 30
+      ]
+    )
+    return result.rows[0]
+  }
+}
+
+export const getOrganizationUsage = async (
+  organizationId: string,
+  usageType: UsageType,
+  weekStartDate: string
+): Promise<OrganizationUsageTracking | null> => {
+  await ensureUsageLimitsTables()
+  
+  const result = await query(
+    'SELECT * FROM organization_usage_tracking WHERE organization_id = $1 AND usage_type = $2 AND week_start_date = $3',
+    [organizationId, usageType, weekStartDate]
+  )
+  
+  return result.rows[0] || null
+}
+
+export const incrementOrganizationUsage = async (
+  organizationId: string,
+  usageType: UsageType
+): Promise<OrganizationUsageTracking> => {
+  await ensureUsageLimitsTables()
+  
+  const today = new Date().toISOString().split('T')[0]
+  
+  // Check if there's an existing tracking within the last 7 days
+  const sevenDaysAgo = new Date()
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0]
+  
+  const existingResult = await query(
+    `SELECT * FROM organization_usage_tracking 
+     WHERE organization_id = $1 AND usage_type = $2 
+     AND week_start_date >= $3 
+     ORDER BY week_start_date DESC 
+     LIMIT 1`,
+    [organizationId, usageType, sevenDaysAgoStr]
+  )
+  
+  if (existingResult.rows.length > 0) {
+    // Check if we're still within the 7-day window
+    const existing = existingResult.rows[0]
+    const weekStartDate = new Date(existing.week_start_date)
+    const todayDate = new Date(today)
+    const daysDiff = Math.floor((todayDate.getTime() - weekStartDate.getTime()) / (1000 * 60 * 60 * 24))
+    
+    if (daysDiff < 7) {
+      // Still within window, increment existing count
+      const result = await query(
+        `UPDATE organization_usage_tracking 
+         SET count = count + 1, updated_at = NOW() 
+         WHERE id = $1 RETURNING *`,
+        [existing.id]
+      )
+      return result.rows[0]
+    } else {
+      // Outside window, create new entry with today's date
+      const result = await query(
+        `INSERT INTO organization_usage_tracking (organization_id, usage_type, week_start_date, count) 
+         VALUES ($1, $2, $3, 1) RETURNING *`,
+        [organizationId, usageType, today]
+      )
+      return result.rows[0]
+    }
+  } else {
+    // No existing usage, create new tracking entry
+    const result = await query(
+      `INSERT INTO organization_usage_tracking (organization_id, usage_type, week_start_date, count) 
+       VALUES ($1, $2, $3, 1) RETURNING *`,
+      [organizationId, usageType, today]
+    )
+    return result.rows[0]
+  }
+}
+
+export const resetOrganizationUsage = async (
+  organizationId: string,
+  usageType?: UsageType
+): Promise<void> => {
+  await ensureUsageLimitsTables()
+  
+  if (usageType) {
+    // Reset specific usage type
+    await query(
+      'DELETE FROM organization_usage_tracking WHERE organization_id = $1 AND usage_type = $2',
+      [organizationId, usageType]
+    )
+  } else {
+    // Reset all usage types
+    await query(
+      'DELETE FROM organization_usage_tracking WHERE organization_id = $1',
+      [organizationId]
+    )
+  }
+}
+
+export const getAllOrganizationsWithLimits = async (): Promise<Array<OrganizationUsageLimits & {
+  organization: Organization
+  current_deep_research_usage: number
+  current_pre_lander_usage: number
+  deep_research_week_start: string | null
+  pre_lander_week_start: string | null
+}>> => {
+  await ensureUsageLimitsTables()
+  
+  // First, ensure all organizations have limits (create defaults if missing) in a single query
+  await query(`
+    INSERT INTO organization_usage_limits (organization_id, deep_research_limit, pre_lander_limit)
+    SELECT id, 3, 30
+    FROM organizations
+    WHERE id NOT IN (SELECT organization_id FROM organization_usage_limits)
+    ON CONFLICT (organization_id) DO NOTHING
+  `)
+  
+  // Now get all organizations with their limits
+  const result = await query(`
+    SELECT 
+      oul.*,
+      o.id as org_id,
+      o.name as org_name,
+      o.created_by as org_created_by,
+      o.created_at as org_created_at,
+      o.updated_at as org_updated_at,
+      COALESCE((
+        SELECT SUM(count) 
+        FROM organization_usage_tracking 
+        WHERE organization_id = oul.organization_id 
+        AND usage_type = 'deep_research'
+        AND week_start_date >= CURRENT_DATE - INTERVAL '7 days'
+      ), 0) as current_deep_research_usage,
+      COALESCE((
+        SELECT SUM(count) 
+        FROM organization_usage_tracking 
+        WHERE organization_id = oul.organization_id 
+        AND usage_type = 'pre_lander'
+        AND week_start_date >= CURRENT_DATE - INTERVAL '7 days'
+      ), 0) as current_pre_lander_usage,
+      (
+        SELECT MAX(week_start_date)
+        FROM organization_usage_tracking
+        WHERE organization_id = oul.organization_id
+        AND usage_type = 'deep_research'
+        AND week_start_date >= CURRENT_DATE - INTERVAL '7 days'
+      ) as deep_research_week_start,
+      (
+        SELECT MAX(week_start_date)
+        FROM organization_usage_tracking
+        WHERE organization_id = oul.organization_id
+        AND usage_type = 'pre_lander'
+        AND week_start_date >= CURRENT_DATE - INTERVAL '7 days'
+      ) as pre_lander_week_start
+    FROM organization_usage_limits oul
+    INNER JOIN organizations o ON oul.organization_id = o.id
+    ORDER BY o.name
+  `)
+  
+  return result.rows.map(row => ({
+    organization_id: row.organization_id,
+    deep_research_limit: row.deep_research_limit,
+    pre_lander_limit: row.pre_lander_limit,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    organization: {
+      id: row.org_id,
+      name: row.org_name,
+      created_by: row.org_created_by,
+      created_at: row.org_created_at,
+      updated_at: row.org_updated_at
+    },
+    current_deep_research_usage: parseInt(row.current_deep_research_usage) || 0,
+    current_pre_lander_usage: parseInt(row.current_pre_lander_usage) || 0,
+    deep_research_week_start: row.deep_research_week_start,
+    pre_lander_week_start: row.pre_lander_week_start
+  }))
 }
