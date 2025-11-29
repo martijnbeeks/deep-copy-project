@@ -2,9 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle, AlertCircle, Play, Download } from "lucide-react"
 // Template validation functions
 
@@ -71,94 +69,92 @@ export function TemplateTester({ htmlContent, templateName }: TemplateTesterProp
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Play className="h-5 w-5" />
-          Template Tester
-        </CardTitle>
-        <CardDescription>
-          Analyze your template and count placeholder fields
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold mb-0.5">Template Analysis</h3>
+          <p className="text-xs text-muted-foreground">Analyze placeholder fields in your template</p>
+        </div>
         <div className="flex items-center gap-2">
-          <Button onClick={runTest} disabled={isTesting}>
+          <Button onClick={runTest} disabled={isTesting} size="sm" className="h-8">
+            <Play className="h-3.5 w-3.5 mr-1.5" />
             {isTesting ? "Testing..." : "Run Test"}
           </Button>
           {testResults && (
-            <Button variant="outline" onClick={downloadTestReport}>
-              <Download className="h-4 w-4 mr-2" />
-              Download Report
+            <Button variant="ghost" size="sm" onClick={downloadTestReport} className="h-8">
+              <Download className="h-3.5 w-3.5 mr-1.5" />
+              Download
             </Button>
           )}
         </div>
+      </div>
 
-        {testResults && (
-          <div className="space-y-4">
-            {/* Overall Status */}
-            <Alert className={testResults.isValid ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
-              <div className="flex items-center gap-2">
-                {testResults.isValid ? (
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                ) : (
-                  <AlertCircle className="h-4 w-4 text-red-600" />
-                )}
-                <AlertDescription>
-                  <div className="font-medium">
-                    {testResults.isValid ? "Template is Valid!" : "Template has Issues"}
-                  </div>
-                  <div className="text-sm mt-1">
-                    Found {testResults.placeholderCount} placeholders out of {testResults.fieldCount} available fields
-                  </div>
-                </AlertDescription>
-              </div>
-            </Alert>
-
-            {/* Statistics */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{testResults.placeholderCount}</div>
-                <div className="text-sm text-gray-600">Placeholders Found</div>
-              </div>
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{testResults.placeholderCount}</div>
-                <div className="text-sm text-gray-600">Fields Used</div>
-              </div>
-            </div>
-
-            {/* Placeholder List */}
-            <div>
-              <h4 className="font-medium mb-2">Found Placeholders:</h4>
-              <div className="max-h-32 overflow-y-auto">
-                <div className="flex flex-wrap gap-2">
-                  {Array.from(new Set(htmlContent.match(/\{\{content\.([^}]+)\}\}/g) || [])).map((placeholder) => (
-                    <Badge key={placeholder} variant="secondary" className="text-xs">
-                      {placeholder}
-                    </Badge>
-                  ))}
+      {testResults && (
+        <div className="space-y-4">
+          {/* Overall Status */}
+          <div className={`rounded-lg border p-3 ${testResults.isValid ? "bg-muted/30 border-border" : "bg-destructive/10 border-destructive/20"}`}>
+            <div className="flex items-start gap-2">
+              {testResults.isValid ? (
+                <CheckCircle className="h-4 w-4 text-primary mt-0.5" />
+              ) : (
+                <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
+              )}
+              <div className="flex-1">
+                <div className="text-xs font-semibold mb-1">
+                  {testResults.isValid ? "Template is Valid" : "Template has Issues"}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Found {testResults.placeholderCount} placeholders out of {testResults.fieldCount} available fields
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Field Coverage */}
-            <div>
-              <h4 className="font-medium mb-2">Template Analysis:</h4>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+          {/* Statistics */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border bg-card p-3 text-center">
+              <div className="text-xl font-semibold text-foreground mb-0.5">{testResults.placeholderCount}</div>
+              <div className="text-xs text-muted-foreground">Placeholders</div>
+            </div>
+            <div className="rounded-lg border bg-card p-3 text-center">
+              <div className="text-xl font-semibold text-foreground mb-0.5">{testResults.placeholderCount}</div>
+              <div className="text-xs text-muted-foreground">Fields Used</div>
+            </div>
+          </div>
+
+          {/* Placeholder List */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold">Found Placeholders</h4>
+            <div className="rounded-lg border bg-muted/20 p-3 max-h-32 overflow-y-auto">
+              <div className="flex flex-wrap gap-1.5">
+                {Array.from(new Set(htmlContent.match(/\{\{content\.([^}]+)\}\}/g) || [])).map((placeholder) => (
+                  <Badge key={placeholder} variant="secondary" className="text-xs font-mono">
+                    {placeholder}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Field Coverage */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold">Template Coverage</h4>
+            <div className="space-y-1.5">
+              <div className="w-full bg-muted rounded-full h-1.5">
                 <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-primary h-1.5 rounded-full transition-all duration-300"
                   style={{
                     width: `${Math.min((testResults.placeholderCount / testResults.fieldCount) * 100, 100)}%`
                   }}
                 />
               </div>
-              <div className="text-sm text-gray-600 mt-1">
+              <div className="text-xs text-muted-foreground">
                 {testResults.placeholderCount} placeholders found in template
               </div>
             </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </div>
   )
 }

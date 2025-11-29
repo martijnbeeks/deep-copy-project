@@ -207,68 +207,65 @@ export function UsageLimitsTab() {
 
   if (loading && organizations.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center text-muted-foreground">Loading usage limits...</div>
-        </CardContent>
-      </Card>
+      <div className="rounded-lg border bg-card p-6">
+        <div className="text-center text-sm text-muted-foreground">Loading usage limits...</div>
+      </div>
     )
   }
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+      <div className="rounded-lg border bg-card">
+        <div className="flex items-center justify-between p-4 border-b">
           <div>
-            <CardTitle>Usage Limits Management</CardTitle>
-            <CardDescription>
-              View and manage usage limits for Deep Research and Pre-Landers per organization
-            </CardDescription>
+            <h3 className="text-sm font-semibold">Usage Limits</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Manage Deep Research and Pre-Lander limits per organization
+            </p>
           </div>
-          <Button onClick={loadOrganizations} disabled={loading} className="flex items-center gap-2">
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+          <Button onClick={loadOrganizations} disabled={loading} variant="ghost" size="sm" className="h-8">
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           </Button>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="p-4">
           {organizations.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No organizations found</p>
+            <p className="text-center text-sm text-muted-foreground py-12">No organizations found</p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {organizations.map((org) => (
-                <Card key={org.organization_id} className="border">
-                  <CardHeader className="pb-3">
+                <div key={org.organization_id} className="rounded-lg border bg-card">
+                  <div className="p-4 border-b">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Building2 className="h-5 w-5 text-muted-foreground" />
-                        <CardTitle className="text-lg">{org.organization.name}</CardTitle>
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <h4 className="text-sm font-semibold">{org.organization.name}</h4>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleEdit(org)}
-                          className="flex items-center gap-1"
+                          className="h-7 px-2 text-xs"
                         >
-                          <Edit className="h-3 w-3" />
-                          Edit Limits
+                          <Edit className="h-3 w-3 mr-1" />
+                          Edit
                         </Button>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           onClick={() => {
                             setResettingOrg(org)
                             setResetDialogOpen(true)
                           }}
-                          className="flex items-center gap-1"
+                          className="h-7 px-2 text-xs"
                         >
-                          <RotateCcw className="h-3 w-3" />
-                          Reset Usage
+                          <RotateCcw className="h-3 w-3 mr-1" />
+                          Reset
                         </Button>
                       </div>
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                  </div>
+                  <div className="p-4 space-y-4">
                     {/* Deep Research Usage */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -316,21 +313,21 @@ export function UsageLimitsTab() {
                         Week started: {formatDate(org.pre_lander_week_start)}
                       </p>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Edit Limits Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader className="space-y-2 pb-4">
-            <DialogTitle className="text-xl">Edit Usage Limits</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              Update usage limits for {editingOrg?.organization.name}
+          <DialogHeader className="space-y-1 pb-4">
+            <DialogTitle className="text-base">Edit Usage Limits</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Update limits for {editingOrg?.organization.name}
             </DialogDescription>
           </DialogHeader>
 
@@ -399,9 +396,9 @@ export function UsageLimitsTab() {
       {/* Reset Usage Dialog */}
       <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader className="space-y-2 pb-4">
-            <DialogTitle className="text-xl">Reset Usage</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
+          <DialogHeader className="space-y-1 pb-4">
+            <DialogTitle className="text-base">Reset Usage</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
               Reset usage tracking for {resettingOrg?.organization.name}
             </DialogDescription>
           </DialogHeader>

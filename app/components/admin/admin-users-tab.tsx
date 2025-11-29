@@ -102,23 +102,23 @@ export function AdminUsersTab() {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <div className="rounded-lg border bg-card">
+      <div className="flex items-center justify-between p-4 border-b">
         <div>
-          <CardTitle>User Management</CardTitle>
-          <CardDescription>Add, view, and delete users</CardDescription>
+          <h3 className="text-sm font-semibold">Users</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Add, view, and delete users</p>
         </div>
         <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add User
+            <Button size="sm" className="h-8">
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              Add
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create New User</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-base">Create User</DialogTitle>
+              <DialogDescription className="text-xs">
                 Add a new user to the system
               </DialogDescription>
             </DialogHeader>
@@ -190,10 +190,10 @@ export function AdminUsersTab() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="p-4">
         {users.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">No users found</p>
+          <p className="text-center text-sm text-muted-foreground py-12">No users found</p>
         ) : (
           <Accordion type="multiple" className="w-full">
             {/* Users grouped by organization */}
@@ -224,31 +224,30 @@ export function AdminUsersTab() {
                       const userOrg = userOrgs.find((o: UserOrganization) => o && o.id === orgId)
 
                       return (
-                        <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
-                          <div className="flex-1">
+                        <div key={user.id} className="flex items-center justify-between p-3 rounded-md hover:bg-muted/50 transition-colors group">
+                          <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <p className="font-medium">{user.name}</p>
+                              <p className="text-sm font-medium truncate">{user.name}</p>
                               {userOrg && (
-                                <Badge variant={userOrg.role === 'admin' ? 'default' : 'secondary'} className="text-xs">
+                                <Badge variant={userOrg.role === 'admin' ? 'default' : 'secondary'} className="text-xs font-normal">
                                   {userOrg.role}
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-sm text-muted-foreground">{user.email}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Created: {new Date(user.created_at).toLocaleDateString()}
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {new Date(user.created_at).toLocaleDateString()}
                             </p>
                           </div>
                           <Button
-                            variant="destructive"
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteUser(user.id)}
                             disabled={deleteUserMutation.isPending}
-                            className="flex items-center gap-1"
+                            className="h-7 w-7 p-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                             aria-label={`Delete user ${user.name}`}
                           >
-                            <Trash2 className="h-3 w-3" />
-                            Delete
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       )
@@ -273,24 +272,23 @@ export function AdminUsersTab() {
                 <AccordionContent>
                   <div className="space-y-2 pt-2">
                     {usersWithoutOrg.map((user) => (
-                      <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
-                        <div>
-                          <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Created: {new Date(user.created_at).toLocaleDateString()}
+                      <div key={user.id} className="flex items-center justify-between p-3 rounded-md hover:bg-muted/50 transition-colors group">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{user.name}</p>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {new Date(user.created_at).toLocaleDateString()}
                           </p>
                         </div>
                         <Button
-                          variant="destructive"
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteUser(user.id)}
                           disabled={deleteUserMutation.isPending}
-                          className="flex items-center gap-1"
+                          className="h-7 w-7 p-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                           aria-label={`Delete user ${user.name}`}
                         >
-                          <Trash2 className="h-3 w-3" />
-                          Delete
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     ))}
@@ -300,8 +298,8 @@ export function AdminUsersTab() {
             )}
           </Accordion>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 

@@ -18,6 +18,10 @@ import { TemplateEditor } from "@/components/admin/template-editor"
 import { TemplateTester } from "@/components/admin/template-tester"
 import { AdminUsersTab } from "@/components/admin/admin-users-tab"
 import { UsageLimitsTab } from "@/components/admin/usage-limits-tab"
+import { useTemplates } from "@/lib/hooks/use-templates"
+import { TemplatePreview } from "@/components/template-preview"
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
+import { Template } from "@/lib/db/types"
 
 interface UserOrganization {
   id: string
@@ -55,15 +59,7 @@ interface InjectableTemplate {
   updated_at: string
 }
 
-interface Template {
-  id: string
-  name: string
-  description: string | null
-  category: string | null
-  created_at: string
-  content_length: number
-  html_content: string
-}
+// Using Template from lib/db/types instead
 
 interface DatabaseStats {
   users: number
@@ -98,6 +94,14 @@ export default function AdminPage() {
   const [inviteLinks, setInviteLinks] = useState<InviteLink[]>([])
   const [isCreatingInviteLink, setIsCreatingInviteLink] = useState(false)
 
+  // Template grid view state
+  const [selectedCategory, setSelectedCategory] = useState("all")
+  const [currentPage, setCurrentPage] = useState(1)
+  const templatesPerPage = 9
+
+  // Use the same hook as /templates route
+  const { data: allTemplates = [], isLoading: templatesLoading } = useTemplates()
+
   // Invite link form state
   const [newInviteLink, setNewInviteLink] = useState({ waitlist_email: '', expiration_days: '7', expiration_hours: '' })
   const [inviteLinkDialogOpen, setInviteLinkDialogOpen] = useState(false)
@@ -113,7 +117,7 @@ export default function AdminPage() {
   const [templateEditorOpen, setTemplateEditorOpen] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<InjectableTemplate | null>(null)
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false)
-  const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null)
+  const [previewTemplate, setPreviewTemplate] = useState<{ id: string; name: string; description: string | null; category: string | null; created_at: string; content_length: number; html_content: string } | null>(null)
   const [previewInjectableTemplate, setPreviewInjectableTemplate] = useState<InjectableTemplate | null>(null)
 
   // Check if already authenticated
@@ -135,22 +139,37 @@ export default function AdminPage() {
     return headers
   }
 
+  // Filter templates by category
+  const filteredTemplates = allTemplates.filter(template => {
+    const matchesCategory = selectedCategory === "all" || template.category === selectedCategory
+    return matchesCategory
+  })
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredTemplates.length / templatesPerPage)
+  const startIndex = (currentPage - 1) * templatesPerPage
+  const endIndex = startIndex + templatesPerPage
+  const currentTemplates = filteredTemplates.slice(startIndex, endIndex)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  // Reset to first page when category changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedCategory])
+
   // Load all data
   const loadData = async () => {
     setLoading(true)
     try {
-      const [templatesRes, injectableTemplatesRes, jobsRes, statsRes, inviteLinksRes] = await Promise.all([
-        fetch('/api/admin/templates', { headers: getAuthHeaders() }),
+      const [injectableTemplatesRes, jobsRes, statsRes, inviteLinksRes] = await Promise.all([
         fetch('/api/admin/injectable-templates', { headers: getAuthHeaders() }),
         fetch('/api/admin/jobs', { headers: getAuthHeaders() }),
         fetch('/api/admin/stats', { headers: getAuthHeaders() }),
         fetch('/api/admin/invite-links', { headers: getAuthHeaders() })
       ])
-
-      if (templatesRes.ok) {
-        const templatesData = await templatesRes.json()
-        setTemplates(templatesData.templates)
-      }
 
       if (injectableTemplatesRes.ok) {
         const injectableTemplatesData = await injectableTemplatesRes.json()
@@ -182,6 +201,12 @@ export default function AdminPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Invalidate templates cache after creating/deleting
+  const invalidateTemplates = () => {
+    // The useTemplates hook will automatically refetch when we trigger a reload
+    // We can use queryClient if needed, but for now just reloading data is fine
   }
 
 
@@ -228,7 +253,8 @@ export default function AdminPage() {
         setNewTemplate({ id: '', name: '', description: '', category: '', htmlContent: '' })
         setTemplateFile(null)
         setTemplateDialogOpen(false)
-        loadData()
+        // Reload window to refresh templates from useTemplates hook
+        window.location.reload()
       } else {
         const error = await response.json()
         throw new Error(error.error)
@@ -258,7 +284,8 @@ export default function AdminPage() {
           title: "Success",
           description: "Template deleted successfully"
         })
-        loadData()
+        // Reload window to refresh templates from useTemplates hook
+        window.location.reload()
       } else {
         const error = await response.json()
         throw new Error(error.error)
@@ -283,7 +310,17 @@ export default function AdminPage() {
   }
 
   const handlePreviewTemplate = (template: Template) => {
-    setPreviewTemplate(template)
+    // Convert Template to the format expected by preview dialog
+    const previewTemplate = {
+      id: template.id,
+      name: template.name,
+      description: template.description || null,
+      category: template.category || null,
+      created_at: template.created_at,
+      content_length: template.html_content.length,
+      html_content: template.html_content
+    }
+    setPreviewTemplate(previewTemplate)
     setPreviewDialogOpen(true)
   }
 
@@ -461,21 +498,6 @@ export default function AdminPage() {
     }
   }
 
-  const handlePreviewTemplateContent = (htmlContent: string) => {
-    // Create a temporary template object for preview
-    const tempTemplate = {
-      id: 'preview',
-      name: 'Preview',
-      type: 'listicle' as const,
-      html_content: htmlContent,
-      description: 'Preview',
-      is_active: true,
-      created_at: '',
-      updated_at: ''
-    }
-    setPreviewInjectableTemplate(tempTemplate)
-    setPreviewDialogOpen(true)
-  }
 
   // Invite link management
   const handleNumericInput = (value: string): string => {
@@ -637,23 +659,34 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <main className="flex-1 p-6 overflow-auto">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-background">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-start justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-              <p className="text-muted-foreground mt-2">
-                Manage users, templates, and view database statistics
+              <h1 className="text-2xl font-semibold tracking-tight mb-1">Admin Dashboard</h1>
+              <p className="text-sm text-muted-foreground">
+                Manage users, templates, and system statistics
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Button onClick={loadData} disabled={loading} className="flex items-center gap-2">
+              <Button
+                onClick={loadData}
+                disabled={loading}
+                variant="ghost"
+                size="sm"
+                className="h-9"
+              >
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
               </Button>
-              <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2">
-                <LogOut className="h-4 w-4" />
+              <Button
+                variant="ghost"
+                onClick={handleLogout}
+                size="sm"
+                className="h-9"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </Button>
             </div>
@@ -661,81 +694,68 @@ export default function AdminPage() {
 
           {/* Stats Overview */}
           {stats && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-8 w-8 text-blue-600" />
-                    <div>
-                      <p className="text-2xl font-bold">{stats.users}</p>
-                      <p className="text-sm text-muted-foreground">Users</p>
-                    </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+              <div className="rounded-lg border bg-card p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-semibold">{stats.users}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Users</p>
                   </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-8 w-8 text-green-600" />
-                    <div>
-                      <p className="text-2xl font-bold">{stats.templates}</p>
-                      <p className="text-sm text-muted-foreground">Templates</p>
-                    </div>
+                  <Users className="h-5 w-5 text-muted-foreground/60" />
+                </div>
+              </div>
+              <div className="rounded-lg border bg-card p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-semibold">{stats.templates}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Templates</p>
                   </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2">
-                    <Database className="h-8 w-8 text-cyan-600" />
-                    <div>
-                      <p className="text-2xl font-bold">{stats.jobs}</p>
-                      <p className="text-sm text-muted-foreground">Jobs</p>
-                    </div>
+                  <FileText className="h-5 w-5 text-muted-foreground/60" />
+                </div>
+              </div>
+              <div className="rounded-lg border bg-card p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-semibold">{stats.jobs}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Jobs</p>
                   </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-8 w-8 text-orange-600" />
-                    <div>
-                      <p className="text-2xl font-bold">{stats.results}</p>
-                      <p className="text-sm text-muted-foreground">Results</p>
-                    </div>
+                  <Database className="h-5 w-5 text-muted-foreground/60" />
+                </div>
+              </div>
+              <div className="rounded-lg border bg-card p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-semibold">{stats.results}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Results</p>
                   </div>
-                </CardContent>
-              </Card>
+                  <CheckCircle className="h-5 w-5 text-muted-foreground/60" />
+                </div>
+              </div>
             </div>
           )}
 
           {/* Job Status Breakdown */}
           {jobStatuses.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Job Status Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {jobStatuses.map((status) => (
-                    <Badge key={status.status} variant="outline" className="text-sm">
-                      {status.status}: {status.count}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <div className="rounded-lg border bg-card p-4 mb-6">
+              <div className="flex flex-wrap gap-2">
+                {jobStatuses.map((status) => (
+                  <Badge key={status.status} variant="secondary" className="text-xs font-normal">
+                    {status.status}: {status.count}
+                  </Badge>
+                ))}
+              </div>
+            </div>
           )}
 
           {/* Main Management Tabs */}
-          <Tabs defaultValue="users" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="templates">Templates</TabsTrigger>
-              <TabsTrigger value="injectable-templates">Injectable Templates</TabsTrigger>
-              <TabsTrigger value="jobs">Jobs</TabsTrigger>
-              <TabsTrigger value="invite-links">Invite Links</TabsTrigger>
-              <TabsTrigger value="usage-limits">Usage Limits</TabsTrigger>
+          <Tabs defaultValue="users" className="space-y-6">
+            <TabsList className="bg-muted/50 h-9">
+              <TabsTrigger value="users" className="text-xs">Users</TabsTrigger>
+              <TabsTrigger value="templates" className="text-xs">Templates</TabsTrigger>
+              <TabsTrigger value="injectable-templates" className="text-xs">Injectable</TabsTrigger>
+              <TabsTrigger value="jobs" className="text-xs">Jobs</TabsTrigger>
+              <TabsTrigger value="invite-links" className="text-xs">Invites</TabsTrigger>
+              <TabsTrigger value="usage-limits" className="text-xs">Limits</TabsTrigger>
             </TabsList>
 
             {/* Users Tab */}
@@ -745,284 +765,302 @@ export default function AdminPage() {
 
             {/* Templates Tab */}
             <TabsContent value="templates" className="space-y-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+              <div className="rounded-lg border bg-card">
+                <div className="flex items-center justify-between p-4 border-b">
                   <div>
-                    <CardTitle>Template Management</CardTitle>
-                    <CardDescription>Upload, view, and delete HTML templates</CardDescription>
+                    <h3 className="text-sm font-semibold">Templates</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Upload and manage HTML templates</p>
                   </div>
-                  <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2">
-                        <Upload className="h-4 w-4" />
-                        Upload Template
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle>Upload New Template</DialogTitle>
-                        <DialogDescription>
-                          Upload an HTML template file or paste the content directly
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="templateFile">Upload HTML File</Label>
-                          <Input
-                            id="templateFile"
-                            type="file"
-                            accept=".html"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0]
-                              if (file) handleTemplateFile(file)
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="templateName">Template Name</Label>
-                          <Input
-                            id="templateName"
-                            value={newTemplate.name}
-                            onChange={(e) => setNewTemplate(prev => ({ ...prev, name: e.target.value }))}
-                            placeholder="My Template"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="templateId">Template ID (Optional)</Label>
-                          <Input
-                            id="templateId"
-                            value={newTemplate.id}
-                            onChange={(e) => setNewTemplate(prev => ({ ...prev, id: e.target.value }))}
-                            placeholder="custom-template-id (leave empty for auto-generated)"
-                          />
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Enter a custom ID or leave empty to auto-generate one
-                          </p>
-                        </div>
-                        <div>
-                          <Label htmlFor="templateDescription">Description</Label>
-                          <Input
-                            id="templateDescription"
-                            value={newTemplate.description}
-                            onChange={(e) => setNewTemplate(prev => ({ ...prev, description: e.target.value }))}
-                            placeholder="Brief description of the template"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="templateCategory">Category</Label>
-                          <Select value={newTemplate.category} onValueChange={(value) => setNewTemplate(prev => ({ ...prev, category: value }))}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="advertorial">Advertorial</SelectItem>
-                              <SelectItem value="listicle">Listicle</SelectItem>
-                              <SelectItem value="review">Review</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="templateContent">HTML Content</Label>
-                          <Textarea
-                            id="templateContent"
-                            value={newTemplate.htmlContent}
-                            onChange={(e) => setNewTemplate(prev => ({ ...prev, htmlContent: e.target.value }))}
-                            placeholder="Paste your HTML content here..."
-                            rows={10}
-                            className="font-mono text-sm"
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setTemplateDialogOpen(false)}>
-                          Cancel
+                  <div className="flex items-center gap-2">
+                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                      <SelectTrigger className="w-40 h-8 text-xs">
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="advertorial">Advertorial</SelectItem>
+                        <SelectItem value="listicle">Listicle</SelectItem>
+                        <SelectItem value="review">Review</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" className="h-8">
+                          <Upload className="h-3.5 w-3.5 mr-1.5" />
+                          Upload
                         </Button>
-                        <Button onClick={createTemplate}>
-                          Upload Template
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {templates.map((template) => (
-                      <div key={template.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <p className="font-medium">{template.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {template.description || 'No description'}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            {template.category && (
-                              <Badge variant="outline" className="text-xs">
-                                {template.category}
-                              </Badge>
-                            )}
-                            <span className="text-xs text-muted-foreground">
-                              {(template.content_length / 1024).toFixed(1)} KB
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              Created: {new Date(template.created_at).toLocaleDateString()}
-                            </span>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle className="text-base">Upload Template</DialogTitle>
+                          <DialogDescription className="text-xs">
+                            Upload an HTML template file or paste content directly
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="templateFile">Upload HTML File</Label>
+                            <Input
+                              id="templateFile"
+                              type="file"
+                              accept=".html"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                if (file) handleTemplateFile(file)
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="templateName">Template Name</Label>
+                            <Input
+                              id="templateName"
+                              value={newTemplate.name}
+                              onChange={(e) => setNewTemplate(prev => ({ ...prev, name: e.target.value }))}
+                              placeholder="My Template"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="templateId">Template ID (Optional)</Label>
+                            <Input
+                              id="templateId"
+                              value={newTemplate.id}
+                              onChange={(e) => setNewTemplate(prev => ({ ...prev, id: e.target.value }))}
+                              placeholder="custom-template-id (leave empty for auto-generated)"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Enter a custom ID or leave empty to auto-generate one
+                            </p>
+                          </div>
+                          <div>
+                            <Label htmlFor="templateDescription">Description</Label>
+                            <Input
+                              id="templateDescription"
+                              value={newTemplate.description}
+                              onChange={(e) => setNewTemplate(prev => ({ ...prev, description: e.target.value }))}
+                              placeholder="Brief description of the template"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="templateCategory">Category</Label>
+                            <Select value={newTemplate.category} onValueChange={(value) => setNewTemplate(prev => ({ ...prev, category: value }))}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select category" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="advertorial">Advertorial</SelectItem>
+                                <SelectItem value="listicle">Listicle</SelectItem>
+                                <SelectItem value="review">Review</SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="templateContent">HTML Content</Label>
+                            <Textarea
+                              id="templateContent"
+                              value={newTemplate.htmlContent}
+                              onChange={(e) => setNewTemplate(prev => ({ ...prev, htmlContent: e.target.value }))}
+                              placeholder="Paste your HTML content here..."
+                              rows={10}
+                              className="font-mono text-sm"
+                            />
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handlePreviewTemplate(template)}
-                          >
-                            <Eye className="h-3 w-3" />
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setTemplateDialogOpen(false)}>
+                            Cancel
                           </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => deleteTemplate(template.id)}
-                            className="flex items-center gap-1"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            Delete
+                          <Button onClick={createTemplate}>
+                            Upload Template
                           </Button>
-                        </div>
-                      </div>
-                    ))}
-                    {templates.length === 0 && (
-                      <p className="text-center text-muted-foreground py-8">No templates found</p>
-                    )}
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+                <div className="p-6">
+                  {templatesLoading ? (
+                    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                      {Array.from({ length: 9 }).map((_, i) => (
+                        <div key={i} className="h-[350px] md:h-[400px] bg-muted/20 rounded-xl animate-pulse" />
+                      ))}
+                    </div>
+                  ) : filteredTemplates.length > 0 ? (
+                    <>
+                      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                        {currentTemplates.map((template) => (
+                          <div key={template.id} className="relative group">
+                            <TemplatePreview
+                              template={template}
+                              isSelected={false}
+                              onClick={() => handlePreviewTemplate(template)}
+                            />
+                            <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  deleteTemplate(template.id)
+                                }}
+                                className="h-8 px-3 text-xs shadow-lg"
+                              >
+                                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Pagination */}
+                      {totalPages > 1 && (
+                        <div className="flex justify-center mt-6">
+                          <Pagination>
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious
+                                  onClick={() => handlePageChange(currentPage - 1)}
+                                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                />
+                              </PaginationItem>
+
+                              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                <PaginationItem key={page}>
+                                  <PaginationLink
+                                    onClick={() => handlePageChange(page)}
+                                    isActive={currentPage === page}
+                                    className="cursor-pointer"
+                                  >
+                                    {page}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              ))}
+
+                              <PaginationItem>
+                                <PaginationNext
+                                  onClick={() => handlePageChange(currentPage + 1)}
+                                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-12">
+                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-sm font-medium mb-2">No templates found</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Try adjusting your filter or upload a new template
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </TabsContent>
 
             {/* Injectable Templates Tab */}
             <TabsContent value="injectable-templates" className="space-y-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+              <div className="rounded-lg border bg-card">
+                <div className="flex items-center justify-between p-4 border-b">
                   <div>
-                    <CardTitle>Injectable Template Management</CardTitle>
-                    <CardDescription>
-                      Create, edit, and manage templates for dynamic content injection.
-                      Simply upload HTML files or paste content - no complex validation required!
-                    </CardDescription>
+                    <h3 className="text-sm font-semibold">Injectable Templates</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Manage dynamic content injection templates</p>
                   </div>
                   <Button
                     onClick={handleCreateNewTemplate}
-                    className="flex items-center gap-2"
+                    size="sm"
+                    className="h-8"
                     type="button"
                   >
-                    <Plus className="h-4 w-4" />
-                    Add Template
+                    <Plus className="h-3.5 w-3.5 mr-1.5" />
+                    Add
                   </Button>
-                </CardHeader>
-                <CardContent>
-                  {/* Upload Options Info */}
-                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h4 className="font-medium text-blue-900 mb-2">How to Add Templates</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-blue-800">
-                      <div className="flex items-start gap-2">
-                        <Upload className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <div className="font-medium">Upload HTML File</div>
-                          <div>Click "Add Template" → Upload .html file</div>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <FileText className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <div className="font-medium">Paste HTML Content</div>
-                          <div>Click "Add Template" → Paste in editor</div>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <CheckCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <div className="font-medium">Start with Templates</div>
-                          <div>Use pre-built swipe templates</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    {injectableTemplates?.map((template) => (
-                      <div key={template.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-medium">{template.name}</h3>
-                            <Badge variant={template.type === 'listicle' ? 'default' : 'secondary'}>
-                              {template.type}
-                            </Badge>
-                            {!template.is_active && (
-                              <Badge variant="destructive">Inactive</Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {template.description || 'No description'}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Created: {new Date(template.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditTemplate(template)}
-                            className="flex items-center gap-1"
-                          >
-                            <FileText className="h-3 w-3" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
+                </div>
+                <div className="p-6">
+                  {injectableTemplates?.length > 0 ? (
+                    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                      {injectableTemplates.map((template) => (
+                        <div key={template.id} className="relative group">
+                          <TemplatePreview
+                            template={{
+                              id: template.id,
+                              name: template.name,
+                              description: template.description || undefined,
+                              html_content: template.html_content,
+                              category: template.type
+                            }}
+                            isSelected={false}
                             onClick={() => handlePreviewInjectableTemplate(template)}
-                            className="flex items-center gap-1"
-                          >
-                            <Eye className="h-3 w-3" />
-                            Preview
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => deleteInjectableTemplate(template.id)}
-                            className="flex items-center gap-1"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            Delete
-                          </Button>
+                          />
+                          <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleEditTemplate(template)
+                              }}
+                              className="h-7 px-2 text-xs bg-background/90 backdrop-blur-sm"
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                deleteInjectableTemplate(template.id)
+                              }}
+                              className="h-7 px-2 text-xs shadow-lg"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
+                          {!template.is_active && (
+                            <div className="absolute top-2 left-2">
+                              <Badge variant="destructive" className="text-xs font-normal">Inactive</Badge>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
-                    {injectableTemplates?.length === 0 && (
-                      <p className="text-center text-muted-foreground py-8">No injectable templates found</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-sm font-medium mb-2">No injectable templates found</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Create your first injectable template to get started
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </TabsContent>
 
             {/* Invite Links Tab */}
             <TabsContent value="invite-links" className="space-y-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+              <div className="rounded-lg border bg-card">
+                <div className="flex items-center justify-between p-4 border-b">
                   <div>
-                    <CardTitle>Invite Links</CardTitle>
-                    <CardDescription>Generate invite links for waitlist users</CardDescription>
+                    <h3 className="text-sm font-semibold">Invite Links</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Generate invite links for users</p>
                   </div>
                   <Dialog open={inviteLinkDialogOpen} onOpenChange={setInviteLinkDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2">
-                        <Plus className="h-4 w-4" />
-                        Create Invite Link
+                      <Button size="sm" className="h-8">
+                        <Plus className="h-3.5 w-3.5 mr-1.5" />
+                        Create
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md">
-                      <DialogHeader className="space-y-2 pb-4">
-                        <DialogTitle className="text-xl">Create Invite Link</DialogTitle>
-                        <DialogDescription className="text-sm text-muted-foreground">
+                      <DialogHeader className="space-y-1 pb-4">
+                        <DialogTitle className="text-base">Create Invite Link</DialogTitle>
+                        <DialogDescription className="text-xs text-muted-foreground">
                           Generate a new invite link for users
                         </DialogDescription>
                       </DialogHeader>
@@ -1121,8 +1159,8 @@ export default function AdminPage() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                </CardHeader>
-                <CardContent>
+                </div>
+                <div className="p-4">
                   <div className="space-y-2">
                     {inviteLinks.map((inviteLink) => {
                       const isOptimistic = inviteLink.id.startsWith('temp-')
@@ -1133,75 +1171,69 @@ export default function AdminPage() {
                       return (
                         <div
                           key={inviteLink.id}
-                          className={`flex items-center justify-between p-3 border rounded-lg ${isOptimistic ? 'opacity-60' : ''
-                            }`}
+                          className={`flex items-center justify-between p-3 rounded-md hover:bg-muted/50 transition-colors group ${isOptimistic ? 'opacity-60' : ''}`}
                         >
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               {isOptimistic ? (
-                                <div className="h-5 w-32 bg-muted animate-pulse rounded" />
+                                <div className="h-4 w-32 bg-muted animate-pulse rounded" />
                               ) : (
-                                <p className="font-medium">
+                                <p className="text-sm font-medium truncate">
                                   {inviteLink.waitlist_email || 'No email'}
                                 </p>
                               )}
                               {!isOptimistic && (
-                                <>
-                                  <Badge variant={isUsed ? 'secondary' : isExpired ? 'destructive' : 'default'}>
-                                    {isUsed ? 'Used' : isExpired ? 'Expired' : 'Active'}
-                                  </Badge>
-                                  {/* <Badge variant="outline">
-                                    {inviteLink.invite_type === 'organization_creator' ? 'Org Creator' : 'Staff'}
-                                  </Badge> */}
-                                </>
+                                <Badge variant={isUsed ? 'secondary' : isExpired ? 'destructive' : 'default'} className="text-xs font-normal">
+                                  {isUsed ? 'Used' : isExpired ? 'Expired' : 'Active'}
+                                </Badge>
                               )}
                               {isOptimistic && (
-                                <Badge variant="outline" className="animate-pulse">
+                                <Badge variant="secondary" className="text-xs font-normal animate-pulse">
                                   Creating...
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-sm text-muted-foreground font-mono mt-1">
+                            <p className="text-xs text-muted-foreground font-mono mt-1 truncate">
                               {isOptimistic ? (
-                                <span className="inline-block h-4 w-64 bg-muted animate-pulse rounded" />
+                                <span className="inline-block h-3 w-64 bg-muted animate-pulse rounded" />
                               ) : (
                                 inviteUrl
                               )}
                             </p>
-                            <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                               {isOptimistic ? (
                                 <span className="inline-block h-3 w-48 bg-muted animate-pulse rounded" />
                               ) : (
                                 <>
-                                  <span>Expires: {new Date(inviteLink.expires_at).toLocaleString()}</span>
+                                  <span>Expires: {new Date(inviteLink.expires_at).toLocaleDateString()}</span>
                                   {inviteLink.used_at && (
-                                    <span>Used: {new Date(inviteLink.used_at).toLocaleString()}</span>
+                                    <span>Used: {new Date(inviteLink.used_at).toLocaleDateString()}</span>
                                   )}
                                 </>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                             {!isOptimistic && (
                               <>
                                 <Button
-                                  variant="outline"
+                                  variant="ghost"
                                   size="sm"
                                   onClick={() => copyInviteLink(inviteLink.token)}
                                   disabled={isUsed || isExpired}
+                                  className="h-7 px-2 text-xs"
                                 >
                                   <Copy className="h-3 w-3 mr-1" />
                                   Copy
                                 </Button>
                                 <Button
-                                  variant="destructive"
+                                  variant="ghost"
                                   size="sm"
                                   onClick={() => deleteInviteLink(inviteLink.id)}
                                   disabled={isUsed}
-                                  className="flex items-center gap-1"
+                                  className="h-7 w-7 p-0 text-destructive hover:text-destructive"
                                 >
-                                  <Trash2 className="h-3 w-3" />
-                                  Delete
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                               </>
                             )}
@@ -1210,63 +1242,59 @@ export default function AdminPage() {
                       )
                     })}
                     {inviteLinks.length === 0 && !isCreatingInviteLink && (
-                      <p className="text-center text-muted-foreground py-8">No invite links created yet</p>
+                      <p className="text-center text-sm text-muted-foreground py-12">No invite links created yet</p>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </TabsContent>
 
             {/* Jobs Tab */}
             <TabsContent value="jobs" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Briefcase className="h-5 w-5" />
-                    Job Management
-                  </CardTitle>
-                  <CardDescription>View and delete jobs</CardDescription>
-                </CardHeader>
-                <CardContent>
+              <div className="rounded-lg border bg-card">
+                <div className="p-4 border-b">
+                  <h3 className="text-sm font-semibold">Jobs</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">View and manage job records</p>
+                </div>
+                <div className="p-4">
                   <div className="space-y-2">
                     {jobs.map((job) => (
-                      <div key={job.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <p className="font-medium">{job.title}</p>
-                          <p className="text-sm text-muted-foreground">
-                            User: {job.user_email}
+                      <div key={job.id} className="flex items-center justify-between p-3 rounded-md hover:bg-muted/50 transition-colors group">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{job.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                            {job.user_email}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
-                            <Badge variant={job.status === 'completed' ? 'default' : 'secondary'}>
+                            <Badge variant={job.status === 'completed' ? 'default' : 'secondary'} className="text-xs font-normal">
                               {job.status}
                             </Badge>
                             {job.template_name && (
-                              <Badge variant="outline" className="text-xs">
-                                Template: {job.template_name}
+                              <Badge variant="secondary" className="text-xs font-normal">
+                                {job.template_name}
                               </Badge>
                             )}
                             <span className="text-xs text-muted-foreground">
-                              Created: {new Date(job.created_at).toLocaleDateString()}
+                              {new Date(job.created_at).toLocaleDateString()}
                             </span>
                           </div>
                         </div>
                         <Button
-                          variant="destructive"
+                          variant="ghost"
                           size="sm"
                           onClick={() => deleteJob(job.id)}
-                          className="flex items-center gap-1"
+                          className="h-7 w-7 p-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <Trash2 className="h-3 w-3" />
-                          Delete
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     ))}
                     {jobs.length === 0 && (
-                      <p className="text-center text-muted-foreground py-8">No jobs found</p>
+                      <p className="text-center text-sm text-muted-foreground py-12">No jobs found</p>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </TabsContent>
 
             {/* Usage Limits Tab */}
@@ -1277,15 +1305,7 @@ export default function AdminPage() {
 
           {/* Template Editor Dialog */}
           <Dialog open={templateEditorOpen} onOpenChange={setTemplateEditorOpen}>
-            <DialogContent className="max-w-7xl max-h-[95vh] flex flex-col">
-              <DialogHeader className="flex-shrink-0">
-                <DialogTitle>
-                  {editingTemplate?.id ? 'Edit Template' : 'Create New Template'}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingTemplate?.id ? 'Edit your injectable template' : 'Create a new injectable template - simply upload HTML or paste content'}
-                </DialogDescription>
-              </DialogHeader>
+            <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[95vw] max-h-[95vh] flex flex-col">
               <div className="flex-1 overflow-y-auto min-h-0">
                 {editingTemplate && (
                   <TemplateEditor
@@ -1300,7 +1320,6 @@ export default function AdminPage() {
                       setTemplateEditorOpen(false)
                       setEditingTemplate(null)
                     }}
-                    onPreview={handlePreviewTemplateContent}
                   />
                 )}
               </div>
@@ -1309,20 +1328,27 @@ export default function AdminPage() {
 
           {/* Template Preview Dialog */}
           <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
-            <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-              <DialogHeader>
-                <DialogTitle>
-                  Template Preview: {previewTemplate?.name || previewInjectableTemplate?.name}
+            <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[95vw] max-h-[90vh] flex flex-col p-0">
+              <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
+                <DialogTitle className="text-base">
+                  Preview: {previewTemplate?.name || previewInjectableTemplate?.name}
                 </DialogTitle>
-                <DialogDescription>
-                  Preview of the HTML template content
+                <DialogDescription className="text-xs">
+                  HTML template preview
                 </DialogDescription>
               </DialogHeader>
-              <div className="flex-1 overflow-auto">
+              <div className="flex-1 overflow-auto min-h-0">
                 {(previewTemplate || previewInjectableTemplate) && (
-                  <div className="space-y-4">
-                    <iframe
-                      srcDoc={`<!DOCTYPE html>
+                  <div className="space-y-6">
+                    {/* Preview Section */}
+                    <div className="px-6 pt-6">
+                      <div className="mb-3">
+                        <h3 className="text-sm font-semibold mb-1">Template Preview</h3>
+                        <p className="text-xs text-muted-foreground">Live preview of your template</p>
+                      </div>
+                      <div className="rounded-lg border bg-muted/20 overflow-hidden">
+                        <iframe
+                          srcDoc={`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1357,37 +1383,43 @@ export default function AdminPage() {
 </head>
 <body>
   ${(() => {
-                          const raw = (previewTemplate?.html_content || previewInjectableTemplate?.html_content) || '';
-                          const name = (previewTemplate?.name || previewInjectableTemplate?.name) || '';
-                          const isJavvy = /javvy/i.test(name) || /\bL00002\b/i.test(name) || /javvy/i.test(raw) || /\bL00002\b/i.test(raw);
-                          if (!isJavvy) return raw;
-                          const noOnError = raw
-                            .replace(/\s+onerror="[^"]*"/gi, '')
-                            .replace(/\s+onerror='[^']*'/gi, '');
-                          const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
-                            const lower = block.toLowerCase();
-                            return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
-                              ? ''
-                              : block;
-                          });
-                          return stripFallbackScripts;
-                        })()}
+                              const raw = (previewTemplate?.html_content || previewInjectableTemplate?.html_content) || '';
+                              const name = (previewTemplate?.name || previewInjectableTemplate?.name) || '';
+                              const isJavvy = /javvy/i.test(name) || /\bL00002\b/i.test(name) || /javvy/i.test(raw) || /\bL00002\b/i.test(raw);
+                              if (!isJavvy) return raw;
+                              const noOnError = raw
+                                .replace(/\s+onerror="[^"]*"/gi, '')
+                                .replace(/\s+onerror='[^']*'/gi, '');
+                              const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+                                const lower = block.toLowerCase();
+                                return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+                                  ? ''
+                                  : block;
+                              });
+                              return stripFallbackScripts;
+                            })()}
 </body>
 </html>`}
-                      className="w-full h-[70vh] border rounded-lg"
-                      title={`Preview of ${previewTemplate?.name || previewInjectableTemplate?.name}`}
-                    />
+                          className="w-full h-[60vh] border-0"
+                          title={`Preview of ${previewTemplate?.name || previewInjectableTemplate?.name}`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Template Tester Section */}
                     {previewInjectableTemplate && (
-                      <TemplateTester
-                        htmlContent={previewInjectableTemplate.html_content}
-                        templateName={previewInjectableTemplate.name}
-                      />
+                      <div className="px-6 pb-6 border-t pt-6">
+                        <TemplateTester
+                          htmlContent={previewInjectableTemplate.html_content}
+                          templateName={previewInjectableTemplate.name}
+                        />
+                      </div>
                     )}
                   </div>
                 )}
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setPreviewDialogOpen(false)}>
+              <DialogFooter className="px-6 pb-6 pt-4 flex-shrink-0 border-t">
+                <Button variant="outline" onClick={() => setPreviewDialogOpen(false)} size="sm" className="h-8">
                   Close
                 </Button>
               </DialogFooter>

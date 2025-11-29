@@ -6,10 +6,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CheckCircle, Eye, Save, Upload } from "lucide-react"
+import { Save } from "lucide-react"
+import { TemplateTester } from "@/components/admin/template-tester"
 // Removed complex field validation - keeping it simple
 
 interface TemplateEditorProps {
@@ -22,10 +21,9 @@ interface TemplateEditorProps {
   }
   onSave: (template: any) => void
   onCancel: () => void
-  onPreview: (htmlContent: string) => void
 }
 
-export function TemplateEditor({ template, onSave, onCancel, onPreview }: TemplateEditorProps) {
+export function TemplateEditor({ template, onSave, onCancel }: TemplateEditorProps) {
   const [formData, setFormData] = useState(template)
   const [activeTab, setActiveTab] = useState("basic")
 
@@ -53,10 +51,6 @@ export function TemplateEditor({ template, onSave, onCancel, onPreview }: Templa
     onSave(formData)
   }
 
-  const handlePreview = () => {
-    onPreview(formData.htmlContent)
-  }
-
   const loadTemplateFromSwipe = async (templateName: string) => {
     try {
       if (templateName === 'blank') {
@@ -68,8 +62,8 @@ export function TemplateEditor({ template, onSave, onCancel, onPreview }: Templa
       const response = await fetch(`/api/admin/load-swipe-template?template=${templateName}`)
       if (response.ok) {
         const data = await response.json()
-        setFormData(prev => ({ 
-          ...prev, 
+        setFormData(prev => ({
+          ...prev,
           htmlContent: data.htmlContent,
           name: data.name || prev.name,
           type: data.type || prev.type
@@ -87,183 +81,131 @@ export function TemplateEditor({ template, onSave, onCancel, onPreview }: Templa
   return (
     <div className="space-y-6 max-h-full overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pb-4 border-b">
         <div>
-          <h2 className="text-2xl font-bold">Template Editor</h2>
-          <p className="text-muted-foreground">Create and edit injectable templates with field validation</p>
+          <h2 className="text-lg font-semibold">Template Editor</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Create and edit injectable templates</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handlePreview} type="button">
-            <Eye className="h-4 w-4 mr-2" />
-            Preview
-          </Button>
-          <Button onClick={handleSave} type="button">
-            <Save className="h-4 w-4 mr-2" />
-            Save Template
+          <Button size="sm" onClick={handleSave} type="button" className="h-8">
+            <Save className="h-3.5 w-3.5 mr-1.5" />
+            Save
           </Button>
         </div>
       </div>
 
       {/* Simple Status */}
-      <Alert className="border-blue-200 bg-blue-50">
-        <CheckCircle className="h-4 w-4 text-blue-600" />
-        <AlertDescription>
-          Upload your HTML template or paste content below. The system will automatically detect placeholders like <code className="bg-blue-100 px-1 rounded">{"{{content.hero.headline}}"}</code> for dynamic content injection.
-        </AlertDescription>
-      </Alert>
+      <div className="rounded-lg border bg-muted/30 p-3">
+        <p className="text-xs text-muted-foreground">
+          Upload your HTML template or paste content below. The system will automatically detect placeholders like{" "}
+          <code className="bg-background border border-border px-1.5 py-0.5 rounded text-xs font-mono text-foreground">
+            {"{{content.hero.headline}}"}
+          </code>
+          {" "}for dynamic content injection.
+        </p>
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="basic">Basic Info</TabsTrigger>
-          <TabsTrigger value="html">HTML Editor</TabsTrigger>
+        <TabsList className="bg-muted/50 h-9">
+          <TabsTrigger value="basic" className="text-xs">Basic Info</TabsTrigger>
+          <TabsTrigger value="html" className="text-xs">HTML Editor</TabsTrigger>
+          <TabsTrigger value="test" className="text-xs">Test</TabsTrigger>
         </TabsList>
 
         {/* Basic Information Tab */}
-        <TabsContent value="basic" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-              <CardDescription>Configure the basic template settings</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="templateName">Template Name</Label>
-                <Input
-                  id="templateName"
-                  value={formData.name}
-                  onChange={(e) => handleBasicChange('name', e.target.value)}
-                  placeholder="My Injectable Template"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="templateId">Template ID (Optional)</Label>
-                <Input
-                  id="templateId"
-                  value={formData.id || ''}
-                  onChange={(e) => handleBasicChange('id', e.target.value)}
-                  placeholder="custom-template-id (leave empty for auto-generated)"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Enter a custom ID or leave empty to auto-generate one
-                </p>
-              </div>
-              
-              <div>
-                <Label htmlFor="templateType">Type</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value: 'listicle' | 'advertorial') => handleBasicChange('type', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="listicle">Listicle</SelectItem>
-                    <SelectItem value="advertorial">Advertorial</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="templateDescription">Description</Label>
-                <Input
-                  id="templateDescription"
-                  value={formData.description}
-                  onChange={(e) => handleBasicChange('description', e.target.value)}
-                  placeholder="Brief description of the template"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="templateFile">Upload HTML File</Label>
-                <Input
-                  id="templateFile"
-                  type="file"
-                  accept=".html"
-                  onChange={handleFileUpload}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Upload an HTML file or paste content in the HTML Editor tab below
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Quick HTML Paste</Label>
-                <Textarea
-                  placeholder="Paste your HTML template content here for quick setup..."
-                  rows={6}
-                  onChange={(e) => handleBasicChange('htmlContent', e.target.value)}
-                  value={formData.htmlContent}
-                  className="font-mono text-sm"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Or use the HTML Editor tab for more detailed editing
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Quick Start Templates</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => loadTemplateFromSwipe('blissy')}
-                    type="button"
-                  >
-                    Load Blissy Template
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => loadTemplateFromSwipe('bugmd')}
-                    type="button"
-                  >
-                    Load BugMD Template
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => loadTemplateFromSwipe('example')}
-                    type="button"
-                  >
-                    Load Example Template
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => loadTemplateFromSwipe('blank')}
-                    type="button"
-                  >
-                    Start Blank
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Load a template from swipe_templates folder as starting point
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="basic" className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="templateName" className="text-xs font-medium">Template Name</Label>
+              <Input
+                id="templateName"
+                value={formData.name}
+                onChange={(e) => handleBasicChange('name', e.target.value)}
+                placeholder="My Injectable Template"
+                className="h-9"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="templateType" className="text-xs font-medium">Type</Label>
+              <Select
+                value={formData.type || 'listicle'}
+                onValueChange={(value: 'listicle' | 'advertorial') => handleBasicChange('type', value)}
+              >
+                <SelectTrigger className="h-9 w-full">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="listicle">Listicle</SelectItem>
+                  <SelectItem value="advertorial">Advertorial</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="templateId" className="text-xs font-medium">
+              Template ID <span className="text-muted-foreground font-normal">(Optional)</span>
+            </Label>
+            <Input
+              id="templateId"
+              value={formData.id || ''}
+              onChange={(e) => handleBasicChange('id', e.target.value)}
+              placeholder="custom-template-id"
+              className="h-9"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Leave empty to auto-generate
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="templateDescription" className="text-xs font-medium">Description</Label>
+            <Input
+              id="templateDescription"
+              value={formData.description}
+              onChange={(e) => handleBasicChange('description', e.target.value)}
+              placeholder="Brief description of the template"
+              className="h-9"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="templateFile" className="text-xs font-medium">Upload HTML File</Label>
+            <Input
+              id="templateFile"
+              type="file"
+              accept=".html"
+              onChange={handleFileUpload}
+              className="h-9"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Upload an HTML file or edit content in the HTML Editor tab
+            </p>
+          </div>
         </TabsContent>
 
 
         {/* HTML Editor Tab */}
         <TabsContent value="html" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>HTML Editor</CardTitle>
-              <CardDescription>Edit the raw HTML template content</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                value={formData.htmlContent}
-                onChange={(e) => handleBasicChange('htmlContent', e.target.value)}
-                placeholder="Paste your HTML template content here..."
-                rows={20}
-                className="font-mono text-sm"
-              />
-            </CardContent>
-          </Card>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">HTML Editor</Label>
+            <Textarea
+              value={formData.htmlContent}
+              onChange={(e) => handleBasicChange('htmlContent', e.target.value)}
+              placeholder="Paste your HTML template content here..."
+              rows={25}
+              className="font-mono text-xs resize-none"
+            />
+          </div>
+        </TabsContent>
+
+        {/* Test Tab */}
+        <TabsContent value="test" className="space-y-4">
+          <TemplateTester
+            htmlContent={formData.htmlContent}
+            templateName={formData.name}
+          />
         </TabsContent>
       </Tabs>
     </div>
