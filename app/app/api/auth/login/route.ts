@@ -29,6 +29,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if user is a member of any organization
+    const memberCheck = await query(
+      `SELECT status 
+       FROM organization_members 
+       WHERE user_id = $1`,
+      [user.id]
+    )
+
+    // If user is a member of any organization, they must have at least one approved membership
+    if (memberCheck.rows.length > 0) {
+      const hasApprovedMembership = memberCheck.rows.some(
+        (row) => row.status === 'approved'
+      )
+
+      if (!hasApprovedMembership) {
+        return NextResponse.json(
+          {
+            error: 'Your account is pending for approval. Please wait for an administrator to approve your membership before you can sign in.'
+          },
+          { status: 403 }
+        )
+      }
+    }
+
     // Remove password hash from response
     const { password_hash, ...userWithoutPassword } = user
 
@@ -49,16 +73,16 @@ export async function POST(request: NextRequest) {
       // Admin status check failure is not critical for login
     }
 
-    const response = NextResponse.json({ 
+    const response = NextResponse.json({
       user: userWithoutPassword,
       isAdmin // Include admin status in login response
     })
-    
+
     // Add cache-busting headers
     response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
     response.headers.set('Pragma', 'no-cache')
     response.headers.set('Expires', '0')
-    
+
     return response
   } catch (error) {
     console.error('Login error:', error)

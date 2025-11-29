@@ -15,7 +15,7 @@ interface MemberApprovalDialogProps {
   memberName: string
   memberEmail: string
   currentRole?: UserRole
-  onApproved?: () => void
+  onApproved?: (memberId: string, role: UserRole) => void
   children: React.ReactNode
 }
 
@@ -67,7 +67,7 @@ export function MemberApprovalDialog({
 
       setOpen(false)
       if (onApproved) {
-        onApproved()
+        onApproved(memberId, role)
       }
     } catch (error) {
       toast({

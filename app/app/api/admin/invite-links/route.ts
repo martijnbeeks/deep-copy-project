@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdminAuth, createAuthResponse } from '@/lib/auth/admin-auth'
-import { createInviteLink, getInviteLinksByCreator } from '@/lib/db/queries'
+import { createInviteLink, getInviteLinksByCreator, deleteInviteLink } from '@/lib/db/queries'
 import { query } from '@/lib/db/connection'
 import { InviteType } from '@/lib/db/types'
+import { logger } from '@/lib/utils/logger'
 
 // Helper to get admin user ID (hardcoded admin email)
 const getAdminUserId = async (): Promise<string | null> => {
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
       invite_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/invite/${inviteLink.token}`
     })
   } catch (error) {
-    console.error('Error creating invite link:', error)
+    logger.error('Error creating invite link:', error)
     return NextResponse.json({ error: 'Failed to create invite link' }, { status: 500 })
   }
 }
@@ -91,8 +92,36 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({ invite_links: inviteLinks })
   } catch (error) {
-    console.error('Error fetching invite links:', error)
+    logger.error('Error fetching invite links:', error)
     return NextResponse.json({ error: 'Failed to fetch invite links' }, { status: 500 })
+  }
+}
+
+// DELETE - Delete invite link
+export async function DELETE(request: NextRequest) {
+  const authResult = await verifyAdminAuth(request)
+  if (authResult.error) {
+    return createAuthResponse(authResult.error)
+  }
+
+  try {
+    const { searchParams } = new URL(request.url)
+    const inviteLinkId = searchParams.get('id')
+    
+    if (!inviteLinkId) {
+      return NextResponse.json({ error: 'Invite link ID is required' }, { status: 400 })
+    }
+
+    const deleted = await deleteInviteLink(inviteLinkId)
+    
+    if (!deleted) {
+      return NextResponse.json({ error: 'Invite link not found' }, { status: 404 })
+    }
+    
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    logger.error('Error deleting invite link:', error)
+    return NextResponse.json({ error: 'Failed to delete invite link' }, { status: 500 })
   }
 }
 

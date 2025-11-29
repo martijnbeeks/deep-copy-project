@@ -91,8 +91,40 @@ export function MembersList({ organizationId }: MembersListProps) {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin" />
+          <div className="space-y-6">
+            {/* Skeleton for pending members section */}
+            <div>
+              <div className="h-5 w-40 bg-muted animate-pulse rounded mb-3" />
+              <div className="space-y-2">
+                {[1, 2].map((i) => (
+                  <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex-1 space-y-2">
+                      <div className="h-5 w-32 bg-muted animate-pulse rounded" />
+                      <div className="h-4 w-48 bg-muted animate-pulse rounded" />
+                    </div>
+                    <div className="h-9 w-24 bg-muted animate-pulse rounded" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Skeleton for approved members section */}
+            <div>
+              <div className="h-5 w-40 bg-muted animate-pulse rounded mb-3" />
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-5 w-32 bg-muted animate-pulse rounded" />
+                        <div className="h-5 w-20 bg-muted animate-pulse rounded" />
+                      </div>
+                      <div className="h-4 w-48 bg-muted animate-pulse rounded" />
+                    </div>
+                    <div className="h-9 w-24 bg-muted animate-pulse rounded" />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -115,7 +147,7 @@ export function MembersList({ organizationId }: MembersListProps) {
                         memberName={member.user.name}
                         memberEmail={member.user.email}
                         currentRole={member.role}
-                        onApproved={fetchMembers}
+                        onApproved={() => fetchMembers()}
                       >
                         <Button size="sm">
                           <UserCheck className="mr-2 h-4 w-4" />

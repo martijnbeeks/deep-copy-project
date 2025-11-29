@@ -565,6 +565,22 @@ export const getInviteLinksByCreator = async (created_by: string): Promise<Invit
   return result.rows
 }
 
+export const getInviteLinksByOrganization = async (organization_id: string): Promise<InviteLink[]> => {
+  const result = await query(
+    'SELECT * FROM invite_links WHERE organization_id = $1 ORDER BY created_at DESC',
+    [organization_id]
+  )
+  return result.rows
+}
+
+export const deleteInviteLink = async (id: string): Promise<boolean> => {
+  const result = await query(
+    'DELETE FROM invite_links WHERE id = $1',
+    [id]
+  )
+  return result.rowCount > 0
+}
+
 // Organization queries
 export const createOrganization = async (name: string, created_by: string): Promise<Organization> => {
   const result = await query(

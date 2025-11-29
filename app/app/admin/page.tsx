@@ -95,7 +95,8 @@ export default function AdminPage() {
   const [stats, setStats] = useState<DatabaseStats | null>(null)
   const [jobStatuses, setJobStatuses] = useState<JobStatus[]>([])
   const [inviteLinks, setInviteLinks] = useState<InviteLink[]>([])
-  
+  const [isCreatingInviteLink, setIsCreatingInviteLink] = useState(false)
+
   // Invite link form state
   const [newInviteLink, setNewInviteLink] = useState({ waitlist_email: '', expiration_days: '7', expiration_hours: '' })
   const [inviteLinkDialogOpen, setInviteLinkDialogOpen] = useState(false)
@@ -556,16 +557,70 @@ export default function AdminPage() {
   }
 
   // Invite link management
+  const handleNumericInput = (value: string): string => {
+    // Only allow digits
+    return value.replace(/[^0-9]/g, '')
+  }
+
   const createInviteLink = async () => {
+    setIsCreatingInviteLink(true)
+
+    // Save form values before clearing
+    const formData = { ...newInviteLink }
+
+    // Calculate expiration for optimistic UI
+    let expiresAt: Date
+    if (formData.expiration_days) {
+      const days = parseInt(formData.expiration_days, 10)
+      if (!isNaN(days) && days > 0) {
+        expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+      } else {
+        expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      }
+    } else if (formData.expiration_hours) {
+      const hours = parseInt(formData.expiration_hours, 10)
+      if (!isNaN(hours) && hours > 0) {
+        expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000)
+      } else {
+        expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      }
+    } else {
+      expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    }
+
+    // Create optimistic invite link
+    const tempId = `temp-${Date.now()}`
+    const tempToken = `temp-${Date.now()}`
+    const optimisticLink: InviteLink = {
+      id: tempId,
+      token: tempToken,
+      invite_type: 'organization_creator',
+      waitlist_email: formData.waitlist_email || null,
+      expires_at: expiresAt.toISOString(),
+      used_at: null,
+      created_at: new Date().toISOString()
+    }
+
+    // Add optimistic link to the list immediately
+    setInviteLinks(prev => [optimisticLink, ...prev])
+    setNewInviteLink({ waitlist_email: '', expiration_days: '7', expiration_hours: '' })
+    setInviteLinkDialogOpen(false)
+
     try {
       const body: any = {}
-      if (newInviteLink.waitlist_email) {
-        body.waitlist_email = newInviteLink.waitlist_email
+      if (formData.waitlist_email) {
+        body.waitlist_email = formData.waitlist_email
       }
-      if (newInviteLink.expiration_days) {
-        body.expiration_days = parseInt(newInviteLink.expiration_days)
-      } else if (newInviteLink.expiration_hours) {
-        body.expiration_hours = parseInt(newInviteLink.expiration_hours)
+      if (formData.expiration_days) {
+        const days = parseInt(formData.expiration_days, 10)
+        if (!isNaN(days) && days > 0) {
+          body.expiration_days = days
+        }
+      } else if (formData.expiration_hours) {
+        const hours = parseInt(formData.expiration_hours, 10)
+        if (!isNaN(hours) && hours > 0) {
+          body.expiration_hours = hours
+        }
       }
 
       const response = await fetch('/api/admin/invite-links', {
@@ -578,23 +633,38 @@ export default function AdminPage() {
       })
 
       if (response.ok) {
+        const data = await response.json()
+        const realInviteLink = data.invite_link
+
+        // Replace optimistic link with real one
+        setInviteLinks(prev =>
+          prev.map(link =>
+            link.id === tempId ? realInviteLink : link
+          )
+        )
+
         toast({
           title: "Success",
           description: "Invite link created successfully"
         })
-        setNewInviteLink({ waitlist_email: '', expiration_days: '7', expiration_hours: '' })
-        setInviteLinkDialogOpen(false)
-        loadData()
       } else {
+        // Remove optimistic link on error
+        setInviteLinks(prev => prev.filter(link => link.id !== tempId))
+
         const error = await response.json()
         throw new Error(error.error)
       }
     } catch (error) {
+      // Remove optimistic link on error
+      setInviteLinks(prev => prev.filter(link => link.id !== tempId))
+
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to create invite link",
         variant: "destructive"
       })
+    } finally {
+      setIsCreatingInviteLink(false)
     }
   }
 
@@ -605,6 +675,36 @@ export default function AdminPage() {
       title: "Copied!",
       description: "Invite link copied to clipboard"
     })
+  }
+
+  const deleteInviteLink = async (inviteLinkId: string) => {
+    if (!confirm('Are you sure you want to delete this invite link?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/invite-links?id=${inviteLinkId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Invite link deleted successfully"
+        })
+        loadData()
+      } else {
+        const error = await response.json()
+        throw new Error(error.error)
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete invite link",
+        variant: "destructive"
+      })
+    }
   }
 
   if (!isAuthenticated) {
@@ -799,10 +899,10 @@ export default function AdminPage() {
                         console.error('Error parsing organizations:', e)
                         orgs = []
                       }
-                      
+
                       // Filter out null/undefined organizations
                       orgs = orgs.filter((org: UserOrganization) => org && org.id)
-                      
+
                       if (orgs.length === 0) {
                         usersWithoutOrg.push(user)
                       } else {
@@ -850,7 +950,7 @@ export default function AdminPage() {
                                     userOrgs = []
                                   }
                                   const userOrg = userOrgs.find((o: UserOrganization) => o && o.id === orgId)
-                                  
+
                                   return (
                                     <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
                                       <div className="flex-1">
@@ -1205,65 +1305,104 @@ export default function AdminPage() {
                         Create Invite Link
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Create Invite Link</DialogTitle>
-                        <DialogDescription>
-                          Generate an invite link for a user. Optionally specify a waitlist email to link it to a waitlist entry.
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader className="space-y-2 pb-4">
+                        <DialogTitle className="text-xl">Create Invite Link</DialogTitle>
+                        <DialogDescription className="text-sm text-muted-foreground">
+                          Generate a new invite link for users
                         </DialogDescription>
                       </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="waitlistEmail">Waitlist Email (Optional)</Label>
+
+                      <div className="space-y-6 py-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="waitlistEmail" className="text-sm font-medium">
+                            Waitlist Email
+                            <span className="text-muted-foreground font-normal ml-1">(optional)</span>
+                          </Label>
                           <Input
                             id="waitlistEmail"
                             type="email"
                             value={newInviteLink.waitlist_email}
                             onChange={(e) => setNewInviteLink(prev => ({ ...prev, waitlist_email: e.target.value }))}
-                            placeholder="user@example.com (optional)"
+                            placeholder="user@example.com"
+                            className="h-10"
                           />
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Leave empty to create invite link for users not on waitlist
+                        </div>
+
+                        <div className="relative">
+                          <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                          </div>
+                          <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">Expiration</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1">
+                              <Label htmlFor="expirationDays" className="text-sm font-medium mb-2 block">
+                                Days
+                              </Label>
+                              <Input
+                                id="expirationDays"
+                                type="text"
+                                inputMode="numeric"
+                                value={newInviteLink.expiration_days}
+                                onChange={(e) => {
+                                  const numericValue = handleNumericInput(e.target.value)
+                                  setNewInviteLink(prev => ({ ...prev, expiration_days: numericValue, expiration_hours: '' }))
+                                }}
+                                placeholder="7"
+                                className="h-10"
+                              />
+                            </div>
+                            <div className="pt-7 text-muted-foreground">or</div>
+                            <div className="flex-1">
+                              <Label htmlFor="expirationHours" className="text-sm font-medium mb-2 block">
+                                Hours
+                              </Label>
+                              <Input
+                                id="expirationHours"
+                                type="text"
+                                inputMode="numeric"
+                                value={newInviteLink.expiration_hours}
+                                onChange={(e) => {
+                                  const numericValue = handleNumericInput(e.target.value)
+                                  setNewInviteLink(prev => ({ ...prev, expiration_hours: numericValue, expiration_days: '' }))
+                                }}
+                                placeholder="24"
+                                className="h-10"
+                              />
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Default: 7 days if left empty
                           </p>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="expirationDays">Expiration (Days)</Label>
-                            <Input
-                              id="expirationDays"
-                              type="number"
-                              min="1"
-                              value={newInviteLink.expiration_days}
-                              onChange={(e) => {
-                                setNewInviteLink(prev => ({ ...prev, expiration_days: e.target.value, expiration_hours: '' }))
-                              }}
-                              placeholder="7"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="expirationHours">Expiration (Hours)</Label>
-                            <Input
-                              id="expirationHours"
-                              type="number"
-                              min="1"
-                              value={newInviteLink.expiration_hours}
-                              onChange={(e) => {
-                                setNewInviteLink(prev => ({ ...prev, expiration_hours: e.target.value, expiration_days: '' }))
-                              }}
-                              placeholder="24"
-                            />
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Leave both empty for default (7 days)
-                        </p>
                       </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setInviteLinkDialogOpen(false)}>
+
+                      <DialogFooter className="gap-2 pt-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => setInviteLinkDialogOpen(false)}
+                          className="w-full sm:w-auto"
+                        >
                           Cancel
                         </Button>
-                        <Button onClick={createInviteLink}>
-                          Create Invite Link
+                        <Button
+                          onClick={createInviteLink}
+                          disabled={isCreatingInviteLink}
+                          className="w-full sm:w-auto"
+                        >
+                          {isCreatingInviteLink ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Creating...
+                            </>
+                          ) : (
+                            'Create Link'
+                          )}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -1272,47 +1411,91 @@ export default function AdminPage() {
                 <CardContent>
                   <div className="space-y-2">
                     {inviteLinks.map((inviteLink) => {
+                      const isOptimistic = inviteLink.id.startsWith('temp-')
                       const isExpired = new Date(inviteLink.expires_at) < new Date()
                       const isUsed = !!inviteLink.used_at
                       const inviteUrl = `${window.location.origin}/invite/${inviteLink.token}`
-                      
+
                       return (
-                        <div key={inviteLink.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div
+                          key={inviteLink.id}
+                          className={`flex items-center justify-between p-3 border rounded-lg ${isOptimistic ? 'opacity-60' : ''
+                            }`}
+                        >
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <p className="font-medium">
-                                {inviteLink.waitlist_email || 'No email'}
-                              </p>
-                              <Badge variant={isUsed ? 'secondary' : isExpired ? 'destructive' : 'default'}>
-                                {isUsed ? 'Used' : isExpired ? 'Expired' : 'Active'}
-                              </Badge>
-                              <Badge variant="outline">
-                                {inviteLink.invite_type === 'organization_creator' ? 'Org Creator' : 'Staff'}
-                              </Badge>
+                              {isOptimistic ? (
+                                <div className="h-5 w-32 bg-muted animate-pulse rounded" />
+                              ) : (
+                                <p className="font-medium">
+                                  {inviteLink.waitlist_email || 'No email'}
+                                </p>
+                              )}
+                              {!isOptimistic && (
+                                <>
+                                  <Badge variant={isUsed ? 'secondary' : isExpired ? 'destructive' : 'default'}>
+                                    {isUsed ? 'Used' : isExpired ? 'Expired' : 'Active'}
+                                  </Badge>
+                                  {/* <Badge variant="outline">
+                                    {inviteLink.invite_type === 'organization_creator' ? 'Org Creator' : 'Staff'}
+                                  </Badge> */}
+                                </>
+                              )}
+                              {isOptimistic && (
+                                <Badge variant="outline" className="animate-pulse">
+                                  Creating...
+                                </Badge>
+                              )}
                             </div>
                             <p className="text-sm text-muted-foreground font-mono mt-1">
-                              {inviteUrl}
+                              {isOptimistic ? (
+                                <span className="inline-block h-4 w-64 bg-muted animate-pulse rounded" />
+                              ) : (
+                                inviteUrl
+                              )}
                             </p>
                             <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                              <span>Expires: {new Date(inviteLink.expires_at).toLocaleString()}</span>
-                              {inviteLink.used_at && (
-                                <span>Used: {new Date(inviteLink.used_at).toLocaleString()}</span>
+                              {isOptimistic ? (
+                                <span className="inline-block h-3 w-48 bg-muted animate-pulse rounded" />
+                              ) : (
+                                <>
+                                  <span>Expires: {new Date(inviteLink.expires_at).toLocaleString()}</span>
+                                  {inviteLink.used_at && (
+                                    <span>Used: {new Date(inviteLink.used_at).toLocaleString()}</span>
+                                  )}
+                                </>
                               )}
                             </div>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => copyInviteLink(inviteLink.token)}
-                            disabled={isUsed || isExpired}
-                          >
-                            <Copy className="h-3 w-3 mr-1" />
-                            Copy
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            {!isOptimistic && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => copyInviteLink(inviteLink.token)}
+                                  disabled={isUsed || isExpired}
+                                >
+                                  <Copy className="h-3 w-3 mr-1" />
+                                  Copy
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => deleteInviteLink(inviteLink.id)}
+                                  disabled={isUsed}
+                                  className="flex items-center gap-1"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                  Delete
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       )
                     })}
-                    {inviteLinks.length === 0 && (
+                    {inviteLinks.length === 0 && !isCreatingInviteLink && (
                       <p className="text-center text-muted-foreground py-8">No invite links created yet</p>
                     )}
                   </div>

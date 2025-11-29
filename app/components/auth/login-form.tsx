@@ -22,7 +22,12 @@ export function LoginForm({ onLogin, isLoading = false, error }: LoginFormProps)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await onLogin(email, password)
+    try {
+      await onLogin(email, password)
+    } catch (error) {
+      // Error is already handled in the auth store and displayed via the error prop
+      // This catch prevents the unhandled promise rejection
+    }
   }
 
   return (
