@@ -139,12 +139,14 @@ class InternalApiClient {
     return this.getMarketingAngleResult(jobId)
   }
 
-  async getGeneratedAngles(marketingAngleId: string) {
-    return this.request<string[]>(`/api/marketing-angles/${marketingAngleId}/generated-angles`)
+  async getGeneratedAngles(jobId: string) {
+    // Use jobs endpoint since we're working with job IDs
+    return this.request<string[]>(`/api/jobs/${jobId}/generated-angles`)
   }
 
-  async getInjectedTemplates(marketingAngleId: string) {
-    return this.request(`/api/marketing-angles/${marketingAngleId}/injected-templates`)
+  async getInjectedTemplates(jobId: string) {
+    // Use jobs endpoint since we're working with job IDs
+    return this.request(`/api/jobs/${jobId}/injected-templates`)
   }
 
   async updateGeneratedAngles(marketingAngleId: string, angles: string[]) {

@@ -393,8 +393,22 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
 
           // Load templates from database
           try {
-            const injectedTemplates = await internalApiClient.getInjectedTemplates(jobId) as any[]
-            if (injectedTemplates && Array.isArray(injectedTemplates) && injectedTemplates.length > 0) {
+            const injectedTemplatesResponse = await internalApiClient.getInjectedTemplates(jobId) as any
+            logger.log(`📦 Initial load: Raw response:`, injectedTemplatesResponse)
+
+            // Handle different response formats
+            let injectedTemplates: any[] = []
+            if (Array.isArray(injectedTemplatesResponse)) {
+              injectedTemplates = injectedTemplatesResponse
+            } else if (injectedTemplatesResponse?.templates && Array.isArray(injectedTemplatesResponse.templates)) {
+              injectedTemplates = injectedTemplatesResponse.templates
+            } else if (injectedTemplatesResponse?.data && Array.isArray(injectedTemplatesResponse.data)) {
+              injectedTemplates = injectedTemplatesResponse.data
+            }
+
+            logger.log(`📦 Initial load: Processed ${injectedTemplates.length} injected templates for job ${jobId}`)
+
+            if (injectedTemplates.length > 0) {
               const templates = injectedTemplates.map((injected: any) => ({
                 name: `${injected.template_id} - ${injected.angle_name}`,
                 type: 'Marketing Angle',
@@ -413,9 +427,14 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
               })
 
               setTemplates(templates)
+              logger.log(`✅ Loaded ${templates.length} templates into UI for job ${jobId}`)
+            } else {
+              logger.log(`⚠️ No templates found in database for job ${jobId}`)
+              setTemplates([])
             }
           } catch (error) {
             logger.error('Failed to load templates:', error)
+            setTemplates([])
           }
           // Always set loading to false after checking database
           setTemplatesLoading(false)
@@ -480,10 +499,28 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
               // Reload generated angles
               const angles = await internalApiClient.getGeneratedAngles(jobId!)
               setGeneratedAngles(new Set(angles))
+              logger.log(`✅ Reloaded ${angles.length} generated angles for job ${jobId}`)
 
               // Reload templates
-              const injectedTemplates = await internalApiClient.getInjectedTemplates(jobId!) as any[]
-              if (injectedTemplates && Array.isArray(injectedTemplates) && injectedTemplates.length > 0) {
+              const injectedTemplatesResponse = await internalApiClient.getInjectedTemplates(jobId!) as any
+              logger.log(`📦 Raw response from getInjectedTemplates:`, injectedTemplatesResponse)
+
+              // Handle different response formats
+              let injectedTemplates: any[] = []
+              if (Array.isArray(injectedTemplatesResponse)) {
+                injectedTemplates = injectedTemplatesResponse
+              } else if (injectedTemplatesResponse?.templates && Array.isArray(injectedTemplatesResponse.templates)) {
+                injectedTemplates = injectedTemplatesResponse.templates
+              } else if (injectedTemplatesResponse?.data && Array.isArray(injectedTemplatesResponse.data)) {
+                injectedTemplates = injectedTemplatesResponse.data
+              }
+
+              logger.log(`📦 Processed ${injectedTemplates.length} injected templates for job ${jobId}`)
+
+              // Always set loading to false, even if no templates found
+              setTemplatesLoading(false)
+
+              if (injectedTemplates.length > 0) {
                 const templates = injectedTemplates.map((injected: any) => ({
                   name: `${injected.template_id} - ${injected.angle_name}`,
                   type: 'Injected Template',
@@ -500,12 +537,17 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                   return (a.templateId || '').localeCompare(b.templateId || '')
                 })
 
+                logger.log(`✅ Setting ${templates.length} templates in UI state`)
                 setTemplates(templates)
+              } else {
+                logger.log(`⚠️ No templates found in response for job ${jobId}. Response:`, injectedTemplatesResponse)
+                // Clear templates if none found
+                setTemplates([])
               }
             } catch (error) {
               logger.error('Error reloading templates:', error)
+              setTemplatesLoading(false)
             }
-            setTemplatesLoading(false)
           } catch (processError) {
             logger.error('Error processing swipe file response:', processError)
             // Still mark as generated to prevent retries, but show error
@@ -1856,7 +1898,19 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
 
               <AccordionContent>
                 <div className="px-8 pb-8 border-t border-border/50 pt-6">
-                  {templates.length === 0 && generatingAngles.size === 0 ? (
+                  {templatesLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {Array.from({ length: 3 }).map((_, index) => (
+                        <Card key={`skeleton-${index}`} className="animate-pulse">
+                          <CardContent className="p-6">
+                            <div className="h-4 bg-muted rounded mb-2"></div>
+                            <div className="h-3 bg-muted rounded mb-4 w-2/3"></div>
+                            <div className="h-32 bg-muted rounded"></div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : templates.length === 0 && generatingAngles.size === 0 ? (
                     <div className="space-y-4">
                       <p className="text-sm text-muted-foreground mb-4">
                         No templates generated yet. Select a marketing angle above to generate templates.

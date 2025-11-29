@@ -670,8 +670,8 @@ export default function AdminPage() {
                 <h1 className="text-base font-semibold tracking-tight">Admin Dashboard</h1>
                 <p className="text-xs text-muted-foreground hidden sm:block">
                   Manage users, templates, and system statistics
-                </p>
-              </div>
+              </p>
+            </div>
             </div>
             <div className="flex items-center gap-1.5">
               <ThemeToggle />
@@ -690,62 +690,62 @@ export default function AdminPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Overview */}
-        {stats && (
+          {/* Stats Overview */}
+          {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div className="rounded-lg border bg-card p-4">
               <div className="flex items-center justify-between">
-                <div>
+                    <div>
                   <p className="text-2xl font-semibold">{stats.users}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Users</p>
-                </div>
+                    </div>
                 <Users className="h-5 w-5 text-muted-foreground/60" />
-              </div>
+                  </div>
             </div>
             <div className="rounded-lg border bg-card p-4">
               <div className="flex items-center justify-between">
-                <div>
+                    <div>
                   <p className="text-2xl font-semibold">{stats.templates}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Templates</p>
-                </div>
+                    </div>
                 <FileText className="h-5 w-5 text-muted-foreground/60" />
-              </div>
+                  </div>
             </div>
             <div className="rounded-lg border bg-card p-4">
               <div className="flex items-center justify-between">
-                <div>
+                    <div>
                   <p className="text-2xl font-semibold">{stats.jobs}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Jobs</p>
-                </div>
+                    </div>
                 <Database className="h-5 w-5 text-muted-foreground/60" />
-              </div>
+                  </div>
             </div>
             <div className="rounded-lg border bg-card p-4">
               <div className="flex items-center justify-between">
-                <div>
+                    <div>
                   <p className="text-2xl font-semibold">{stats.results}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Results</p>
-                </div>
+                    </div>
                 <CheckCircle className="h-5 w-5 text-muted-foreground/60" />
-              </div>
+                  </div>
             </div>
-          </div>
-        )}
+            </div>
+          )}
 
-        {/* Job Status Breakdown */}
-        {jobStatuses.length > 0 && (
+          {/* Job Status Breakdown */}
+          {jobStatuses.length > 0 && (
           <div className="rounded-lg border bg-card p-4 mb-6">
-            <div className="flex flex-wrap gap-2">
-              {jobStatuses.map((status) => (
+                <div className="flex flex-wrap gap-2">
+                  {jobStatuses.map((status) => (
                 <Badge key={status.status} variant="secondary" className="text-xs font-normal">
-                  {status.status}: {status.count}
-                </Badge>
-              ))}
-            </div>
+                      {status.status}: {status.count}
+                    </Badge>
+                  ))}
+                </div>
           </div>
-        )}
+          )}
 
-        {/* Main Management Tabs */}
+          {/* Main Management Tabs */}
         <Tabs defaultValue="users" className="space-y-6">
           <TabsList className="bg-muted/50 h-9">
             <TabsTrigger value="users" className="text-xs">Users</TabsTrigger>
@@ -754,21 +754,21 @@ export default function AdminPage() {
             <TabsTrigger value="jobs" className="text-xs">Jobs</TabsTrigger>
             <TabsTrigger value="invite-links" className="text-xs">Invites</TabsTrigger>
             <TabsTrigger value="usage-limits" className="text-xs">Limits</TabsTrigger>
-          </TabsList>
+            </TabsList>
 
-          {/* Users Tab */}
-          <TabsContent value="users" className="space-y-4">
-            <AdminUsersTab />
-          </TabsContent>
+            {/* Users Tab */}
+            <TabsContent value="users" className="space-y-4">
+              <AdminUsersTab />
+            </TabsContent>
 
-          {/* Templates Tab */}
-          <TabsContent value="templates" className="space-y-4">
+            {/* Templates Tab */}
+            <TabsContent value="templates" className="space-y-4">
             <div className="rounded-lg border bg-card">
               <div className="flex items-center justify-between p-4 border-b">
-                <div>
+                  <div>
                   <h3 className="text-sm font-semibold">Templates</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">Upload and manage HTML templates</p>
-                </div>
+                  </div>
                 <div className="flex items-center gap-2">
                   <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                     <SelectTrigger className="w-40 h-8 text-xs">
@@ -875,8 +875,8 @@ export default function AdminPage() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                </div>
-              </div>
+                          </div>
+                        </div>
               <div className="p-6">
                 {templatesLoading ? (
                   <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -895,21 +895,21 @@ export default function AdminPage() {
                             onClick={() => handlePreviewTemplate(template)}
                           />
                           <div className="absolute bottom-3 right-3">
-                            <Button
-                              variant="destructive"
-                              size="sm"
+                          <Button
+                            variant="destructive"
+                            size="sm"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 deleteTemplate(template.id)
                               }}
                               className="h-8 px-3 text-xs shadow-lg"
-                            >
+                          >
                               <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                              Delete
-                            </Button>
-                          </div>
+                            Delete
+                          </Button>
                         </div>
-                      ))}
+                      </div>
+                    ))}
                     </div>
 
                     {/* Pagination */}
@@ -958,26 +958,26 @@ export default function AdminPage() {
                 )}
               </div>
             </div>
-          </TabsContent>
+            </TabsContent>
 
-          {/* Injectable Templates Tab */}
-          <TabsContent value="injectable-templates" className="space-y-4">
+            {/* Injectable Templates Tab */}
+            <TabsContent value="injectable-templates" className="space-y-4">
             <div className="rounded-lg border bg-card">
               <div className="flex items-center justify-between p-4 border-b">
-                <div>
+                  <div>
                   <h3 className="text-sm font-semibold">Injectable Templates</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">Manage dynamic content injection templates</p>
-                </div>
-                <Button
-                  onClick={handleCreateNewTemplate}
+                  </div>
+                  <Button
+                    onClick={handleCreateNewTemplate}
                   size="sm"
                   className="h-8"
-                  type="button"
-                >
+                    type="button"
+                  >
                   <Plus className="h-3.5 w-3.5 mr-1.5" />
                   Add
-                </Button>
-              </div>
+                  </Button>
+                        </div>
               <div className="p-6">
                 {injectableTemplates?.length > 0 ? (
                   <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -1035,308 +1035,308 @@ export default function AdminPage() {
                       Create your first injectable template to get started
                     </p>
                   </div>
-                )}
-              </div>
+                    )}
+                  </div>
             </div>
-          </TabsContent>
+            </TabsContent>
 
-          {/* Invite Links Tab */}
-          <TabsContent value="invite-links" className="space-y-4">
+            {/* Invite Links Tab */}
+            <TabsContent value="invite-links" className="space-y-4">
             <div className="rounded-lg border bg-card">
               <div className="flex items-center justify-between p-4 border-b">
-                <div>
+                  <div>
                   <h3 className="text-sm font-semibold">Invite Links</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">Generate invite links for users</p>
-                </div>
-                <Dialog open={inviteLinkDialogOpen} onOpenChange={setInviteLinkDialogOpen}>
-                  <DialogTrigger asChild>
+                  </div>
+                  <Dialog open={inviteLinkDialogOpen} onOpenChange={setInviteLinkDialogOpen}>
+                    <DialogTrigger asChild>
                     <Button size="sm" className="h-8">
                       <Plus className="h-3.5 w-3.5 mr-1.5" />
                       Create
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
                     <DialogHeader className="space-y-1 pb-4">
                       <DialogTitle className="text-base">Create Invite Link</DialogTitle>
                       <DialogDescription className="text-xs text-muted-foreground">
-                        Generate a new invite link for users
-                      </DialogDescription>
-                    </DialogHeader>
+                          Generate a new invite link for users
+                        </DialogDescription>
+                      </DialogHeader>
 
-                    <div className="space-y-6 py-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="waitlistEmail" className="text-sm font-medium">
-                          Waitlist Email
-                          <span className="text-muted-foreground font-normal ml-1">(optional)</span>
-                        </Label>
-                        <Input
-                          id="waitlistEmail"
-                          type="email"
-                          value={newInviteLink.waitlist_email}
-                          onChange={(e) => setNewInviteLink(prev => ({ ...prev, waitlist_email: e.target.value }))}
-                          placeholder="user@example.com"
-                          className="h-10"
-                        />
-                      </div>
-
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t" />
+                      <div className="space-y-6 py-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="waitlistEmail" className="text-sm font-medium">
+                            Waitlist Email
+                            <span className="text-muted-foreground font-normal ml-1">(optional)</span>
+                          </Label>
+                          <Input
+                            id="waitlistEmail"
+                            type="email"
+                            value={newInviteLink.waitlist_email}
+                            onChange={(e) => setNewInviteLink(prev => ({ ...prev, waitlist_email: e.target.value }))}
+                            placeholder="user@example.com"
+                            className="h-10"
+                          />
                         </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-background px-2 text-muted-foreground">Expiration</span>
-                        </div>
-                      </div>
 
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1">
-                            <Label htmlFor="expirationDays" className="text-sm font-medium mb-2 block">
-                              Days
-                            </Label>
-                            <Input
-                              id="expirationDays"
-                              type="text"
-                              inputMode="numeric"
-                              value={newInviteLink.expiration_days}
-                              onChange={(e) => {
-                                const numericValue = handleNumericInput(e.target.value)
-                                setNewInviteLink(prev => ({ ...prev, expiration_days: numericValue, expiration_hours: '' }))
-                              }}
-                              placeholder="7"
-                              className="h-10"
-                            />
+                        <div className="relative">
+                          <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
                           </div>
-                          <div className="pt-7 text-muted-foreground">or</div>
-                          <div className="flex-1">
-                            <Label htmlFor="expirationHours" className="text-sm font-medium mb-2 block">
-                              Hours
-                            </Label>
-                            <Input
-                              id="expirationHours"
-                              type="text"
-                              inputMode="numeric"
-                              value={newInviteLink.expiration_hours}
-                              onChange={(e) => {
-                                const numericValue = handleNumericInput(e.target.value)
-                                setNewInviteLink(prev => ({ ...prev, expiration_hours: numericValue, expiration_days: '' }))
-                              }}
-                              placeholder="24"
-                              className="h-10"
-                            />
+                          <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">Expiration</span>
                           </div>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          Default: 7 days if left empty
-                        </p>
-                      </div>
-                    </div>
 
-                    <DialogFooter className="gap-2 pt-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => setInviteLinkDialogOpen(false)}
-                        className="w-full sm:w-auto"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={createInviteLink}
-                        disabled={isCreatingInviteLink}
-                        className="w-full sm:w-auto"
-                      >
-                        {isCreatingInviteLink ? (
-                          <>
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                            Creating...
-                          </>
-                        ) : (
-                          'Create Link'
-                        )}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1">
+                              <Label htmlFor="expirationDays" className="text-sm font-medium mb-2 block">
+                                Days
+                              </Label>
+                              <Input
+                                id="expirationDays"
+                                type="text"
+                                inputMode="numeric"
+                                value={newInviteLink.expiration_days}
+                                onChange={(e) => {
+                                  const numericValue = handleNumericInput(e.target.value)
+                                  setNewInviteLink(prev => ({ ...prev, expiration_days: numericValue, expiration_hours: '' }))
+                                }}
+                                placeholder="7"
+                                className="h-10"
+                              />
+                            </div>
+                            <div className="pt-7 text-muted-foreground">or</div>
+                            <div className="flex-1">
+                              <Label htmlFor="expirationHours" className="text-sm font-medium mb-2 block">
+                                Hours
+                              </Label>
+                              <Input
+                                id="expirationHours"
+                                type="text"
+                                inputMode="numeric"
+                                value={newInviteLink.expiration_hours}
+                                onChange={(e) => {
+                                  const numericValue = handleNumericInput(e.target.value)
+                                  setNewInviteLink(prev => ({ ...prev, expiration_hours: numericValue, expiration_days: '' }))
+                                }}
+                                placeholder="24"
+                                className="h-10"
+                              />
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Default: 7 days if left empty
+                          </p>
+                        </div>
+                      </div>
+
+                      <DialogFooter className="gap-2 pt-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => setInviteLinkDialogOpen(false)}
+                          className="w-full sm:w-auto"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={createInviteLink}
+                          disabled={isCreatingInviteLink}
+                          className="w-full sm:w-auto"
+                        >
+                          {isCreatingInviteLink ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Creating...
+                            </>
+                          ) : (
+                            'Create Link'
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
               </div>
               <div className="p-4">
-                <div className="space-y-2">
-                  {inviteLinks.map((inviteLink) => {
-                    const isOptimistic = inviteLink.id.startsWith('temp-')
-                    const isExpired = new Date(inviteLink.expires_at) < new Date()
-                    const isUsed = !!inviteLink.used_at
-                    const inviteUrl = `${window.location.origin}/invite/${inviteLink.token}`
+                  <div className="space-y-2">
+                    {inviteLinks.map((inviteLink) => {
+                      const isOptimistic = inviteLink.id.startsWith('temp-')
+                      const isExpired = new Date(inviteLink.expires_at) < new Date()
+                      const isUsed = !!inviteLink.used_at
+                      const inviteUrl = `${window.location.origin}/invite/${inviteLink.token}`
 
-                    return (
-                      <div
-                        key={inviteLink.id}
+                      return (
+                        <div
+                          key={inviteLink.id}
                         className={`flex items-center justify-between p-3 rounded-md hover:bg-muted/50 transition-colors group ${isOptimistic ? 'opacity-60' : ''}`}
-                      >
+                        >
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            {isOptimistic ? (
+                            <div className="flex items-center gap-2">
+                              {isOptimistic ? (
                               <div className="h-4 w-32 bg-muted animate-pulse rounded" />
-                            ) : (
+                              ) : (
                               <p className="text-sm font-medium truncate">
-                                {inviteLink.waitlist_email || 'No email'}
-                              </p>
-                            )}
-                            {!isOptimistic && (
+                                  {inviteLink.waitlist_email || 'No email'}
+                                </p>
+                              )}
+                              {!isOptimistic && (
                               <Badge variant={isUsed ? 'secondary' : isExpired ? 'destructive' : 'default'} className="text-xs font-normal">
-                                {isUsed ? 'Used' : isExpired ? 'Expired' : 'Active'}
-                              </Badge>
-                            )}
-                            {isOptimistic && (
+                                    {isUsed ? 'Used' : isExpired ? 'Expired' : 'Active'}
+                                  </Badge>
+                              )}
+                              {isOptimistic && (
                               <Badge variant="secondary" className="text-xs font-normal animate-pulse">
-                                Creating...
-                              </Badge>
-                            )}
-                          </div>
+                                  Creating...
+                                </Badge>
+                              )}
+                            </div>
                           <p className="text-xs text-muted-foreground font-mono mt-1 truncate">
-                            {isOptimistic ? (
+                              {isOptimistic ? (
                               <span className="inline-block h-3 w-64 bg-muted animate-pulse rounded" />
-                            ) : (
-                              inviteUrl
-                            )}
-                          </p>
+                              ) : (
+                                inviteUrl
+                              )}
+                            </p>
                           <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                            {isOptimistic ? (
-                              <span className="inline-block h-3 w-48 bg-muted animate-pulse rounded" />
-                            ) : (
-                              <>
+                              {isOptimistic ? (
+                                <span className="inline-block h-3 w-48 bg-muted animate-pulse rounded" />
+                              ) : (
+                                <>
                                 <span>Expires: {new Date(inviteLink.expires_at).toLocaleDateString()}</span>
-                                {inviteLink.used_at && (
+                                  {inviteLink.used_at && (
                                   <span>Used: {new Date(inviteLink.used_at).toLocaleDateString()}</span>
-                                )}
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        <div className="flex items-center gap-1.5">
+                            {!isOptimistic && (
+                              <>
+                                <Button
+                                variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyInviteLink(inviteLink.token)}
+                                  disabled={isUsed || isExpired}
+                                className="h-7 px-2 text-xs"
+                                >
+                                  <Copy className="h-3 w-3 mr-1" />
+                                  Copy
+                                </Button>
+                                <Button
+                                variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteInviteLink(inviteLink.id)}
+                                  disabled={isUsed}
+                                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
                               </>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          {!isOptimistic && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => copyInviteLink(inviteLink.token)}
-                                disabled={isUsed || isExpired}
-                                className="h-7 px-2 text-xs"
-                              >
-                                <Copy className="h-3 w-3 mr-1" />
-                                Copy
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => deleteInviteLink(inviteLink.id)}
-                                disabled={isUsed}
-                                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                  {inviteLinks.length === 0 && !isCreatingInviteLink && (
+                      )
+                    })}
+                    {inviteLinks.length === 0 && !isCreatingInviteLink && (
                     <p className="text-center text-sm text-muted-foreground py-12">No invite links created yet</p>
-                  )}
-                </div>
+                    )}
+                  </div>
               </div>
             </div>
-          </TabsContent>
+            </TabsContent>
 
-          {/* Jobs Tab */}
-          <TabsContent value="jobs" className="space-y-4">
+            {/* Jobs Tab */}
+            <TabsContent value="jobs" className="space-y-4">
             <div className="rounded-lg border bg-card">
               <div className="p-4 border-b">
                 <h3 className="text-sm font-semibold">Jobs</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">View and manage job records</p>
               </div>
               <div className="p-4">
-                <div className="space-y-2">
-                  {jobs.map((job) => (
+                  <div className="space-y-2">
+                    {jobs.map((job) => (
                     <div key={job.id} className="flex items-center justify-between p-3 rounded-md hover:bg-muted/50 transition-colors group">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{job.title}</p>
                         <p className="text-xs text-muted-foreground mt-0.5 truncate">
                           {job.user_email}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
                           <Badge variant={job.status === 'completed' ? 'default' : 'secondary'} className="text-xs font-normal">
-                            {job.status}
-                          </Badge>
-                          {job.template_name && (
+                              {job.status}
+                            </Badge>
+                            {job.template_name && (
                             <Badge variant="secondary" className="text-xs font-normal">
                               {job.template_name}
-                            </Badge>
-                          )}
-                          <span className="text-xs text-muted-foreground">
+                              </Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">
                             {new Date(job.created_at).toLocaleDateString()}
-                          </span>
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      <Button
+                        <Button
                         variant="ghost"
-                        size="sm"
-                        onClick={() => deleteJob(job.id)}
+                          size="sm"
+                          onClick={() => deleteJob(job.id)}
                         className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                      >
+                        >
                         <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  ))}
-                  {jobs.length === 0 && (
+                        </Button>
+                      </div>
+                    ))}
+                    {jobs.length === 0 && (
                     <p className="text-center text-sm text-muted-foreground py-12">No jobs found</p>
-                  )}
-                </div>
+                    )}
+                  </div>
               </div>
             </div>
-          </TabsContent>
+            </TabsContent>
 
-          {/* Usage Limits Tab */}
-          <TabsContent value="usage-limits" className="space-y-4">
-            <UsageLimitsTab />
-          </TabsContent>
-        </Tabs>
+            {/* Usage Limits Tab */}
+            <TabsContent value="usage-limits" className="space-y-4">
+              <UsageLimitsTab />
+            </TabsContent>
+          </Tabs>
 
-        {/* Template Editor Dialog */}
-        <Dialog open={templateEditorOpen} onOpenChange={setTemplateEditorOpen}>
+          {/* Template Editor Dialog */}
+          <Dialog open={templateEditorOpen} onOpenChange={setTemplateEditorOpen}>
           <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[95vw] max-h-[95vh] flex flex-col">
-            <div className="flex-1 overflow-y-auto min-h-0">
-              {editingTemplate && (
-                <TemplateEditor
-                  template={{
-                    name: editingTemplate.name,
-                    type: editingTemplate.type,
-                    description: editingTemplate.description || '',
-                    htmlContent: editingTemplate.html_content
-                  }}
-                  onSave={handleSaveTemplate}
-                  onCancel={() => {
-                    setTemplateEditorOpen(false)
-                    setEditingTemplate(null)
-                  }}
-                />
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {editingTemplate && (
+                  <TemplateEditor
+                    template={{
+                      name: editingTemplate.name,
+                      type: editingTemplate.type,
+                      description: editingTemplate.description || '',
+                      htmlContent: editingTemplate.html_content
+                    }}
+                    onSave={handleSaveTemplate}
+                    onCancel={() => {
+                      setTemplateEditorOpen(false)
+                      setEditingTemplate(null)
+                    }}
+                  />
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
 
-        {/* Template Preview Dialog */}
-        <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+          {/* Template Preview Dialog */}
+          <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
           <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[95vw] max-h-[90vh] flex flex-col p-0">
             <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
               <DialogTitle className="text-base">
                 Preview: {previewTemplate?.name || previewInjectableTemplate?.name}
-              </DialogTitle>
+                </DialogTitle>
               <DialogDescription className="text-xs">
                 HTML template preview
-              </DialogDescription>
-            </DialogHeader>
+                </DialogDescription>
+              </DialogHeader>
             <div className="flex-1 overflow-auto min-h-0">
-              {(previewTemplate || previewInjectableTemplate) && (
+                {(previewTemplate || previewInjectableTemplate) && (
                 <div className="space-y-6">
                   {/* Preview Section */}
                   <div className="px-6 pt-6">
@@ -1345,8 +1345,8 @@ export default function AdminPage() {
                       <p className="text-xs text-muted-foreground">Live preview of your template</p>
                     </div>
                     <div className="rounded-lg border bg-muted/20 overflow-hidden">
-                      <iframe
-                        srcDoc={`<!DOCTYPE html>
+                    <iframe
+                      srcDoc={`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1381,48 +1381,48 @@ export default function AdminPage() {
 </head>
 <body>
   ${(() => {
-                            const raw = (previewTemplate?.html_content || previewInjectableTemplate?.html_content) || '';
-                            const name = (previewTemplate?.name || previewInjectableTemplate?.name) || '';
-                            const isJavvy = /javvy/i.test(name) || /\bL00002\b/i.test(name) || /javvy/i.test(raw) || /\bL00002\b/i.test(raw);
-                            if (!isJavvy) return raw;
-                            const noOnError = raw
-                              .replace(/\s+onerror="[^"]*"/gi, '')
-                              .replace(/\s+onerror='[^']*'/gi, '');
-                            const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
-                              const lower = block.toLowerCase();
-                              return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
-                                ? ''
-                                : block;
-                            });
-                            return stripFallbackScripts;
-                          })()}
+                          const raw = (previewTemplate?.html_content || previewInjectableTemplate?.html_content) || '';
+                          const name = (previewTemplate?.name || previewInjectableTemplate?.name) || '';
+                          const isJavvy = /javvy/i.test(name) || /\bL00002\b/i.test(name) || /javvy/i.test(raw) || /\bL00002\b/i.test(raw);
+                          if (!isJavvy) return raw;
+                          const noOnError = raw
+                            .replace(/\s+onerror="[^"]*"/gi, '')
+                            .replace(/\s+onerror='[^']*'/gi, '');
+                          const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+                            const lower = block.toLowerCase();
+                            return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+                              ? ''
+                              : block;
+                          });
+                          return stripFallbackScripts;
+                        })()}
 </body>
 </html>`}
                         className="w-full h-[60vh] border-0"
-                        title={`Preview of ${previewTemplate?.name || previewInjectableTemplate?.name}`}
-                      />
+                      title={`Preview of ${previewTemplate?.name || previewInjectableTemplate?.name}`}
+                    />
                     </div>
                   </div>
 
                   {/* Template Tester Section */}
-                  {previewInjectableTemplate && (
+                    {previewInjectableTemplate && (
                     <div className="px-6 pb-6 border-t pt-6">
                       <TemplateTester
                         htmlContent={previewInjectableTemplate.html_content}
                         templateName={previewInjectableTemplate.name}
                       />
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
+                    )}
+                  </div>
+                )}
+              </div>
             <DialogFooter className="px-6 pb-6 pt-4 flex-shrink-0 border-t">
               <Button variant="outline" onClick={() => setPreviewDialogOpen(false)} size="sm" className="h-8">
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                  Close
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
       </main>
     </div>
   )

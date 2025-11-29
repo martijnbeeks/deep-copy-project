@@ -62,8 +62,8 @@ export function TemplateEditor({ template, onSave, onCancel }: TemplateEditorPro
       const response = await fetch(`/api/admin/load-swipe-template?template=${templateName}`)
       if (response.ok) {
         const data = await response.json()
-        setFormData(prev => ({
-          ...prev,
+        setFormData(prev => ({ 
+          ...prev, 
           htmlContent: data.htmlContent,
           name: data.name || prev.name,
           type: data.type || prev.type
@@ -117,29 +117,29 @@ export function TemplateEditor({ template, onSave, onCancel }: TemplateEditorPro
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="templateName" className="text-xs font-medium">Template Name</Label>
-              <Input
-                id="templateName"
-                value={formData.name}
-                onChange={(e) => handleBasicChange('name', e.target.value)}
-                placeholder="My Injectable Template"
+                <Input
+                  id="templateName"
+                  value={formData.name}
+                  onChange={(e) => handleBasicChange('name', e.target.value)}
+                  placeholder="My Injectable Template"
                 className="h-9"
-              />
-            </div>
-
+                />
+              </div>
+              
             <div className="space-y-1.5">
               <Label htmlFor="templateType" className="text-xs font-medium">Type</Label>
-              <Select
+                <Select
                 value={formData.type || 'listicle'}
-                onValueChange={(value: 'listicle' | 'advertorial') => handleBasicChange('type', value)}
-              >
+                  onValueChange={(value: 'listicle' | 'advertorial') => handleBasicChange('type', value)}
+                >
                 <SelectTrigger className="h-9 w-full">
                   <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="listicle">Listicle</SelectItem>
-                  <SelectItem value="advertorial">Advertorial</SelectItem>
-                </SelectContent>
-              </Select>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="listicle">Listicle</SelectItem>
+                    <SelectItem value="advertorial">Advertorial</SelectItem>
+                  </SelectContent>
+                </Select>
             </div>
           </div>
 
@@ -157,32 +157,32 @@ export function TemplateEditor({ template, onSave, onCancel }: TemplateEditorPro
             <p className="text-xs text-muted-foreground mt-1">
               Leave empty to auto-generate
             </p>
-          </div>
-
+              </div>
+              
           <div className="space-y-1.5">
             <Label htmlFor="templateDescription" className="text-xs font-medium">Description</Label>
-            <Input
-              id="templateDescription"
-              value={formData.description}
-              onChange={(e) => handleBasicChange('description', e.target.value)}
-              placeholder="Brief description of the template"
+                <Input
+                  id="templateDescription"
+                  value={formData.description}
+                  onChange={(e) => handleBasicChange('description', e.target.value)}
+                  placeholder="Brief description of the template"
               className="h-9"
-            />
-          </div>
-
+                />
+              </div>
+              
           <div className="space-y-1.5">
             <Label htmlFor="templateFile" className="text-xs font-medium">Upload HTML File</Label>
-            <Input
-              id="templateFile"
-              type="file"
-              accept=".html"
-              onChange={handleFileUpload}
+                <Input
+                  id="templateFile"
+                  type="file"
+                  accept=".html"
+                  onChange={handleFileUpload}
               className="h-9"
             />
             <p className="text-xs text-muted-foreground mt-1">
               Upload an HTML file or edit content in the HTML Editor tab
-            </p>
-          </div>
+                </p>
+              </div>
         </TabsContent>
 
 
@@ -190,13 +190,13 @@ export function TemplateEditor({ template, onSave, onCancel }: TemplateEditorPro
         <TabsContent value="html" className="space-y-4">
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">HTML Editor</Label>
-            <Textarea
-              value={formData.htmlContent}
-              onChange={(e) => handleBasicChange('htmlContent', e.target.value)}
-              placeholder="Paste your HTML template content here..."
+              <Textarea
+                value={formData.htmlContent}
+                onChange={(e) => handleBasicChange('htmlContent', e.target.value)}
+                placeholder="Paste your HTML template content here..."
               rows={25}
               className="font-mono text-xs resize-none"
-            />
+              />
           </div>
         </TabsContent>
 

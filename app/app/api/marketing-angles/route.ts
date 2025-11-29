@@ -3,6 +3,7 @@ import { getJobsByUserId, createJob, updateJobStatus, createResult } from '@/lib
 import { deepCopyClient } from '@/lib/clients/deepcopy-client'
 import { requireAuth, createAuthErrorResponse } from '@/lib/auth/user-auth'
 import { handleApiError, createSuccessResponse, createValidationErrorResponse } from '@/lib/middleware/error-handler'
+import { checkAndIncrementUsage } from '@/lib/middleware/usage-limits'
 import { logger } from '@/lib/utils/logger'
 
 export async function GET(request: NextRequest) {
@@ -61,6 +62,20 @@ export async function POST(request: NextRequest) {
           duplicateJobId: duplicateMarketingAngle.id
         },
         { status: 409 } // Conflict status
+      )
+    }
+
+    // Check usage limits before creating marketing angle (deep research)
+    const usageCheck = await checkAndIncrementUsage(user, 'deep_research')
+    if (!usageCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Usage limit exceeded',
+          message: usageCheck.error || 'You have reached your weekly limit for Deep Research actions.',
+          currentUsage: usageCheck.currentUsage,
+          limit: usageCheck.limit
+        },
+        { status: 429 } // Too Many Requests
       )
     }
 
