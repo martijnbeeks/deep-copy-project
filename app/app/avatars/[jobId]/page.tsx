@@ -125,111 +125,158 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
             const targetJobId = (avatar as any).avatar_job_id || avatar.job_id
             router.push(`/results/${targetJobId}`)
         } else {
-            // If not researched, show loading modal first
-            setSelectedAvatar(avatar)
-            setShowResearchLoading(true)
-            setResearchProgress(0)
-            setResearchStage(0)
-            setCurrentJobId(null)
-
-            // Reset source status
-            setSourceStatus(resetSourceStatus())
-
-            // Start progress animation
-            const startTime = Date.now()
-            const progressInterval = setInterval(() => {
-                const elapsed = (Date.now() - startTime) / 1000 // seconds
-                const estimatedMaxTime = 480 // 8 minutes in seconds
-                const baseProgress = Math.min(85, (elapsed / estimatedMaxTime) * 85)
-
-                setResearchProgress(prev => {
-                    return Math.max(prev, Math.floor(baseProgress))
-                })
-
-                // Update source status based on elapsed time
-                const elapsedMinutes = elapsed / 60
-                if (elapsedMinutes >= 0.5) setSourceStatus(prev => ({ ...prev, webSearch: true }))
-                if (elapsedMinutes >= 1) setSourceStatus(prev => ({ ...prev, amazonReviews: true }))
-                if (elapsedMinutes >= 1.5) setSourceStatus(prev => ({ ...prev, redditDiscussions: true }))
-            }, 1000)
-
-            // Update stages based on elapsed time
-            setTimeout(() => setResearchStage(1), 30000)   // Stage 1 at 30s
-            setTimeout(() => setResearchStage(2), 90000)   // Stage 2 at 1.5min
-            setTimeout(() => setResearchStage(3), 180000)  // Stage 3 at 3min
-            setTimeout(() => setResearchStage(4), 300000)  // Stage 4 at 5min
-
+            // Check usage limit BEFORE showing loading modal
             try {
-                setIsResearching(true)
-                const response = await fetch('/api/avatars/research', {
-                    method: 'POST',
+                const limitCheckResponse = await fetch(`/api/usage/check?type=deep_research`, {
+                    method: 'GET',
                     headers: {
-                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${user?.email || ''}`
-                    },
-                    body: JSON.stringify({
-                        jobId: avatar.job_id,
-                        personaName: avatar.persona_name
-                    })
+                    }
                 })
 
-                if (!response.ok) {
-                    const errorData = await response.json()
-                    throw new Error(errorData.error || 'Failed to start research')
+                if (!limitCheckResponse.ok) {
+                    const errorData = await limitCheckResponse.json()
+                    toast({
+                        title: "Usage Limit Exceeded",
+                        description: errorData.error || 'You have reached your weekly limit for Deep Research actions.',
+                        variant: "destructive",
+                    })
+                    return // Don't proceed if limit check fails
                 }
 
-                const data = await response.json()
-                const avatarJobId = data.job.id // Use avatar job ID (the new job created for this avatar)
+                const limitCheck = await limitCheckResponse.json()
+                if (!limitCheck.allowed) {
+                    toast({
+                        title: "Usage Limit Exceeded",
+                        description: limitCheck.error || 'You have reached your weekly limit for Deep Research actions.',
+                        variant: "destructive",
+                    })
+                    return // Don't proceed if limit is exceeded
+                }
 
-                setCurrentJobId(avatarJobId)
+                // Only show loading modal if limit check passes
+                setSelectedAvatar(avatar)
+                setShowResearchLoading(true)
+                setResearchProgress(0)
+                setResearchStage(0)
+                setCurrentJobId(null)
 
-                // Refresh avatars to show updated research status
-                await fetchAvatars()
+                // Reset source status
+                setSourceStatus(resetSourceStatus())
 
-                // Poll for job status
-                const pollJobStatus = async () => {
-                    const maxAttempts = 180 // Max 15 minutes (180 * 5s)
-                    const pollInterval = 5000 // Poll every 5 seconds
+                // Start progress animation
+                const startTime = Date.now()
+                let progressInterval: NodeJS.Timeout | null = null
 
-                    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                        try {
-                            const statusResponse = await fetch(`/api/jobs/${avatarJobId}/status`, {
-                                method: 'GET',
-                                headers: {
-                                    'Content-Type': 'application/json',
+                progressInterval = setInterval(() => {
+                    const elapsed = (Date.now() - startTime) / 1000 // seconds
+                    const estimatedMaxTime = 480 // 8 minutes in seconds
+                    const baseProgress = Math.min(85, (elapsed / estimatedMaxTime) * 85)
+
+                    setResearchProgress(prev => {
+                        return Math.max(prev, Math.floor(baseProgress))
+                    })
+
+                    // Update source status based on elapsed time
+                    const elapsedMinutes = elapsed / 60
+                    if (elapsedMinutes >= 0.5) setSourceStatus(prev => ({ ...prev, webSearch: true }))
+                    if (elapsedMinutes >= 1) setSourceStatus(prev => ({ ...prev, amazonReviews: true }))
+                    if (elapsedMinutes >= 1.5) setSourceStatus(prev => ({ ...prev, redditDiscussions: true }))
+                }, 1000)
+
+                // Update stages based on elapsed time
+                setTimeout(() => setResearchStage(1), 30000)   // Stage 1 at 30s
+                setTimeout(() => setResearchStage(2), 90000)   // Stage 2 at 1.5min
+                setTimeout(() => setResearchStage(3), 180000)  // Stage 3 at 3min
+                setTimeout(() => setResearchStage(4), 300000)  // Stage 4 at 5min
+
+                try {
+                    setIsResearching(true)
+                    const response = await fetch('/api/avatars/research', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${user?.email || ''}`
+                        },
+                        body: JSON.stringify({
+                            jobId: avatar.job_id,
+                            personaName: avatar.persona_name
+                        })
+                    })
+
+                    if (!response.ok) {
+                        const errorData = await response.json()
+                        throw new Error(errorData.error || 'Failed to start research')
+                    }
+
+                    const data = await response.json()
+                    const avatarJobId = data.job.id // Use avatar job ID (the new job created for this avatar)
+
+                    setCurrentJobId(avatarJobId)
+
+                    // Refresh avatars to show updated research status
+                    await fetchAvatars()
+
+                    // Poll for job status
+                    const pollJobStatus = async () => {
+                        const maxAttempts = 180 // Max 15 minutes (180 * 5s)
+                        const pollInterval = 5000 // Poll every 5 seconds
+
+                        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                            try {
+                                const statusResponse = await fetch(`/api/jobs/${avatarJobId}/status`, {
+                                    method: 'GET',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    }
+                                })
+
+                                if (!statusResponse.ok) {
+                                    throw new Error(`Status check failed: ${statusResponse.status}`)
                                 }
-                            })
 
-                            if (!statusResponse.ok) {
-                                throw new Error(`Status check failed: ${statusResponse.status}`)
-                            }
+                                const statusData = await statusResponse.json()
+                                const status = statusData.status?.toLowerCase()
 
-                            const statusData = await statusResponse.json()
-                            const status = statusData.status?.toLowerCase()
+                                // Update progress and stage based on status
+                                if (status === 'submitted') {
+                                    setResearchStage(1)
+                                    setResearchProgress(prev => Math.max(prev, 15))
+                                } else if (status === 'running' || status === 'processing') {
+                                    const elapsed = (Date.now() - startTime) / 1000
+                                    if (elapsed > 180) {
+                                        setResearchStage(3)
+                                    } else if (elapsed > 90) {
+                                        setResearchStage(2)
+                                    }
+                                    const progressFromTime = Math.min(85, 20 + (elapsed / 480) * 65)
+                                    setResearchProgress(prev => Math.max(prev, Math.floor(progressFromTime)))
+                                } else if (status === 'completed' || status === 'succeeded') {
+                                    clearInterval(progressInterval)
+                                    setResearchStage(4)
+                                    setResearchProgress(100)
 
-                            // Update progress and stage based on status
-                            if (status === 'submitted') {
-                                setResearchStage(1)
-                                setResearchProgress(prev => Math.max(prev, 15))
-                            } else if (status === 'running' || status === 'processing') {
-                                const elapsed = (Date.now() - startTime) / 1000
-                                if (elapsed > 180) {
-                                    setResearchStage(3)
-                                } else if (elapsed > 90) {
-                                    setResearchStage(2)
-                                }
-                                const progressFromTime = Math.min(85, 20 + (elapsed / 480) * 65)
-                                setResearchProgress(prev => Math.max(prev, Math.floor(progressFromTime)))
-                            } else if (status === 'completed' || status === 'succeeded') {
-                                clearInterval(progressInterval)
-                                setResearchStage(4)
-                                setResearchProgress(100)
+                                    // Mark all sources as complete
+                                    setSourceStatus(completeSourceStatus())
 
-                                // Mark all sources as complete
-                                setSourceStatus(completeSourceStatus())
+                                    // Wait a moment then redirect to results
+                                    setTimeout(() => {
+                                        setShowResearchLoading(false)
+                                        setResearchProgress(0)
+                                        setResearchStage(0)
+                                        setCurrentJobId(null)
+                                        setSelectedAvatar(null)
+                                        setSelectedAvatarForDetails(null)
 
-                                // Wait a moment then redirect to results
-                                setTimeout(() => {
+                                        // Reset source status
+                                        setSourceStatus(resetSourceStatus())
+
+                                        // Redirect to avatar job's results page
+                                        router.push(`/results/${avatarJobId}`)
+                                    }, 1000)
+                                    return
+                                } else if (status === 'failed' || status === 'failure') {
+                                    clearInterval(progressInterval)
                                     setShowResearchLoading(false)
                                     setResearchProgress(0)
                                     setResearchStage(0)
@@ -237,62 +284,76 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                     setSelectedAvatar(null)
                                     setSelectedAvatarForDetails(null)
 
-                                    // Reset source status
                                     setSourceStatus(resetSourceStatus())
 
-                                    // Redirect to avatar job's results page
-                                    router.push(`/results/${avatarJobId}`)
-                                }, 1000)
-                                return
-                            } else if (status === 'failed' || status === 'failure') {
-                                clearInterval(progressInterval)
-                                setShowResearchLoading(false)
-                                setResearchProgress(0)
-                                setResearchStage(0)
-                                setCurrentJobId(null)
-                                setSelectedAvatar(null)
-                                setSelectedAvatarForDetails(null)
+                                    toast({
+                                        title: "Error",
+                                        description: "Job processing failed. Please try again.",
+                                        variant: "destructive",
+                                    })
+                                    return
+                                }
 
-                                setSourceStatus(resetSourceStatus())
+                                // If still processing, wait and try again
+                                if (attempt < maxAttempts) {
+                                    await new Promise(resolve => setTimeout(resolve, pollInterval))
+                                }
 
-                                toast({
-                                    title: "Error",
-                                    description: "Job processing failed. Please try again.",
-                                    variant: "destructive",
-                                })
-                                return
-                            }
+                            } catch (err) {
+                                if (attempt === maxAttempts) {
+                                    clearInterval(progressInterval)
+                                    setShowResearchLoading(false)
+                                    setResearchProgress(0)
+                                    setResearchStage(0)
+                                    setCurrentJobId(null)
+                                    setSelectedAvatar(null)
+                                    setSelectedAvatarForDetails(null)
 
-                            // If still processing, wait and try again
-                            if (attempt < maxAttempts) {
+                                    setSourceStatus(resetSourceStatus())
+
+                                    toast({
+                                        title: "Error",
+                                        description: "Failed to check job status. Please check your jobs page.",
+                                        variant: "destructive",
+                                    })
+                                    return
+                                }
                                 await new Promise(resolve => setTimeout(resolve, pollInterval))
                             }
-
-                        } catch (err) {
-                            if (attempt === maxAttempts) {
-                                clearInterval(progressInterval)
-                                setShowResearchLoading(false)
-                                setResearchProgress(0)
-                                setResearchStage(0)
-                                setCurrentJobId(null)
-                                setSelectedAvatar(null)
-                                setSelectedAvatarForDetails(null)
-
-                                setSourceStatus(resetSourceStatus())
-
-                                toast({
-                                    title: "Error",
-                                    description: "Failed to check job status. Please check your jobs page.",
-                                    variant: "destructive",
-                                })
-                                return
-                            }
-                            await new Promise(resolve => setTimeout(resolve, pollInterval))
                         }
+
+                        // Timeout reached
+                        clearInterval(progressInterval)
+                        setShowResearchLoading(false)
+                        setResearchProgress(0)
+                        setResearchStage(0)
+                        setCurrentJobId(null)
+                        setSelectedAvatar(null)
+                        setSelectedAvatarForDetails(null)
+
+                        setSourceStatus({
+                            webSearch: false,
+                            amazonReviews: false,
+                            redditDiscussions: false,
+                            industryBlogs: false,
+                            competitorAnalysis: false,
+                            marketTrends: false,
+                        })
+
+                        toast({
+                            title: "Processing Taking Longer",
+                            description: "Your job is still processing. This can take 5-8 minutes or more. Please check your jobs page for updates.",
+                            variant: "default",
+                        })
                     }
 
-                    // Timeout reached
-                    clearInterval(progressInterval)
+                    // Start polling
+                    pollJobStatus()
+
+                } catch (error) {
+                    if (progressInterval) {
+                        clearInterval(progressInterval)
+                    }
                     setShowResearchLoading(false)
                     setResearchProgress(0)
                     setResearchStage(0)
@@ -300,43 +361,23 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                     setSelectedAvatar(null)
                     setSelectedAvatarForDetails(null)
 
-                    setSourceStatus({
-                        webSearch: false,
-                        amazonReviews: false,
-                        redditDiscussions: false,
-                        industryBlogs: false,
-                        competitorAnalysis: false,
-                        marketTrends: false,
-                    })
+                    setSourceStatus(resetSourceStatus())
 
                     toast({
-                        title: "Processing Taking Longer",
-                        description: "Your job is still processing. This can take 5-8 minutes or more. Please check your jobs page for updates.",
-                        variant: "default",
+                        title: "Error",
+                        description: error instanceof Error ? error.message : "Failed to start research. Please try again.",
+                        variant: "destructive",
                     })
+                } finally {
+                    setIsResearching(false)
                 }
-
-                // Start polling
-                pollJobStatus()
-
-            } catch (error) {
-                clearInterval(progressInterval)
-                setShowResearchLoading(false)
-                setResearchProgress(0)
-                setResearchStage(0)
-                setCurrentJobId(null)
-                setSelectedAvatar(null)
-                setSelectedAvatarForDetails(null)
-
-                setSourceStatus(resetSourceStatus())
-
+            } catch (limitError) {
+                // Error checking usage limit - don't show loading modal
                 toast({
                     title: "Error",
-                    description: error instanceof Error ? error.message : "Failed to start research. Please try again.",
+                    description: "Failed to check usage limit. Please try again.",
                     variant: "destructive",
                 })
-            } finally {
-                setIsResearching(false)
             }
         }
     }
