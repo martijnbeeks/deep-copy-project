@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import { useAuthStore } from "@/stores/auth-store"
 import { Loader2 } from "lucide-react"
 import { UserRole } from "@/lib/db/types"
 
@@ -29,9 +30,13 @@ export function MemberRoleDialog({
   children
 }: MemberRoleDialogProps) {
   const { toast } = useToast()
+  const { user, refreshAdminStatus } = useAuthStore()
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [role, setRole] = useState<UserRole>(currentRole)
+  
+  // Check if the member being updated is the current user
+  const isCurrentUser = user?.email === memberEmail
 
   const handleUpdate = async () => {
     setIsLoading(true)
@@ -72,6 +77,11 @@ export function MemberRoleDialog({
         title: "Success!",
         description: `${memberName}'s role has been updated to ${role === 'admin' ? 'Admin' : 'Normal User'}`,
       })
+
+      // If this is the current user, refresh their admin status
+      if (isCurrentUser) {
+        await refreshAdminStatus()
+      }
 
       setOpen(false)
       if (onRoleUpdated) {

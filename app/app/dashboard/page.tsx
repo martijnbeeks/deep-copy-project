@@ -10,7 +10,7 @@ import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { OfflineBanner } from "@/components/ui/offline-banner"
 import { EmptyState } from "@/components/ui/empty-state"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import Link from "next/link"
 import { FileText, AlertCircle, Zap, Eye, Search, Filter, Calendar, ExternalLink, ArrowUp, Edit2, Trash2, Building2 } from "lucide-react"
 import { SalesPagePreview } from "@/components/sales-page-preview"
@@ -19,6 +19,7 @@ import { useRequireAuth } from "@/hooks/use-require-auth"
 import { useJobs, useCreateJob, useUpdateJob, useDeleteJob } from "@/lib/hooks/use-jobs"
 import { useSimplePolling } from "@/hooks/use-simple-polling"
 import { useJobsStore } from "@/stores/jobs-store"
+import { useDebounce } from "@/hooks/use-debounce"
 import { Job, JobWithTemplate } from "@/lib/db/types"
 import { isProcessingStatus } from "@/lib/utils/job-status"
 import { logger } from "@/lib/utils/logger"
@@ -36,14 +37,11 @@ export default function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const { toast } = useToast()
 
-  // Get filters from UI store
-  const { filters, setFilters } = useJobsStore()
+  // Fetch all jobs without filters (client-side filtering instead)
+  const { data: allJobs = [], isLoading, error: queryError, refetch } = useJobs()
 
-  // Use TanStack Query for data fetching with filters
-  const { data: jobs = [], isLoading, error: queryError, refetch } = useJobs({
-    status: statusFilter !== 'all' ? statusFilter : undefined,
-    search: searchTerm || undefined
-  })
+  // Debounce search term to avoid filtering on every keystroke
+  const debouncedSearchTerm = useDebounce(searchTerm, 500)
   const createJobMutation = useCreateJob()
   const updateJobMutation = useUpdateJob()
   const deleteJobMutation = useDeleteJob()
@@ -58,11 +56,29 @@ export default function DashboardPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Use simple polling for processing jobs (hits DeepCopy API directly)
-  const { isPolling } = useSimplePolling(jobs)
+  // Client-side filtering with debounced search
+  const filteredJobs = useMemo(() => {
+    return allJobs.filter((job: JobWithTemplate) => {
+      // Search filter
+      const matchesSearch = !debouncedSearchTerm || 
+        job.title?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        job.brand_info?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
 
-  // Count processing jobs using utility
-  const processingJobsCount = jobs.filter(job => isProcessingStatus(job.status)).length
+      // Status filter
+      const matchesStatus = statusFilter === 'all' || job.status?.toLowerCase() === statusFilter.toLowerCase()
+
+      return matchesSearch && matchesStatus
+    })
+  }, [allJobs, debouncedSearchTerm, statusFilter])
+
+  // Use simple polling for processing jobs (hits DeepCopy API directly)
+  const { isPolling } = useSimplePolling(allJobs)
+
+  // Count processing jobs using utility (memoized)
+  const processingJobsCount = useMemo(
+    () => allJobs.filter(job => isProcessingStatus(job.status)).length,
+    [allJobs]
+  )
 
   // Fetch user's organization name
   useEffect(() => {
@@ -81,7 +97,12 @@ export default function DashboardPage() {
           setOrganizationName(data.organization?.name || null)
         }
       } catch (error) {
-        console.error('Error fetching organization:', error)
+        logger.error('Error fetching organization:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load organization information",
+          variant: "destructive",
+        })
       }
     }
 
@@ -90,28 +111,19 @@ export default function DashboardPage() {
     }
   }, [user])
 
-  // Log when jobs data changes (development only)
+  // Log when jobs data changes (development only) - only log when count changes
   useEffect(() => {
-    const processingJobs = jobs.filter(j => isProcessingStatus(j.status))
-    const completedJobs = jobs.filter(j => j.status?.toLowerCase() === 'completed')
-    const failedJobs = jobs.filter(j => j.status?.toLowerCase() === 'failed')
+    const processingCount = allJobs.filter(j => isProcessingStatus(j.status)).length
+    const completedCount = allJobs.filter(j => j.status?.toLowerCase() === 'completed').length
+    const failedCount = allJobs.filter(j => j.status?.toLowerCase() === 'failed').length
 
-    logger.log(`📊 Dashboard: Jobs updated - ${jobs.length} total`)
-    logger.log(`  - Processing: ${processingJobs.length}`)
-    logger.log(`  - Completed: ${completedJobs.length}`)
-    logger.log(`  - Failed: ${failedJobs.length}`)
-  }, [jobs])
+    logger.log(`📊 Dashboard: Jobs updated - ${allJobs.length} total`)
+    logger.log(`  - Processing: ${processingCount}`)
+    logger.log(`  - Completed: ${completedCount}`)
+    logger.log(`  - Failed: ${failedCount}`)
+  }, [allJobs.length]) // Only log when count changes, not array reference
 
-  // Early return if not authenticated to prevent skeleton loader
-  if (!isReady) {
-    return null
-  }
-
-  // Jobs are already filtered by the API via useJobs hook filters
-  // No need for client-side filtering - use jobs directly
-  const filteredJobs = jobs
-
-
+  // Status badge helper function (defined before early returns to follow Rules of Hooks)
   const getStatusBadge = (status: Job["status"]) => {
     const variants = {
       completed: "default",
@@ -132,6 +144,11 @@ export default function DashboardPage() {
         {status}
       </Badge>
     )
+  }
+
+  // Early return if not authenticated to prevent skeleton loader
+  if (!isReady) {
+    return null
   }
 
   if (!user) {
@@ -424,6 +441,15 @@ export default function DashboardPage() {
                       key={job.id}
                       className="group relative cursor-pointer rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all h-[240px] md:h-[260px] flex flex-col overflow-hidden"
                       onClick={() => router.push(`/avatars/${job.id}`)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          router.push(`/avatars/${job.id}`)
+                        }
+                      }}
+                      aria-label={`View project ${job.title}`}
                     >
                       {/* Preview Area */}
                       <div className="flex-1 relative bg-gray-50 dark:bg-gray-900 overflow-hidden min-h-0">

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { JobWithTemplate, JobWithResult } from '@/lib/db/types'
 import { internalApiClient } from '@/lib/clients/internal-client'
 import { useJobsStore } from '@/stores/jobs-store'
+import { POLLING_INTERVALS } from '@/lib/constants/polling'
 
 // Query keys
 export const marketingAngleKeys = {
@@ -22,7 +23,7 @@ export function useMarketingAngles(filters?: { status?: string; search?: string 
     },
     staleTime: 30 * 1000, // Data is fresh for 30 seconds - won't refetch on navigation if data is fresh
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-    refetchInterval: 10000, // Refetch every 10 seconds for real-time updates (only when component is mounted)
+    refetchInterval: POLLING_INTERVALS.JOB_POLLING, // Refetch every 10 seconds for real-time updates (only when component is mounted)
   })
 }
 
@@ -36,7 +37,7 @@ export function useMarketingAngle(id: string) {
     enabled: !!id,
     staleTime: 30 * 1000, // Data is fresh for 30 seconds
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates (only when component is mounted)
+    refetchInterval: POLLING_INTERVALS.MARKETING_ANGLE_POLLING, // Refetch every 5 seconds for real-time updates (only when component is mounted)
   })
 }
 

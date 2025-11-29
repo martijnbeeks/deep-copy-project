@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, memo } from "react"
+import Image from "next/image"
 import { ExternalLink, Globe, Loader2 } from "lucide-react"
 import {
   Dialog,
@@ -15,7 +16,7 @@ interface SalesPagePreviewProps {
   className?: string
 }
 
-export function SalesPagePreview({ url, jobId, className = "" }: SalesPagePreviewProps) {
+function SalesPagePreviewComponent({ url, jobId, className = "" }: SalesPagePreviewProps) {
   const [screenshot, setScreenshot] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [faviconError, setFaviconError] = useState(false)
@@ -55,7 +56,7 @@ export function SalesPagePreview({ url, jobId, className = "" }: SalesPagePrevie
           }
         }
       } catch (error) {
-        console.error('Failed to fetch screenshot:', error)
+        // Silently fail - component will show fallback UI
       } finally {
         setIsLoading(false)
       }
@@ -95,10 +96,13 @@ export function SalesPagePreview({ url, jobId, className = "" }: SalesPagePrevie
 
         {screenshot ? (
           <div className="relative w-full h-full overflow-hidden">
-            <img
+            <Image
               src={screenshot}
               alt={`Preview of ${domain}`}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-110"
+              unoptimized
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors pointer-events-none" />
 
@@ -114,9 +118,17 @@ export function SalesPagePreview({ url, jobId, className = "" }: SalesPagePrevie
           <div className="flex flex-col items-center justify-center h-full p-4 gap-3">
             <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-muted/50 border border-border/50">
               {!faviconError ? (
-                <img src={faviconUrl} alt="" className="w-8 h-8" onError={() => setFaviconError(true)} />
+                <Image
+                  src={faviconUrl}
+                  alt={`${domain} favicon`}
+                  width={32}
+                  height={32}
+                  className="w-8 h-8"
+                  onError={() => setFaviconError(true)}
+                  unoptimized
+                />
               ) : (
-                <Globe className="w-6 h-6 text-muted-foreground" />
+                <Globe className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
               )}
             </div>
             <div className="flex flex-col items-center gap-1.5 w-full">
@@ -173,4 +185,7 @@ export function SalesPagePreview({ url, jobId, className = "" }: SalesPagePrevie
     </>
   )
 }
+
+// Memoize component to prevent unnecessary re-renders
+export const SalesPagePreview = memo(SalesPagePreviewComponent)
 

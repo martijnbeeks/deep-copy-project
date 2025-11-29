@@ -26,54 +26,22 @@ const baseNavigation = [
 ]
 
 export function Sidebar() {
-  const { user, logout } = useAuthStore()
+  const { user, logout, isAdmin } = useAuthStore()
   const pathname = usePathname()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [loadingItem, setLoadingItem] = useState<string | null>(null)
-  const [isOrgAdmin, setIsOrgAdmin] = useState(false)
-  const [checkingAdmin, setCheckingAdmin] = useState(true)
 
   // Prevent hydration mismatch
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Check if user is an organization admin
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (!user?.email) {
-        setCheckingAdmin(false)
-        return
-      }
-
-      try {
-        const response = await fetch('/api/organizations/check-admin', {
-          headers: {
-            'Authorization': `Bearer ${user.email}`,
-          }
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          setIsOrgAdmin(data.isAdmin || false)
-        }
-      } catch (error) {
-        console.error('Error checking admin status:', error)
-        setIsOrgAdmin(false)
-      } finally {
-        setCheckingAdmin(false)
-      }
-    }
-
-    checkAdminStatus()
-  }, [user])
-
-  // Build navigation array based on admin status
+  // Build navigation array based on admin status (from auth store - set during login)
   const navigation = [
     ...baseNavigation,
-    ...(isOrgAdmin ? [{ name: "Manage Organization", href: "/organizations/admin", icon: Building2 }] : [])
+    ...(isAdmin ? [{ name: "Manage Organization", href: "/organizations/admin", icon: Building2 }] : [])
   ]
 
   const handleNavigation = async (href: string) => {

@@ -37,16 +37,8 @@ export function MembersList({ organizationId }: MembersListProps) {
     setIsLoading(true)
     try {
       // Get user email from auth store for authorization header
-      const authStorage = localStorage.getItem('auth-storage')
-      let userEmail = ''
-      if (authStorage) {
-        try {
-          const authData = JSON.parse(authStorage)
-          userEmail = authData.state?.user?.email || ''
-        } catch {
-          // Ignore parse errors
-        }
-      }
+      const { getUserEmailFromStorage } = await import('@/lib/utils/local-storage')
+      const userEmail = getUserEmailFromStorage()
 
       if (!userEmail) {
         throw new Error('Not authenticated')

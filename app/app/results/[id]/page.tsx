@@ -1,8 +1,17 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import { Sidebar, SidebarTrigger } from "@/components/dashboard/sidebar"
-import { DeepCopyResults } from "@/components/results/deepcopy-results"
 import { Button } from "@/components/ui/button"
+
+// Dynamically import large component to reduce initial bundle size
+const DeepCopyResults = dynamic(
+  () => import("@/components/results/deepcopy-results").then((mod) => mod.DeepCopyResults),
+  {
+    loading: () => <ContentViewerSkeleton />,
+    ssr: false, // Component uses client-side only features
+  }
+)
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { Download, ArrowLeft } from "lucide-react"

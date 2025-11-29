@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserByEmail, validatePassword } from '@/lib/db/queries'
+import { query } from '@/lib/db/connection'
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,7 +32,27 @@ export async function POST(request: NextRequest) {
     // Remove password hash from response
     const { password_hash, ...userWithoutPassword } = user
 
-    const response = NextResponse.json({ user: userWithoutPassword })
+    // Check if user is an admin of any organization (quick check during login)
+    let isAdmin = false
+    try {
+      const adminCheck = await query(
+        `SELECT COUNT(*) as count
+         FROM organization_members
+         WHERE user_id = $1 
+           AND status = 'approved' 
+           AND role = 'admin'`,
+        [user.id]
+      )
+      isAdmin = parseInt(adminCheck.rows[0]?.count || '0') > 0
+    } catch (error) {
+      // If admin check fails, default to false (non-critical)
+      // Admin status check failure is not critical for login
+    }
+
+    const response = NextResponse.json({ 
+      user: userWithoutPassword,
+      isAdmin // Include admin status in login response
+    })
     
     // Add cache-busting headers
     response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')

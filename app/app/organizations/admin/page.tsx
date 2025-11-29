@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuthStore } from "@/stores/auth-store"
 import { Loader2, AlertCircle, Building2, Users, UserCheck, Plus, ArrowRight } from "lucide-react"
 import { UserRole, MemberStatus } from "@/lib/db/types"
+import { logger } from "@/lib/utils/logger"
 
 interface Organization {
   id: string
@@ -44,50 +45,55 @@ interface OrganizationMember {
 export default function OrganizationAdminPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { user, isAuthenticated } = useAuthStore()
+  const { user, isAuthenticated, isLoading: authLoading } = useAuthStore()
   const [isLoading, setIsLoading] = useState(true)
+  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true)
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [allPendingMembers, setAllPendingMembers] = useState<OrganizationMember[]>([])
   const [allMembers, setAllMembers] = useState<OrganizationMember[]>([])
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null)
 
+  // Wait for auth to hydrate, then check authentication
   useEffect(() => {
+    // Wait for auth store to finish hydrating from localStorage
+    if (authLoading) return
+
     if (!isAuthenticated || !user) {
       router.push('/login')
       return
     }
 
-    fetchOrganizations()
-  }, [isAuthenticated, user, router])
+    setIsCheckingAdmin(false)
+  }, [authLoading, isAuthenticated, user, router])
 
-  // Redirect if user is not an admin
+  // Check admin status and fetch organizations together (only after auth is ready)
   useEffect(() => {
-    const checkAdminAndRedirect = async () => {
-      if (!user?.email || !isAuthenticated) return
+    if (authLoading || isCheckingAdmin || !isAuthenticated || !user) return
 
+    const checkAdminAndFetch = async () => {
       try {
-        const authStorage = localStorage.getItem('auth-storage')
-        let userEmail = ''
-        if (authStorage) {
-          try {
-            const authData = JSON.parse(authStorage)
-            userEmail = authData.state?.user?.email || ''
-          } catch {
-            // Ignore parse errors
-          }
+        const { getUserEmailFromStorage } = await import('@/lib/utils/local-storage')
+        const userEmail = getUserEmailFromStorage()
+
+        if (!userEmail) {
+          router.push('/login')
+          return
         }
 
-        if (!userEmail) return
-
-        const response = await fetch('/api/organizations/check-admin', {
+        // Check admin status first
+        const adminResponse = await fetch('/api/organizations/check-admin', {
           headers: {
             'Authorization': `Bearer ${userEmail}`,
           }
         })
 
-        if (response.ok) {
-          const data = await response.json()
-          if (!data.isAdmin) {
+        if (adminResponse.ok) {
+          const adminData = await adminResponse.json()
+          const userIsAdmin = adminData.isAdmin || false
+          setIsAdmin(userIsAdmin)
+          
+          if (!userIsAdmin) {
             // User is not an admin, redirect to dashboard
             router.push('/dashboard')
             toast({
@@ -95,35 +101,29 @@ export default function OrganizationAdminPage() {
               description: "You don't have permission to access this page.",
               variant: "destructive",
             })
+            return
           }
+
+          // If admin check passes, fetch organizations
+          await fetchOrganizations(userEmail)
+        } else {
+          // If check fails, assume not admin
+          setIsAdmin(false)
+          router.push('/dashboard')
         }
       } catch (error) {
-        console.error('Error checking admin status:', error)
+        logger.error('Error checking admin status:', error)
+        setIsAdmin(false)
+        router.push('/dashboard')
       }
     }
 
-    if (isAuthenticated && user) {
-      checkAdminAndRedirect()
-    }
-  }, [isAuthenticated, user, router, toast])
+    checkAdminAndFetch()
+  }, [authLoading, isCheckingAdmin, isAuthenticated, user, router, toast])
 
-  const fetchOrganizations = async () => {
+  const fetchOrganizations = async (userEmail: string) => {
     setIsLoading(true)
     try {
-      const authStorage = localStorage.getItem('auth-storage')
-      let userEmail = ''
-      if (authStorage) {
-        try {
-          const authData = JSON.parse(authStorage)
-          userEmail = authData.state?.user?.email || ''
-        } catch {
-          // Ignore parse errors
-        }
-      }
-
-      if (!userEmail) {
-        throw new Error('Not authenticated')
-      }
 
       // Fetch user's organizations where they are admin
       const orgsResponse = await fetch('/api/organizations/my-organizations', {
@@ -139,31 +139,41 @@ export default function OrganizationAdminPage() {
       const orgsData = await orgsResponse.json()
       setOrganizations(orgsData.organizations || [])
 
-      // Fetch all members across all organizations
-      const pendingMembers: OrganizationMember[] = []
-      const allMembersList: OrganizationMember[] = []
+      // Fetch all members across all organizations in parallel
+      const memberPromises = (orgsData.organizations || []).map(async (org: Organization) => {
+        try {
+          const membersResponse = await fetch(`/api/organizations/${org.id}/members`, {
+            headers: {
+              'Authorization': `Bearer ${userEmail}`,
+            }
+          })
 
-      for (const org of orgsData.organizations || []) {
-        const membersResponse = await fetch(`/api/organizations/${org.id}/members`, {
-          headers: {
-            'Authorization': `Bearer ${userEmail}`,
+          if (membersResponse.ok) {
+            const membersData = await membersResponse.json()
+            const members = (membersData.members || []).map((m: OrganizationMember) => ({
+              ...m,
+              organization: { id: org.id, name: org.name }
+            }))
+            return { members, orgId: org.id }
           }
-        })
-
-        if (membersResponse.ok) {
-          const membersData = await membersResponse.json()
-          const members = (membersData.members || []).map((m: OrganizationMember) => ({
-            ...m,
-            organization: { id: org.id, name: org.name }
-          }))
-
-          allMembersList.push(...members)
-
-          // Filter pending members
-          const pending = members.filter((m: OrganizationMember) => m.status === 'pending')
-          pendingMembers.push(...pending)
+          return { members: [], orgId: org.id }
+        } catch (error) {
+          logger.error(`Error fetching members for organization ${org.id}:`, error)
+          return { members: [], orgId: org.id }
         }
-      }
+      })
+
+      const memberResults = await Promise.all(memberPromises)
+      
+      // Combine all members and filter pending ones
+      const allMembersList: OrganizationMember[] = []
+      const pendingMembers: OrganizationMember[] = []
+
+      memberResults.forEach(({ members }) => {
+        allMembersList.push(...members)
+        const pending = members.filter((m: OrganizationMember) => m.status === 'pending')
+        pendingMembers.push(...pending)
+      })
 
       setAllPendingMembers(pendingMembers)
       setAllMembers(allMembersList)
@@ -183,11 +193,16 @@ export default function OrganizationAdminPage() {
     }
   }
 
-  const handleMemberApproved = () => {
-    fetchOrganizations()
+  const handleMemberApproved = async () => {
+    const { getUserEmailFromStorage } = await import('@/lib/utils/local-storage')
+    const userEmail = getUserEmailFromStorage()
+    if (userEmail) {
+      await fetchOrganizations(userEmail)
+    }
   }
 
-  if (isLoading) {
+  // Show loading while checking auth or admin status
+  if (authLoading || isCheckingAdmin || isLoading || isAdmin === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -198,7 +213,8 @@ export default function OrganizationAdminPage() {
     )
   }
 
-  if (!isAuthenticated || !user) {
+  // If not authenticated or not admin (after check), show nothing (redirect is happening)
+  if (!isAuthenticated || !user || isAdmin === false) {
     return null
   }
 

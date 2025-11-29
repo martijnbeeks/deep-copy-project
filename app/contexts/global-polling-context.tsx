@@ -5,6 +5,7 @@ import { useGlobalJobPolling } from '@/hooks/use-global-job-polling'
 import { useQueryClient } from '@tanstack/react-query'
 import { logger } from '@/lib/utils/logger'
 import { jobKeys } from '@/lib/hooks/use-jobs'
+import { POLLING_INTERVALS } from '@/lib/constants/polling'
 
 interface GlobalPollingContextType {
   isPolling: boolean
@@ -29,7 +30,7 @@ export function GlobalPollingProvider({ children }: { children: React.ReactNode 
       startPolling,
       stopPolling
     } = useGlobalJobPolling({
-      interval: 5000, // Poll every 5 seconds for better responsiveness
+      interval: POLLING_INTERVALS.GLOBAL_POLLING, // Poll every 5 seconds for better responsiveness
       onJobUpdate: (jobId, status, progress) => {
         logger.log(`🔄 Global polling: Job ${jobId} status updated to ${status}`)
         // Invalidate only the jobs list queries, not all job-related queries

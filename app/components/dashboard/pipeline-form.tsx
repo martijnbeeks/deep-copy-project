@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -36,7 +36,7 @@ interface PipelineFormProps {
   isLoading?: boolean
 }
 
-export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps) {
+function PipelineFormComponent({ onSubmit, isLoading = false }: PipelineFormProps) {
   // Use TanStack Query for templates data
   const { data: templates = [], isLoading: templatesLoading } = useTemplates()
   const createJobMutation = useCreateJob()
@@ -309,3 +309,6 @@ export function PipelineForm({ onSubmit, isLoading = false }: PipelineFormProps)
     </Card>
   )
 }
+
+// Memoize component to prevent unnecessary re-renders
+export const PipelineForm = memo(PipelineFormComponent)

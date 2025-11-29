@@ -7,6 +7,7 @@ interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
   error: string | null
+  isAdmin: boolean
 }
 
 interface AuthActions {
@@ -16,6 +17,7 @@ interface AuthActions {
   login: (email: string, password: string) => Promise<void>
   logout: () => void
   clearError: () => void
+  refreshAdminStatus: () => Promise<void>
 }
 
 export const useAuthStore = create<AuthState & AuthActions>()(
@@ -25,8 +27,9 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       isAuthenticated: false,
       isLoading: true, // Start as loading to prevent premature redirects
       error: null,
+      isAdmin: false,
 
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
+      setUser: (user, isAdmin = false) => set({ user, isAuthenticated: !!user, isAdmin }),
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
       clearError: () => set({ error: null }),
@@ -46,8 +49,8 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             throw new Error(errorData.error || 'Login failed')
           }
 
-          const { user } = await response.json()
-          set({ user, isAuthenticated: true, isLoading: false })
+          const { user, isAdmin } = await response.json()
+          set({ user, isAuthenticated: true, isLoading: false, isAdmin: isAdmin || false })
         } catch (error) {
           set({ 
             error: error instanceof Error ? error.message : 'Login failed',
@@ -58,11 +61,34 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       },
 
       logout: () => {
-        set({ user: null, isAuthenticated: false, error: null })
+        set({ user: null, isAuthenticated: false, error: null, isAdmin: false })
         // Clear from server
         fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
         // Clear persisted storage
         localStorage.removeItem('auth-storage')
+      },
+
+      refreshAdminStatus: async () => {
+        const state = get()
+        if (!state.user?.email || !state.isAuthenticated) {
+          return
+        }
+
+        try {
+          const response = await fetch('/api/organizations/check-admin', {
+            headers: {
+              'Authorization': `Bearer ${state.user.email}`,
+            }
+          })
+
+          if (response.ok) {
+            const data = await response.json()
+            set({ isAdmin: data.isAdmin || false })
+          }
+        } catch (error) {
+          // Silently fail - admin status remains unchanged
+          console.error('Error refreshing admin status:', error)
+        }
       },
     }),
     {
@@ -76,7 +102,8 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           updated_at: state.user.updated_at,
           // Don't persist sensitive data
         } : null,
-        isAuthenticated: state.isAuthenticated 
+        isAuthenticated: state.isAuthenticated,
+        isAdmin: state.isAdmin
       }),
       onRehydrateStorage: () => (state) => {
         // Set loading to false after rehydration is complete

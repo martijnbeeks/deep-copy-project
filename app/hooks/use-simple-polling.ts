@@ -6,6 +6,7 @@ import { internalApiClient } from '@/lib/clients/internal-client'
 import { isProcessingStatus } from '@/lib/utils/job-status'
 import { logger } from '@/lib/utils/logger'
 import { jobKeys } from '@/lib/hooks/use-jobs'
+import { POLLING_INTERVALS } from '@/lib/constants/polling'
 
 /**
  * Simple polling hook that polls processing jobs via server-side endpoint
@@ -66,7 +67,7 @@ export function useSimplePolling(jobs: any[]) {
     pollJobs()
 
     // Set up interval
-    intervalRef.current = setInterval(pollJobs, 5000)
+    intervalRef.current = setInterval(pollJobs, POLLING_INTERVALS.SIMPLE_POLLING)
 
     // Cleanup
     return () => {

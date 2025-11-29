@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { useGlobalPolling } from '@/contexts/global-polling-context'
 import { useJobs } from '@/lib/hooks/use-jobs'
+import { logger } from '@/lib/utils/logger'
 
 /**
  * Automatically adds processing jobs to global polling
@@ -20,36 +21,54 @@ export function useAutoPolling() {
     const globalPolling = useGlobalPolling()
     addJobToPolling = globalPolling.addJobToPolling
     removeJobFromPolling = globalPolling.removeJobFromPolling
-    console.log('✅ useAutoPolling: Global polling context available')
+    logger.log('✅ useAutoPolling: Global polling context available')
   } catch (error) {
-    console.log('⚠️ useAutoPolling: Global polling context not available, using fallback')
+    logger.log('⚠️ useAutoPolling: Global polling context not available, using fallback')
   }
+
+  // Use refs to track current jobs to avoid stale closures
+  const jobsRef = useRef(jobs)
+  const addJobRef = useRef(addJobToPolling)
+  const removeJobRef = useRef(removeJobFromPolling)
+
+  // Update refs when values change
+  useEffect(() => {
+    jobsRef.current = jobs
+    addJobRef.current = addJobToPolling
+    removeJobRef.current = removeJobFromPolling
+  }, [jobs, addJobToPolling, removeJobFromPolling])
 
   useEffect(() => {
     // Add all processing jobs to global polling
-    const processingJobs = jobs.filter(job => 
+    const processingJobs = jobsRef.current.filter(job => 
       job.status === 'processing' || job.status === 'pending'
     )
 
-    console.log(`🔄 Auto-polling: Found ${processingJobs.length} processing jobs:`, processingJobs.map(j => `${j.id}(${j.status})`))
+    logger.log(`🔄 Auto-polling: Found ${processingJobs.length} processing jobs:`, processingJobs.map(j => `${j.id}(${j.status})`))
 
     // Add each processing job to global polling
     processingJobs.forEach(job => {
-      console.log(`➕ Adding job ${job.id} to global polling (${job.status})`)
-      addJobToPolling(job.id, job.status, job.progress)
+      logger.log(`➕ Adding job ${job.id} to global polling (${job.status})`)
+      addJobRef.current(job.id, job.status, job.progress)
     })
 
     // Clean up: remove jobs that are no longer processing
-    const completedJobs = jobs.filter(job => 
+    const completedJobs = jobsRef.current.filter(job => 
       job.status === 'completed' || job.status === 'failed'
     )
 
     completedJobs.forEach(job => {
-      console.log(`➖ Removing completed job ${job.id} from global polling (${job.status})`)
-      removeJobFromPolling(job.id)
+      logger.log(`➖ Removing completed job ${job.id} from global polling (${job.status})`)
+      removeJobRef.current(job.id)
     })
 
-  }, [jobs, addJobToPolling, removeJobFromPolling])
+    // Cleanup function: remove all jobs when component unmounts
+    return () => {
+      jobsRef.current.forEach(job => {
+        removeJobRef.current(job.id)
+      })
+    }
+  }, [jobs.length]) // Only depend on jobs.length to avoid excessive re-runs
 
   return {
     processingJobsCount: jobs.filter(job => 
