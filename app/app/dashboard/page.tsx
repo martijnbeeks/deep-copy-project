@@ -43,13 +43,13 @@ interface JobCardProps {
 }
 
 // Memoized Job Card Component
-const JobCard = memo(function JobCard({ 
-  job, 
-  onEdit, 
-  onDelete, 
-  onClick, 
+const JobCard = memo(function JobCard({
+  job,
+  onEdit,
+  onDelete,
+  onClick,
   onKeyDown,
-  getStatusBadge 
+  getStatusBadge
 }: JobCardProps) {
   return (
     <button
@@ -153,7 +153,7 @@ export default function DashboardPage() {
   const filteredJobs = useMemo(() => {
     return allJobs.filter((job: JobWithTemplate) => {
       // Search filter
-      const matchesSearch = !debouncedSearchTerm || 
+      const matchesSearch = !debouncedSearchTerm ||
         job.title?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
         job.brand_info?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
 
@@ -239,50 +239,7 @@ export default function DashboardPage() {
     )
   }
 
-  // Early return if not authenticated to prevent skeleton loader
-  if (!isReady) {
-    return null
-  }
-
-  if (!user) {
-    return (
-      <div className="flex h-screen bg-background">
-        <div className="w-64 border-r bg-card">
-          <div className="p-6 space-y-4">
-            <div className="h-8 w-32 bg-muted animate-pulse-slow rounded" />
-            <div className="space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-10 w-full bg-muted animate-pulse-slow rounded" />
-              ))}
-            </div>
-          </div>
-        </div>
-        <main className="flex-1 p-6">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <div className="h-8 w-48 bg-muted animate-pulse-slow rounded" />
-                <div className="h-4 w-64 bg-muted animate-pulse-slow rounded" />
-              </div>
-              <div className="h-10 w-32 bg-muted animate-pulse-slow rounded" />
-            </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="p-6 border rounded-lg bg-card">
-                  <div className="space-y-2">
-                    <div className="h-4 w-20 bg-muted animate-pulse-slow rounded" />
-                    <div className="h-8 w-16 bg-muted animate-pulse-slow rounded" />
-                    <div className="h-3 w-24 bg-muted animate-pulse-slow rounded" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </main>
-      </div>
-    )
-  }
-
+  // All hooks must be defined before early returns to follow Rules of Hooks
   const handlePipelineSubmit = useCallback(async (data: unknown) => {
     setError(null)
 
@@ -424,6 +381,50 @@ export default function DashboardPage() {
       router.push(`/avatars/${jobId}`)
     }
   }, [router])
+
+  // Early return if not authenticated to prevent skeleton loader
+  if (!isReady) {
+    return null
+  }
+
+  if (!user) {
+    return (
+      <div className="flex h-screen bg-background">
+        <div className="w-64 border-r bg-card">
+          <div className="p-6 space-y-4">
+            <div className="h-8 w-32 bg-muted animate-pulse-slow rounded" />
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-10 w-full bg-muted animate-pulse-slow rounded" />
+              ))}
+            </div>
+          </div>
+        </div>
+        <main className="flex-1 p-6">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="h-8 w-48 bg-muted animate-pulse-slow rounded" />
+                <div className="h-4 w-64 bg-muted animate-pulse-slow rounded" />
+              </div>
+              <div className="h-10 w-32 bg-muted animate-pulse-slow rounded" />
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="p-6 border rounded-lg bg-card">
+                  <div className="space-y-2">
+                    <div className="h-4 w-20 bg-muted animate-pulse-slow rounded" />
+                    <div className="h-8 w-16 bg-muted animate-pulse-slow rounded" />
+                    <div className="h-3 w-24 bg-muted animate-pulse-slow rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <ErrorBoundary>

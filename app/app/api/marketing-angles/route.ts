@@ -65,7 +65,34 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get selected avatars (where is_researched === true) for DeepCopy API
+    const selectedAvatars = avatars?.filter((a: any) => a.is_researched === true) || []
+
+    // If no avatars are researched, create job without DeepCopy API call
+    if (selectedAvatars.length === 0) {
+      // Create job in database without execution_id (will be set later when research starts)
+      const brandInfoSafe = typeof brand_info === 'string' ? brand_info : ''
+      const marketingAngle = await createJob({
+        user_id: user.id,
+        title,
+        brand_info: brandInfoSafe,
+        sales_page_url,
+        template_id: undefined,
+        advertorial_type: 'advertorial',
+        target_approach,
+        avatars: avatars || [],
+        // No execution_id - will be set when avatar research starts
+        screenshot: product_image || undefined
+      })
+
+      // Set status to 'pending' - no research has started yet
+      await updateJobStatus(marketingAngle.id, 'pending')
+
+      return createSuccessResponse(marketingAngle)
+    }
+
     // Check usage limits before creating marketing angle (deep research)
+    // Only check if there are researched avatars to process
     const usageCheck = await checkAndIncrementUsage(user, 'deep_research')
     if (!usageCheck.allowed) {
       return NextResponse.json(
@@ -78,9 +105,6 @@ export async function POST(request: NextRequest) {
         { status: 429 } // Too Many Requests
       )
     }
-
-    // Get selected avatars (where is_researched === true) for DeepCopy API
-    const selectedAvatars = avatars?.filter((a: any) => a.is_researched === true) || []
 
     // Submit marketing angle to DeepCopy API first to get the job ID using centralized client
     let deepCopyJobId: string
