@@ -12,13 +12,11 @@ import { EmptyState } from "@/components/ui/empty-state"
 import { useRouter } from "next/navigation"
 import React, { useEffect, useState, useMemo, useCallback, memo } from "react"
 import Link from "next/link"
-import { FileText, AlertCircle, Zap, Eye, Search, Filter, Calendar, ExternalLink, ArrowUp, Edit2, Trash2, Building2 } from "lucide-react"
+import { FileText, AlertCircle, Zap, Search, Filter, ArrowUp, Edit2, Trash2, Building2 } from "lucide-react"
 import { SalesPagePreview } from "@/components/sales-page-preview"
 import { useToast } from "@/hooks/use-toast"
 import { useRequireAuth } from "@/hooks/use-require-auth"
 import { useJobs, useCreateJob, useUpdateJob, useDeleteJob } from "@/lib/hooks/use-jobs"
-import { useSimplePolling } from "@/hooks/use-simple-polling"
-import { useJobsStore } from "@/stores/jobs-store"
 import { useDebounce } from "@/hooks/use-debounce"
 import { Job, JobWithTemplate } from "@/lib/db/types"
 import { isProcessingStatus } from "@/lib/utils/job-status"
@@ -27,6 +25,7 @@ import { internalApiClient } from "@/lib/clients/internal-client"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // Memoized SalesPagePreview component
 const MemoizedSalesPagePreview = memo(SalesPagePreview)
@@ -52,9 +51,10 @@ const JobCard = memo(function JobCard({
   getStatusBadge
 }: JobCardProps) {
   return (
-    <button
-      type="button"
-      className="group relative cursor-pointer rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all h-[240px] md:h-[260px] flex flex-col overflow-hidden text-left"
+    <div
+      role="button"
+      tabIndex={0}
+      className="group relative cursor-pointer rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all h-[240px] md:h-[260px] flex flex-col overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
       onClick={() => onClick(job.id)}
       onKeyDown={(e) => onKeyDown(e, job.id)}
       aria-label={`View project ${job.title}`}
@@ -115,11 +115,33 @@ const JobCard = memo(function JobCard({
           </div>
         </div>
       </div>
-    </button>
+    </div>
   )
 })
 
 JobCard.displayName = "JobCard"
+
+// Create Content Card Component (extracted to avoid duplication)
+const CreateContentCard = memo(function CreateContentCard() {
+  return (
+    <Link href="/create" className="block">
+      <div className="relative cursor-pointer rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 hover:border-primary/50 hover:shadow-md transition-all h-[240px] md:h-[260px] flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
+          <div className="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-3">
+            <Zap className="h-7 w-7 text-primary" />
+          </div>
+          <h3 className="font-semibold text-sm text-foreground mb-1">
+            Create New Content
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Start generating AI content
+          </p>
+        </div>
+      </div>
+    </Link>
+  )
+})
+CreateContentCard.displayName = "CreateContentCard"
 
 export default function DashboardPage() {
   const { user, isReady } = useRequireAuth()
@@ -131,7 +153,7 @@ export default function DashboardPage() {
   const { toast } = useToast()
 
   // Fetch all jobs without filters (client-side filtering instead)
-  const { data: allJobs = [], isLoading, error: queryError, refetch } = useJobs()
+  const { data: allJobs = [], isLoading, refetch } = useJobs()
 
   // Debounce search term to avoid filtering on every keystroke
   const debouncedSearchTerm = useDebounce(searchTerm, 500)
@@ -163,15 +185,6 @@ export default function DashboardPage() {
       return matchesSearch && matchesStatus
     })
   }, [allJobs, debouncedSearchTerm, statusFilter])
-
-  // Use simple polling for processing jobs (hits DeepCopy API directly)
-  const { isPolling } = useSimplePolling(allJobs)
-
-  // Count processing jobs using utility (memoized)
-  const processingJobsCount = useMemo(
-    () => allJobs.filter(job => isProcessingStatus(job.status)).length,
-    [allJobs]
-  )
 
   // Fetch user's organization name
   useEffect(() => {
@@ -206,14 +219,16 @@ export default function DashboardPage() {
 
   // Log when jobs data changes (development only) - only log when count changes
   useEffect(() => {
-    const processingCount = allJobs.filter(j => isProcessingStatus(j.status)).length
-    const completedCount = allJobs.filter(j => j.status?.toLowerCase() === 'completed').length
-    const failedCount = allJobs.filter(j => j.status?.toLowerCase() === 'failed').length
+    if (allJobs.length > 0) {
+      const processingCount = allJobs.filter(j => isProcessingStatus(j.status)).length
+      const completedCount = allJobs.filter(j => j.status?.toLowerCase() === 'completed').length
+      const failedCount = allJobs.filter(j => j.status?.toLowerCase() === 'failed').length
 
-    logger.log(`📊 Dashboard: Jobs updated - ${allJobs.length} total`)
-    logger.log(`  - Processing: ${processingCount}`)
-    logger.log(`  - Completed: ${completedCount}`)
-    logger.log(`  - Failed: ${failedCount}`)
+      logger.log(`📊 Dashboard: Jobs updated - ${allJobs.length} total`)
+      logger.log(`  - Processing: ${processingCount}`)
+      logger.log(`  - Completed: ${completedCount}`)
+      logger.log(`  - Failed: ${failedCount}`)
+    }
   }, [allJobs.length]) // Only log when count changes, not array reference
 
   // Status badge helper function (defined before early returns to follow Rules of Hooks)
@@ -505,53 +520,50 @@ export default function DashboardPage() {
 
               {/* Jobs Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Create New Content Card - First Card */}
-                <Link href="/create" className={filteredJobs.length === 0 ? "hidden" : "block"}>
-                  <div className="relative cursor-pointer rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 hover:border-primary/50 hover:shadow-md transition-all h-[240px] md:h-[260px] flex flex-col overflow-hidden">
-                    <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
-                      <div className="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-3">
-                        <Zap className="h-7 w-7 text-primary" />
+                {isLoading && allJobs.length === 0 ? (
+                  // Show skeleton loaders only on initial load (when no cached data exists)
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="h-[240px] md:h-[260px] rounded-lg border border-border bg-card overflow-hidden">
+                      <div className="flex-1 h-full bg-gray-50 dark:bg-gray-900">
+                        <Skeleton className="h-full w-full" />
                       </div>
-                      <h3 className="font-semibold text-sm text-foreground mb-1">
-                        Create New Content
-                      </h3>
-                      <p className="text-xs text-muted-foreground">
-                        Start generating AI content
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-
-                {filteredJobs.length === 0 ? (
-                  <div className="col-span-full flex items-center justify-center py-12">
-                    <Link href="/create" className="block">
-                      <div className="relative cursor-pointer rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 hover:border-primary/50 hover:shadow-md transition-all h-[240px] md:h-[260px] flex flex-col overflow-hidden">
-                        <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
-                          <div className="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-3">
-                            <Zap className="h-7 w-7 text-primary" />
+                      <div className="p-3 border-t border-border">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <Skeleton className="h-4 w-3/4" />
+                          <Skeleton className="h-5 w-16 rounded-full" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Skeleton className="h-3 w-20" />
+                          <div className="flex gap-1">
+                            <Skeleton className="h-6 w-6 rounded" />
+                            <Skeleton className="h-6 w-6 rounded" />
                           </div>
-                          <h3 className="font-semibold text-sm text-foreground mb-1">
-                            Create New Content
-                          </h3>
-                          <p className="text-xs text-muted-foreground">
-                            Start generating AI content
-                          </p>
                         </div>
                       </div>
-                    </Link>
-                  </div>
-                ) : (
-                  filteredJobs.map((job: JobWithTemplate) => (
-                    <JobCard
-                      key={job.id}
-                      job={job}
-                      onEdit={handleEditClick}
-                      onDelete={handleDeleteClick}
-                      onClick={handleJobCardClick}
-                      onKeyDown={handleJobCardKeyDown}
-                      getStatusBadge={getStatusBadge}
-                    />
+                    </div>
                   ))
+                ) : (
+                  <>
+                    {filteredJobs.length > 0 && <CreateContentCard />}
+                    
+                    {filteredJobs.length === 0 ? (
+                      <div className="col-span-full flex items-center justify-center py-12">
+                        <CreateContentCard />
+                      </div>
+                    ) : (
+                      filteredJobs.map((job: JobWithTemplate) => (
+                        <JobCard
+                          key={job.id}
+                          job={job}
+                          onEdit={handleEditClick}
+                          onDelete={handleDeleteClick}
+                          onClick={handleJobCardClick}
+                          onKeyDown={handleJobCardKeyDown}
+                          getStatusBadge={getStatusBadge}
+                        />
+                      ))
+                    )}
+                  </>
                 )}
               </div>
             </div>

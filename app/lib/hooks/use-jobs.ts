@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { JobWithTemplate, JobWithResult } from '@/lib/db/types'
 import { internalApiClient } from '@/lib/clients/internal-client'
-import { useJobsStore } from '@/stores/jobs-store'
 import { POLLING_INTERVALS } from '@/lib/constants/polling'
 
 // Query keys
@@ -21,9 +20,12 @@ export function useMarketingAngles(filters?: { status?: string; search?: string 
       const response = await internalApiClient.getMarketingAngles(filters) as { jobs: JobWithTemplate[] }
       return response.jobs
     },
-    staleTime: 30 * 1000, // Data is fresh for 30 seconds - won't refetch on navigation if data is fresh
+    staleTime: 30 * 1000, // Data is fresh for 30 seconds
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-    refetchInterval: POLLING_INTERVALS.JOB_POLLING, // Refetch every 10 seconds for real-time updates (only when component is mounted)
+    refetchOnMount: true, // Always refetch when component mounts (but show cached data immediately)
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    placeholderData: (previousData) => previousData, // Show cached data immediately while refetching in background
+    // GlobalPollingProvider handles polling for processing jobs
   })
 }
 
