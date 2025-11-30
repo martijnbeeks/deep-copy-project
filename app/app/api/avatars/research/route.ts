@@ -27,9 +27,6 @@ export async function POST(request: NextRequest) {
       return createValidationErrorResponse('Job not found', 404)
     }
 
-    // Check if parent job is an avatar extraction job (is_avatar_job = true and no parent_job_id)
-    const isAvatarExtractionJob = parentJob.is_avatar_job && !parentJob.parent_job_id
-
     // Get avatars from parent job
     const avatars = parentJob.avatars || []
     const selectedAvatar = avatars.find((a: any) => a.persona_name === personaName)
@@ -39,22 +36,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if research job already exists for this persona
-    // For avatar extraction jobs, we look for regular research jobs (not avatar jobs)
-    // For regular jobs, we look for avatar research jobs
-    const existingJobQuery = isAvatarExtractionJob
-      ? `SELECT * FROM jobs 
-         WHERE parent_job_id = $1 
-         AND avatar_persona_name = $2 
-         AND user_id = $3
-         AND (is_avatar_job IS NULL OR is_avatar_job = FALSE)
-         LIMIT 1`
-      : `SELECT * FROM jobs 
-         WHERE parent_job_id = $1 
-         AND avatar_persona_name = $2 
-         AND user_id = $3
-         LIMIT 1`
-
-    const existingAvatarJob = await query(existingJobQuery, [jobId, personaName, user.id])
+    const existingAvatarJob = await query(
+      `SELECT * FROM jobs 
+       WHERE parent_job_id = $1 
+       AND avatar_persona_name = $2 
+       AND user_id = $3
+       LIMIT 1`,
+      [jobId, personaName, user.id]
+    )
 
     if (existingAvatarJob.rows.length > 0) {
       // Research job already exists, return it
@@ -118,8 +107,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create NEW research job for this avatar
-    // If parent is an avatar extraction job, create a regular research job (not is_avatar_job)
-    // If parent is a regular job, create an avatar research job (is_avatar_job = true)
+    // All research jobs are treated the same - no is_avatar_job distinction needed
     const researchJob = await createJob({
       user_id: user.id,
       title: `${parentJob.title} - ${personaName}`,
@@ -133,7 +121,7 @@ export async function POST(request: NextRequest) {
       custom_id: deepCopyJobId,
       parent_job_id: jobId,
       avatar_persona_name: personaName,
-      is_avatar_job: !isAvatarExtractionJob // Only set to true if parent is NOT an avatar extraction job
+      is_avatar_job: false // All jobs are regular marketing angle jobs
     })
 
     // Update parent job's avatar to mark as researched and link to research job

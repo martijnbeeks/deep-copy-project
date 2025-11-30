@@ -27,8 +27,9 @@ export async function GET(
 
     const marketingAngle = result.rows[0]
 
-    // Use the marketing angle ID directly as the DeepCopy job ID (since we now use DeepCopy job ID as primary key)
-    const deepCopyJobId = marketingAngleId
+    // Use execution_id if available (jobs submitted to DeepCopy have this set),
+    // otherwise use the job ID directly (for jobs created with DeepCopy job ID as primary key)
+    const deepCopyJobId = marketingAngle.execution_id || marketingAngleId
 
     // Get current database status first
     const currentMarketingAngle = await query(`

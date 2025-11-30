@@ -204,6 +204,7 @@ export default function CreatePage() {
       let createdMarketingAngle: any
       
       // If we have an avatar extraction job ID, UPDATE it instead of creating new
+      // The API will automatically detect if execution_id is missing and submit to DeepCopy
       if (avatarExtractionJobId) {
         createdMarketingAngle = await updateMarketingAngleMutation.mutateAsync({
           id: avatarExtractionJobId,
@@ -212,8 +213,7 @@ export default function CreatePage() {
           sales_page_url: dataToSubmit.sales_page_url,
           target_approach: dataToSubmit.target_approach || 'explore',
           avatars: dataToSubmit.avatars || [],
-          product_image: dataToSubmit.product_image,
-          convertFromAvatarExtraction: true
+          product_image: dataToSubmit.product_image
         })
       } else {
         // Normal create flow

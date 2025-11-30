@@ -17,14 +17,14 @@ export async function GET(request: NextRequest) {
     const jobId = searchParams.get('jobId')
 
     // Build query with optional jobId filter
-    // If jobId is provided, include avatar jobs; otherwise exclude them
+    // All jobs are treated the same - no special filtering needed
     let sql = `
       SELECT 
         j.id as job_id,
         j.title as job_title,
         j.created_at as job_created_at,
         j.avatars,
-        j.is_avatar_job
+        j.execution_id
       FROM jobs j
       WHERE j.user_id = $1 
         AND j.avatars IS NOT NULL 
@@ -33,12 +33,8 @@ export async function GET(request: NextRequest) {
     const params: any[] = [user.id]
 
     if (jobId) {
-      // When specific jobId is provided, include avatar jobs
       sql += ` AND j.id = $2`
       params.push(jobId)
-    } else {
-      // When listing all avatars, exclude avatar jobs (they're accessed via their own route)
-      sql += ` AND (j.is_avatar_job IS NULL OR j.is_avatar_job = FALSE)`
     }
 
     sql += ` ORDER BY j.created_at DESC`
@@ -53,8 +49,9 @@ export async function GET(request: NextRequest) {
         ? JSON.parse(job.avatars) 
         : job.avatars || []
       
-      // If this is an avatar extraction job (is_avatar_job = true), return avatars directly
-      if (job.is_avatar_job) {
+      // If job doesn't have execution_id, it's a pending job (avatars extracted but not submitted to DeepCopy)
+      // Return avatars directly without looking for research jobs
+      if (!job.execution_id) {
         avatars.forEach((avatar: any, index: number) => {
           allAvatars.push({
             ...avatar,
@@ -70,20 +67,14 @@ export async function GET(request: NextRequest) {
           })
         })
       } else {
-        // For regular jobs, get research jobs (avatar jobs) for this parent job
-        // For avatar extraction jobs, get regular research jobs (not is_avatar_job)
-        const isAvatarExtractionJob = job.is_avatar_job && !job.parent_job_id
-        const avatarJobsQuery = isAvatarExtractionJob
-          ? `SELECT id, avatar_persona_name, status, execution_id, progress, created_at, updated_at
-             FROM jobs 
-             WHERE parent_job_id = $1 
-             AND (is_avatar_job IS NULL OR is_avatar_job = FALSE)
-             AND avatar_persona_name IS NOT NULL`
-          : `SELECT id, avatar_persona_name, status, execution_id, progress, created_at, updated_at
-             FROM jobs 
-             WHERE parent_job_id = $1 AND is_avatar_job = TRUE`
-        
-        const avatarJobs = await query(avatarJobsQuery, [job.job_id])
+        // For jobs with execution_id, get research jobs (child jobs) for each avatar
+        const avatarJobs = await query(
+          `SELECT id, avatar_persona_name, status, execution_id, progress, created_at, updated_at
+           FROM jobs 
+           WHERE parent_job_id = $1 
+           AND avatar_persona_name IS NOT NULL`,
+          [job.job_id]
+        )
         
         avatars.forEach((avatar: any, index: number) => {
           const avatarJob = avatarJobs.rows.find(

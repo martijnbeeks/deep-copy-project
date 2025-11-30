@@ -55,24 +55,21 @@ export async function PATCH(
       sales_page_url, 
       target_approach, 
       avatars, 
-      product_image,
-      convertFromAvatarExtraction 
+      product_image
     } = body
 
-    // Check if this is converting an avatar extraction job to a marketing angle
-    const isAvatarExtractionJob = existingJob.is_avatar_job && !existingJob.parent_job_id
-    const shouldConvert = convertFromAvatarExtraction || isAvatarExtractionJob
+    // If job doesn't have execution_id, it means it hasn't been submitted to DeepCopy yet
+    // This happens when avatars were extracted but user hasn't confirmed yet
+    const needsDeepCopySubmission = !existingJob.execution_id
 
-    if (shouldConvert) {
-      // Convert avatar extraction job to marketing angle job
-      // This means: update fields, submit to DeepCopy API, update execution_id, set is_avatar_job = false
-
+    if (needsDeepCopySubmission) {
+      // Job was created from avatar extraction, now submitting to DeepCopy
       if (!title) {
-        return createValidationErrorResponse('Title is required when converting avatar extraction job')
+        return createValidationErrorResponse('Title is required')
       }
 
       if (!target_approach) {
-        return createValidationErrorResponse('Target approach is required when converting avatar extraction job')
+        return createValidationErrorResponse('Target approach is required')
       }
 
       // Get selected avatars (where is_researched === true) for DeepCopy API
@@ -90,7 +87,6 @@ export async function PATCH(
                target_approach = $4, 
                avatars = $5, 
                screenshot = $6,
-               is_avatar_job = FALSE,
                status = 'pending',
                updated_at = NOW()
            WHERE id = $7 AND user_id = $8`,
@@ -148,7 +144,7 @@ export async function PATCH(
         )
       }
 
-      // Update the job: convert from avatar extraction to marketing angle
+      // Update the job with DeepCopy execution_id and set status to processing
       const brandInfoSafe = typeof brand_info === 'string' ? brand_info : (existingJob.brand_info || '')
       
       await query(
@@ -160,7 +156,6 @@ export async function PATCH(
              avatars = $5, 
              execution_id = $6,
              screenshot = $7,
-             is_avatar_job = FALSE,
              status = 'processing',
              updated_at = NOW()
          WHERE id = $8 AND user_id = $9`,
@@ -209,7 +204,7 @@ export async function PATCH(
       const updatedJob = await getJobById(marketingAngleId, authResult.user.id)
       return createSuccessResponse(updatedJob || {})
     } else {
-      // Regular update (not converting from avatar extraction)
+      // Regular update (job already has execution_id, just updating fields)
       const { title, brand_info, sales_page_url } = body
 
       // Build updates object with only provided fields

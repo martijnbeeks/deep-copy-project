@@ -30,26 +30,27 @@ export async function POST(request: NextRequest) {
     // Generate title if not provided
     const jobTitle = title || new URL(sales_page_url).hostname
 
-    // Create job with is_avatar_job = true
+    // Create regular marketing angle job (no is_avatar_job flag)
+    // Status is 'pending' until user confirms and submits to DeepCopy
     const job = await createJob({
       user_id: user.id,
       title: jobTitle,
-      brand_info: '', // Avatar extraction jobs don't have brand info
+      brand_info: '', // Will be filled when user confirms
       sales_page_url,
       template_id: undefined,
       advertorial_type: 'advertorial', // Default type for database constraint
       target_approach: 'explore', // Default since avatars were extracted
       avatars: avatars || [],
-      execution_id: undefined, // No DeepCopy execution ID for avatar extraction jobs
-      custom_id: undefined, // No custom ID needed
+      execution_id: undefined, // Will be set when submitted to DeepCopy
+      custom_id: undefined, // No custom ID needed (will use UUID)
       parent_job_id: undefined,
       avatar_persona_name: undefined,
-      is_avatar_job: true,
+      is_avatar_job: false, // Treat as regular marketing angle job
       screenshot: product_image || undefined
     })
 
-    // Set status to completed since avatars are already extracted
-    await updateJobStatus(job.id, 'completed', 100)
+    // Set status to pending - waiting for user to confirm and submit to DeepCopy
+    await updateJobStatus(job.id, 'pending', 0)
 
     logger.log(`✅ Avatar extraction job saved: ${job.id} for user ${user.id}`)
 
