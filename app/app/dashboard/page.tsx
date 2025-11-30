@@ -387,11 +387,16 @@ export default function DashboardPage() {
   }, [])
 
   const handleJobCardClick = useCallback((jobId: string, job?: JobWithTemplate) => {
-    // Check if this is an avatar job
-    if (job?.is_avatar_job) {
+    // Check if this job has avatars - route to avatars page if it does
+    const hasAvatars = job?.avatars && (
+      (Array.isArray(job.avatars) && job.avatars.length > 0) ||
+      (typeof job.avatars === 'string' && job.avatars.length > 0)
+    )
+    
+    if (hasAvatars) {
       router.push(`/avatars/${jobId}`)
     } else {
-      // Regular jobs route to results page
+      // Jobs without avatars route to results page
       router.push(`/results/${jobId}`)
     }
   }, [router])
@@ -399,7 +404,12 @@ export default function DashboardPage() {
   const handleJobCardKeyDown = useCallback((e: React.KeyboardEvent, jobId: string, job?: JobWithTemplate) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      if (job?.is_avatar_job) {
+      const hasAvatars = job?.avatars && (
+        (Array.isArray(job.avatars) && job.avatars.length > 0) ||
+        (typeof job.avatars === 'string' && job.avatars.length > 0)
+      )
+      
+      if (hasAvatars) {
         router.push(`/avatars/${jobId}`)
       } else {
         router.push(`/results/${jobId}`)
