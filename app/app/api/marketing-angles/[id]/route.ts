@@ -1,7 +1,11 @@
-import { NextRequest } from 'next/server'
-import { getJobById, deleteJobById, updateJob } from '@/lib/db/queries'
+import { NextRequest, NextResponse } from 'next/server'
+import { getJobById, deleteJobById, updateJob, updateJobStatus, createResult } from '@/lib/db/queries'
+import { query } from '@/lib/db/connection'
 import { requireAuth, createAuthErrorResponse } from '@/lib/auth/user-auth'
 import { handleApiError, createSuccessResponse, createValidationErrorResponse } from '@/lib/middleware/error-handler'
+import { deepCopyClient } from '@/lib/clients/deepcopy-client'
+import { checkAndIncrementUsage } from '@/lib/middleware/usage-limits'
+import { logger } from '@/lib/utils/logger'
 
 export async function GET(
   request: NextRequest,
@@ -38,33 +42,195 @@ export async function PATCH(
       return createAuthErrorResponse(authResult)
     }
 
-    // First check if the marketing angle exists and belongs to the user
-    const existingMarketingAngle = await getJobById(marketingAngleId, authResult.user.id)
-    if (!existingMarketingAngle) {
-      return createValidationErrorResponse('Marketing angle not found', 404)
+    // First check if the job exists and belongs to the user
+    const existingJob = await getJobById(marketingAngleId, authResult.user.id)
+    if (!existingJob) {
+      return createValidationErrorResponse('Job not found', 404)
     }
 
     const body = await request.json()
-    const { title, brand_info, sales_page_url } = body
+    const { 
+      title, 
+      brand_info, 
+      sales_page_url, 
+      target_approach, 
+      avatars, 
+      product_image,
+      convertFromAvatarExtraction 
+    } = body
 
-    // Build updates object with only provided fields
-    const updates: { title?: string; brand_info?: string; sales_page_url?: string } = {}
-    if (title !== undefined) updates.title = title
-    if (brand_info !== undefined) updates.brand_info = brand_info
-    if (sales_page_url !== undefined) updates.sales_page_url = sales_page_url
+    // Check if this is converting an avatar extraction job to a marketing angle
+    const isAvatarExtractionJob = existingJob.is_avatar_job && !existingJob.parent_job_id
+    const shouldConvert = convertFromAvatarExtraction || isAvatarExtractionJob
 
-    if (Object.keys(updates).length === 0) {
-      return createValidationErrorResponse('No valid fields to update')
+    if (shouldConvert) {
+      // Convert avatar extraction job to marketing angle job
+      // This means: update fields, submit to DeepCopy API, update execution_id, set is_avatar_job = false
+
+      if (!title) {
+        return createValidationErrorResponse('Title is required when converting avatar extraction job')
+      }
+
+      if (!target_approach) {
+        return createValidationErrorResponse('Target approach is required when converting avatar extraction job')
+      }
+
+      // Get selected avatars (where is_researched === true) for DeepCopy API
+      const selectedAvatars = avatars?.filter((a: any) => a.is_researched === true) || []
+
+      if (selectedAvatars.length === 0) {
+        // No avatars selected - just update the job without submitting to DeepCopy
+        const brandInfoSafe = typeof brand_info === 'string' ? brand_info : (existingJob.brand_info || '')
+        
+        await query(
+          `UPDATE jobs 
+           SET title = $1, 
+               brand_info = $2, 
+               sales_page_url = $3, 
+               target_approach = $4, 
+               avatars = $5, 
+               screenshot = $6,
+               is_avatar_job = FALSE,
+               status = 'pending',
+               updated_at = NOW()
+           WHERE id = $7 AND user_id = $8`,
+          [
+            title,
+            brandInfoSafe,
+            sales_page_url || existingJob.sales_page_url,
+            target_approach,
+            JSON.stringify(avatars || existingJob.avatars || []),
+            product_image || existingJob.screenshot || null,
+            marketingAngleId,
+            authResult.user.id
+          ]
+        )
+
+        const updatedJob = await getJobById(marketingAngleId, authResult.user.id)
+        return createSuccessResponse({ job: updatedJob })
+      }
+
+      // Check usage limits before submitting to DeepCopy
+      const usageCheck = await checkAndIncrementUsage(authResult.user, 'deep_research')
+      if (!usageCheck.allowed) {
+        return NextResponse.json(
+          {
+            error: 'Usage limit exceeded',
+            message: usageCheck.error || `You've reached your weekly limit of ${usageCheck.limit} Deep Research actions.`,
+            currentUsage: usageCheck.currentUsage,
+            limit: usageCheck.limit
+          },
+          { status: 429 }
+        )
+      }
+
+      // Submit to DeepCopy API
+      let deepCopyJobId: string
+      try {
+        const marketingAnglePayload = {
+          title: title,
+          brand_info: brand_info || '',
+          sales_page_url: sales_page_url || existingJob.sales_page_url || '',
+          target_approach: target_approach,
+          avatars: selectedAvatars.map((avatar: any) => ({
+            persona_name: avatar.persona_name,
+            is_researched: avatar.is_researched || true
+          }))
+        }
+
+        const deepCopyResponse = await deepCopyClient.submitMarketingAngle(marketingAnglePayload)
+        deepCopyJobId = deepCopyResponse.jobId
+      } catch (apiError) {
+        logger.error('❌ DeepCopy API Error:', apiError)
+        return NextResponse.json(
+          { error: 'Failed to submit marketing angle to DeepCopy API', details: apiError instanceof Error ? apiError.message : String(apiError) },
+          { status: 500 }
+        )
+      }
+
+      // Update the job: convert from avatar extraction to marketing angle
+      const brandInfoSafe = typeof brand_info === 'string' ? brand_info : (existingJob.brand_info || '')
+      
+      await query(
+        `UPDATE jobs 
+         SET title = $1, 
+             brand_info = $2, 
+             sales_page_url = $3, 
+             target_approach = $4, 
+             avatars = $5, 
+             execution_id = $6,
+             screenshot = $7,
+             is_avatar_job = FALSE,
+             status = 'processing',
+             updated_at = NOW()
+         WHERE id = $8 AND user_id = $9`,
+        [
+          title,
+          brandInfoSafe,
+          sales_page_url || existingJob.sales_page_url,
+          target_approach,
+          JSON.stringify(avatars || existingJob.avatars || []),
+          deepCopyJobId,
+          product_image || existingJob.screenshot || null,
+          marketingAngleId,
+          authResult.user.id
+        ]
+      )
+
+      // Update job status to processing
+      await updateJobStatus(marketingAngleId, 'processing')
+
+      // Check initial status
+      try {
+        const statusResponse = await deepCopyClient.getMarketingAngleStatus(deepCopyJobId)
+
+        if (statusResponse.status === 'SUCCEEDED') {
+          const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
+          await createResult(marketingAngleId, '', {
+            deepcopy_job_id: deepCopyJobId,
+            full_result: result,
+            project_name: result.project_name,
+            timestamp_iso: result.timestamp_iso,
+            job_id: result.job_id,
+            generated_at: new Date().toISOString()
+          })
+          await updateJobStatus(marketingAngleId, 'completed', 100)
+        } else if (statusResponse.status === 'FAILED') {
+          await updateJobStatus(marketingAngleId, 'failed')
+        } else if (['RUNNING', 'SUBMITTED', 'PENDING'].includes(statusResponse.status)) {
+          const progress = statusResponse.status === 'SUBMITTED' ? 25 :
+            statusResponse.status === 'RUNNING' ? 50 : 30
+          await updateJobStatus(marketingAngleId, 'processing', progress)
+        }
+      } catch (statusError) {
+        // Continue even if status check fails
+      }
+
+      const updatedJob = await getJobById(marketingAngleId, authResult.user.id)
+      return createSuccessResponse(updatedJob || {})
+    } else {
+      // Regular update (not converting from avatar extraction)
+      const { title, brand_info, sales_page_url } = body
+
+      // Build updates object with only provided fields
+      const updates: { title?: string; brand_info?: string; sales_page_url?: string } = {}
+      if (title !== undefined) updates.title = title
+      if (brand_info !== undefined) updates.brand_info = brand_info
+      if (sales_page_url !== undefined) updates.sales_page_url = sales_page_url
+
+      if (Object.keys(updates).length === 0) {
+        return createValidationErrorResponse('No valid fields to update')
+      }
+
+      // Update the marketing angle
+      const updatedMarketingAngle = await updateJob(marketingAngleId, authResult.user.id, updates)
+      
+      if (!updatedMarketingAngle) {
+        throw new Error('Failed to update marketing angle')
+      }
+
+      return createSuccessResponse(updatedMarketingAngle)
     }
-
-    // Update the marketing angle
-    const updatedMarketingAngle = await updateJob(marketingAngleId, authResult.user.id, updates)
-    
-    if (!updatedMarketingAngle) {
-      throw new Error('Failed to update marketing angle')
-    }
-
-    return createSuccessResponse({ marketingAngle: updatedMarketingAngle })
   } catch (error) {
     return handleApiError(error)
   }

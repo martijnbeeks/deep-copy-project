@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, AlertCircle, Info, Zap, CheckCircle } from "lucide-react"
 import { useRequireAuth } from "@/hooks/use-require-auth"
-import { useCreateMarketingAngle } from "@/lib/hooks/use-jobs"
+import { useCreateMarketingAngle, useUpdateMarketingAngle } from "@/lib/hooks/use-jobs"
 import { useRouter } from "next/navigation"
 import { Sidebar, SidebarTrigger } from "@/components/dashboard/sidebar"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
@@ -62,6 +62,7 @@ const getFirstSelectedAvatar = (avatars?: CustomerAvatar[]): CustomerAvatar | un
 export default function CreatePage() {
   const { user, isAuthenticated, isReady } = useRequireAuth()
   const createMarketingAngleMutation = useCreateMarketingAngle()
+  const updateMarketingAngleMutation = useUpdateMarketingAngle()
   const router = useRouter()
 
   // Use auto-polling for processing marketing angles (hits DeepCopy API directly)
@@ -78,6 +79,7 @@ export default function CreatePage() {
   const [errors, setErrors] = useState<Partial<Record<keyof PipelineFormData, string>>>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [avatarExtractionJobId, setAvatarExtractionJobId] = useState<string | null>(null)
 
   // Avatar extraction dialog state
   const [showAvatarDialog, setShowAvatarDialog] = useState(false)
@@ -198,17 +200,40 @@ export default function CreatePage() {
     // For "known" approach, proceed with normal submission
     try {
       setIsLoading(true)
-      const createdMarketingAngle = await createMarketingAngleMutation.mutateAsync({
-        ...dataToSubmit,
-        brand_info: dataToSubmit.brand_info || '', // Ensure brand_info is always a string
-        advertorial_type: 'Advertorial', // Default value since it's required by the API
-        target_approach: dataToSubmit.target_approach || 'explore',
-        avatars: dataToSubmit.avatars || [],
-        product_image: dataToSubmit.product_image, // Pass product_image from avatar extraction
-      })
+      
+      let createdMarketingAngle: any
+      
+      // If we have an avatar extraction job ID, UPDATE it instead of creating new
+      if (avatarExtractionJobId) {
+        createdMarketingAngle = await updateMarketingAngleMutation.mutateAsync({
+          id: avatarExtractionJobId,
+          title: dataToSubmit.title,
+          brand_info: dataToSubmit.brand_info || '',
+          sales_page_url: dataToSubmit.sales_page_url,
+          target_approach: dataToSubmit.target_approach || 'explore',
+          avatars: dataToSubmit.avatars || [],
+          product_image: dataToSubmit.product_image,
+          convertFromAvatarExtraction: true
+        })
+      } else {
+        // Normal create flow
+        createdMarketingAngle = await createMarketingAngleMutation.mutateAsync({
+          ...dataToSubmit,
+          brand_info: dataToSubmit.brand_info || '', // Ensure brand_info is always a string
+          advertorial_type: 'Advertorial', // Default value since it's required by the API
+          target_approach: dataToSubmit.target_approach || 'explore',
+          avatars: dataToSubmit.avatars || [],
+          product_image: dataToSubmit.product_image, // Pass product_image from avatar extraction
+        })
+      }
 
       // Set marketing angle ID for polling
       setCurrentMarketingAngleId(createdMarketingAngle.id)
+      
+      // Clear avatar extraction job ID after successful update
+      if (avatarExtractionJobId) {
+        setAvatarExtractionJobId(null)
+      }
 
       // Show research generation loading dialog
       setShowResearchLoading(true)
@@ -310,6 +335,7 @@ export default function CreatePage() {
                 })
                 setErrors({})
                 setGeneralError(null)
+                setAvatarExtractionJobId(null) // Clear avatar extraction job ID
 
                 // Redirect to results page
                 router.push(`/results/${createdMarketingAngle.id}`)
@@ -432,8 +458,13 @@ export default function CreatePage() {
     await submitForm(false)
   }
 
-  const handleAvatarsSelected = async (selectedAvatars: any[], allAvatars: any[], shouldClose: boolean = true, autoSubmit: boolean = false, productImage?: string) => {
+  const handleAvatarsSelected = async (selectedAvatars: any[], allAvatars: any[], shouldClose: boolean = true, autoSubmit: boolean = false, productImage?: string, extractionJobId?: string) => {
     try {
+      // Store the avatar extraction job ID if provided (from initial extraction)
+      if (extractionJobId) {
+        setAvatarExtractionJobId(extractionJobId)
+      }
+
       // Mark selected avatars as researched
       const avatarsWithResearch = allAvatars.map(avatar => ({
         ...avatar,

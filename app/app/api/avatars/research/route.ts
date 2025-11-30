@@ -27,6 +27,9 @@ export async function POST(request: NextRequest) {
       return createValidationErrorResponse('Job not found', 404)
     }
 
+    // Check if parent job is an avatar extraction job (is_avatar_job = true and no parent_job_id)
+    const isAvatarExtractionJob = parentJob.is_avatar_job && !parentJob.parent_job_id
+
     // Get avatars from parent job
     const avatars = parentJob.avatars || []
     const selectedAvatar = avatars.find((a: any) => a.persona_name === personaName)
@@ -35,25 +38,33 @@ export async function POST(request: NextRequest) {
       return createValidationErrorResponse('Avatar not found in job', 404)
     }
 
-    // Check if avatar job already exists for this persona
-    const existingAvatarJob = await query(
-      `SELECT * FROM jobs 
-       WHERE parent_job_id = $1 
-       AND avatar_persona_name = $2 
-       AND user_id = $3
-       LIMIT 1`,
-      [jobId, personaName, user.id]
-    )
+    // Check if research job already exists for this persona
+    // For avatar extraction jobs, we look for regular research jobs (not avatar jobs)
+    // For regular jobs, we look for avatar research jobs
+    const existingJobQuery = isAvatarExtractionJob
+      ? `SELECT * FROM jobs 
+         WHERE parent_job_id = $1 
+         AND avatar_persona_name = $2 
+         AND user_id = $3
+         AND (is_avatar_job IS NULL OR is_avatar_job = FALSE)
+         LIMIT 1`
+      : `SELECT * FROM jobs 
+         WHERE parent_job_id = $1 
+         AND avatar_persona_name = $2 
+         AND user_id = $3
+         LIMIT 1`
+
+    const existingAvatarJob = await query(existingJobQuery, [jobId, personaName, user.id])
 
     if (existingAvatarJob.rows.length > 0) {
-      // Avatar job already exists, return it
-      const avatarJob = existingAvatarJob.rows[0]
+      // Research job already exists, return it
+      const researchJob = existingAvatarJob.rows[0]
 
       // Update parent job's avatar to mark as researched
       const updatedAvatars = avatars.map((avatar: any) => ({
         ...avatar,
         is_researched: avatar.persona_name === personaName ? true : avatar.is_researched,
-        avatar_job_id: avatar.persona_name === personaName ? avatarJob.id : avatar.avatar_job_id
+        avatar_job_id: avatar.persona_name === personaName ? researchJob.id : avatar.avatar_job_id
       }))
 
       await query(
@@ -62,8 +73,8 @@ export async function POST(request: NextRequest) {
       )
 
       return createSuccessResponse({
-        job: avatarJob,
-        message: 'Avatar job already exists'
+        job: researchJob,
+        message: 'Research job already exists'
       })
     }
 
@@ -106,28 +117,30 @@ export async function POST(request: NextRequest) {
       return handleApiError(apiError)
     }
 
-    // Create NEW job for this avatar
-    const avatarJob = await createJob({
+    // Create NEW research job for this avatar
+    // If parent is an avatar extraction job, create a regular research job (not is_avatar_job)
+    // If parent is a regular job, create an avatar research job (is_avatar_job = true)
+    const researchJob = await createJob({
       user_id: user.id,
       title: `${parentJob.title} - ${personaName}`,
-      brand_info: parentJob.brand_info,
+      brand_info: parentJob.brand_info || '',
       sales_page_url: parentJob.sales_page_url,
       template_id: undefined,
       advertorial_type: 'advertorial',
-      target_approach: parentJob.target_approach,
+      target_approach: parentJob.target_approach || 'aggressive',
       avatars: [selectedAvatar], // Only this avatar
       execution_id: deepCopyJobId,
       custom_id: deepCopyJobId,
       parent_job_id: jobId,
       avatar_persona_name: personaName,
-      is_avatar_job: true
+      is_avatar_job: !isAvatarExtractionJob // Only set to true if parent is NOT an avatar extraction job
     })
 
-    // Update parent job's avatar to mark as researched and link to avatar job
+    // Update parent job's avatar to mark as researched and link to research job
     const updatedAvatars = avatars.map((avatar: any) => ({
       ...avatar,
       is_researched: avatar.persona_name === personaName ? true : avatar.is_researched,
-      avatar_job_id: avatar.persona_name === personaName ? avatarJob.id : avatar.avatar_job_id
+      avatar_job_id: avatar.persona_name === personaName ? researchJob.id : avatar.avatar_job_id
     }))
 
     await query(
@@ -135,8 +148,8 @@ export async function POST(request: NextRequest) {
       [JSON.stringify(updatedAvatars), jobId]
     )
 
-    // Update avatar job status to processing
-    await updateJobStatus(avatarJob.id, 'processing', 0)
+    // Update research job status to processing
+    await updateJobStatus(researchJob.id, 'processing', 0)
 
     // Check initial status
     try {
@@ -144,7 +157,7 @@ export async function POST(request: NextRequest) {
 
       if (statusResponse.status === 'SUCCEEDED') {
         const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
-        await createResult(avatarJob.id, '', {
+        await createResult(researchJob.id, '', {
           deepcopy_job_id: deepCopyJobId,
           full_result: result,
           project_name: result.project_name,
@@ -152,13 +165,13 @@ export async function POST(request: NextRequest) {
           job_id: result.job_id,
           generated_at: new Date().toISOString()
         })
-        await updateJobStatus(avatarJob.id, 'completed', 100)
+        await updateJobStatus(researchJob.id, 'completed', 100)
       } else if (statusResponse.status === 'FAILED') {
-        await updateJobStatus(avatarJob.id, 'failed')
+        await updateJobStatus(researchJob.id, 'failed')
       } else if (['RUNNING', 'SUBMITTED', 'PENDING'].includes(statusResponse.status)) {
         const progress = statusResponse.status === 'SUBMITTED' ? 25 :
           statusResponse.status === 'RUNNING' ? 50 : 30
-        await updateJobStatus(avatarJob.id, 'processing', progress)
+        await updateJobStatus(researchJob.id, 'processing', progress)
       }
     } catch (statusError) {
       // Continue even if status check fails
@@ -166,8 +179,8 @@ export async function POST(request: NextRequest) {
     }
 
     return createSuccessResponse({
-      job: avatarJob,
-      message: 'Avatar research job created successfully'
+      job: researchJob,
+      message: 'Research job created successfully'
     })
   } catch (error) {
     return handleApiError(error)
