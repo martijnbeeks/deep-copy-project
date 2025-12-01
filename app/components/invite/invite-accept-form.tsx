@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,7 +15,6 @@ interface InviteAcceptFormProps {
 }
 
 export function InviteAcceptForm({ token, inviteType, waitlistEmail }: InviteAcceptFormProps) {
-  const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -76,9 +74,10 @@ export function InviteAcceptForm({ token, inviteType, waitlistEmail }: InviteAcc
           description: "Organization created successfully. You can now log in.",
         })
 
-        // Redirect to login immediately
-        // Keep isLoading true until redirect happens
-        router.push('/login')
+        // Redirect to login using hard redirect to prevent race condition
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 2000)
       } else {
         // Staff member flow
         if (!staffName || !staffEmail || !username || !password) {
@@ -115,21 +114,22 @@ export function InviteAcceptForm({ token, inviteType, waitlistEmail }: InviteAcc
           description: "Account created. Waiting for admin approval.",
         })
 
-        // Redirect to login immediately
-        // Keep isLoading true until redirect happens
-        router.push('/login')
+        // Redirect to login using hard redirect to prevent race condition
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 2000)
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to accept invite'
       setError(errorMessage)
-      setIsLoading(false) // Only reset loading state on error
       toast({
         title: "Error",
         description: errorMessage,
         variant: "destructive",
       })
+    } finally {
+      setIsLoading(false)
     }
-    // Don't reset isLoading on success - keep form disabled until redirect completes
   }
 
   if (inviteType === 'organization_creator') {

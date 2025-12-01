@@ -550,11 +550,53 @@ export const getInviteLinkByToken = async (token: string): Promise<InviteLink | 
   return result.rows[0] || null
 }
 
-export const markInviteLinkAsUsed = async (token: string, used_by: string): Promise<void> => {
-  await query(
-    'UPDATE invite_links SET used_at = NOW(), used_by = $2, updated_at = NOW() WHERE token = $1',
-    [token, used_by]
-  )
+export const markInviteLinkAsUsed = async (token: string, used_by: string): Promise<boolean> => {
+  console.log('[MARK_INVITE_USED] Starting', { token, used_by, timestamp: new Date().toISOString() })
+  
+  try {
+    const result = await query(
+      'UPDATE invite_links SET used_at = NOW(), used_by = $2, updated_at = NOW() WHERE token = $1 RETURNING id',
+      [token, used_by]
+    )
+    
+    console.log('[MARK_INVITE_USED] Query executed', { 
+      token, 
+      used_by, 
+      rowsAffected: result.rowCount || result.rows.length,
+      returnedIds: result.rows.map(r => r.id)
+    })
+    
+    if (result.rows.length === 0) {
+      console.error('[MARK_INVITE_USED] No rows updated - checking current state', { token, used_by })
+      // Try to fetch the invite to see its current state
+      const currentInvite = await getInviteLinkByToken(token)
+      console.error('[MARK_INVITE_USED] Current invite state', { 
+        token, 
+        currentInvite: currentInvite ? {
+          id: currentInvite.id,
+          usedAt: currentInvite.used_at,
+          usedBy: currentInvite.used_by,
+          token: currentInvite.token
+        } : null
+      })
+      return false
+    }
+    
+    console.log('[MARK_INVITE_USED] Successfully marked invite as used', { 
+      token, 
+      used_by, 
+      inviteId: result.rows[0].id 
+    })
+    return true
+  } catch (error) {
+    console.error('[MARK_INVITE_USED] Exception caught', { 
+      token, 
+      used_by, 
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    })
+    throw error
+  }
 }
 
 export const getInviteLinksByCreator = async (created_by: string): Promise<InviteLink[]> => {
@@ -583,21 +625,30 @@ export const deleteInviteLink = async (id: string): Promise<boolean> => {
 
 // Organization queries
 export const createOrganization = async (name: string, created_by: string): Promise<Organization> => {
-  await ensureUsageLimitsTables()
+  console.log('[CREATE_ORG] Starting createOrganization', { name, created_by, timestamp: new Date().toISOString() })
   
+  console.log('[CREATE_ORG] Calling ensureUsageLimitsTables')
+  await ensureUsageLimitsTables()
+  console.log('[CREATE_ORG] ensureUsageLimitsTables completed')
+  
+  console.log('[CREATE_ORG] Inserting organization into database', { name, created_by })
   const result = await query(
     'INSERT INTO organizations (name, created_by) VALUES ($1, $2) RETURNING *',
     [name, created_by]
   )
+  console.log('[CREATE_ORG] Organization inserted', { orgId: result.rows[0]?.id })
   
   const organization = result.rows[0]
   
   // Automatically create default usage limits for the new organization
+  console.log('[CREATE_ORG] Setting organization usage limits', { orgId: organization.id })
   await setOrganizationUsageLimits(organization.id, {
     deep_research_limit: 3,
     pre_lander_limit: 30
   })
+  console.log('[CREATE_ORG] Usage limits set successfully', { orgId: organization.id })
   
+  console.log('[CREATE_ORG] createOrganization completed', { orgId: organization.id, name: organization.name })
   return organization
 }
 
@@ -712,7 +763,10 @@ export const createUserWithUsername = async (email: string, password: string, na
 
 // Usage Limits Schema Setup
 export const ensureUsageLimitsTables = async (): Promise<void> => {
+  console.log('[ENSURE_TABLES] Starting ensureUsageLimitsTables', { timestamp: new Date().toISOString() })
+  
   // Create organization_usage_limits table
+  console.log('[ENSURE_TABLES] Creating organization_usage_limits table')
   await query(`
     CREATE TABLE IF NOT EXISTS organization_usage_limits (
       organization_id TEXT PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
@@ -722,8 +776,10 @@ export const ensureUsageLimitsTables = async (): Promise<void> => {
       updated_at TIMESTAMP DEFAULT NOW()
     )
   `)
+  console.log('[ENSURE_TABLES] organization_usage_limits table ensured')
 
   // Create organization_usage_tracking table
+  console.log('[ENSURE_TABLES] Creating organization_usage_tracking table')
   await query(`
     CREATE TABLE IF NOT EXISTS organization_usage_tracking (
       id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -736,33 +792,47 @@ export const ensureUsageLimitsTables = async (): Promise<void> => {
       UNIQUE(organization_id, usage_type, week_start_date)
     )
   `)
+  console.log('[ENSURE_TABLES] organization_usage_tracking table ensured')
 
   // Create index for faster lookups
+  console.log('[ENSURE_TABLES] Creating index')
   await query(`
     CREATE INDEX IF NOT EXISTS idx_usage_tracking_org_type_date 
     ON organization_usage_tracking(organization_id, usage_type, week_start_date)
   `)
+  console.log('[ENSURE_TABLES] Index created')
+  console.log('[ENSURE_TABLES] ensureUsageLimitsTables completed')
 }
 
 // Usage Limits Queries
 export const getOrganizationUsageLimits = async (organizationId: string): Promise<OrganizationUsageLimits | null> => {
-  await ensureUsageLimitsTables()
+  console.log('[GET_LIMITS] Starting getOrganizationUsageLimits', { organizationId, timestamp: new Date().toISOString() })
   
+  console.log('[GET_LIMITS] Calling ensureUsageLimitsTables')
+  await ensureUsageLimitsTables()
+  console.log('[GET_LIMITS] ensureUsageLimitsTables completed')
+  
+  console.log('[GET_LIMITS] Querying organization_usage_limits', { organizationId })
   const result = await query(
     'SELECT * FROM organization_usage_limits WHERE organization_id = $1',
     [organizationId]
   )
+  console.log('[GET_LIMITS] Query completed', { organizationId, found: result.rows.length > 0 })
   
   if (result.rows.length === 0) {
+    console.log('[GET_LIMITS] No limits found, creating default limits', { organizationId })
     // Create default limits if they don't exist
     await setOrganizationUsageLimits(organizationId, { deep_research_limit: 3, pre_lander_limit: 30 })
+    console.log('[GET_LIMITS] Default limits created, querying again', { organizationId })
     const newResult = await query(
       'SELECT * FROM organization_usage_limits WHERE organization_id = $1',
       [organizationId]
     )
+    console.log('[GET_LIMITS] Second query completed', { organizationId, found: newResult.rows.length > 0 })
     return newResult.rows[0] || null
   }
   
+  console.log('[GET_LIMITS] Returning existing limits', { organizationId })
   return result.rows[0]
 }
 
@@ -770,11 +840,23 @@ export const setOrganizationUsageLimits = async (
   organizationId: string,
   limits: { deep_research_limit?: number; pre_lander_limit?: number }
 ): Promise<OrganizationUsageLimits> => {
-  await ensureUsageLimitsTables()
+  console.log('[SET_LIMITS] Starting setOrganizationUsageLimits', { organizationId, limits, timestamp: new Date().toISOString() })
   
-  const existing = await getOrganizationUsageLimits(organizationId)
+  console.log('[SET_LIMITS] Calling ensureUsageLimitsTables')
+  await ensureUsageLimitsTables()
+  console.log('[SET_LIMITS] ensureUsageLimitsTables completed')
+  
+  // Directly query to avoid infinite recursion with getOrganizationUsageLimits
+  console.log('[SET_LIMITS] Querying existing usage limits directly', { organizationId })
+  const existingResult = await query(
+    'SELECT * FROM organization_usage_limits WHERE organization_id = $1',
+    [organizationId]
+  )
+  const existing = existingResult.rows[0] || null
+  console.log('[SET_LIMITS] Existing limits retrieved', { organizationId, hasExisting: !!existing })
   
   if (existing) {
+    console.log('[SET_LIMITS] Updating existing limits', { organizationId })
     const updates: string[] = ['updated_at = NOW()']
     const params: any[] = [organizationId]
     
@@ -788,12 +870,15 @@ export const setOrganizationUsageLimits = async (
       params.push(limits.pre_lander_limit)
     }
     
+    console.log('[SET_LIMITS] Executing UPDATE query', { organizationId, updates })
     const result = await query(
       `UPDATE organization_usage_limits SET ${updates.join(', ')} WHERE organization_id = $1 RETURNING *`,
       params
     )
+    console.log('[SET_LIMITS] UPDATE completed', { organizationId, resultId: result.rows[0]?.organization_id })
     return result.rows[0]
   } else {
+    console.log('[SET_LIMITS] Inserting new limits', { organizationId, limits })
     const result = await query(
       `INSERT INTO organization_usage_limits (organization_id, deep_research_limit, pre_lander_limit) 
        VALUES ($1, $2, $3) RETURNING *`,
@@ -803,6 +888,7 @@ export const setOrganizationUsageLimits = async (
         limits.pre_lander_limit ?? 30
       ]
     )
+    console.log('[SET_LIMITS] INSERT completed', { organizationId, resultId: result.rows[0]?.organization_id })
     return result.rows[0]
   }
 }
