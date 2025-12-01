@@ -94,6 +94,10 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
   const selectedAvatars = currentJob?.avatars?.filter((a: any) => a.is_researched === true) || []
   const selectedAvatarNames = selectedAvatars.map((a: any) => a.persona_name).join(', ')
 
+  // Determine the parent job ID for navigation back to avatars
+  // If this is a research job (has parent_job_id), use the parent, otherwise use current job ID
+  const avatarsPageJobId = currentJob?.parent_job_id || params.id
+
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar />
@@ -107,7 +111,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => router.push(`/avatars/${params.id}`)}
+                    onClick={() => router.push(`/avatars/${avatarsPageJobId}`)}
                     className="flex items-center gap-2"
                   >
                     <ArrowLeft className="h-4 w-4" />

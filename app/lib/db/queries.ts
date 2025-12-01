@@ -192,6 +192,7 @@ export const getJobsByUserId = async (userId: string, filters: { status?: string
     FROM jobs j
     LEFT JOIN templates t ON j.template_id = t.id
     WHERE j.user_id = $1
+      AND j.parent_job_id IS NULL
   `
   const params: any[] = [userId]
   const conditions: string[] = []
