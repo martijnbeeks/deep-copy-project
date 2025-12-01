@@ -45,6 +45,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Use DeepCopy job ID (execution_id) if available, otherwise use job.id
+    // Some jobs use DeepCopy job ID as primary key, others store it in execution_id
+    const deepCopyJobId = job.execution_id || job.id
+    logger.log(`🔧 Using DeepCopy job ID: ${deepCopyJobId} (local job ID: ${original_job_id}, execution_id: ${job.execution_id || 'none'})`)
+
     // Determine endpoint based on environment
     const endpoint = isDevMode() ? 'dev/swipe-files/generate' : 'swipe-files/generate'
 
@@ -62,6 +67,7 @@ export async function POST(request: NextRequest) {
         const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 seconds
 
         logger.log(`🔧 ${isDevMode() ? 'DEV MODE' : 'PRODUCTION'}: Submitting swipe file generation to ${endpoint} (attempt ${attempt})`)
+        logger.log(`🔧 Request payload: original_job_id=${deepCopyJobId}, select_angle=${select_angle}`)
 
         const response = await fetch(`${DEEPCOPY_API_URL}${endpoint}?t=${Date.now()}`, {
           method: 'POST',
@@ -74,7 +80,7 @@ export async function POST(request: NextRequest) {
             'Expires': '0'
           },
           body: JSON.stringify({
-            original_job_id,
+            original_job_id: deepCopyJobId, // Use DeepCopy job ID, not local database ID
             select_angle,
             ...(swipe_file_ids && swipe_file_ids.length > 0 && { swipe_file_ids })
           }),

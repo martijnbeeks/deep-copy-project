@@ -227,7 +227,8 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
   const { toast } = useToast()
 
   const fullResult = result.metadata?.full_result
-  const originalJobId = result.metadata?.deepcopy_job_id
+  // Use local database jobId instead of DeepCopy API job ID for API calls
+  const originalJobId = jobId || result.metadata?.deepcopy_job_id
 
   // Memoize HTML processing function for iframes
   const createPreviewHTML = useMemo(() => {
@@ -586,33 +587,78 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
           }
           return
         } else if ((statusData as { status: string }).status === 'FAILED') {
+          // Log the full response to see error details
+          logger.error('❌ Swipe file generation failed. Full response:', statusData)
+          
+          // Extract error message from response if available
+          const errorMessage = (statusData as any).error || 
+                              (statusData as any).message || 
+                              (statusData as any).errorMessage ||
+                              'Swipe file generation job failed on the server'
+          
+          logger.error('❌ Error details:', errorMessage)
+          
           // Remove from generating map on failure
           setGeneratingAngles(prev => {
             const newMap = new Map(prev)
             newMap.delete(angle)
             return newMap
           })
-          throw new Error('Swipe file generation job failed')
+          
+          // Update status
+          setAngleStatuses(prev => {
+            const newMap = new Map(prev)
+            newMap.set(angle, 'FAILED')
+            return newMap
+          })
+          
+          // Show user-friendly error notification
+          toast({
+            title: 'Pre-lander generation failed',
+            description: errorMessage,
+            variant: 'destructive',
+            duration: 5000
+          })
+          
+          throw new Error(`Swipe file generation job failed: ${errorMessage}`)
         }
-      } catch (err) {
+      } catch (err: any) {
+        logger.error(`⚠️ Swipe file polling error (attempt ${attempt}/${maxAttempts}):`, err)
+        
         if (attempt === maxAttempts) {
-          logger.error('Swipe file polling error:', err)
-          // Remove from generating map on timeout
+          // Final attempt failed - show error to user
+          const errorMessage = err?.message || 
+                              err?.error || 
+                              'Failed to check pre-lander generation status. Please try again.'
+          
+          logger.error('❌ Swipe file polling failed after all attempts:', errorMessage)
+          
+          // Remove from generating map on timeout/failure
           setGeneratingAngles(prev => {
             const newMap = new Map(prev)
             newMap.delete(angle)
             return newMap
           })
+          
           setAngleStatuses(prev => {
             const newMap = new Map(prev)
             newMap.set(angle, 'FAILED')
             return newMap
+          })
+          
+          // Show user-friendly error notification
+          toast({
+            title: 'Pre-lander generation failed',
+            description: errorMessage,
+            variant: 'destructive',
+            duration: 5000
           })
         }
       }
     }
 
     // Remove from generating map on timeout
+    logger.warn(`⏱️ Swipe file generation timed out for angle "${angle}" after ${maxAttempts} attempts`)
     setGeneratingAngles(prev => {
       const newMap = new Map(prev)
       newMap.delete(angle)
@@ -622,6 +668,14 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
       const newMap = new Map(prev)
       newMap.set(angle, 'TIMEOUT')
       return newMap
+    })
+    
+    // Show timeout error to user
+    toast({
+      title: 'Pre-lander generation timed out',
+      description: `The pre-lander generation for "${angle}" is taking longer than expected. Please check back later or try again.`,
+      variant: 'destructive',
+      duration: 5000
     })
   }
 
