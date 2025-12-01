@@ -76,10 +76,9 @@ export function InviteAcceptForm({ token, inviteType, waitlistEmail }: InviteAcc
           description: "Organization created successfully. You can now log in.",
         })
 
-        // Redirect to login
-        setTimeout(() => {
-          router.push('/login')
-        }, 2000)
+        // Redirect to login immediately
+        // Keep isLoading true until redirect happens
+        router.push('/login')
       } else {
         // Staff member flow
         if (!staffName || !staffEmail || !username || !password) {
@@ -116,22 +115,21 @@ export function InviteAcceptForm({ token, inviteType, waitlistEmail }: InviteAcc
           description: "Account created. Waiting for admin approval.",
         })
 
-        // Redirect to login
-        setTimeout(() => {
-          router.push('/login')
-        }, 2000)
+        // Redirect to login immediately
+        // Keep isLoading true until redirect happens
+        router.push('/login')
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to accept invite'
       setError(errorMessage)
+      setIsLoading(false) // Only reset loading state on error
       toast({
         title: "Error",
         description: errorMessage,
         variant: "destructive",
       })
-    } finally {
-      setIsLoading(false)
     }
+    // Don't reset isLoading on success - keep form disabled until redirect completes
   }
 
   if (inviteType === 'organization_creator') {
