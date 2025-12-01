@@ -132,7 +132,7 @@ export const getJobsByUserIdWithResults = async (userId: string, filters: { stat
     LEFT JOIN templates t ON j.template_id = t.id
     LEFT JOIN results r ON j.id = r.job_id
     WHERE j.user_id = $1
-      AND (j.is_avatar_job IS NULL OR j.is_avatar_job = FALSE)
+      AND j.parent_job_id IS NULL
   `
   const params: any[] = [userId]
   const conditions: string[] = []
@@ -192,7 +192,6 @@ export const getJobsByUserId = async (userId: string, filters: { status?: string
     FROM jobs j
     LEFT JOIN templates t ON j.template_id = t.id
     WHERE j.user_id = $1
-      AND (j.is_avatar_job IS NULL OR j.is_avatar_job = FALSE)
   `
   const params: any[] = [userId]
   const conditions: string[] = []

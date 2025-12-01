@@ -27,8 +27,9 @@ export async function GET(
 
     const job = result.rows[0]
 
-    // Use the job ID directly as the DeepCopy job ID (since we now use DeepCopy job ID as primary key)
-    const deepCopyJobId = jobId
+    // Use execution_id if available (jobs submitted to DeepCopy have this set),
+    // otherwise use the job ID directly (for jobs created with DeepCopy job ID as primary key)
+    const deepCopyJobId = job.execution_id || jobId
 
     // Get current database status first
     const currentJob = await query(`

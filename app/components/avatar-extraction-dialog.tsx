@@ -12,6 +12,7 @@ import { DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { getGenderIcon } from "@/lib/utils/avatar-utils"
+import { useAuthStore } from "@/stores/auth-store"
 
 interface ExtractedAvatar {
   persona_name: string
@@ -41,7 +42,7 @@ interface AvatarApiResponse {
 interface AvatarExtractionDialogProps {
   isOpen: boolean
   onClose: () => void
-  onAvatarsSelected: (selected: ExtractedAvatar[], all: ExtractedAvatar[], shouldClose?: boolean, autoSubmit?: boolean, productImage?: string) => void
+  onAvatarsSelected: (selected: ExtractedAvatar[], all: ExtractedAvatar[], shouldClose?: boolean, autoSubmit?: boolean, productImage?: string, avatarExtractionJobId?: string) => void
   salesPageUrl: string
   formData: any
   isLoading?: boolean
@@ -55,6 +56,7 @@ function AvatarExtractionDialogComponent({
   formData,
   isLoading = false
 }: AvatarExtractionDialogProps) {
+  const { user } = useAuthStore()
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [avatars, setAvatars] = useState<ExtractedAvatar[]>([])
   const [selectedAvatars, setSelectedAvatars] = useState<Set<number>>(new Set())
@@ -209,7 +211,7 @@ function AvatarExtractionDialogComponent({
           if (resultData.success && resultData.avatars && resultData.avatars.length > 0) {
             clearInterval(progressInterval)
             setLoadingProgress(100)
-            setTimeout(() => {
+            setTimeout(async () => {
               // Mark the first avatar as broad persona when target_approach is "explore"
               const processedAvatars = (resultData.avatars || []).map((avatar: ExtractedAvatar, index: number) => ({
                 ...avatar,
@@ -239,11 +241,44 @@ function AvatarExtractionDialogComponent({
                 }))
               }
 
+              // Save avatar extraction as a job in the database
+              let extractionJobId: string | undefined = undefined
+              try {
+                if (user?.email) {
+                  const saveResponse = await fetch('/api/avatars/save', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${user.email}`
+                    },
+                    body: JSON.stringify({
+                      sales_page_url: salesPageUrl,
+                      avatars: processedAvatars,
+                      product_image: productImage,
+                      title: formData?.title || undefined
+                    })
+                  })
+
+                  if (!saveResponse.ok) {
+                    console.error('Failed to save avatar extraction job:', await saveResponse.text())
+                    // Continue anyway - don't block the user experience
+                  } else {
+                    const saveData = await saveResponse.json()
+                    extractionJobId = saveData.job?.id
+                    console.log('Avatar extraction job saved:', extractionJobId)
+                  }
+                }
+              } catch (saveError) {
+                console.error('Error saving avatar extraction job:', saveError)
+                // Continue anyway - don't block the user experience
+              }
+
               // Save extracted avatars to parent immediately so they persist even if modal is closed
               // Pass empty array for selected avatars since user hasn't selected yet
               // Pass false for shouldClose to keep the modal open for user to select avatars
               // Pass product_image so it can be stored when job is created
-              onAvatarsSelected([], processedAvatars, false, false, productImage)
+              // Pass extractionJobId so parent can update the job instead of creating new
+              onAvatarsSelected([], processedAvatars, false, false, productImage, extractionJobId)
 
               // Show verification dialog after extraction
               setShowVerification(true)
@@ -302,7 +337,9 @@ function AvatarExtractionDialogComponent({
         is_researched: selectedAvatars.has(index) ? true : (avatar.is_researched || false)
       }))
       // Trigger automatic form submission when proceeding
-      onAvatarsSelected(selectedAvatarData, avatarsWithResearch, true, true)
+      // Note: extractionJobId is not available here since we're in handleSubmit, not after extraction
+      // The job ID should already be stored in parent component from the initial extraction
+      onAvatarsSelected(selectedAvatarData, avatarsWithResearch, true, true, undefined, undefined)
     } catch (err) {
       console.error('Submit error:', err)
       setError('Failed to create job. Please try again.')
@@ -348,7 +385,8 @@ function AvatarExtractionDialogComponent({
         }))
 
         // Pass false for shouldClose since dialog is already closing via onClose()
-        onAvatarsSelected(currentSelected, avatarsWithResearch, false)
+        // Note: extractionJobId is not available here, but it should already be stored in parent
+        onAvatarsSelected(currentSelected, avatarsWithResearch, false, false, undefined, undefined)
       }
       onClose()
     }
@@ -731,7 +769,9 @@ function AvatarExtractionDialogComponent({
                       is_researched: selectedAvatars.has(index) ? true : (avatar.is_researched || false)
                     }))
                     // Update formData with verification data and trigger automatic form submission
-                    onAvatarsSelected(selectedAvatarData, avatarsWithResearch, true, true)
+                    // Note: extractionJobId is not available here since we're in verification dialog
+                    // The job ID should already be stored in parent component from the initial extraction
+                    onAvatarsSelected(selectedAvatarData, avatarsWithResearch, true, true, undefined, undefined)
                   } catch (err) {
                     console.error('Submit error:', err)
                     setError('Failed to create job. Please try again.')

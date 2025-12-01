@@ -36,8 +36,8 @@ interface JobCardProps {
   job: JobWithTemplate
   onEdit: (job: JobWithTemplate, e: React.MouseEvent) => void
   onDelete: (job: JobWithTemplate, e: React.MouseEvent) => void
-  onClick: (jobId: string) => void
-  onKeyDown: (e: React.KeyboardEvent, jobId: string) => void
+  onClick: (jobId: string, job?: JobWithTemplate) => void
+  onKeyDown: (e: React.KeyboardEvent, jobId: string, job?: JobWithTemplate) => void
   getStatusBadge: (status: Job["status"]) => React.ReactNode
 }
 
@@ -55,8 +55,8 @@ const JobCard = memo(function JobCard({
       role="button"
       tabIndex={0}
       className="group relative cursor-pointer rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all h-[240px] md:h-[260px] flex flex-col overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-      onClick={() => onClick(job.id)}
-      onKeyDown={(e) => onKeyDown(e, job.id)}
+      onClick={() => onClick(job.id, job)}
+      onKeyDown={(e) => onKeyDown(e, job.id, job)}
       aria-label={`View project ${job.title}`}
     >
       {/* Preview Area */}
@@ -386,14 +386,34 @@ export default function DashboardPage() {
     setDeletingJob(null)
   }, [])
 
-  const handleJobCardClick = useCallback((jobId: string) => {
-    router.push(`/avatars/${jobId}`)
+  const handleJobCardClick = useCallback((jobId: string, job?: JobWithTemplate) => {
+    // Check if this job has avatars - route to avatars page if it does
+    const hasAvatars = job?.avatars && (
+      (Array.isArray(job.avatars) && job.avatars.length > 0) ||
+      (typeof job.avatars === 'string' && job.avatars.length > 0)
+    )
+    
+    if (hasAvatars) {
+      router.push(`/avatars/${jobId}`)
+    } else {
+      // Jobs without avatars route to results page
+      router.push(`/results/${jobId}`)
+    }
   }, [router])
 
-  const handleJobCardKeyDown = useCallback((e: React.KeyboardEvent, jobId: string) => {
+  const handleJobCardKeyDown = useCallback((e: React.KeyboardEvent, jobId: string, job?: JobWithTemplate) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      router.push(`/avatars/${jobId}`)
+      const hasAvatars = job?.avatars && (
+        (Array.isArray(job.avatars) && job.avatars.length > 0) ||
+        (typeof job.avatars === 'string' && job.avatars.length > 0)
+      )
+      
+      if (hasAvatars) {
+        router.push(`/avatars/${jobId}`)
+      } else {
+        router.push(`/results/${jobId}`)
+      }
     }
   }, [router])
 
