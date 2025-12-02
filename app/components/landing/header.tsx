@@ -23,12 +23,15 @@ export const Header = () => {
 
         {/* Navigation Links */}
         <nav className="hidden md:flex items-center gap-8">
-          <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Features
+          <a href="#results" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Results
           </a>
-          <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             How it Works
           </a>
+          {/*<a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            How it Works
+          </a>*/}
           <a href="#faqs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             FAQs
           </a>

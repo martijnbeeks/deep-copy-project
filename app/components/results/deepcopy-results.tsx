@@ -960,7 +960,7 @@ function DeepCopyResultsComponent({
                 templates.push({
                   name:
                     typeof swipeResult.angle === "string" &&
-                    swipeResult.angle.includes(":")
+                      swipeResult.angle.includes(":")
                       ? swipeResult.angle.split(":")[0].trim()
                       : `Angle ${index + 1}`,
                   type: "Marketing Angle",
@@ -1308,9 +1308,8 @@ function DeepCopyResultsComponent({
 
       toast({
         title: "Download started",
-        description: `Downloading ${templatesToDownload.length} template${
-          templatesToDownload.length !== 1 ? "s" : ""
-        } as ZIP file.`,
+        description: `Downloading ${templatesToDownload.length} template${templatesToDownload.length !== 1 ? "s" : ""
+          } as ZIP file.`,
       });
     } catch (error) {
       logger.error("Failed to download templates:", error);
@@ -1383,11 +1382,9 @@ function DeepCopyResultsComponent({
 
       toast({
         title: "Success",
-        description: `Swipe file generation started for ${
-          templateIds.length
-        } template${
-          templateIds.length !== 1 ? "s" : ""
-        }! Templates will appear when ready.`,
+        description: `Swipe file generation started for ${templateIds.length
+          } template${templateIds.length !== 1 ? "s" : ""
+          }! Templates will appear when ready.`,
       });
     } catch (error) {
       toast({
@@ -1451,7 +1448,7 @@ function DeepCopyResultsComponent({
                         return (
                           <>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              {offerBrief.potential_product_names &&
+                              {/*offerBrief.potential_product_names &&
                                 offerBrief.potential_product_names.length >
                                   0 && (
                                   <div className="bg-muted/50 p-4 rounded-lg">
@@ -1473,40 +1470,7 @@ function DeepCopyResultsComponent({
                                       )}
                                     </div>
                                   </div>
-                                )}
-
-                              {(offerBrief.level_of_consciousness ||
-                                offerBrief.level_of_awareness) && (
-                                <div className="bg-muted/50 p-4 rounded-lg">
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {offerBrief.level_of_consciousness && (
-                                      <div className="space-y-2">
-                                        <h4 className="font-medium text-foreground flex items-center gap-2 text-sm">
-                                          <Brain className="w-4 h-4 text-accent" />
-                                          Level of Consciousness
-                                        </h4>
-                                        <p className="text-sm text-muted-foreground capitalize pl-6">
-                                          {offerBrief.level_of_consciousness}
-                                        </p>
-                                      </div>
-                                    )}
-                                    {offerBrief.level_of_awareness && (
-                                      <div className="space-y-2">
-                                        <h4 className="font-medium text-foreground flex items-center gap-2 text-sm">
-                                          <Eye className="w-4 h-4 text-primary" />
-                                          Level of Awareness
-                                        </h4>
-                                        <p className="text-sm text-muted-foreground capitalize pl-6">
-                                          {offerBrief.level_of_awareness.replace(
-                                            /_/g,
-                                            " "
-                                          )}
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
+                                )*/}
 
                               {offerBrief.stage_of_sophistication && (
                                 <div className="bg-muted/50 p-4 rounded-lg col-span-2">
@@ -1522,13 +1486,39 @@ function DeepCopyResultsComponent({
                                   </p>
                                   {offerBrief.stage_of_sophistication
                                     .rationale && (
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      {
-                                        offerBrief.stage_of_sophistication
-                                          .rationale
-                                      }
-                                    </p>
-                                  )}
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        {
+                                          offerBrief.stage_of_sophistication
+                                            .rationale
+                                        }
+                                      </p>
+                                    )}
+                                </div>
+                              )}
+                              {offerBrief.level_of_consciousness && (
+                                <div className="bg-muted/50 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                                    <Brain className="w-4 h-4 text-accent" />
+                                    Level of Consciousness
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground capitalize">
+                                    {offerBrief.level_of_consciousness}
+                                  </p>
+                                </div>
+                              )}
+
+                              {offerBrief.level_of_awareness && (
+                                <div className="bg-muted/50 p-4 rounded-lg">
+                                  <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                                    <Eye className="w-4 h-4 text-primary" />
+                                    Level of Awareness
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground capitalize">
+                                    {offerBrief.level_of_awareness.replace(
+                                      /_/g,
+                                      " "
+                                    )}
+                                  </p>
                                 </div>
                               )}
                             </div>
@@ -1568,55 +1558,55 @@ function DeepCopyResultsComponent({
 
                               {(offerBrief.potential_ump ||
                                 offerBrief.potential_ums) && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  {offerBrief.potential_ump &&
-                                    offerBrief.potential_ump.length > 0 && (
-                                      <div className="bg-muted/50 p-4 rounded-lg">
-                                        <h4 className="font-medium text-foreground mb-2">
-                                          Unique Mechanism (Problem)
-                                        </h4>
-                                        <ul className="space-y-1">
-                                          {offerBrief.potential_ump.map(
-                                            (ump: string, idx: number) => (
-                                              <li
-                                                key={idx}
-                                                className="text-sm text-muted-foreground flex items-start gap-2"
-                                              >
-                                                <span className="text-destructive mt-0.5">
-                                                  •
-                                                </span>
-                                                <span>{ump}</span>
-                                              </li>
-                                            )
-                                          )}
-                                        </ul>
-                                      </div>
-                                    )}
-                                  {offerBrief.potential_ums &&
-                                    offerBrief.potential_ums.length > 0 && (
-                                      <div className="bg-muted/50 p-4 rounded-lg">
-                                        <h4 className="font-medium text-foreground mb-2">
-                                          Unique Mechanism (Solution)
-                                        </h4>
-                                        <ul className="space-y-1">
-                                          {offerBrief.potential_ums.map(
-                                            (ums: string, idx: number) => (
-                                              <li
-                                                key={idx}
-                                                className="text-sm text-muted-foreground flex items-start gap-2"
-                                              >
-                                                <span className="text-primary mt-0.5">
-                                                  •
-                                                </span>
-                                                <span>{ums}</span>
-                                              </li>
-                                            )
-                                          )}
-                                        </ul>
-                                      </div>
-                                    )}
-                                </div>
-                              )}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {offerBrief.potential_ump &&
+                                      offerBrief.potential_ump.length > 0 && (
+                                        <div className="bg-muted/50 p-4 rounded-lg">
+                                          <h4 className="font-medium text-foreground mb-2">
+                                            Unique Mechanism (Problem)
+                                          </h4>
+                                          <ul className="space-y-1">
+                                            {offerBrief.potential_ump.map(
+                                              (ump: string, idx: number) => (
+                                                <li
+                                                  key={idx}
+                                                  className="text-sm text-muted-foreground flex items-start gap-2"
+                                                >
+                                                  <span className="text-destructive mt-0.5">
+                                                    •
+                                                  </span>
+                                                  <span>{ump}</span>
+                                                </li>
+                                              )
+                                            )}
+                                          </ul>
+                                        </div>
+                                      )}
+                                    {offerBrief.potential_ums &&
+                                      offerBrief.potential_ums.length > 0 && (
+                                        <div className="bg-muted/50 p-4 rounded-lg">
+                                          <h4 className="font-medium text-foreground mb-2">
+                                            Unique Mechanism (Solution)
+                                          </h4>
+                                          <ul className="space-y-1">
+                                            {offerBrief.potential_ums.map(
+                                              (ums: string, idx: number) => (
+                                                <li
+                                                  key={idx}
+                                                  className="text-sm text-muted-foreground flex items-start gap-2"
+                                                >
+                                                  <span className="text-primary mt-0.5">
+                                                    •
+                                                  </span>
+                                                  <span>{ums}</span>
+                                                </li>
+                                              )
+                                            )}
+                                          </ul>
+                                        </div>
+                                      )}
+                                  </div>
+                                )}
 
                               {/*{offerBrief.guru && (
                                 <div className="bg-muted/50 p-4 rounded-lg">
@@ -1805,13 +1795,13 @@ function DeepCopyResultsComponent({
                           <div className="bg-muted rounded-lg p-4">
                             <pre className="text-sm whitespace-pre-wrap text-foreground">
                               {typeof fullResult.results.offer_brief ===
-                              "string"
+                                "string"
                                 ? fullResult.results.offer_brief
                                 : JSON.stringify(
-                                    fullResult.results.offer_brief,
-                                    null,
-                                    2
-                                  )}
+                                  fullResult.results.offer_brief,
+                                  null,
+                                  2
+                                )}
                             </pre>
                           </div>
                         );
@@ -1828,595 +1818,594 @@ function DeepCopyResultsComponent({
       {/* Avatar & Marketing */}
       {(fullResult?.results?.avatar_sheet ||
         fullResult?.results?.marketing_angles) && (
-        <div className="mb-12">
-          <Accordion type="single" collapsible>
-            <AccordionItem value="avatar-marketing">
-              <Card className="bg-card/80 border-border/50">
-                <AccordionTrigger className="p-8 hover:no-underline">
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
-                        <User className="w-5 h-5 text-primary-foreground" />
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-foreground">
-                          Avatars & Marketing Angles
-                        </h2>
-                        <p className="text-sm text-muted-foreground">
-                          Customer avatars and marketing angles
-                        </p>
+          <div className="mb-12">
+            <Accordion type="single" collapsible>
+              <AccordionItem value="avatar-marketing">
+                <Card className="bg-card/80 border-border/50">
+                  <AccordionTrigger className="p-8 hover:no-underline">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
+                          <User className="w-5 h-5 text-primary-foreground" />
+                        </div>
+                        <div>
+                          <h2 className="text-2xl font-bold text-foreground">
+                            Avatars & Marketing Angles
+                          </h2>
+                          <p className="text-sm text-muted-foreground">
+                            Customer avatars and marketing angles
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </AccordionTrigger>
+                  </AccordionTrigger>
 
-                <AccordionContent>
-                  <div className="px-8 pb-8 space-y-6 border-t border-border/50 pt-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {fullResult?.results?.avatar_sheet && (
-                        <div className="space-y-4">
-                          <h4 className="text-lg font-semibold mb-4">
-                            {customerAvatars?.[0]?.persona_name ||
-                              "Customer Avatar"}
-                          </h4>
-                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-4 border border-blue-200/50 dark:border-blue-800/50">
-                            {(() => {
-                              try {
-                                const avatarData = JSON.parse(
-                                  fullResult.results.avatar_sheet
-                                );
+                  <AccordionContent>
+                    <div className="px-8 pb-8 space-y-6 border-t border-border/50 pt-6">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {fullResult?.results?.avatar_sheet && (
+                          <div className="space-y-4">
+                            <h4 className="text-lg font-semibold mb-4">
+                              {customerAvatars?.[0]?.persona_name ||
+                                "Customer Avatar"}
+                            </h4>
+                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-4 border border-blue-200/50 dark:border-blue-800/50">
+                              {(() => {
+                                try {
+                                  const avatarData = JSON.parse(
+                                    fullResult.results.avatar_sheet
+                                  );
 
-                                // Build array of all available accordion items to open by default
-                                const defaultOpenItems = ["demographics"];
-                                if (
-                                  avatarData.demographics
-                                    ?.professional_backgrounds
-                                ) {
-                                  defaultOpenItems.push(
-                                    "professional-background"
+                                  // Build array of all available accordion items to open by default
+                                  const defaultOpenItems = ["demographics"];
+                                  if (
+                                    avatarData.demographics
+                                      ?.professional_backgrounds
+                                  ) {
+                                    defaultOpenItems.push(
+                                      "professional-background"
+                                    );
+                                  }
+                                  if (
+                                    avatarData.demographics?.typical_identities
+                                  ) {
+                                    defaultOpenItems.push("identities");
+                                  }
+                                  if (avatarData.pain_points) {
+                                    defaultOpenItems.push("pain-points");
+                                  }
+                                  if (avatarData.goals) {
+                                    defaultOpenItems.push("goals");
+                                  }
+
+                                  return (
+                                    <Accordion
+                                      type="multiple"
+                                      className="w-full"
+                                      defaultValue={defaultOpenItems}
+                                    >
+                                      {/* Demographics */}
+                                      <AccordionItem
+                                        value="demographics"
+                                        className="border-none"
+                                      >
+                                        <AccordionTrigger className="py-2 hover:no-underline">
+                                          <div className="flex items-center gap-2">
+                                            <Users className="h-4 w-4 text-primary" />
+                                            <span className="font-semibold text-foreground text-sm">
+                                              Demographics
+                                            </span>
+                                          </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-2">
+                                          <div className="space-y-3">
+                                            <div className="grid grid-cols-2 gap-3 text-sm">
+                                              <div>
+                                                <p className="text-muted-foreground text-xs">
+                                                  Age
+                                                </p>
+                                                <p className="font-medium text-foreground">
+                                                  {avatarData.demographics
+                                                    ?.age_range || "N/A"}
+                                                </p>
+                                              </div>
+                                              <div>
+                                                <p className="text-muted-foreground text-xs">
+                                                  Gender
+                                                </p>
+                                                <p className="font-medium text-foreground">
+                                                  {avatarData.demographics?.gender
+                                                    ?.map((g: string) =>
+                                                      capitalizeFirst(g)
+                                                    )
+                                                    .join(", ") || "N/A"}
+                                                </p>
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <p className="text-muted-foreground text-xs mb-1">
+                                                Locations
+                                              </p>
+                                              <div className="flex flex-wrap gap-1">
+                                                {avatarData.demographics?.locations?.map(
+                                                  (
+                                                    location: string,
+                                                    index: number
+                                                  ) => (
+                                                    <Badge
+                                                      key={index}
+                                                      variant="secondary"
+                                                      className="text-xs px-2 py-0.5"
+                                                    >
+                                                      {location}
+                                                    </Badge>
+                                                  )
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </AccordionContent>
+                                      </AccordionItem>
+
+                                      {/* Professional Background */}
+                                      {avatarData.demographics
+                                        ?.professional_backgrounds && (
+                                          <AccordionItem
+                                            value="professional-background"
+                                            className="border-none"
+                                          >
+                                            <AccordionTrigger className="py-2 hover:no-underline">
+                                              <div className="flex items-center gap-2">
+                                                <Briefcase className="h-4 w-4 text-accent" />
+                                                <span className="font-semibold text-foreground text-sm">
+                                                  Professional Background
+                                                </span>
+                                              </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent className="pt-2">
+                                              <div className="flex flex-wrap gap-1">
+                                                {avatarData.demographics.professional_backgrounds.map(
+                                                  (bg: string, index: number) => (
+                                                    <Badge
+                                                      key={index}
+                                                      variant="outline"
+                                                      className="text-sm px-2 py-0.5"
+                                                    >
+                                                      {bg}
+                                                    </Badge>
+                                                  )
+                                                )}
+                                              </div>
+                                            </AccordionContent>
+                                          </AccordionItem>
+                                        )}
+
+                                      {/* Identities */}
+                                      {avatarData.demographics
+                                        ?.typical_identities && (
+                                          <AccordionItem
+                                            value="identities"
+                                            className="border-none"
+                                          >
+                                            <AccordionTrigger className="py-2 hover:no-underline">
+                                              <div className="flex items-center gap-2">
+                                                <Sparkles className="h-4 w-4 text-accent" />
+                                                <span className="font-semibold text-foreground text-sm">
+                                                  Identities
+                                                </span>
+                                              </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent className="pt-2">
+                                              <div className="flex flex-wrap gap-1">
+                                                {avatarData.demographics.typical_identities.map(
+                                                  (
+                                                    identity: string,
+                                                    index: number
+                                                  ) => (
+                                                    <Badge
+                                                      key={index}
+                                                      variant="secondary"
+                                                      className="text-sm px-2 py-0.5"
+                                                    >
+                                                      {identity}
+                                                    </Badge>
+                                                  )
+                                                )}
+                                              </div>
+                                            </AccordionContent>
+                                          </AccordionItem>
+                                        )}
+
+                                      {/* Pain Points */}
+                                      {avatarData.pain_points && (
+                                        <AccordionItem
+                                          value="pain-points"
+                                          className="border-none"
+                                        >
+                                          <AccordionTrigger className="py-2 hover:no-underline">
+                                            <div className="flex items-center gap-2">
+                                              <AlertTriangle className="h-4 w-4 text-destructive" />
+                                              <span className="font-semibold text-foreground text-sm">
+                                                Pain Points
+                                              </span>
+                                            </div>
+                                          </AccordionTrigger>
+                                          <AccordionContent className="pt-2">
+                                            <div className="space-y-2">
+                                              {avatarData.pain_points
+                                                .slice(0, 3)
+                                                .map(
+                                                  (
+                                                    painPoint: any,
+                                                    index: number
+                                                  ) => (
+                                                    <div
+                                                      key={index}
+                                                      className="bg-destructive/5 border border-destructive/20 p-2 rounded-lg"
+                                                    >
+                                                      <h6 className="font-medium text-foreground text-sm mb-1">
+                                                        {painPoint.title}
+                                                      </h6>
+                                                      <ul className="space-y-0.5">
+                                                        {painPoint.bullets
+                                                          ?.slice(0, 2)
+                                                          .map(
+                                                            (
+                                                              bullet: string,
+                                                              bulletIndex: number
+                                                            ) => (
+                                                              <li
+                                                                key={bulletIndex}
+                                                                className="text-sm text-muted-foreground flex items-start gap-1"
+                                                              >
+                                                                <span className="text-destructive mt-0.5">
+                                                                  •
+                                                                </span>
+                                                                <span className="break-words">
+                                                                  {bullet}
+                                                                </span>
+                                                              </li>
+                                                            )
+                                                          )}
+                                                      </ul>
+                                                    </div>
+                                                  )
+                                                )}
+                                            </div>
+                                          </AccordionContent>
+                                        </AccordionItem>
+                                      )}
+
+                                      {/* Goals */}
+                                      {avatarData.goals && (
+                                        <AccordionItem
+                                          value="goals"
+                                          className="border-none"
+                                        >
+                                          <AccordionTrigger className="py-2 hover:no-underline">
+                                            <div className="flex items-center gap-2">
+                                              <Star className="h-4 w-4 text-primary" />
+                                              <span className="font-semibold text-foreground text-sm">
+                                                Goals
+                                              </span>
+                                            </div>
+                                          </AccordionTrigger>
+                                          <AccordionContent className="pt-2">
+                                            <div className="grid grid-cols-1 gap-2">
+                                              <div>
+                                                <h6 className="font-medium text-foreground text-sm mb-1">
+                                                  Short Term
+                                                </h6>
+                                                <ul className="space-y-0.5">
+                                                  {avatarData.goals.short_term
+                                                    ?.slice(0, 2)
+                                                    .map(
+                                                      (
+                                                        goal: string,
+                                                        index: number
+                                                      ) => (
+                                                        <li
+                                                          key={index}
+                                                          className="text-sm text-muted-foreground flex items-start gap-1"
+                                                        >
+                                                          <span className="text-primary mt-0.5">
+                                                            ✓
+                                                          </span>
+                                                          <span className="break-words">
+                                                            {goal}
+                                                          </span>
+                                                        </li>
+                                                      )
+                                                    )}
+                                                </ul>
+                                              </div>
+                                              <div>
+                                                <h6 className="font-medium text-foreground text-sm mb-1">
+                                                  Long Term
+                                                </h6>
+                                                <ul className="space-y-0.5">
+                                                  {avatarData.goals.long_term
+                                                    ?.slice(0, 2)
+                                                    .map(
+                                                      (
+                                                        goal: string,
+                                                        index: number
+                                                      ) => (
+                                                        <li
+                                                          key={index}
+                                                          className="text-sm text-muted-foreground flex items-start gap-1"
+                                                        >
+                                                          <span className="text-primary mt-0.5">
+                                                            ✓
+                                                          </span>
+                                                          <span className="break-words">
+                                                            {goal}
+                                                          </span>
+                                                        </li>
+                                                      )
+                                                    )}
+                                                </ul>
+                                              </div>
+                                            </div>
+                                          </AccordionContent>
+                                        </AccordionItem>
+                                      )}
+                                    </Accordion>
+                                  );
+                                } catch (error) {
+                                  return (
+                                    <div className="bg-muted rounded-lg p-4">
+                                      <pre className="text-sm whitespace-pre-wrap text-foreground">
+                                        {fullResult.results.avatar_sheet}
+                                      </pre>
+                                    </div>
                                   );
                                 }
-                                if (
-                                  avatarData.demographics?.typical_identities
-                                ) {
-                                  defaultOpenItems.push("identities");
-                                }
-                                if (avatarData.pain_points) {
-                                  defaultOpenItems.push("pain-points");
-                                }
-                                if (avatarData.goals) {
-                                  defaultOpenItems.push("goals");
-                                }
+                              })()}
+                            </div>
+                          </div>
+                        )}
+                        {fullResult?.results?.marketing_angles && (
+                          <div className="space-y-4">
+                            <h4 className="text-lg font-semibold mb-4">
+                              Marketing Angles
+                            </h4>
+                            <Accordion
+                              type="single"
+                              collapsible
+                              className="w-full space-y-3"
+                              value={openMarketingAngle}
+                              onValueChange={setOpenMarketingAngle}
+                            >
+                              {fullResult.results.marketing_angles.map(
+                                (angle: string | Angle, index: number) => {
+                                  const {
+                                    angleObj,
+                                    angleTitle,
+                                    angleDescription,
+                                    angleString,
+                                  } = parseAngle(angle);
+                                  const isGenerated =
+                                    generatedAngles.has(angleString);
+                                  const isGenerating =
+                                    generatingAngles.has(angleString);
+                                  const status = angleStatuses.get(angleString);
+                                  const itemValue = `angle-${index}`;
+                                  const isOpen = openMarketingAngle === itemValue;
 
-                                return (
-                                  <Accordion
-                                    type="multiple"
-                                    className="w-full"
-                                    defaultValue={defaultOpenItems}
-                                  >
-                                    {/* Demographics */}
+                                  return (
                                     <AccordionItem
-                                      value="demographics"
+                                      key={index}
+                                      value={itemValue}
                                       className="border-none"
                                     >
-                                      <AccordionTrigger className="py-2 hover:no-underline">
-                                        <div className="flex items-center gap-2">
-                                          <Users className="h-4 w-4 text-primary" />
-                                          <span className="font-semibold text-foreground text-sm">
-                                            Demographics
-                                          </span>
-                                        </div>
-                                      </AccordionTrigger>
-                                      <AccordionContent className="pt-2">
-                                        <div className="space-y-3">
-                                          <div className="grid grid-cols-2 gap-3 text-sm">
-                                            <div>
-                                              <p className="text-muted-foreground text-xs">
-                                                Age
-                                              </p>
-                                              <p className="font-medium text-foreground">
-                                                {avatarData.demographics
-                                                  ?.age_range || "N/A"}
-                                              </p>
-                                            </div>
-                                            <div>
-                                              <p className="text-muted-foreground text-xs">
-                                                Gender
-                                              </p>
-                                              <p className="font-medium text-foreground">
-                                                {avatarData.demographics?.gender
-                                                  ?.map((g: string) =>
-                                                    capitalizeFirst(g)
-                                                  )
-                                                  .join(", ") || "N/A"}
-                                              </p>
-                                            </div>
-                                          </div>
-                                          <div>
-                                            <p className="text-muted-foreground text-xs mb-1">
-                                              Locations
-                                            </p>
-                                            <div className="flex flex-wrap gap-1">
-                                              {avatarData.demographics?.locations?.map(
-                                                (
-                                                  location: string,
-                                                  index: number
-                                                ) => (
-                                                  <Badge
-                                                    key={index}
-                                                    variant="secondary"
-                                                    className="text-xs px-2 py-0.5"
-                                                  >
-                                                    {location}
-                                                  </Badge>
-                                                )
-                                              )}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </AccordionContent>
-                                    </AccordionItem>
-
-                                    {/* Professional Background */}
-                                    {avatarData.demographics
-                                      ?.professional_backgrounds && (
-                                      <AccordionItem
-                                        value="professional-background"
-                                        className="border-none"
-                                      >
-                                        <AccordionTrigger className="py-2 hover:no-underline">
-                                          <div className="flex items-center gap-2">
-                                            <Briefcase className="h-4 w-4 text-accent" />
-                                            <span className="font-semibold text-foreground text-sm">
-                                              Professional Background
-                                            </span>
-                                          </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="pt-2">
-                                          <div className="flex flex-wrap gap-1">
-                                            {avatarData.demographics.professional_backgrounds.map(
-                                              (bg: string, index: number) => (
-                                                <Badge
-                                                  key={index}
-                                                  variant="outline"
-                                                  className="text-sm px-2 py-0.5"
-                                                >
-                                                  {bg}
-                                                </Badge>
-                                              )
-                                            )}
-                                          </div>
-                                        </AccordionContent>
-                                      </AccordionItem>
-                                    )}
-
-                                    {/* Identities */}
-                                    {avatarData.demographics
-                                      ?.typical_identities && (
-                                      <AccordionItem
-                                        value="identities"
-                                        className="border-none"
-                                      >
-                                        <AccordionTrigger className="py-2 hover:no-underline">
-                                          <div className="flex items-center gap-2">
-                                            <Sparkles className="h-4 w-4 text-accent" />
-                                            <span className="font-semibold text-foreground text-sm">
-                                              Identities
-                                            </span>
-                                          </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="pt-2">
-                                          <div className="flex flex-wrap gap-1">
-                                            {avatarData.demographics.typical_identities.map(
-                                              (
-                                                identity: string,
-                                                index: number
-                                              ) => (
-                                                <Badge
-                                                  key={index}
-                                                  variant="secondary"
-                                                  className="text-sm px-2 py-0.5"
-                                                >
-                                                  {identity}
-                                                </Badge>
-                                              )
-                                            )}
-                                          </div>
-                                        </AccordionContent>
-                                      </AccordionItem>
-                                    )}
-
-                                    {/* Pain Points */}
-                                    {avatarData.pain_points && (
-                                      <AccordionItem
-                                        value="pain-points"
-                                        className="border-none"
-                                      >
-                                        <AccordionTrigger className="py-2 hover:no-underline">
-                                          <div className="flex items-center gap-2">
-                                            <AlertTriangle className="h-4 w-4 text-destructive" />
-                                            <span className="font-semibold text-foreground text-sm">
-                                              Pain Points
-                                            </span>
-                                          </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="pt-2">
-                                          <div className="space-y-2">
-                                            {avatarData.pain_points
-                                              .slice(0, 3)
-                                              .map(
-                                                (
-                                                  painPoint: any,
-                                                  index: number
-                                                ) => (
-                                                  <div
-                                                    key={index}
-                                                    className="bg-destructive/5 border border-destructive/20 p-2 rounded-lg"
-                                                  >
-                                                    <h6 className="font-medium text-foreground text-sm mb-1">
-                                                      {painPoint.title}
-                                                    </h6>
-                                                    <ul className="space-y-0.5">
-                                                      {painPoint.bullets
-                                                        ?.slice(0, 2)
-                                                        .map(
-                                                          (
-                                                            bullet: string,
-                                                            bulletIndex: number
-                                                          ) => (
-                                                            <li
-                                                              key={bulletIndex}
-                                                              className="text-sm text-muted-foreground flex items-start gap-1"
-                                                            >
-                                                              <span className="text-destructive mt-0.5">
-                                                                •
-                                                              </span>
-                                                              <span className="break-words">
-                                                                {bullet}
-                                                              </span>
-                                                            </li>
-                                                          )
-                                                        )}
-                                                    </ul>
-                                                  </div>
-                                                )
-                                              )}
-                                          </div>
-                                        </AccordionContent>
-                                      </AccordionItem>
-                                    )}
-
-                                    {/* Goals */}
-                                    {avatarData.goals && (
-                                      <AccordionItem
-                                        value="goals"
-                                        className="border-none"
-                                      >
-                                        <AccordionTrigger className="py-2 hover:no-underline">
-                                          <div className="flex items-center gap-2">
-                                            <Star className="h-4 w-4 text-primary" />
-                                            <span className="font-semibold text-foreground text-sm">
-                                              Goals
-                                            </span>
-                                          </div>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="pt-2">
-                                          <div className="grid grid-cols-1 gap-2">
-                                            <div>
-                                              <h6 className="font-medium text-foreground text-sm mb-1">
-                                                Short Term
-                                              </h6>
-                                              <ul className="space-y-0.5">
-                                                {avatarData.goals.short_term
-                                                  ?.slice(0, 2)
-                                                  .map(
-                                                    (
-                                                      goal: string,
-                                                      index: number
-                                                    ) => (
-                                                      <li
-                                                        key={index}
-                                                        className="text-sm text-muted-foreground flex items-start gap-1"
-                                                      >
-                                                        <span className="text-primary mt-0.5">
-                                                          ✓
-                                                        </span>
-                                                        <span className="break-words">
-                                                          {goal}
-                                                        </span>
-                                                      </li>
-                                                    )
-                                                  )}
-                                              </ul>
-                                            </div>
-                                            <div>
-                                              <h6 className="font-medium text-foreground text-sm mb-1">
-                                                Long Term
-                                              </h6>
-                                              <ul className="space-y-0.5">
-                                                {avatarData.goals.long_term
-                                                  ?.slice(0, 2)
-                                                  .map(
-                                                    (
-                                                      goal: string,
-                                                      index: number
-                                                    ) => (
-                                                      <li
-                                                        key={index}
-                                                        className="text-sm text-muted-foreground flex items-start gap-1"
-                                                      >
-                                                        <span className="text-primary mt-0.5">
-                                                          ✓
-                                                        </span>
-                                                        <span className="break-words">
-                                                          {goal}
-                                                        </span>
-                                                      </li>
-                                                    )
-                                                  )}
-                                              </ul>
-                                            </div>
-                                          </div>
-                                        </AccordionContent>
-                                      </AccordionItem>
-                                    )}
-                                  </Accordion>
-                                );
-                              } catch (error) {
-                                return (
-                                  <div className="bg-muted rounded-lg p-4">
-                                    <pre className="text-sm whitespace-pre-wrap text-foreground">
-                                      {fullResult.results.avatar_sheet}
-                                    </pre>
-                                  </div>
-                                );
-                              }
-                            })()}
-                          </div>
-                        </div>
-                      )}
-                      {fullResult?.results?.marketing_angles && (
-                        <div className="space-y-4">
-                          <h4 className="text-lg font-semibold mb-4">
-                            Marketing Angles
-                          </h4>
-                          <Accordion
-                            type="single"
-                            collapsible
-                            className="w-full space-y-3"
-                            value={openMarketingAngle}
-                            onValueChange={setOpenMarketingAngle}
-                          >
-                            {fullResult.results.marketing_angles.map(
-                              (angle: string | Angle, index: number) => {
-                                const {
-                                  angleObj,
-                                  angleTitle,
-                                  angleDescription,
-                                  angleString,
-                                } = parseAngle(angle);
-                                const isGenerated =
-                                  generatedAngles.has(angleString);
-                                const isGenerating =
-                                  generatingAngles.has(angleString);
-                                const status = angleStatuses.get(angleString);
-                                const itemValue = `angle-${index}`;
-                                const isOpen = openMarketingAngle === itemValue;
-
-                                return (
-                                  <AccordionItem
-                                    key={index}
-                                    value={itemValue}
-                                    className="border-none"
-                                  >
-                                    <Card
-                                      className={`p-0 transition-all hover:shadow-md cursor-pointer ${
-                                        isGenerated
+                                      <Card
+                                        className={`p-0 transition-all hover:shadow-md cursor-pointer ${isGenerated
                                           ? "border-2 border-green-500 bg-green-50/50 dark:bg-green-950/20"
                                           : "border border-border hover:border-primary/50"
-                                      }`}
-                                      onClick={() => {
-                                        setOpenMarketingAngle(
-                                          isOpen ? undefined : itemValue
-                                        );
-                                      }}
-                                    >
-                                      <div className="p-4">
-                                        <div className="flex items-center justify-between">
-                                          <div className="flex items-center gap-2 flex-1">
-                                            <AngleStatusIcon
-                                              isGenerated={isGenerated}
-                                              isGenerating={isGenerating}
-                                            />
-                                            <div className="flex-1">
-                                              {angleTitle && (
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                  <Badge
-                                                    variant="outline"
-                                                    className="text-xs font-semibold bg-muted text-foreground border-border"
-                                                  >
-                                                    #{index + 1}
-                                                  </Badge>
-                                                  <h3 className="text-base font-semibold text-foreground">
-                                                    {angleTitle}
-                                                  </h3>
-                                                </div>
+                                          }`}
+                                        onClick={() => {
+                                          setOpenMarketingAngle(
+                                            isOpen ? undefined : itemValue
+                                          );
+                                        }}
+                                      >
+                                        <div className="p-4">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 flex-1">
+                                              <AngleStatusIcon
+                                                isGenerated={isGenerated}
+                                                isGenerating={isGenerating}
+                                              />
+                                              <div className="flex-1">
+                                                {angleTitle && (
+                                                  <div className="flex items-center gap-2 flex-wrap">
+                                                    <Badge
+                                                      variant="outline"
+                                                      className="text-xs font-semibold bg-muted text-foreground border-border"
+                                                    >
+                                                      #{index + 1}
+                                                    </Badge>
+                                                    <h3 className="text-base font-semibold text-foreground">
+                                                      {angleTitle}
+                                                    </h3>
+                                                  </div>
+                                                )}
+                                                <p className="text-sm text-muted-foreground mt-1">
+                                                  {angleDescription}
+                                                </p>
+                                              </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                              {isGenerated && (
+                                                <Badge
+                                                  variant="outline"
+                                                  className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
+                                                >
+                                                  Generated
+                                                </Badge>
                                               )}
-                                              <p className="text-sm text-muted-foreground mt-1">
-                                                {angleDescription}
-                                              </p>
+                                              {isGenerating && status && (
+                                                <Badge
+                                                  variant="outline"
+                                                  className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800"
+                                                >
+                                                  {status}
+                                                </Badge>
+                                              )}
+                                              <AccordionTrigger className="pointer-events-none" />
                                             </div>
                                           </div>
-                                          <div className="flex items-center gap-2">
-                                            {isGenerated && (
-                                              <Badge
-                                                variant="outline"
-                                                className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
-                                              >
-                                                Generated
-                                              </Badge>
-                                            )}
-                                            {isGenerating && status && (
-                                              <Badge
-                                                variant="outline"
-                                                className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800"
-                                              >
-                                                {status}
-                                              </Badge>
-                                            )}
-                                            <AccordionTrigger className="pointer-events-none" />
-                                          </div>
                                         </div>
-                                      </div>
-                                      <AccordionContent className="px-4 pb-4">
-                                        {angleObj && (
-                                          <div className="space-y-4">
-                                            {angleObj?.target_age_range && (
-                                              <div>
-                                                <h6 className="text-xs font-semibold text-foreground uppercase mb-1">
-                                                  Target Age Range
-                                                </h6>
-                                                <p className="text-sm text-muted-foreground">
-                                                  {angleObj.target_age_range}
-                                                </p>
-                                              </div>
-                                            )}
-                                            {angleObj?.target_audience && (
-                                              <div>
-                                                <h6 className="text-xs font-semibold text-foreground uppercase mb-1">
-                                                  Target Audience
-                                                </h6>
-                                                <p className="text-sm text-muted-foreground">
-                                                  {angleObj.target_audience}
-                                                </p>
-                                              </div>
-                                            )}
-                                            <AngleListSection
-                                              title="Pain Points"
-                                              items={angleObj?.pain_points}
-                                            />
-                                            <AngleListSection
-                                              title="Desires"
-                                              items={angleObj?.desires}
-                                            />
-                                            <AngleListSection
-                                              title="Common Objections"
-                                              items={
-                                                angleObj?.common_objections
-                                              }
-                                            />
-                                            <AngleListSection
-                                              title="Failed Alternatives"
-                                              items={
-                                                angleObj?.failed_alternatives
-                                              }
-                                            />
-                                            <AngleListSection
-                                              title="Copy Approach"
-                                              items={angleObj?.copy_approach}
-                                            />
-                                          </div>
-                                        )}
-                                        <div className="flex justify-end pt-4 border-t border-border/50 mt-4">
-                                          <Button
-                                            onClick={async (e) => {
-                                              e.stopPropagation();
-                                              if (
+                                        <AccordionContent className="px-4 pb-4">
+                                          {angleObj && (
+                                            <div className="space-y-4">
+                                              {angleObj?.target_age_range && (
+                                                <div>
+                                                  <h6 className="text-xs font-semibold text-foreground uppercase mb-1">
+                                                    Target Age Range
+                                                  </h6>
+                                                  <p className="text-sm text-muted-foreground">
+                                                    {angleObj.target_age_range}
+                                                  </p>
+                                                </div>
+                                              )}
+                                              {angleObj?.target_audience && (
+                                                <div>
+                                                  <h6 className="text-xs font-semibold text-foreground uppercase mb-1">
+                                                    Target Audience
+                                                  </h6>
+                                                  <p className="text-sm text-muted-foreground">
+                                                    {angleObj.target_audience}
+                                                  </p>
+                                                </div>
+                                              )}
+                                              <AngleListSection
+                                                title="Pain Points"
+                                                items={angleObj?.pain_points}
+                                              />
+                                              <AngleListSection
+                                                title="Desires"
+                                                items={angleObj?.desires}
+                                              />
+                                              <AngleListSection
+                                                title="Common Objections"
+                                                items={
+                                                  angleObj?.common_objections
+                                                }
+                                              />
+                                              <AngleListSection
+                                                title="Failed Alternatives"
+                                                items={
+                                                  angleObj?.failed_alternatives
+                                                }
+                                              />
+                                              <AngleListSection
+                                                title="Copy Approach"
+                                                items={angleObj?.copy_approach}
+                                              />
+                                            </div>
+                                          )}
+                                          <div className="flex justify-end pt-4 border-t border-border/50 mt-4">
+                                            <Button
+                                              onClick={async (e) => {
+                                                e.stopPropagation();
+                                                if (
+                                                  !originalJobId ||
+                                                  isGenerated ||
+                                                  isGenerating
+                                                )
+                                                  return;
+
+                                                // Add to generating map
+                                                updateGeneratingAngle(
+                                                  angleString,
+                                                  "pending"
+                                                );
+                                                updateAngleStatus(
+                                                  angleString,
+                                                  "SUBMITTED"
+                                                );
+
+                                                try {
+                                                  const data =
+                                                    (await internalApiClient.generateSwipeFiles(
+                                                      {
+                                                        original_job_id:
+                                                          originalJobId,
+                                                        select_angle: angleString,
+                                                      }
+                                                    )) as { jobId?: string };
+
+                                                  // Track this angle as generating
+                                                  if (data.jobId) {
+                                                    updateGeneratingAngle(
+                                                      angleString,
+                                                      data.jobId
+                                                    );
+                                                    // Start polling for this specific angle
+                                                    pollSwipeFileStatus(
+                                                      data.jobId,
+                                                      angleString
+                                                    );
+                                                  }
+                                                } catch (error) {
+                                                  logger.error(
+                                                    "Error generating pre-landers:",
+                                                    error
+                                                  );
+                                                  // Remove from generating map on error
+                                                  removeGeneratingAngle(
+                                                    angleString
+                                                  );
+                                                  removeAngleStatus(angleString);
+
+                                                  // Show user-friendly error message
+                                                  showError(
+                                                    error,
+                                                    "Failed to generate pre-landers. Please try again."
+                                                  );
+                                                }
+                                              }}
+                                              disabled={
                                                 !originalJobId ||
                                                 isGenerated ||
                                                 isGenerating
-                                              )
-                                                return;
-
-                                              // Add to generating map
-                                              updateGeneratingAngle(
-                                                angleString,
-                                                "pending"
-                                              );
-                                              updateAngleStatus(
-                                                angleString,
-                                                "SUBMITTED"
-                                              );
-
-                                              try {
-                                                const data =
-                                                  (await internalApiClient.generateSwipeFiles(
-                                                    {
-                                                      original_job_id:
-                                                        originalJobId,
-                                                      select_angle: angleString,
-                                                    }
-                                                  )) as { jobId?: string };
-
-                                                // Track this angle as generating
-                                                if (data.jobId) {
-                                                  updateGeneratingAngle(
-                                                    angleString,
-                                                    data.jobId
-                                                  );
-                                                  // Start polling for this specific angle
-                                                  pollSwipeFileStatus(
-                                                    data.jobId,
-                                                    angleString
-                                                  );
-                                                }
-                                              } catch (error) {
-                                                logger.error(
-                                                  "Error generating pre-landers:",
-                                                  error
-                                                );
-                                                // Remove from generating map on error
-                                                removeGeneratingAngle(
-                                                  angleString
-                                                );
-                                                removeAngleStatus(angleString);
-
-                                                // Show user-friendly error message
-                                                showError(
-                                                  error,
-                                                  "Failed to generate pre-landers. Please try again."
-                                                );
                                               }
-                                            }}
-                                            disabled={
-                                              !originalJobId ||
-                                              isGenerated ||
-                                              isGenerating
-                                            }
-                                            size="sm"
-                                          >
-                                            {isGenerating ? (
-                                              <>
-                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                Generating...
-                                              </>
-                                            ) : isGenerated ? (
-                                              <>
-                                                <CheckCircle2 className="w-4 h-4 mr-2" />
-                                                Generated
-                                              </>
-                                            ) : (
-                                              "Generate Pre-Landers"
-                                            )}
-                                          </Button>
-                                        </div>
-                                      </AccordionContent>
-                                    </Card>
-                                  </AccordionItem>
-                                );
-                              }
-                            )}
-                          </Accordion>
-                        </div>
-                      )}
+                                              size="sm"
+                                            >
+                                              {isGenerating ? (
+                                                <>
+                                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                  Generating...
+                                                </>
+                                              ) : isGenerated ? (
+                                                <>
+                                                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                                                  Generated
+                                                </>
+                                              ) : (
+                                                "Generate Pre-Landers"
+                                              )}
+                                            </Button>
+                                          </div>
+                                        </AccordionContent>
+                                      </Card>
+                                    </AccordionItem>
+                                  );
+                                }
+                              )}
+                            </Accordion>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </AccordionContent>
-              </Card>
-            </AccordionItem>
-          </Accordion>
-        </div>
-      )}
+                  </AccordionContent>
+                </Card>
+              </AccordionItem>
+            </Accordion>
+          </div>
+        )}
 
       {/* Angle Selection & Swipe File Generation */}
       {/* Always show if we have marketing_angles */}
@@ -2707,7 +2696,7 @@ function DeepCopyResultsComponent({
                                   );
                                 const angleTitle =
                                   selectedAngle &&
-                                  typeof selectedAngle === "object"
+                                    typeof selectedAngle === "object"
                                     ? selectedAngle.title
                                     : selectedAngleFilter;
                                 parts.push(angleTitle);
@@ -2717,15 +2706,12 @@ function DeepCopyResultsComponent({
                               }
 
                               if (parts.length > 0) {
-                                return `${filteredCount} of ${
-                                  templates.length
-                                } template${
-                                  templates.length !== 1 ? "s" : ""
-                                } (${parts.join(", ")})`;
+                                return `${filteredCount} of ${templates.length
+                                  } template${templates.length !== 1 ? "s" : ""
+                                  } (${parts.join(", ")})`;
                               }
-                              return `${templates.length} template${
-                                templates.length !== 1 ? "s" : ""
-                              } generated`;
+                              return `${templates.length} template${templates.length !== 1 ? "s" : ""
+                                } generated`;
                             })()}
                           </p>
                         </div>
@@ -2919,7 +2905,7 @@ function DeepCopyResultsComponent({
                                 <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                                 <p className="text-muted-foreground">
                                   {selectedAngleFilter !== "all" ||
-                                  selectedTypeFilter !== "all"
+                                    selectedTypeFilter !== "all"
                                     ? "No templates found for the selected filters."
                                     : "No templates found for the selected angle."}
                                 </p>
@@ -2937,14 +2923,12 @@ function DeepCopyResultsComponent({
                                 <div className="relative h-48 bg-background overflow-hidden border-b border-border/50">
                                   <div className="absolute inset-0 overflow-hidden">
                                     <iframe
-                                      key={`preview-${template.name}-${
-                                        template.angle || ""
-                                      }-${index}`}
+                                      key={`preview-${template.name}-${template.angle || ""
+                                        }-${index}`}
                                       srcDoc={
                                         templateIframeHTML[
-                                          `${template.name}-${
-                                            template.angle || ""
-                                          }`
+                                        `${template.name}-${template.angle || ""
+                                        }`
                                         ]
                                       }
                                       className="w-full h-full"
@@ -2996,7 +2980,7 @@ function DeepCopyResultsComponent({
                                               }
                                               return (
                                                 ma.angle ===
-                                                  templateAngleDesc ||
+                                                templateAngleDesc ||
                                                 ma.angle === templateAngle
                                               );
                                             }
@@ -3130,8 +3114,8 @@ function DeepCopyResultsComponent({
                                           <DialogDescription>
                                             {template.timestamp
                                               ? new Date(
-                                                  template.timestamp
-                                                ).toLocaleString()
+                                                template.timestamp
+                                              ).toLocaleString()
                                               : "Generated"}
                                           </DialogDescription>
                                         </DialogHeader>
@@ -3147,28 +3131,28 @@ function DeepCopyResultsComponent({
 </head>
 <body>
   ${(() => {
-    const raw = template.html;
-    const hasRealImages =
-      /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(
-        raw
-      );
-    if (!hasRealImages) return raw;
-    const noOnError = raw
-      .replace(/\s+onerror="[^"]*"/gi, "")
-      .replace(/\s+onerror='[^']*'/gi, "");
-    const stripFallbackScripts = noOnError.replace(
-      /<script[\s\S]*?<\/script>/gi,
-      (block) => {
-        const lower = block.toLowerCase();
-        return lower.includes("handlebrokenimages") ||
-          lower.includes("createfallbackimage") ||
-          lower.includes("placehold.co")
-          ? ""
-          : block;
-      }
-    );
-    return stripFallbackScripts;
-  })()}
+                                                const raw = template.html;
+                                                const hasRealImages =
+                                                  /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(
+                                                    raw
+                                                  );
+                                                if (!hasRealImages) return raw;
+                                                const noOnError = raw
+                                                  .replace(/\s+onerror="[^"]*"/gi, "")
+                                                  .replace(/\s+onerror='[^']*'/gi, "");
+                                                const stripFallbackScripts = noOnError.replace(
+                                                  /<script[\s\S]*?<\/script>/gi,
+                                                  (block) => {
+                                                    const lower = block.toLowerCase();
+                                                    return lower.includes("handlebrokenimages") ||
+                                                      lower.includes("createfallbackimage") ||
+                                                      lower.includes("placehold.co")
+                                                      ? ""
+                                                      : block;
+                                                  }
+                                                );
+                                                return stripFallbackScripts;
+                                              })()}
   <script>
     (function(){
       function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }
@@ -3369,14 +3353,14 @@ function DeepCopyResultsComponent({
                       modalTypeFilter === "all"
                         ? availableTemplates
                         : availableTemplates.filter((template: Template) => {
-                            const templateType =
-                              template.category?.toLowerCase() === "listicle"
-                                ? "listicle"
-                                : "advertorial";
-                            return (
-                              templateType === modalTypeFilter.toLowerCase()
-                            );
-                          });
+                          const templateType =
+                            template.category?.toLowerCase() === "listicle"
+                              ? "listicle"
+                              : "advertorial";
+                          return (
+                            templateType === modalTypeFilter.toLowerCase()
+                          );
+                        });
 
                     return (
                       <>
@@ -3501,7 +3485,7 @@ function DeepCopyResultsComponent({
                 </div>
 
                 {fullResult?.results?.marketing_angles &&
-                fullResult.results.marketing_angles.length > 0 ? (
+                  fullResult.results.marketing_angles.length > 0 ? (
                   <Accordion
                     type="single"
                     collapsible
@@ -3529,11 +3513,10 @@ function DeepCopyResultsComponent({
                             className="border-none"
                           >
                             <Card
-                              className={`cursor-pointer transition-all hover:shadow-md ${
-                                isSelected
-                                  ? "border-2 border-primary bg-primary/10"
-                                  : "border border-border hover:border-primary/50"
-                              }`}
+                              className={`cursor-pointer transition-all hover:shadow-md ${isSelected
+                                ? "border-2 border-primary bg-primary/10"
+                                : "border border-border hover:border-primary/50"
+                                }`}
                               onClick={() => {
                                 handleAngleToggle(angleText);
                                 setOpenAngleItem((prev) =>
@@ -3545,9 +3528,8 @@ function DeepCopyResultsComponent({
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2 flex-1">
                                     <div
-                                      className={`bg-primary/10 rounded-full p-1.5 flex-shrink-0 ${
-                                        isSelected ? "bg-primary/20" : ""
-                                      }`}
+                                      className={`bg-primary/10 rounded-full p-1.5 flex-shrink-0 ${isSelected ? "bg-primary/20" : ""
+                                        }`}
                                     >
                                       <Target className="h-4 w-4 text-primary" />
                                     </div>
@@ -3653,7 +3635,7 @@ function DeepCopyResultsComponent({
                                       )}
                                     {angleObj?.failed_alternatives &&
                                       angleObj.failed_alternatives.length >
-                                        0 && (
+                                      0 && (
                                         <div className="pt-2 border-t border-border">
                                           <span className="font-medium">
                                             Failed Alternatives:

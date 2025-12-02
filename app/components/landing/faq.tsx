@@ -44,7 +44,7 @@ export const FAQ = () => {
   ];
 
   return (
-    <section id="faqs" className="py-20 md:py-32 bg-background">
+    <section id="faqs" className="py-10 md:py-16 bg-background">
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-accent/10 rounded-full mb-4 text-sm font-medium text-accent">
@@ -55,7 +55,7 @@ export const FAQ = () => {
           </h2>
         </div>
 
-        <div className="max-w-3xl mx-auto mb-8">
+        {/*<div className="max-w-3xl mx-auto mb-8">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input
@@ -63,10 +63,10 @@ export const FAQ = () => {
               className="pl-10 h-12"
             />
           </div>
-        </div>
+        </div>*/}
 
         <div className="max-w-3xl mx-auto">
-          <Accordion type="single" collapsible className="space-y-4">
+          <Accordion type="single" collapsible defaultValue="item-0" className="space-y-4">
             {faqs.map((faq, index) => (
               <AccordionItem
                 key={index}

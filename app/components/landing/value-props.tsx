@@ -21,7 +21,7 @@ export const ValueProps = () => {
   ];
 
   return (
-    <section className="py-20 md:py-32 bg-background">
+    <section className="py-10 md:py-16 bg-background">
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-accent/10 rounded-full mb-4 text-sm font-medium text-accent">
