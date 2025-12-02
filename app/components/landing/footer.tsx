@@ -33,7 +33,7 @@ export const Footer = () => {
               Build better pages. Close more deals. Let AI do the research.
             </p>
           </div>
-          
+
           {footerSections.map((section, index) => (
             <div key={index}>
               <h4 className="font-semibold mb-4">{section.title}</h4>
@@ -52,10 +52,10 @@ export const Footer = () => {
             </div>
           ))}
         </div>
-        
+
         <div className="border-t pt-8">
           <p className="text-center text-sm text-muted-foreground">
-            ©️ 2025 DeepCopy. All rights reserved.
+            © 2025 DeepCopy. All rights reserved.
           </p>
         </div>
       </div>
