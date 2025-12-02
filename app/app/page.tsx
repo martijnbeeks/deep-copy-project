@@ -19,7 +19,7 @@ export default function LandingPage() {
       <SocialProof />
       <ValueProps />
       <Features />
-      <HowItWorks />
+      {/*<HowItWorks />*/}
       <Testimonials />
       <FAQ />
       <FinalCTA />
