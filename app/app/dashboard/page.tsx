@@ -151,6 +151,7 @@ export default function DashboardPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const { toast } = useToast()
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false)
 
   // Optimistic UI state
   const [optimisticJobs, setOptimisticJobs] = useState<Map<string, Partial<JobWithTemplate>>>(new Map())
@@ -537,7 +538,13 @@ export default function DashboardPage() {
     <ErrorBoundary>
       <div className="flex h-screen bg-background overflow-hidden">
         <OfflineBanner />
-        <Sidebar />
+        <div
+          onMouseEnter={() => setIsSidebarHovered(true)}
+          onMouseLeave={() => setIsSidebarHovered(false)}
+          className="fixed left-0 top-0 h-screen z-50"
+        >
+          <Sidebar />
+        </div>
         <main className="flex-1 overflow-auto ml-16">
           <div className="p-4 md:p-6 pb-24 md:pb-28">
             <div className="mb-6">
@@ -658,7 +665,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Fixed Footer with Action Buttons */}
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border ml-16">
+          <div className={`fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border transition-all duration-300 ${isSidebarHovered ? 'ml-64' : 'ml-16'}`}>
             <div className="px-4 py-2 md:px-6 md:py-3">
               <div className="flex items-center justify-between gap-4">
                 <Button
