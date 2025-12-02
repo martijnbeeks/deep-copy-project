@@ -148,7 +148,7 @@ def lambda_handler(event, context):
     job_id = event.get('job_id')
     select_angle = event.get('select_angle')
     
-    swipe_file_ids = event.get('swipe_file_id')
+    swipe_file_ids = event.get('swipe_file_ids', [])
     # check if swipe_file_ids is a number / string, make a list of it
     if isinstance(swipe_file_ids, (str)):
         swipe_file_ids = [swipe_file_ids]
@@ -261,7 +261,7 @@ if __name__ == "__main__":
         "original_job_id": "03479dbf-bc4c-4472-80ff-b11b561b8777",
         "job_id": "03479dbf-bc4c-4472-80ff-b11b561b8777-swipe",
         "select_angle": "Embarrassment & Professional Confidence: 'Restore the beard you earned—no flakes in meetings.'",
-        "swipe_file_ids": ["A00002"],
+        "swipe_file_ids": ["L00002"],
         "dev_mode": os.environ.get('dev_mode', 'false').lower() == 'true',
     }
     lambda_handler(test_event, {})

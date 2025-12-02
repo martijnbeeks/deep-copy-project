@@ -42,6 +42,7 @@ def handler(event, _context):
     # Detect dev mode
     path = event.get("path", "")
     dev_mode = path.startswith("/dev") or "/dev/" in path
+    dev_mode = True
 
     # Persist initial job record
     try:

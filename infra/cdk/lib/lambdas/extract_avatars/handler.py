@@ -120,7 +120,7 @@ def lambda_handler(event, context):
             logger.info(f"Dev mode detected for job {job_id}. Using mock results.")
             try:
                 # Mock source
-                mock_key = "results/avatars/test-job-123/avatar_extraction_results.json"
+                mock_key = "results/avatars/2a122590-f4a3-4770-a275-81e7cc5d8062/avatar_extraction_results.json"
                 s3_response = s3_client.get_object(Bucket=results_bucket, Key=mock_key)
                 results = json.loads(s3_response['Body'].read().decode('utf-8'))
                 s3_key = save_results_to_s3(job_id, results)
@@ -196,7 +196,8 @@ if __name__ == "__main__":
     os.environ['RESULTS_BUCKET'] = 'deepcopystack-resultsbucketa95a2103-zhwjflrlpfih'
     test_event = {
         "job_id": os.environ.get('job_id'),
-        "url": os.environ.get('url'),
-        "dev_mode": os.environ.get('dev_mode', '').lower() == 'true'
+        "url": os.environ.get('url', "https://trynewaura.com/products/seborrheic-dermatitis-cream"),
+        # "dev_mode": os.environ.get('dev_mode', '').lower() == 'true'
+        "dev_mode": True
     }
     print(lambda_handler(test_event, {}))

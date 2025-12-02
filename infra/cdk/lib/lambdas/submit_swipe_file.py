@@ -6,6 +6,11 @@ from datetime import datetime, timezone
 import boto3
 from botocore.exceptions import ClientError
 
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
 
 _lambda = boto3.client("lambda")
 _ddb = boto3.client("dynamodb")
@@ -46,8 +51,10 @@ def handler(event, _context):
         body = {}
 
     # Validate required parameters
+    logger.info(f"Body: {body}")
     original_job_id = body.get("original_job_id")
     select_angle = body.get("select_angle")
+    swipe_file_ids = body.get("swipe_file_ids", [])
     
     if not original_job_id:
         return {
@@ -75,6 +82,7 @@ def handler(event, _context):
     # Detect dev mode
     path = event.get("path", "")
     dev_mode = path.startswith("/dev") or "/dev/" in path
+    dev_mode = True
 
     # Persist initial job record in DynamoDB
     try:
@@ -103,6 +111,7 @@ def handler(event, _context):
         "job_id": job_id,
         "select_angle": select_angle,
         "dev_mode": dev_mode,
+        "swipe_file_ids": swipe_file_ids,
     }
     
     try:

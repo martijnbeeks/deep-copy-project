@@ -34,8 +34,8 @@ class CustomerAvatar(BaseModel):
 class AvatarCollection(BaseModel):
     """Collection of customer avatars for a product"""
     avatars: List[CustomerAvatar] = Field(..., min_items=5, description="At least 5 distinct customer avatars")
-    company_type: str = Field(..., description="The type of company the product is for")
-    product_description: str = Field(..., description="A description of the product")
+    company_type: str = Field(..., description="The type of company the product is for. Max 4 words.")
+    product_description: str = Field(..., description="A description of the product. Max 4 words.")
 
 
 def capture_page_as_image_bytes(url: str) -> bytes:

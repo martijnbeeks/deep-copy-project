@@ -86,9 +86,10 @@ curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
 curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
   "${API_URL}avatars/YOUR_JOB_ID/result" | jq '.' > result.json
 
+3272be97-ea33-4c82-a401-34d4d337eb9a
 
 49facbfe-11ee-4f39-8084-bb02f1c6050a
-
+https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/jobs/3272be97-ea33-4c82-a401-34d4d337eb9a
 # ============================================================================
 # Swipe File Generation API
 # ============================================================================
