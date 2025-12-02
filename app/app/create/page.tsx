@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, AlertCircle, Info, Zap, CheckCircle } from "lucide-react"
 import { useRequireAuth } from "@/hooks/use-require-auth"
@@ -200,9 +200,9 @@ export default function CreatePage() {
     // For "known" approach, proceed with normal submission
     try {
       setIsLoading(true)
-      
+
       let createdMarketingAngle: any
-      
+
       // If we have an avatar extraction job ID, UPDATE it instead of creating new
       // The API will automatically detect if execution_id is missing and submit to DeepCopy
       if (avatarExtractionJobId) {
@@ -229,7 +229,7 @@ export default function CreatePage() {
 
       // Set marketing angle ID for polling
       setCurrentMarketingAngleId(createdMarketingAngle.id)
-      
+
       // Clear avatar extraction job ID after successful update
       if (avatarExtractionJobId) {
         setAvatarExtractionJobId(null)
@@ -962,6 +962,12 @@ export default function CreatePage() {
         }
       }}>
         <DialogContent className="max-w-2xl border-border">
+          <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+            <p className="text-sm font-semibold text-primary text-center">
+              Yes, our research takes a while… that's
+              why it will convert!
+            </p>
+          </div>
           <div className="flex flex-col py-6 space-y-6">
             {/* Selected Marketing Angle and Target Audience */}
             <div className="space-y-3">

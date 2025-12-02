@@ -728,6 +728,12 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                 }
             }}>
                 <DialogContent className="max-w-2xl border-border">
+                    <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+                        <p className="text-sm font-semibold text-primary text-center">
+                            Yes, our research takes a while… that's
+                            why it will convert!
+                        </p>
+                    </div>
                     <div className="flex flex-col py-6 space-y-6">
                         {/* Selected Marketing Angle and Target Audience */}
                         {selectedAvatar && (
