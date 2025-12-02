@@ -152,6 +152,10 @@ export default function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const { toast } = useToast()
 
+  // Optimistic UI state
+  const [optimisticJobs, setOptimisticJobs] = useState<Map<string, Partial<JobWithTemplate>>>(new Map())
+  const [deletedJobIds, setDeletedJobIds] = useState<Set<string>>(new Set())
+
   // Fetch all jobs without filters (client-side filtering instead)
   const { data: allJobs = [], isLoading, refetch } = useJobs()
 
@@ -171,9 +175,18 @@ export default function DashboardPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Client-side filtering with debounced search
+  // Client-side filtering with debounced search and optimistic updates
   const filteredJobs = useMemo(() => {
-    return allJobs.filter((job: JobWithTemplate) => {
+    // Apply optimistic updates to jobs
+    const jobsWithOptimisticUpdates = allJobs.map((job: JobWithTemplate) => {
+      const optimisticUpdate = optimisticJobs.get(job.id)
+      if (optimisticUpdate) {
+        return { ...job, ...optimisticUpdate }
+      }
+      return job
+    }).filter((job: JobWithTemplate) => !deletedJobIds.has(job.id))
+
+    return jobsWithOptimisticUpdates.filter((job: JobWithTemplate) => {
       // Search filter
       const matchesSearch = !debouncedSearchTerm ||
         job.title?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
@@ -184,7 +197,7 @@ export default function DashboardPage() {
 
       return matchesSearch && matchesStatus
     })
-  }, [allJobs, debouncedSearchTerm, statusFilter])
+  }, [allJobs, debouncedSearchTerm, statusFilter, optimisticJobs, deletedJobIds])
 
   // Fetch user's organization name
   useEffect(() => {
@@ -216,6 +229,16 @@ export default function DashboardPage() {
       fetchOrganization()
     }
   }, [user])
+
+  // Clear optimistic updates when data refetches successfully
+  useEffect(() => {
+    if (allJobs.length > 0 && !isLoading) {
+      // Clear optimistic updates - server data is now authoritative
+      setOptimisticJobs(new Map())
+      // Note: We don't clear deletedJobIds here because if a job was deleted,
+      // it won't be in allJobs, so it should stay deleted
+    }
+  }, [allJobs, isLoading])
 
   // Log when jobs data changes (development only) - only log when count changes
   useEffect(() => {
@@ -321,10 +344,25 @@ export default function DashboardPage() {
       return
     }
 
+    const newTitle = editTitle.trim()
+    const jobId = editingJob.id
+
+    // Optimistic update
+    setOptimisticJobs(prev => {
+      const newMap = new Map(prev)
+      newMap.set(jobId, { title: newTitle })
+      return newMap
+    })
+
+    // Close dialog immediately
+    setIsEditDialogOpen(false)
+    setEditingJob(null)
+    setEditTitle("")
+
     try {
       await updateJobMutation.mutateAsync({
-        id: editingJob.id,
-        title: editTitle.trim(),
+        id: jobId,
+        title: newTitle,
       })
 
       toast({
@@ -332,10 +370,20 @@ export default function DashboardPage() {
         description: "Project name updated successfully",
       })
 
-      setIsEditDialogOpen(false)
-      setEditingJob(null)
-      setEditTitle("")
+      // Clear optimistic update after success
+      setOptimisticJobs(prev => {
+        const newMap = new Map(prev)
+        newMap.delete(jobId)
+        return newMap
+      })
     } catch (error) {
+      // Revert optimistic update on error
+      setOptimisticJobs(prev => {
+        const newMap = new Map(prev)
+        newMap.delete(jobId)
+        return newMap
+      })
+
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to update project name",
@@ -359,18 +407,32 @@ export default function DashboardPage() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deletingJob) return
 
+    const jobId = deletingJob.id
+
+    // Optimistic delete - remove from UI immediately
+    setDeletedJobIds(prev => new Set(prev).add(jobId))
+
+    // Close dialog immediately
+    setIsDeleteDialogOpen(false)
+    setDeletingJob(null)
+
     try {
-      setIsDeleting(true)
-      await deleteJobMutation.mutateAsync(deletingJob.id)
+      await deleteJobMutation.mutateAsync(jobId)
 
       toast({
         title: "Project deleted successfully",
         description: "The project has been permanently removed.",
       })
 
-      setIsDeleteDialogOpen(false)
-      setDeletingJob(null)
+      // Keep it deleted (optimistic update was correct)
     } catch (error) {
+      // Revert optimistic delete on error
+      setDeletedJobIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(jobId)
+        return newSet
+      })
+
       toast({
         title: "Error deleting project",
         description: error instanceof Error ? error.message : "Failed to delete project",
@@ -388,11 +450,16 @@ export default function DashboardPage() {
 
   const handleJobCardClick = useCallback((jobId: string, job?: JobWithTemplate) => {
     // Check if this job has avatars - route to avatars page if it does
-    const hasAvatars = job?.avatars && (
-      (Array.isArray(job.avatars) && job.avatars.length > 0) ||
-      (typeof job.avatars === 'string' && job.avatars.length > 0)
-    )
-    
+    const avatars = job?.avatars as any[] | string | undefined
+    let hasAvatars = false
+    if (avatars) {
+      if (Array.isArray(avatars)) {
+        hasAvatars = avatars.length > 0
+      } else if (typeof avatars === 'string') {
+        hasAvatars = avatars.length > 0
+      }
+    }
+
     if (hasAvatars) {
       router.push(`/avatars/${jobId}`)
     } else {
@@ -404,11 +471,16 @@ export default function DashboardPage() {
   const handleJobCardKeyDown = useCallback((e: React.KeyboardEvent, jobId: string, job?: JobWithTemplate) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      const hasAvatars = job?.avatars && (
-        (Array.isArray(job.avatars) && job.avatars.length > 0) ||
-        (typeof job.avatars === 'string' && job.avatars.length > 0)
-      )
-      
+      const avatars = job?.avatars as any[] | string | undefined
+      let hasAvatars = false
+      if (avatars) {
+        if (Array.isArray(avatars)) {
+          hasAvatars = avatars.length > 0
+        } else if (typeof avatars === 'string') {
+          hasAvatars = avatars.length > 0
+        }
+      }
+
       if (hasAvatars) {
         router.push(`/avatars/${jobId}`)
       } else {
@@ -541,48 +613,44 @@ export default function DashboardPage() {
               {/* Jobs Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {isLoading && allJobs.length === 0 ? (
-                  // Show skeleton loaders only on initial load (when no cached data exists)
-                  Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="h-[240px] md:h-[260px] rounded-lg border border-border bg-card overflow-hidden">
-                      <div className="flex-1 h-full bg-gray-50 dark:bg-gray-900">
-                        <Skeleton className="h-full w-full" />
-                      </div>
-                      <div className="p-3 border-t border-border">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <Skeleton className="h-4 w-3/4" />
-                          <Skeleton className="h-5 w-16 rounded-full" />
+                  // Show skeleton loaders on initial load (when no cached data exists)
+                  <>
+                    <CreateContentCard />
+                    {Array.from({ length: 7 }).map((_, i) => (
+                      <div key={i} className="h-[240px] md:h-[260px] rounded-lg border border-border bg-card overflow-hidden">
+                        <div className="flex-1 h-full bg-gray-50 dark:bg-gray-900">
+                          <Skeleton className="h-full w-full" />
                         </div>
-                        <div className="flex items-center justify-between">
-                          <Skeleton className="h-3 w-20" />
-                          <div className="flex gap-1">
-                            <Skeleton className="h-6 w-6 rounded" />
-                            <Skeleton className="h-6 w-6 rounded" />
+                        <div className="p-3 border-t border-border">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-5 w-16 rounded-full" />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <Skeleton className="h-3 w-20" />
+                            <div className="flex gap-1">
+                              <Skeleton className="h-6 w-6 rounded" />
+                              <Skeleton className="h-6 w-6 rounded" />
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                  </>
                 ) : (
                   <>
-                    {filteredJobs.length > 0 && <CreateContentCard />}
-                    
-                    {filteredJobs.length === 0 ? (
-                      <div className="col-span-full flex items-center justify-center py-12">
-                        <CreateContentCard />
-                      </div>
-                    ) : (
-                      filteredJobs.map((job: JobWithTemplate) => (
-                        <JobCard
-                          key={job.id}
-                          job={job}
-                          onEdit={handleEditClick}
-                          onDelete={handleDeleteClick}
-                          onClick={handleJobCardClick}
-                          onKeyDown={handleJobCardKeyDown}
-                          getStatusBadge={getStatusBadge}
-                        />
-                      ))
-                    )}
+                    <CreateContentCard />
+                    {filteredJobs.map((job: JobWithTemplate) => (
+                      <JobCard
+                        key={job.id}
+                        job={job}
+                        onEdit={handleEditClick}
+                        onDelete={handleDeleteClick}
+                        onClick={handleJobCardClick}
+                        onKeyDown={handleJobCardKeyDown}
+                        getStatusBadge={getStatusBadge}
+                      />
+                    ))}
                   </>
                 )}
               </div>
