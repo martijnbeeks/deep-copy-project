@@ -589,29 +589,29 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
         } else if ((statusData as { status: string }).status === 'FAILED') {
           // Log the full response to see error details
           logger.error('❌ Swipe file generation failed. Full response:', statusData)
-          
+
           // Extract error message from response if available
-          const errorMessage = (statusData as any).error || 
-                              (statusData as any).message || 
-                              (statusData as any).errorMessage ||
-                              'Swipe file generation job failed on the server'
-          
+          const errorMessage = (statusData as any).error ||
+            (statusData as any).message ||
+            (statusData as any).errorMessage ||
+            'Swipe file generation job failed on the server'
+
           logger.error('❌ Error details:', errorMessage)
-          
+
           // Remove from generating map on failure
           setGeneratingAngles(prev => {
             const newMap = new Map(prev)
             newMap.delete(angle)
             return newMap
           })
-          
+
           // Update status
           setAngleStatuses(prev => {
             const newMap = new Map(prev)
             newMap.set(angle, 'FAILED')
             return newMap
           })
-          
+
           // Show user-friendly error notification
           toast({
             title: 'Pre-lander generation failed',
@@ -619,33 +619,33 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
             variant: 'destructive',
             duration: 5000
           })
-          
+
           throw new Error(`Swipe file generation job failed: ${errorMessage}`)
         }
       } catch (err: any) {
         logger.error(`⚠️ Swipe file polling error (attempt ${attempt}/${maxAttempts}):`, err)
-        
+
         if (attempt === maxAttempts) {
           // Final attempt failed - show error to user
-          const errorMessage = err?.message || 
-                              err?.error || 
-                              'Failed to check pre-lander generation status. Please try again.'
-          
+          const errorMessage = err?.message ||
+            err?.error ||
+            'Failed to check pre-lander generation status. Please try again.'
+
           logger.error('❌ Swipe file polling failed after all attempts:', errorMessage)
-          
+
           // Remove from generating map on timeout/failure
           setGeneratingAngles(prev => {
             const newMap = new Map(prev)
             newMap.delete(angle)
             return newMap
           })
-          
+
           setAngleStatuses(prev => {
             const newMap = new Map(prev)
             newMap.set(angle, 'FAILED')
             return newMap
           })
-          
+
           // Show user-friendly error notification
           toast({
             title: 'Pre-lander generation failed',
@@ -669,7 +669,7 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
       newMap.set(angle, 'TIMEOUT')
       return newMap
     })
-    
+
     // Show timeout error to user
     toast({
       title: 'Pre-lander generation timed out',
@@ -1150,28 +1150,33 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                                 </div>
                               )}
 
-                              {offerBrief.level_of_consciousness && (
+                              {(offerBrief.level_of_consciousness || offerBrief.level_of_awareness) && (
                                 <div className="bg-muted/50 p-4 rounded-lg">
-                                  <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                                    <Brain className="w-4 h-4 text-accent" />
-                                    Level of Consciousness
-                                  </h4>
-                                  <p className="text-sm text-muted-foreground capitalize">{offerBrief.level_of_consciousness}</p>
-                                </div>
-                              )}
-
-                              {offerBrief.level_of_awareness && (
-                                <div className="bg-muted/50 p-4 rounded-lg">
-                                  <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                                    <Eye className="w-4 h-4 text-primary" />
-                                    Level of Awareness
-                                  </h4>
-                                  <p className="text-sm text-muted-foreground capitalize">{offerBrief.level_of_awareness.replace(/_/g, ' ')}</p>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {offerBrief.level_of_consciousness && (
+                                      <div className="space-y-2">
+                                        <h4 className="font-medium text-foreground flex items-center gap-2 text-sm">
+                                          <Brain className="w-4 h-4 text-accent" />
+                                          Level of Consciousness
+                                        </h4>
+                                        <p className="text-sm text-muted-foreground capitalize pl-6">{offerBrief.level_of_consciousness}</p>
+                                      </div>
+                                    )}
+                                    {offerBrief.level_of_awareness && (
+                                      <div className="space-y-2">
+                                        <h4 className="font-medium text-foreground flex items-center gap-2 text-sm">
+                                          <Eye className="w-4 h-4 text-primary" />
+                                          Level of Awareness
+                                        </h4>
+                                        <p className="text-sm text-muted-foreground capitalize pl-6">{offerBrief.level_of_awareness.replace(/_/g, ' ')}</p>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               )}
 
                               {offerBrief.stage_of_sophistication && (
-                                <div className="bg-muted/50 p-4 rounded-lg">
+                                <div className="bg-muted/50 p-4 rounded-lg col-span-2">
                                   <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
                                     <TrendingUp className="w-4 h-4 text-accent" />
                                     Stage of Sophistication
@@ -1236,12 +1241,12 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                                 </div>
                               )}
 
-                              {offerBrief.guru && (
+                              {/*{offerBrief.guru && (
                                 <div className="bg-muted/50 p-4 rounded-lg">
                                   <h4 className="font-medium text-foreground mb-2">Guru / Discovery Story</h4>
                                   <p className="text-sm text-muted-foreground">{offerBrief.guru}</p>
                                 </div>
-                              )}
+                              )}*/}
 
                               {offerBrief.discovery_story && (
                                 <div className="bg-muted/50 p-4 rounded-lg">
@@ -1303,14 +1308,14 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                                 </div>
                               )}
 
-                              {offerBrief.funnel_architecture && offerBrief.funnel_architecture.length > 0 && (
+                              {/*offerBrief.funnel_architecture && offerBrief.funnel_architecture.length > 0 && (
                                 <div className="bg-muted/50 p-4 rounded-lg">
                                   <h4 className="font-medium text-foreground mb-2">Funnel Architecture</h4>
                                   <p className="text-sm text-muted-foreground">{offerBrief.funnel_architecture.join(' → ')}</p>
                                 </div>
-                              )}
+                              )*/}
 
-                              {offerBrief.potential_domains && offerBrief.potential_domains.length > 0 && (
+                              {/*offerBrief.potential_domains && offerBrief.potential_domains.length > 0 && (
                                 <div className="bg-muted/50 p-4 rounded-lg">
                                   <h4 className="font-medium text-foreground mb-2">Potential Domains</h4>
                                   <div className="flex flex-wrap gap-1">
@@ -1321,7 +1326,7 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                                     ))}
                                   </div>
                                 </div>
-                              )}
+                              )*/}
 
                               {offerBrief.product && (
                                 <div className="bg-muted/50 p-4 rounded-lg">
@@ -1338,7 +1343,7 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                                 </div>
                               )}
 
-                              {offerBrief.examples_swipes && offerBrief.examples_swipes.length > 0 && (
+                              {/*offerBrief.examples_swipes && offerBrief.examples_swipes.length > 0 && (
                                 <div className="bg-muted/50 p-4 rounded-lg">
                                   <h4 className="font-medium text-foreground mb-2">Example Swipes</h4>
                                   <div className="space-y-2">
@@ -1357,7 +1362,7 @@ function DeepCopyResultsComponent({ result, jobTitle, jobId, advertorialType, te
                                     ))}
                                   </div>
                                 </div>
-                              )}
+                              )*/}
 
                               {offerBrief.other_notes && (
                                 <div className="bg-muted/50 p-4 rounded-lg">
