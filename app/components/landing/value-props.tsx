@@ -1,27 +1,32 @@
-import { Zap, Target, TrendingUp } from "lucide-react";
+import { TrendingUp, Target, RefreshCw, Brain } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 export const ValueProps = () => {
   const props = [
     {
       icon: TrendingUp,
-      title: "Rising Acquisition Costs",
-      description: "Digital ad spend is soaring to $650B+ by 2025, driving up competition and CAC. Every lead now costs more. Your CAC is likely up year-over-year – our analysis shows no industry is spared. You can't afford to waste traffic on underperforming landing pages."
+      title: "Rising Acquisition Costs Make Conversion Critical",
+      description: "CAC is up 60% since 2019. DeepCopy allows you to find unique angles and avatars that drives your conversion up and makes you scale again!"
     },
     {
       icon: Target,
-      title: "Post-COVID Digital Surge & AI Revolution",
-      description: "Customer behavior shifted – almost all research and buying starts online now, meaning your landing pages form the first impression. We're in an AI revolution with GPT-4 and advanced tech making new solutions possible that weren't feasible years ago. Competitors are starting to leverage it – those who don't will be left behind."
+      title: "Reach Untapped Audiences with Research-Driven Pre-landers in Minutes",
+      description: "The biggest companies spend $20,000+ on pre-lander creation, hiring teams of researchers and copywriters because pre-landers convert cold audience 5x better than cold traffic to landing pages. Now you get the same research-backed prelanders in 15 minutes instead of 5 weeks. What cost enterprises millions is now accessible to everyone."
     },
     {
-      icon: Zap,
-      title: "Need for Speed in Modern Markets",
-      description: "Markets move faster; campaigns that took weeks to launch now need to go live in days to seize opportunities like trend-driven campaigns. Companies launching campaigns faster are outpacing competitors. The bar for optimization is being raised – 73% of companies now conduct A/B tests, up from 40% just years ago."
+      icon: RefreshCw,
+      title: "Stop Endless Inconsistent Prompting Without the Results You Want",
+      description: "Businesses waste 15+ hours weekly wrestling with ChatGPT - managing SOPs, tweaking prompts, getting different outputs every time. DeepCopy eliminates prompt engineering entirely with one platform that knows your brand and delivers consistent, high-converting copy. No more prompt libraries, no more inconsistency, no more wasted hours."
+    },
+    {
+      icon: Brain,
+      title: "Customer Intelligence Is Your Competitive Edge",
+      description: "You can't convert customers you don't understand - most pages fail because they guess instead of know. DeepCopy's AI analyzes thousands of reviews, forums, and competitor pages to uncover the exact words and desires that drive purchases. Stop writing blind - know what makes customers buy before you write."
     }
   ];
 
   return (
-    <section className="py-10 md:py-16 bg-background">
+    <section id="value-props" className="py-10 md:py-16 bg-background">
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-accent/10 rounded-full mb-4 text-sm font-medium text-accent">
@@ -35,7 +40,7 @@ export const ValueProps = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
           {props.map((prop, index) => (
             <Card
               key={index}
