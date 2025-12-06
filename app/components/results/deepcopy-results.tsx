@@ -3726,7 +3726,7 @@ function DeepCopyResultsComponent({
                       Generating...
                     </>
                   ) : (
-                    "Generate Refined Template"
+                    "Generate Refined Pre-Lander"
                   )}
                 </Button>
               </div>

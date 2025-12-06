@@ -9,7 +9,8 @@ import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { EmptyState } from "@/components/ui/empty-state"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, Suspense } from "react"
-import { Users, CheckCircle, Calendar, User, ArrowLeft, Loader2, Info } from "lucide-react"
+import { Users, CheckCircle, Calendar, User, ArrowLeft, Loader2, Info, Globe } from "lucide-react"
+import { SiAmazon, SiReddit } from "react-icons/si"
 import { useAuthStore } from "@/stores/auth-store"
 import { useToast } from "@/hooks/use-toast"
 import { INITIAL_SOURCE_STATUS, COMPLETED_SOURCE_STATUS, resetSourceStatus, completeSourceStatus, type SourceStatus } from "@/lib/constants/research-sources"
@@ -735,21 +736,15 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                         </p>
                     </div>
                     <div className="flex flex-col py-6 space-y-6">
-                        {/* Selected Marketing Angle and Target Audience */}
+                        {/* Selected Avatar */}
                         {selectedAvatar && (
                             <div className="space-y-3">
                                 <div className="space-y-1">
-                                    <p className="text-sm font-medium text-muted-foreground">Selected Marketing Angle</p>
+                                    <p className="text-sm font-medium text-muted-foreground">Selected Avatar</p>
                                     <p className="text-base font-semibold text-foreground">
-                                        {selectedAvatar.key_buying_motivation
-                                            ? selectedAvatar.key_buying_motivation.split('.')[0] || "Before/After Transformation Angle"
-                                            : "Before/After Transformation Angle"}
-                                    </p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm font-medium text-muted-foreground">Target Audience</p>
-                                    <p className="text-base font-semibold text-foreground">
-                                        {selectedAvatar.persona_name || "Evidence-seeking fitness enthusiasts"}
+                                        {selectedAvatar.persona_name 
+                                            ? `Avatar ${(selectedAvatar.avatar_index ?? 0) + 1}: ${selectedAvatar.persona_name}`
+                                            : `Avatar ${(selectedAvatar.avatar_index ?? 0) + 1}: Evidence-seeking fitness enthusiasts`}
                                     </p>
                                 </div>
                             </div>
@@ -762,7 +757,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                 {/* Web Search */}
                                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                                     <div className="flex items-center gap-3">
-                                        <span className="text-xl">🌐</span>
+                                        <Globe className="w-5 h-5" style={{ color: '#3B82F6' }} />
                                         <span className="text-sm font-medium text-foreground">Web Search</span>
                                     </div>
                                     {sourceStatus.webSearch ? (
@@ -777,7 +772,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                 {/* Amazon Reviews */}
                                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                                     <div className="flex items-center gap-3">
-                                        <span className="text-xl">📦</span>
+                                        <SiAmazon className="w-5 h-5" style={{ color: '#FF9900' }} />
                                         <span className="text-sm font-medium text-foreground">Amazon Reviews</span>
                                     </div>
                                     {sourceStatus.amazonReviews ? (
@@ -792,7 +787,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                 {/* Reddit Discussions */}
                                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                                     <div className="flex items-center gap-3">
-                                        <span className="text-xl">💬</span>
+                                        <SiReddit className="w-5 h-5" style={{ color: '#FF4500' }} />
                                         <span className="text-sm font-medium text-foreground">Reddit Discussions</span>
                                     </div>
                                     {sourceStatus.redditDiscussions ? (
