@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, AlertCircle, Info, Zap, CheckCircle } from "lucide-react"
+import { Loader2, AlertCircle, Info, Zap, CheckCircle, Globe } from "lucide-react"
+import { SiAmazon, SiReddit } from "react-icons/si"
 import { useRequireAuth } from "@/hooks/use-require-auth"
 import { useCreateMarketingAngle, useUpdateMarketingAngle } from "@/lib/hooks/use-jobs"
 import { useRouter } from "next/navigation"
@@ -57,6 +58,16 @@ const getSelectedAvatars = (avatars?: CustomerAvatar[]): CustomerAvatar[] => {
 // Helper to get first selected avatar (for display)
 const getFirstSelectedAvatar = (avatars?: CustomerAvatar[]): CustomerAvatar | undefined => {
   return getSelectedAvatars(avatars)[0]
+}
+
+// Helper to get selected avatar index (1-based) in the original array
+const getSelectedAvatarIndex = (avatars?: CustomerAvatar[]): number => {
+  const selectedAvatars = getSelectedAvatars(avatars)
+  if (selectedAvatars.length === 0) return 1
+  
+  const firstSelected = selectedAvatars[0]
+  const index = avatars?.findIndex(a => a.persona_name === firstSelected.persona_name) ?? -1
+  return index >= 0 ? index + 1 : 1 // 1-based index
 }
 
 export default function CreatePage() {
@@ -969,20 +980,14 @@ export default function CreatePage() {
             </p>
           </div>
           <div className="flex flex-col py-6 space-y-6">
-            {/* Selected Marketing Angle and Target Audience */}
+            {/* Selected Avatar */}
             <div className="space-y-3">
               <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Selected Marketing Angle</p>
+                <p className="text-sm font-medium text-muted-foreground">Selected Avatar</p>
                 <p className="text-base font-semibold text-foreground">
-                  {getFirstSelectedAvatar(formData.avatars)?.key_buying_motivation
-                    ? getFirstSelectedAvatar(formData.avatars)!.key_buying_motivation.split('.')[0] || "Before/After Transformation Angle"
-                    : "Before/After Transformation Angle"}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Target Audience</p>
-                <p className="text-base font-semibold text-foreground">
-                  {getFirstSelectedAvatar(formData.avatars)?.persona_name || "Evidence-seeking fitness enthusiasts"}
+                  {getFirstSelectedAvatar(formData.avatars)?.persona_name 
+                    ? `Avatar ${getSelectedAvatarIndex(formData.avatars)}: ${getFirstSelectedAvatar(formData.avatars)!.persona_name}`
+                    : `Avatar ${getSelectedAvatarIndex(formData.avatars)}: Evidence-seeking fitness enthusiasts`}
                 </p>
               </div>
             </div>
@@ -994,7 +999,7 @@ export default function CreatePage() {
                 {/* Web Search */}
                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                   <div className="flex items-center gap-3">
-                    <span className="text-xl">🌐</span>
+                    <Globe className="w-5 h-5" style={{ color: '#3B82F6' }} />
                     <span className="text-sm font-medium text-foreground">Web Search</span>
                   </div>
                   {sourceStatus.webSearch ? (
@@ -1009,7 +1014,7 @@ export default function CreatePage() {
                 {/* Amazon Reviews */}
                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                   <div className="flex items-center gap-3">
-                    <span className="text-xl">📦</span>
+                    <SiAmazon className="w-5 h-5" style={{ color: '#FF9900' }} />
                     <span className="text-sm font-medium text-foreground">Amazon Reviews</span>
                   </div>
                   {sourceStatus.amazonReviews ? (
@@ -1024,7 +1029,7 @@ export default function CreatePage() {
                 {/* Reddit Discussions */}
                 <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
                   <div className="flex items-center gap-3">
-                    <span className="text-xl">💬</span>
+                    <SiReddit className="w-5 h-5" style={{ color: '#FF4500' }} />
                     <span className="text-sm font-medium text-foreground">Reddit Discussions</span>
                   </div>
                   {sourceStatus.redditDiscussions ? (

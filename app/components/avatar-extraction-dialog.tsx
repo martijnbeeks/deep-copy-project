@@ -103,6 +103,9 @@ function AvatarExtractionDialogComponent({
           .map((avatar: ExtractedAvatar, index: number) => avatar.is_researched ? index : -1)
           .filter((index: number) => index >= 0)
         setSelectedAvatars(new Set(researchedIndices))
+        
+        // Show verification dialog when reusing existing avatars
+        setShowVerification(true)
       } else {
         // Fresh extraction flow
         setAvatars([])
@@ -506,8 +509,8 @@ function AvatarExtractionDialogComponent({
           </Alert>
         )}
 
-        {/* Verification Dialog */}
-        {showVerification && avatars.length > 0 && (
+        {/* Verification Dialog - Always show when avatars are available and not analyzing */}
+        {!isAnalyzing && avatars.length > 0 && (
           <div className="space-y-6 py-4">
             <div>
               <h2 className="flex items-center gap-2 text-xl font-semibold mb-2">
@@ -749,7 +752,13 @@ function AvatarExtractionDialogComponent({
             <DialogFooter className="gap-3">
               <Button
                 variant="outline"
-                onClick={() => setShowVerification(false)}
+                onClick={() => {
+                  // Focus on the first input field for editing
+                  const companyTypeInput = document.getElementById('edit-company-type')
+                  if (companyTypeInput) {
+                    companyTypeInput.focus()
+                  }
+                }}
               >
                 Edit Information
               </Button>
@@ -790,7 +799,7 @@ function AvatarExtractionDialogComponent({
                 ) : (
                   <>
                     <CheckCircle className="w-4 h-4 mr-2" />
-                    Confirm & Continue
+                    Proceed to Research
                   </>
                 )}
               </Button>
@@ -798,190 +807,7 @@ function AvatarExtractionDialogComponent({
           </div>
         )}
 
-        {!isAnalyzing && !showVerification && avatars.length > 0 && (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold mb-2">Found {avatars.length} Customer Personas</h3>
-              <p className="text-muted-foreground">
-                Select the personas you want to target for your campaign
-              </p>
-            </div>
-
-            <Accordion type="single" collapsible value={openItem} onValueChange={setOpenItem} className="w-full space-y-3">
-              {avatars.map((avatar, index) => {
-                const isSelected = selectedAvatars.has(index)
-                const itemValue = `avatar-${index}`
-
-                return (
-                  <AccordionItem key={index} value={itemValue} className="border-none">
-                    <Card
-                      className={`transition-all cursor-pointer hover:shadow-md ${isSelected
-                        ? 'border-2 border-primary bg-primary/10'
-                        : 'border border-border hover:border-primary/50'
-                        }`}
-                      onClick={() => {
-                        handleAvatarToggle(index)
-                        setOpenItem(prev => (prev === itemValue ? undefined : itemValue))
-                      }}
-                    >
-                      <div className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 flex-1">
-                            <span className="text-2xl">{getGenderIcon(avatar.gender)}</span>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <Badge variant="outline" className="text-xs font-semibold bg-muted text-foreground border-border">
-                                  #{index + 1}
-                                </Badge>
-                                <div className="font-semibold text-base">{avatar.persona_name}</div>
-                                {avatar.is_broad_avatar && (
-                                  <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
-                                    Broad Persona
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 flex-wrap mt-1">
-                                <span className="text-xs text-muted-foreground">{avatar.age_range}</span>
-                                <span className="text-xs text-muted-foreground">•</span>
-                                <span className="text-xs text-muted-foreground">{formatGender(avatar.gender)}</span>
-                                {avatar.characteristics && avatar.characteristics.length > 0 && (
-                                  <>
-                                    <span className="text-xs text-muted-foreground">•</span>
-                                    <div className="flex flex-wrap gap-1">
-                                      {avatar.characteristics.slice(0, 3).map((char, idx) => (
-                                        <Badge key={idx} variant="outline" className="text-xs px-1.5 py-0">
-                                          {char}
-                                        </Badge>
-                                      ))}
-                                      {avatar.characteristics.length > 3 && (
-                                        <span className="text-xs text-muted-foreground">+{avatar.characteristics.length - 3}</span>
-                                      )}
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {isSelected && (
-                              <CheckCircle className="w-5 h-5 text-primary" />
-                            )}
-                            <AccordionTrigger />
-                          </div>
-                        </div>
-                      </div>
-                      <AccordionContent className="px-4 pb-4">
-                        <div className="space-y-3 text-sm">
-                          <div>
-                            <span className="font-medium">Age Range:</span>
-                            <p className="text-muted-foreground">{avatar.age_range}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium">Description:</span>
-                            <p className="text-muted-foreground">{avatar.description}</p>
-                          </div>
-                          {avatar.characteristics && avatar.characteristics.length > 0 && (
-                            <div>
-                              <span className="font-medium">Characteristics:</span>
-                              <div className="flex flex-wrap gap-2 mt-1">
-                                {avatar.characteristics.map((char, idx) => (
-                                  <Badge key={idx} variant="outline" className="text-xs">
-                                    {char}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          <div>
-                            <span className="font-medium">Gender:</span>
-                            <p className="text-muted-foreground">{formatGender(avatar.gender)}</p>
-                          </div>
-                          {avatar.key_buying_motivation && (
-                            <div>
-                              <span className="font-medium">Key Buying Motivation:</span>
-                              <p className="text-muted-foreground">{avatar.key_buying_motivation}</p>
-                            </div>
-                          )}
-                          {avatar.pain_point && (
-                            <div>
-                              <span className="font-medium">Pain Point:</span>
-                              <p className="text-muted-foreground">{avatar.pain_point}</p>
-                            </div>
-                          )}
-                          {avatar.emotion && (
-                            <div>
-                              <span className="font-medium">Emotion:</span>
-                              <p className="text-muted-foreground">{avatar.emotion}</p>
-                            </div>
-                          )}
-                          {avatar.desire && (
-                            <div>
-                              <span className="font-medium">Desire:</span>
-                              <p className="text-muted-foreground">{avatar.desire}</p>
-                            </div>
-                          )}
-                          {avatar.objections && avatar.objections.length > 0 && (
-                            <div className="pt-2 border-t border-border">
-                              <span className="font-medium">Objections:</span>
-                              <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
-                                {avatar.objections.map((obj, idx) => (
-                                  <li key={idx}>{obj}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {avatar.failed_alternatives && avatar.failed_alternatives.length > 0 && (
-                            <div className="pt-2 border-t border-border">
-                              <span className="font-medium">Failed Alternatives:</span>
-                              <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
-                                {avatar.failed_alternatives.map((alt, idx) => (
-                                  <li key={idx}>{alt}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {avatar.hook_line && (
-                            <div className="pt-2 border-t border-border">
-                              <span className="font-medium">Hook Line:</span>
-                              <p className="text-primary italic">{avatar.hook_line}</p>
-                            </div>
-                          )}
-                        </div>
-                      </AccordionContent>
-                    </Card>
-                  </AccordionItem>
-                )
-              })}
-            </Accordion>
-
-            <div className="flex items-center justify-between pt-4 border-t">
-              <div className="text-sm text-muted-foreground">
-                {selectedAvatars.size > 0 ? '1 persona selected' : 'No persona selected'}
-              </div>
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={onClose} disabled={isSubmitting || isLoading}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSubmit}
-                  disabled={selectedAvatars.size === 0 || isSubmitting || isLoading}
-                >
-                  {isSubmitting || isLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Creating Job...
-                    </>
-                  ) : (
-                    <>
-                      <User className="h-4 w-4 mr-2" />
-                      Proceed to Template selection
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Removed the second view without company type & product info - only show verification modal */}
       </DialogContent>
     </Dialog>
   )
