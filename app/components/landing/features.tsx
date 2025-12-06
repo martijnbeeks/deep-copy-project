@@ -9,7 +9,7 @@ export const Features = () => {
       title: "Deep Customer & Competitor Research",
       subtitle: "Uncover what truly drives your audience",
       description: "AI-powered scraping and analysis of your target audience across social media, forums, and review sites to uncover pain points and motivations.",
-      visual: "AI analyzing social media posts and reviews"
+      visual: "/box1.mp4"
     },
     {
       icon: Target,
@@ -23,7 +23,7 @@ export const Features = () => {
       title: "Competitor Intelligence",
       subtitle: "Do not reinvent the wheel, learn from the best in your industry.",
       description: "Analyze winning landing pages from top brands in your industry, extracting the highest-converting pre-lander and messaging strategies for your particular project.",
-      visual: "Side-by-side competitor page analysis"
+      visual: "/box3.mp4"
     },
     {
       icon: Zap,
@@ -67,8 +67,21 @@ export const Features = () => {
               <p className="text-muted-foreground leading-relaxed mb-6">
                 {feature.description}
               </p>
-              <div className="aspect-video bg-muted/50 rounded-lg flex items-center justify-center text-sm text-muted-foreground border">
-                {feature.visual}
+              <div className="aspect-video bg-muted/50 rounded-lg overflow-hidden border relative">
+                {feature.visual.endsWith('.mp4') ? (
+                  <video
+                    src={feature.visual}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
+                    {feature.visual}
+                  </div>
+                )}
               </div>
             </Card>
           ))}
