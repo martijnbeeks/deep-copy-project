@@ -16,12 +16,12 @@ export default function LandingPage() {
     <div className="min-h-screen">
       <Header />
       <Hero />
-      <FinalCTA />
+      <Features />
       <SocialProof />
       <ValueProps />
-      <Features />
+      <FinalCTA />
       {/*<HowItWorks />*/}
-      <Testimonials />
+      {/*<Testimonials />*/}
       <FAQ />
       <Footer />
     </div>
