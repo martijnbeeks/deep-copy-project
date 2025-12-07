@@ -67,7 +67,7 @@ export const Features = () => {
               <p className="text-muted-foreground leading-relaxed mb-6">
                 {feature.description}
               </p>
-              <div className="aspect-video bg-muted/50 rounded-lg overflow-hidden border relative">
+              <div className={`aspect-video rounded-lg overflow-hidden relative ${feature.visual.endsWith('.mp4') && feature.visual === '/box1.mp4' ? '' : 'bg-muted/50 border'}`}>
                 {feature.visual.endsWith('.mp4') ? (
                   <video
                     src={feature.visual}
@@ -75,7 +75,7 @@ export const Features = () => {
                     loop
                     muted
                     playsInline
-                    className="w-full h-full object-contain"
+                    className={`w-full h-full ${feature.visual === '/box1.mp4' ? 'object-contain' : 'object-contain'}`}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
