@@ -1,8 +1,28 @@
+"use client"
+
 import { Search, Target, Trophy, Zap } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useEffect, useRef } from "react";
 
 export const Features = () => {
+  const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
+
+  useEffect(() => {
+    // Attempt to play videos on mobile after component mounts
+    Object.values(videoRefs.current).forEach((video) => {
+      if (video) {
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((error) => {
+            // Autoplay was prevented, but that's okay
+            // The video will play when user interacts with the page
+            console.log('Video autoplay prevented:', error);
+          });
+        }
+      }
+    });
+  }, []);
   const features = [
     {
       icon: Search,
@@ -70,11 +90,25 @@ export const Features = () => {
               <div className={`aspect-video rounded-lg overflow-hidden relative ${feature.visual.endsWith('.mp4') && feature.visual === '/box1.mp4' ? '' : 'bg-muted/50 border'}`}>
                 {feature.visual.endsWith('.mp4') ? (
                   <video
+                    ref={(el) => {
+                      videoRefs.current[index] = el;
+                    }}
                     src={feature.visual}
                     autoPlay
                     loop
                     muted
                     playsInline
+                    preload="auto"
+                    onLoadedData={(e) => {
+                      // Attempt to play when video data is loaded
+                      const video = e.currentTarget;
+                      const playPromise = video.play();
+                      if (playPromise !== undefined) {
+                        playPromise.catch(() => {
+                          // Autoplay prevented, will play on user interaction
+                        });
+                      }
+                    }}
                     className={`w-full h-full ${feature.visual === '/box1.mp4' ? 'object-contain' : 'object-contain'}`}
                   />
                 ) : (
