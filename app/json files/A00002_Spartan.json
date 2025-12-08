@@ -1,0 +1,365 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SpartanAdvertorialContent",
+  "description": "Template for advertorial. Please rewrite each attribute using the example provided below. The examples should be used as a guide to rewrite the advertorial but use the content of the advertorial to rewrite the attributes.",
+  "type": "object",
+  "required": [
+    "alert",
+    "breadcrumbs",
+    "hero",
+    "story",
+    "section1",
+    "section2",
+    "section3",
+    "section4",
+    "section5",
+    "section6",
+    "section7",
+    "section8",
+    "section9",
+    "section10",
+    "section11",
+    "section12",
+    "sidebar",
+    "cta",
+    "sticky",
+    "footer"
+  ],
+  "properties": {
+    "alert": {
+      "type": "object",
+      "required": [
+        "banner"
+      ],
+      "properties": {
+        "banner": {
+          "type": "string",
+          "description": "Example: UPDATE: Spartan Red Light Cap SELLING OUT faster than expected! Lock in your order NOW to get 50% OFF + FAST SHIPPING to the US."
+        }
+      }
+    },
+    "breadcrumbs": {
+      "type": "string",
+      "description": "Example: Home > Hair Loss."
+    },
+    "hero": {
+      "type": "object",
+      "required": [
+        "headline",
+        "subheadline"
+      ],
+      "properties": {
+        "headline": {
+          "type": "string",
+          "description": "Example: Dermatologists Are Furious: This Device Delivers Results Better Than $3,000 Hair Transplants?"
+        },
+        "subheadline": {
+          "type": "string",
+          "description": "Example: Leading hair restoration clinics are scrambling to keep this breakthrough technology under wraps."
+        }
+      }
+    },
+    "story": {
+      "type": "object",
+      "required": [
+        "intro"
+      ],
+      "properties": {
+        "intro": {
+          "type": "string",
+          "description": "Example: Dr. Sarah Martinez has been practicing dermatology for over 15 years. She's performed hundreds of hair transplant procedures, each costing her patients between $3,000 and $15,000. But last month, something happened that left her absolutely stunned. A patient she'd been treating for male pattern baldness walked into her office with a completely transformed hairline. Thick, healthy hair had grown back in areas that were previously bald. His confidence was through the roof. \"I immediately assumed he'd gotten work done somewhere else,\" Dr. Martinez recalls. \"But when I asked him about it, he pulled out this small device that looked like a baseball cap. He said he'd been using it for just 12 minutes a day.\" What happened next shocked her even more. \"The results were better than anything I'd seen from a $10,000 transplant procedure. I couldn't believe it.\" Dr. Martinez isn't alone. Dermatologists across the country are reporting similar stories, and frankly, they're not happy about it."
+        }
+      }
+    },
+    "section1": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: The Hair Loss Crisis That's Destroying Men's Confidence."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: If you're reading this, chances are you've experienced the devastating effects of hair loss firsthand. You're not alone. A staggering 87% of men experience the confidence-crushing effects of hair thinning, receding hairlines, and embarrassing bald patches as early as their late 20s. Every morning, you check the mirror hoping it's not getting worse. But it is. You see more scalp showing through. More hair on your pillow. More awkward moments trying to style what's left to cover the thin spots. The psychological impact is brutal. You avoid certain lighting. You worry about windy days. You feel older than your age. Your confidence in professional and personal situations takes a hit. And the \"solutions\" offered by the medical establishment? They're either: - Extremely expensive (hair transplants: $3,000-$15,000) - Risky with side effects (medications that can cause sexual dysfunction) - Temporary bandaids (topical treatments that only mask symptoms) - Simply ineffective (most \"miracle\" products do nothing) But here's what those expensive dermatologists don't want you to know..."
+        }
+      }
+    },
+    "section2": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: The Hidden Truth About Why Hair Transplants Often Fail."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Dr. James Peterson, a leading trichologist (hair loss specialist), recently made a shocking revelation at the International Hair Science Symposium. \"We've been treating hair loss all wrong,\" he admitted to a room full of stunned colleagues. \"Hair transplants move hair from one area to another, but they don't address the root cause of why the hair died in the first place.\" That root cause? A hormone called DHT (Dihydrotestosterone). DHT is literally suffocating your hair follicles right now. Studies show that 8 out of 10 men have excessive DHT levels that are creating what experts call a \"stranglehold effect\" on their hair follicles. Here's how it works: DHT binds to your hair follicles and blocks vital nutrients from reaching them. When your follicles can't get the nutrients they need, they gradually shrink and eventually stop producing hair altogether. Even if you get a hair transplant, if you don't address the DHT problem, the transplanted hair will eventually fall out too. That's why some men need multiple transplant procedures. The shocking truth: You could spend $15,000 on a hair transplant and still end up bald if you don't deal with DHT."
+        }
+      }
+    },
+    "section3": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: The Breakthrough Discovery That Changes Everything."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: But in 2023, everything changed. A pioneering clinical breakthrough, highlighted in research from the Journal of Cosmetic and Laser Therapy, revealed that Low-Level Laser Therapy (LLLT) offers a powerful, non-invasive approach to combating hair loss caused by DHT. Rather than simply masking symptoms or moving hair around, LLLT revitalizes dormant follicles by: - Improving blood flow to starved hair follicles - Enhancing oxygenation at the cellular level - Supporting cellular metabolism even in DHT-damaged areas - Reactivating the natural hair growth cycle The game-changing discovery: By energizing hair follicles and breaking DHT's stranglehold, this therapy helps reverse thinning and kickstart regrowth—giving you a thicker, fuller head of hair, naturally and safely. And now, this breakthrough technology is available to use at home."
+        }
+      }
+    },
+    "section4": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Introducing the Spartan Red Light Growth Cap."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: The Spartan Red Light Growth Cap is a cutting-edge, FDA-cleared device that brings professional-grade laser therapy to your home. Here's what makes it revolutionary: - 272 medical-grade lasers deliver targeted energy to every follicle - Clinically proven to stimulate hair growth in multiple studies - Just 12 minutes a day - completely hands-free and cordless - Zero side effects - no drugs, no chemicals, no invasive procedures - Targets male pattern baldness specifically where other solutions fail The technology works by: 1. Neutralizing DHT to protect and revive your hair follicles 2. Filling in embarrassing thin spots with strong, new growth 3. Restoring your receding hairline to its former glory 4. Transforming weak, lifeless strands into thick, healthy hair 5. Dramatically increasing your overall hair density"
+        }
+      }
+    },
+    "section5": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: The Proof Is Overwhelming."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: 105,347+ men are already using Spartan to reclaim the hair they thought was gone forever. The device has been featured in: - Forbes (\"Revolutionary Hair Loss Solution\") - Men's Health (\"The Future of Hair Restoration\") - GQ (\"Game-Changing Technology\") Clinical evidence is equally impressive: A systematic review analyzing 15 studies found that LLLT significantly increased terminal hair count, demonstrating its effectiveness in combating hair loss at the follicular level. Real results from real men:"
+        }
+      }
+    },
+    "section6": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: How Much Are You Really Saving?"
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Let's do the math on what hair restoration actually costs: Hair Transplant Surgery: - Initial procedure: $3,000-$15,000 - Follow-up procedures: $3,000-$8,000 each - Total potential cost: $15,000-$30,000+ - Risk: Scarring, infection, unnatural results Prescription Medications: - Monthly cost: $50-$200 - Annual cost: $600-$2,400 - 10-year cost: $6,000-$24,000 - Risk: Sexual side effects, liver damage Topical Treatments: - Monthly cost: $100-$300 - Annual cost: $1,200-$3,600 - 10-year cost: $12,000-$36,000 - Risk: Scalp irritation, minimal results Spartan Red Light Growth Cap: - One-time investment - No ongoing costs - No side effects - Results: Visible regrowth in 8-12 weeks"
+        }
+      }
+    },
+    "section7": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: WARNING: Every Day You Wait, DHT Tightens Its Grip."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Here's the harsh reality: DHT doesn't take a day off. Every single day you delay taking action, DHT continues its relentless assault on your hair follicles. At the International Hair Science Symposium, leading experts revealed the shocking truth about what happens when you wait: Week 1-2: DHT continues blocking nutrients to your follicles Week 3-4: More follicles begin to shrink and weaken Week 5-8: Hair shedding accelerates noticeably Week 9-12: Follicles become increasingly resistant to regrowth Beyond 12 weeks: Permanent damage becomes irreversible The window for action is closing. Once DHT has completely destroyed your hair follicles, even the most advanced treatments can't bring them back. The men who see the most dramatic results with Spartan are those who act quickly, before permanent damage sets in."
+        }
+      }
+    },
+    "section8": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Beware of Cheap Imitations."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Since Spartan went viral on social media, unauthorized sellers have flooded Amazon with cheap knockoffs and inferior red light devices. These imitations are dangerous because they: - Lack the precise wavelength needed for hair growth - Use cheap LEDs instead of medical-grade lasers - Haven't undergone FDA clearance - May actually damage your scalp with incorrect frequencies Always buy directly from the official Spartan website to ensure you're getting the authentic device with: 272 medical-grade lasers (not cheap LEDs), FDA-cleared technology, Proper wavelength calibration, Full warranty and support"
+        }
+      }
+    },
+    "section9": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Your Risk-Free Opportunity."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Here's the deal: We believe in the Spartan Red Light Growth Cap so much that we don't want you to spend a dime until you're 100% certain it works for you. That's why we're offering a 90-day, no-questions-asked guarantee. Try the Spartan Red Light Growth Cap for a full 90 days. If you don't see new hair growth, thicker hair, or a restoration of your confidence, simply return it for a complete refund. You're only paying if it turns out to be a complete lifesaver. And from our experience with over 105,000 satisfied customers, we can almost guarantee that it will be."
+        }
+      }
+    },
+    "section10": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Special Limited-Time Offer."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: How much is a full, healthy head of hair worth to you? While you'll notice improvements within 3 weeks, consistent use over 3-6 months ensures you reduce DHT levels up to 73%. This means your hair will be restored, and your new fuller look will last for years to come. This one-time investment supports visible regrowth that lasts, without the ongoing cost of medications or the risk of multiple surgeries. But you must act now. For the next 24 hours only, we're offering readers of this article an exclusive opportunity to save 50% on the Spartan Red Light Growth Cap."
+        }
+      }
+    },
+    "section11": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: The Choice Is Yours."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: You have two options: Option 1: Continue watching your hair disappear, losing confidence every day, and eventually spend thousands on risky procedures that may not even work. Option 2: Take action now with clinically proven technology that's already helped over 105,000 men reclaim their hair and confidence. The men who wait \"just a little longer\" are the ones who end up with permanent hair loss. Don't let that be you."
+        }
+      }
+    },
+    "section12": {
+      "type": "object",
+      "required": [
+        "title"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Try Spartan's Red Light Growth Cap Now - Risk FREE!"
+        }
+      }
+    },
+    "sidebar": {
+      "type": "object",
+      "required": [
+        "title",
+        "subtitle",
+        "ctaButton"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Finally Reduce."
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Example: Hair Loss."
+        },
+        "ctaButton": {
+          "type": "string",
+          "description": "Example: GET 50% OFF SPARTAN NOW!"
+        }
+      }
+    },
+    "cta": {
+      "type": "object",
+      "required": [
+        "primary",
+        "secondary"
+      ],
+      "properties": {
+        "primary": {
+          "type": "string",
+          "description": "Example: Try Spartan's Red Light Growth Cap Now - Risk FREE!"
+        },
+        "secondary": {
+          "type": "string",
+          "description": "Example: GET 50% OFF Spartan Red Light Growth Cap!"
+        }
+      }
+    },
+    "sticky": {
+      "type": "object",
+      "required": [
+        "cta"
+      ],
+      "properties": {
+        "cta": {
+          "type": "string",
+          "description": "Example: GET 50% OFF Spartan Red Light Growth Cap!"
+        }
+      }
+    },
+    "footer": {
+      "type": "object",
+      "required": [
+        "copyright",
+        "disclaimer",
+        "links"
+      ],
+      "properties": {
+        "copyright": {
+          "type": "string",
+          "description": "Example: SPARTAN - Copyright 2025 - All Rights Reserved."
+        },
+        "disclaimer": {
+          "type": "string",
+          "description": "Example: MEDICAL & HEALTH DISCLOSURE: Results may vary. The content and products presented here are not intended to diagnose, treat, cure, or prevent any disease. This offer is not a replacement for any medications or treatments prescribed by a doctor or healthcare professional. We recommend consulting a physician before using any products or implementing any recommendations mentioned on this page. The FDA has not evaluated these statements."
+        },
+        "links": {
+          "type": "object",
+          "required": [
+            "privacyPolicy",
+            "termsOfService",
+            "refundPolicy"
+          ],
+          "properties": {
+            "privacyPolicy": {
+              "type": "string",
+              "description": "Example: Privacy Policy."
+            },
+            "termsOfService": {
+              "type": "string",
+              "description": "Example: Terms Of Service."
+            },
+            "refundPolicy": {
+              "type": "string",
+              "description": "Example: Refund Policy."
+            }
+          }
+        }
+      }
+    }
+  }
+}

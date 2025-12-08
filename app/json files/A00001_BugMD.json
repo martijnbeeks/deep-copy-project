@@ -1,0 +1,331 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BugMDAdvertorialContent",
+  "description": "Template for BugMD advertorial. Please rewrite each attribute using the example provided below. The examples should be used as a guide to rewrite the advertorial but use the content of the advertorial to rewrite the attributes.",
+  "type": "object",
+  "required": [
+    "hero",
+    "story",
+    "section1",
+    "section2",
+    "section3",
+    "section4",
+    "section5",
+    "section6",
+    "section7",
+    "section8",
+    "section9",
+    "sidebar",
+    "cta",
+    "footer"
+  ],
+  "properties": {
+    "hero": {
+      "type": "object",
+      "required": [
+        "headline",
+        "subheadline",
+        "date"
+      ],
+      "properties": {
+        "headline": {
+          "type": "string",
+          "description": "Example: Before Spending Hundreds or Thousands on an Exterminator, You Need to Try This."
+        },
+        "subheadline": {
+          "type": "string",
+          "description": "Example: \"We haven't heard any pitter patter of little feet since\" - Janice W."
+        },
+        "date": {
+          "type": "string",
+          "description": "Example: Thursday, October 16, 2025."
+        }
+      }
+    },
+    "story": {
+      "type": "object",
+      "required": [
+        "title",
+        "body",
+        "intro"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 30 DAY SATISFACTION GUARANTEE"
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: When your package arrives, give it a try for 30 days. If you’re not 100% satisfied for any reason whatsoever, just let us know and we’ll quickly handle your return."
+        },
+        "intro": {
+          "type": "string",
+          "description": "Example: Everyone who's had pests invade their home will tell you that it's a nightmare. And the worst part is, they always come back. It feels like an uphill battle trying to take back control of your own home. Cockroaches, ants, bed bugs and more can ruin the comfort of your home. You can try paying an exterminator hundreds of dollars but that can require multiple visits and not an affordable option. And then be constantly worried if those will have an effect on you... You can try an over the counter bug spray. But those can come in one of two ways… 1) They actually work but they smell terrible in your home… 2) They barely tickle the roaches, ants, and bed bugs living in your home. There's got to be a better way, right?"
+        }
+      }
+    },
+    "section1": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: A Pest Invasion can Make Your Life Miserable.."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Everyone who's had pests invade their home will tell you that it's a nightmare. And the worst part is, they always come back. It feels like an uphill battle trying to take back control of your own home. Cockroaches, ants, bed bugs and more can ruin the comfort of your home. You can try paying an exterminator hundreds of dollars but that can require multiple visits and not an affordable option. And then be constantly worried if those will have an effect on you... You can try an over the counter bug spray. But those can come in one of two ways… 1) They actually work but they smell terrible in your home… 2) They barely tickle the roaches, ants, and bed bugs living in your home. There's got to be a better way, right?"
+        }
+      }
+    },
+    "section2": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: You Might as Well Give Pests Your Home's Keys and Start Paying them Rent."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: They already enjoy the food that's in your pantry… and they enjoy taking delicious bites out of you as you sleep… So why not make it official that pests practically own your house? Now… What if there was a way to keep that food protected from pests and finally get a goods nights rest without worrying about one crawling on you? You see, there's a \"pest explosion\" coming in the next couple of months, and you need to be ready. So what if you could find a reliable insect-killing spray… that's so safe you can even use it on vegetables when used as directed? That's where BugMD comes in..."
+        }
+      }
+    },
+    "section3": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Try This Before You Spend Hundreds on an Exterminator (or Get Another Supermarket Spray)."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: BugMD is the safe* and easiest way eliminate fleas, mites, ticks, roaches, bed bugs, and more… (*when used as directed) It's the perfect affordable solution to try before dropping a load of cash on an exterminator."
+        }
+      }
+    },
+    "section4": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: This Pest-Destroying Solution is How Americans are Finally Getting Control of their Home."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Just imagine… Spraying BugMD in that kitchen drawer where you always find two or three roaches running around. Then, wait a few days and open that same drawer to find no roaches in sight. And the best thing? You don't have to worry about spraying your cookware with BugMD since it uses family friendly plant-based ingredients. However... These sprays have been difficult to keep in stock due to increased popularity. We highly recommend you check if there are still some available before they get put on back order again."
+        }
+      }
+    },
+    "section5": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: So How Does BugMD Work?"
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: The secret behind BugMD is its proprietary formula of potent essential oils. You see… What do you think we used to kill and repel insects back before we had bug spray? What do indigenous people use in the jungle? That's right… People have used natural ingredients for thousands of years to accomplish the same purpose."
+        }
+      }
+    },
+    "section6": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: BugMD is Super Easy to Use!"
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: All you have to do to protect your family and your house from nauseating pests is: 1) Add the BugMD solution to some water and mix it. 2) Then, go to that little corner in your living room where annoying ants keep coming from… or go to your bed-bug-infested mattress… 3) And spray this mix directly onto the pest-infested area. 4) Let it dry for a couple of minutes and done! You've successfully exterminated those annoying pests. Then finally feel in control of your own home! BugMD works on Roaches, Bed Bugs, Ants, Fleas, Mites, and Ticks."
+        }
+      }
+    },
+    "section7": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Does BugMD actually Destroy Pests?"
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Here's some of the impressive feedback we've gotten about BugMD from some happy customers."
+        }
+      }
+    },
+    "section8": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Why We Love BugMD! (And Why You Should Too)."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Customers Reported: We used to keep a bottle of bug spray in our homes at all times. Not because of some pest infestation, but because my wife is terribly afraid of roaches. So as soon as we saw one we sprayed the entire area and hope they'd never come back. But they did… Until we started using this BugMD. It works amazing! I'm not breathing in those odd smelling ingredients like with the other bug sprays we had. This one works wonders and smells amazing. My wife and I love it. Bottom line: If you're tired of living with disgusting pests… and if you want an easy way to eliminate pests… then you should give BugMD a try!"
+        }
+      }
+    },
+    "section9": {
+      "type": "object",
+      "required": [
+        "title",
+        "body",
+        "offerBadge",
+        "offerBox",
+        "citations"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: How Can You Try BugMD?"
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: BugMD is only available online and can't be found in stores. Now that you know about the amazing power of this plant-based potent spray, here is how you can get some for your own home: 1) Go here and order BugMD from the official website 2) Enjoy your days at home without seeing or hearing any cockroaches, flies or ants. Currently BugMD has a 55% off deal. If you want to check if it still active & inventory is in stock click here or the button below >>>"
+        },
+        "offerBadge": {
+          "type": "string",
+          "description": "Example: INTERNET-ONLY OFFER."
+        },
+        "offerBox": {
+          "type": "string",
+          "description": "Example: Currently BugMD has a 55% off deal. If you want to check if it still active & inventory is in stock click here or the button below >>>"
+        },
+        "citations": {
+          "type": "object",
+          "required": [
+            "heading",
+            "items"
+          ],
+          "properties": {
+            "heading": {
+              "type": "string",
+              "description": "Example: CITATIONS."
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "Example: (1) https://www.parents.com/health/injuries/safety/pest-proof-your-home-safely/"
+              }
+            }
+          }
+        }
+      }
+    },
+    "sidebar": {
+      "type": "object",
+      "required": [
+        "title",
+        "subtitle",
+        "ctaButton"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: BugMD."
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Example: Pest Control."
+        },
+        "ctaButton": {
+          "type": "string",
+          "description": "Example: Check Current Availability »."
+        }
+      }
+    },
+    "cta": {
+      "type": "object",
+      "required": [
+        "primary",
+        "secondary"
+      ],
+      "properties": {
+        "primary": {
+          "type": "string",
+          "description": "Example: Check Current Availability »."
+        },
+        "secondary": {
+          "type": "string",
+          "description": "Example: Check Current Availability »."
+        }
+      }
+    },
+    "footer": {
+      "type": "object",
+      "required": [
+        "copyright",
+        "disclaimer",
+        "links"
+      ],
+      "properties": {
+        "copyright": {
+          "type": "string",
+          "description": "Example: Copyright © 2025 BugMD | All Rights Reserved."
+        },
+        "disclaimer": {
+          "type": "string",
+          "description": "Example: This product is not intended to diagnose, treat, cure, or prevent any disease. Individual results may vary. Testimonials are not representative of typical results. Always consult with a qualified healthcare professional before starting any health program. The information on this page is for informational purposes only and should not be considered medical advice. These statements have not been evaluated by the Food and Drug Administration."
+        },
+        "links": {
+          "type": "object",
+          "required": [
+            "privacyPolicy",
+            "termsOfService",
+            "refundPolicy"
+          ],
+          "properties": {
+            "privacyPolicy": {
+              "type": "string",
+              "description": "Example: Privacy Policy."
+            },
+            "termsOfService": {
+              "type": "string",
+              "description": "Example: Terms of Service."
+            },
+            "refundPolicy": {
+              "type": "string",
+              "description": "Example: Returns."
+            }
+          }
+        }
+      }
+    }
+  }
+}

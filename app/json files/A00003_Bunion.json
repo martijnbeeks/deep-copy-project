@@ -1,0 +1,298 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BunionAdvertorialContent",
+  "description": "Template for Bunion advertorial. Please rewrite each attribute using the example provided below.",
+  "type": "object",
+  "required": [
+    "alert",
+    "breadcrumbs",
+    "hero",
+    "story",
+    "section1",
+    "section2",
+    "section3",
+    "section4",
+    "section5",
+    "section6",
+    "sidebar",
+    "cta",
+    "sticky",
+    "footer"
+  ],
+  "properties": {
+    "alert": {
+      "type": "object",
+      "required": [
+        "banner"
+      ],
+      "properties": {
+        "banner": {
+          "type": "string",
+          "description": "Example: UPDATE: The Bunion Fix is SELLING OUT faster than expected! Lock in your order NOW to get 50% OFF + FAST SHIPPING."
+        }
+      }
+    },
+    "breadcrumbs": {
+      "type": "string",
+      "description": "Example: Home > Bunion Pain > Bunion Fix."
+    },
+    "hero": {
+      "type": "object",
+      "required": [
+        "headline",
+        "subheadline",
+        "date",
+        "author",
+        "rating"
+      ],
+      "properties": {
+        "headline": {
+          "type": "string",
+          "description": "Example: What if I told you that your bunion pain isn't really caused by the \"bump\" itself, but by a hidden muscle imbalance that's been silently destroying your foot for years?"
+        },
+        "subheadline": {
+          "type": "string",
+          "description": "Example: Here's what's REALLY happening inside your foot right now..."
+        },
+        "date": {
+          "type": "string",
+          "description": "Example: October 16, 2025."
+        },
+        "author": {
+          "type": "object",
+          "required": [
+            "name",
+            "credentials"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Example: Dr. Blane Schilling."
+            },
+            "credentials": {
+              "type": "string",
+              "description": "Example: Podiatrist from Denver, Colorado."
+            }
+          }
+        },
+        "rating": {
+          "type": "object",
+          "required": [
+            "value",
+            "count"
+          ],
+          "properties": {
+            "value": {
+              "type": "string",
+              "description": "Example: 4.8 out of 5."
+            },
+            "count": {
+              "type": "string",
+              "description": "Example: 3,791 Ratings."
+            }
+          }
+        }
+      }
+    },
+    "story": {
+      "type": "object",
+      "required": [
+        "intro"
+      ],
+      "properties": {
+        "intro": {
+          "type": "string",
+          "description": "Example: Hi, my name is Dr. Blane Schilling, and I'm a podiatrist from Denver, Colorado. I have over 30 years of clinical experience and have treated well over 2,500 patients who came to me with all kinds of foot problems... Bunions, Toe misalignment, Hammertoes, Metatarsalgia. You name it. I've seen it all. From mild discomfort and stiffness... To swelling and redness... To..."
+        }
+      }
+    },
+    "section1": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Bunions So Bad You Could Barely Walk."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: But it wasn't until recently that I truly cracked the code to provide relief from bunion pain and deformity. It all started with a personal Breakthrough Discovery I had about a year ago. One night, I was poring over clinical studies on foot biomechanics and bunion formation when I stumbled across something that shocked me."
+        }
+      }
+    },
+    "section2": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Shocking Root Cause of Bunions."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: What if I told you that your bunion pain isn't really caused by the \"bump\" itself, but by a hidden muscle imbalance that's been silently destroying your foot for years? Here's what's REALLY happening inside your foot right now... You're Experiencing Progressive Toe Deviation (PTD). We call this process Progressive Toe Deviation (PTD), and it's the root cause of the crippling pain, swelling, unsightly appearance, and trouble walking that people with bunions experience. You see, you have muscles on both sides of your big toe. One side has become way too tight and is constantly pulling your toe INWARD toward your other toes. Meanwhile, the muscles that should be pulling it back have become weak and useless. This creates a devastating tug-of-war inside your foot where the tight muscles ALWAYS win, dragging your toe further and further out of position every single day."
+        }
+      }
+    },
+    "section3": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Why Everything You've Tried Has Failed."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Most people with bunions have tried every \"solution\" they could find: Bunion pads and toe spacers - Only mask the pain, can't retrain the overpowering muscles pulling your toe out of position. Wider shoes and orthotics - Provide comfort but do nothing to reverse the muscle imbalance causing your bunion. Foot exercises - Help somewhat, but can't provide the precise, consistent pressure needed to realign your displaced joint. Surgery - Cuts and repositions bone but doesn't fix the muscle problem, which is why nearly 50% of bunions return even after surgery. This is why you feel hopeless - nothing addresses bunions where they actually start: your foot muscles. But what if I told you there's finally a way to reverse bunions at their source? A breakthrough that retrains those imbalanced muscles without surgery, without pain, and from the comfort of your own home..."
+        }
+      }
+    },
+    "section4": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Get Relief From Bunion Pain at Home in Just 30 Minutes Per Day."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: It's all possible thanks to what I call \"Advanced Alignment Therapy\" - the first breakthrough that actually retrains your foot muscles instead of just masking the pain. You see, while other treatments focus on managing symptoms, Advanced Alignment Therapy actually REVERSES the muscle imbalance that created your bunion in the first place. This is the ONLY method that works WITH your body's natural biomechanics to gradually pull your toe back into its proper position - like having braces for your teeth, but for your toes. Introducing Treatmedy Bunion Fix. The Treatmedy Bunion Fix is the first device that delivers Advanced Alignment Therapy with a breakthrough Patented Hinge Joint Mechanism. Advanced Alignment Therapy supports the realignment of the big toe and gradually alleviates inflammation and pain. Patented Hinge Joint Mechanism allows you to adjust the stretch and therapy intensity to your needs since every foot and bunion is different and requires a unique approach. It helps release muscular tension by simply pulling your bunion back to its natural position, resulting in pain-free natural realignment that actually LASTS. The best part? You can experience relief in as little as 30 minutes a day! It's perfect for stationary use, like lounging on the couch, watching TV, reading, or sleeping."
+        }
+      }
+    },
+    "section5": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Customer Reviews."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: 4.8 out of 5. 3,791 Ratings. Rating breakdown: 5 Star: 90%, 4 Star: 7%, 3 Star: 2%, 2 Star: 0%, 1 Star: 1%. Ratings by feature: Price: 5.0, Effectiveness: 5.0, Comfort: 5.0, Quality: 4.8."
+        }
+      }
+    },
+    "section6": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Comments."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Comments section with customer feedback and replies."
+        }
+      }
+    },
+    "sidebar": {
+      "type": "object",
+      "required": [
+        "title",
+        "subtitle",
+        "ctaButton"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Finally Reduce."
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Example: Bunion Pain."
+        },
+        "ctaButton": {
+          "type": "string",
+          "description": "Example: GET 50% OFF BUNION FIX NOW!"
+        }
+      }
+    },
+    "cta": {
+      "type": "object",
+      "required": [
+        "primary",
+        "secondary"
+      ],
+      "properties": {
+        "primary": {
+          "type": "string",
+          "description": "Example: GET 50% OFF Bunion Fix Now!"
+        },
+        "secondary": {
+          "type": "string",
+          "description": "Example: GET 50% OFF Bunion Fix Now!"
+        }
+      }
+    },
+    "sticky": {
+      "type": "object",
+      "required": [
+        "cta"
+      ],
+      "properties": {
+        "cta": {
+          "type": "string",
+          "description": "Example: GET 50% OFF Bunion Fix Now!"
+        }
+      }
+    },
+    "footer": {
+      "type": "object",
+      "required": [
+        "copyright",
+        "disclaimer",
+        "links"
+      ],
+      "properties": {
+        "copyright": {
+          "type": "string",
+          "description": "Example: © 2024 All Rights Reserved."
+        },
+        "disclaimer": {
+          "type": "string",
+          "description": "Example: If you or any other person has a medical concern, you should consult with your health care provider or seek other professional medical treatment. Never disregard professional medical advice or delay in seeking it because of something that have read on this page or in any linked materials. If you think you may have a medical emergency, call your doctor or emergency services immediately."
+        },
+        "links": {
+          "type": "object",
+          "required": [
+            "privacyPolicy",
+            "termsOfService"
+          ],
+          "properties": {
+            "privacyPolicy": {
+              "type": "string",
+              "description": "Example: Privacy Policy."
+            },
+            "termsOfService": {
+              "type": "string",
+              "description": "Example: Terms of Service."
+            }
+          }
+        }
+      }
+    }
+  }
+}

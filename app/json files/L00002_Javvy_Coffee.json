@@ -1,0 +1,311 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "JavvyCoffeeListicleContent",
+  "description": "Template for Javvy Coffee listicle. Please rewrite each attribute using the example provided below.",
+  "type": "object",
+  "required": [
+    "topbar",
+    "hero",
+    "section1",
+    "section2",
+    "section3",
+    "section4",
+    "section5",
+    "section6",
+    "section7",
+    "section8",
+    "section9",
+    "section10",
+    "section11",
+    "section12",
+    "footer"
+  ],
+  "properties": {
+    "topbar": {
+      "type": "object",
+      "required": [
+        "label"
+      ],
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Example: ✨ BLACK FRIDAY VIP ACCESS."
+        }
+      }
+    },
+    "hero": {
+      "type": "object",
+      "required": [
+        "headline",
+        "date",
+        "author",
+        "summary"
+      ],
+      "properties": {
+        "headline": {
+          "type": "string",
+          "description": "Example: 12 Reasons Why Javvy Coffee Concentrate Will Upgrade Your Mornings."
+        },
+        "date": {
+          "type": "string",
+          "description": "Example: Last Updated Oct 13, 2025."
+        },
+        "author": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Example: Jade M."
+            }
+          }
+        },
+        "summary": {
+          "type": "string",
+          "description": "Example: Enjoy iced coffee at home without sugar or junk. Javvy is convenient, tasty, and the easiest way to get barista-style coffee anytime!"
+        }
+      }
+    },
+    "section1": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 1. Smooth energy that lasts - no crash, no hassle."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Zero sugar, low calories. Crash-free energy to start your mornings strong, stay focused all afternoon - or switch to decaf to relax at night."
+        }
+      }
+    },
+    "section2": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 2. Your morning ritual, finally stress-free."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Mornings are fragile, and if you hit snooze too many times everything spirals. Javvy makes coffee unbelievably easy: just pour, mix with water or milk, and it's ready. No machines, no fuss. And if you're running late, Javvy travels with you so your ritual never skips a beat."
+        }
+      }
+    },
+    "section3": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 3. Just 2 ingredients, pure coffee taste."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Clean label at its core: no fillers, no additives, no artificial flavors - just water and 100% Real Coffee taste. That's why every sip tastes naturally smooth."
+        }
+      }
+    },
+    "section4": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 4. 15+ Dessert-inspired flavors (and fresh new ones every month)."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Indulgent favorites like Vanilla, Caramel, and Mocha - plus new limited flavors released monthly. Your coffee routine will never feel the same."
+        }
+      }
+    },
+    "section5": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 5. Ditch the pods, ditch the waste."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Forget plastic pods, filters, and messy grounds. Javvy cuts the clutter and the trash. You get smooth coffee without leaving a trail of waste. Better for you, better for the planet."
+        }
+      }
+    },
+    "section6": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 6. Consistent perfection, in every cup."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Ever had your favorite drink ruined by a distracted barista? With Javvy, that's over. It's Hustle-Free Coffee with the same consistent taste every time, because you're in control."
+        }
+      }
+    },
+    "section7": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 7. Be your own barista, 1,000+ recipes to try."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Macchiato, flat white, cold brew, or your own wild invention - Javvy makes it simple to recreate them all. Hot or iced, creamy or bold, the choice is always yours. With thousands of recipes and endless flavor twists, every kitchen becomes a coffee shop and every cup a new discovery."
+        }
+      }
+    },
+    "section8": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 8. Coffee in seconds, time back in your day."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Skip the 20-minute line at the café. Skip the late-night coffee runs. Javvy means coffee in seconds, anytime you want it. Time is the ultimate luxury - Javvy gives it back."
+        }
+      }
+    },
+    "section9": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 9. Save more than just minutes, cut the cost."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Café coffee adds up fast. With Javvy, each cup can cost under 50¢ - saving your wallet while keeping your ritual indulgent. More savings, more freedom, more coffee you love."
+        }
+      }
+    },
+    "section10": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 10. One bottle, a month of coffee."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Every bottle makes up to 35 cups. Enough for a month of mornings - or to share with friends, coworkers, or at a party. (Espresso martinis, anyone?)"
+        }
+      }
+    },
+    "section11": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 11. Switch to better coffee, 30 days risk-free & free gifts included."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: A coffee upgrade should feel exciting, not risky. That's why Javvy comes with 30 days risk-free and free gifts included. That's how confident we are that it will upgrade your mornings."
+        }
+      }
+    },
+    "section12": {
+      "type": "object",
+      "required": [
+        "title",
+        "subheadline"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Reaching #12 means one thing: you're truly serious about a better morning coffee routine."
+        },
+        "subheadline": {
+          "type": "string",
+          "description": "Example: ✨ We don't hand these out every day… consider this your exclusive Javvy hookup, just for you."
+        }
+      }
+    },
+    "footer": {
+      "type": "object",
+      "required": [
+        "copyright",
+        "disclaimer",
+        "links"
+      ],
+      "properties": {
+        "copyright": {
+          "type": "string",
+          "description": "Example: © 2025 Javy Coffee Company. All right reserved."
+        },
+        "disclaimer": {
+          "type": "string",
+          "description": "Example: *Special sale discount is valid only on the first delivery of a new Javvy Coffee subscription created on https://try.javvycoffee.com/as by 10/16/2025 at 11:59pm PST and includes the price of free gifts. Javvy Coffee subscription renews every 30 days at a discounted rate of the price listed at checkout. Max one offer per customer; cannot be combined with any other offers or sales."
+        },
+        "links": {
+          "type": "object",
+          "required": [
+            "privacyPolicy",
+            "termsOfService"
+          ],
+          "properties": {
+            "privacyPolicy": {
+              "type": "string",
+              "description": "Example: Privacy Policy."
+            },
+            "termsOfService": {
+              "type": "string",
+              "description": "Example: Terms of Service."
+            }
+          }
+        }
+      }
+    }
+  }
+}
