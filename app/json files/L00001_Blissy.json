@@ -1,0 +1,337 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BlissyListicleContent",
+  "description": "Template for Blissy listicle. Please rewrite each attribute using the example provided below.",
+  "type": "object",
+  "required": [
+    "promoBanner",
+    "countdown",
+    "announcement",
+    "hero",
+    "section1",
+    "section2",
+    "section3",
+    "section4",
+    "section5",
+    "section6",
+    "section7",
+    "section8",
+    "section9",
+    "section10",
+    "section11",
+    "section12",
+    "cta",
+    "footer"
+  ],
+  "properties": {
+    "promoBanner": {
+      "type": "string",
+      "description": "Example: ⚡️ VIP FALL SALE ⚡️."
+    },
+    "countdown": {
+      "type": "object",
+      "required": [
+        "label",
+        "time"
+      ],
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Example: ENDING IN:."
+        },
+        "time": {
+          "type": "string",
+          "description": "Example: 00:08:38."
+        }
+      }
+    },
+    "announcement": {
+      "type": "string",
+      "description": "Example: SAVE 55% AND GET A FREE GIFT."
+    },
+    "hero": {
+      "type": "object",
+      "required": [
+        "headline",
+        "subheadline",
+        "reviewCount",
+        "pressQuotes"
+      ],
+      "properties": {
+        "headline": {
+          "type": "string",
+          "description": "Example: WHAT MAKES BLISSY THE MOST POPULAR PILLOWCASE IN THE WORLD?"
+        },
+        "subheadline": {
+          "type": "string",
+          "description": "Example: In just a year the Blissy Silk Pillowcase has skyrocketed to international fame. Selling out on way more than one occasion, and accumulating a massive following of loyal Blissy users, saying they'll \"never sleep on anything else\". With over 232,000 5-star reviews, those who have tried Blissy swear that it does what it says it does."
+        },
+        "reviewCount": {
+          "type": "string",
+          "description": "Example: 232,000+ Reviews."
+        },
+        "pressQuotes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "quote",
+              "publication"
+            ],
+            "properties": {
+              "quote": {
+                "type": "string",
+                "description": "Example: Blissy pillowcases have eliminated bedhead and frizz, softened skin, and even improved sleep quality."
+              },
+              "publication": {
+                "type": "string",
+                "description": "Example: The Oprah Magazine."
+              }
+            }
+          }
+        }
+      }
+    },
+    "section1": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 1. It's Anti-aging and Skin-saving."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Your face is in direct contact with your pillowcase all night. Other fabrics create friction and absorb your skin's moisture and lotions, causing blemishes, dryness, and sleep wrinkles. Blissy's silk surface is gentle, helping your skin repair itself overnight."
+        }
+      }
+    },
+    "section2": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 2. It'll improve the look, feel, and health of your hair."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: The 22-Momme 100% Mulberry Silk reduces friction, so your hair won't tangle or break. Wake up with healthier, shinier hair without the frizz."
+        }
+      }
+    },
+    "section3": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 3. Every morning show is raving about it!"
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Probably hard to believe a pillowcase can make so much noise right? Blissy is currently the hottest product on Live with Kelly & Mark, Good Morning America, The View and Tamron Hall... just to name a few! \"If you don't have a silk pillowcase... what are you doing???\" - Kelly Ripa."
+        }
+      }
+    },
+    "section4": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 4. Don't confuse it with cheap satin alternatives."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Silk is a 100% natural fiber, while satin is man-made. Silk is soft, smooth, and hypoallergenic, and it doesn't cause static. It also helps your skin retain moisture, unlike satin."
+        }
+      }
+    },
+    "section5": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 5. It keeps you cool and comfy all night—every night."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Blissy self-regulates its temperature, meaning it's always cool and comfortable. No more flipping the pillow to find the cool spot. The silk surface helps you fall—and stay—asleep fast."
+        }
+      }
+    },
+    "section6": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 6. It's naturally hypoallergenic."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Blissy's silk material is naturally hypoallergenic and anti-bacterial. It's resistant to mold, fungi, and dust-mites, making it perfect for those with allergies."
+        }
+      }
+    },
+    "section7": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 7. It's the must-have gift of 2025."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: It's a gift that people will use every single night. Giving someone the gift of better sleep, glowing skin, and beautiful hair is unique and luxurious. It comes in a beautiful package, ready for gifting."
+        }
+      }
+    },
+    "section8": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 8. It has over 232,000 5-Star reviews!"
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Blissy is the highest and most rated silk pillowcase company with over 232,000 5-star reviews! A good product leads to happy customers."
+        }
+      }
+    },
+    "section9": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 9. Its super easy to clean and will last a lifetime!"
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: You can machine-wash your Blissy repeatedly without ruining it. Due to its anti-bacterial properties, it can be washed less often than cotton and stay fresh."
+        }
+      }
+    },
+    "section10": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 10. It's the perfect travel companion!"
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Bring your Blissy pillowcase with you to enjoy the same benefits in a hotel or on a plane. Traveling doesn't have to be an inconvenience anymore."
+        }
+      }
+    },
+    "section11": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 11. It Will Transform Your Bedroom into a Magical Place!"
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Blissy's luxurious sheen and incredible softness will instantly transform your bed. It looks and feels lightyears better than any other pillowcase."
+        }
+      }
+    },
+    "section12": {
+      "type": "object",
+      "required": [
+        "title"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: It's pretty clear why Blissy has become an international sensation..."
+        }
+      }
+    },
+    "cta": {
+      "type": "object",
+      "required": [
+        "primary"
+      ],
+      "properties": {
+        "primary": {
+          "type": "string",
+          "description": "Example: Check Availability."
+        }
+      }
+    },
+    "footer": {
+      "type": "object",
+      "required": [
+        "copyright",
+        "links"
+      ],
+      "properties": {
+        "copyright": {
+          "type": "string",
+          "description": "Example: 2025 Blissy. All Rights Reserved."
+        },
+        "links": {
+          "type": "object",
+          "required": [
+            "privacyPolicy",
+            "termsOfService"
+          ],
+          "properties": {
+            "privacyPolicy": {
+              "type": "string",
+              "description": "Example: Privacy Policy."
+            },
+            "termsOfService": {
+              "type": "string",
+              "description": "Example: Terms & Conditions."
+            }
+          }
+        }
+      }
+    }
+  }
+}

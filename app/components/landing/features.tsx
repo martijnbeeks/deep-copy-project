@@ -36,7 +36,7 @@ export const Features = () => {
       title: "AI Copywriting with Specific Angle Selection",
       subtitle: "Find untapped angles that can scale your business to the next step",
       description: "Choose from multiple data-driven marketing angles based on comprehensive research insights and competitor analysis.",
-      visual: "Dashboard showing angle performance metrics"
+      visual: "/box2.mp4"
     },
     {
       icon: Trophy,
@@ -87,7 +87,7 @@ export const Features = () => {
               <p className="text-muted-foreground leading-relaxed mb-6">
                 {feature.description}
               </p>
-              <div className={`aspect-video rounded-lg overflow-hidden relative ${feature.visual.endsWith('.mp4') && feature.visual === '/box1.mp4' ? '' : 'bg-muted/50 border'}`}>
+              <div className={`aspect-video rounded-lg overflow-hidden relative ${feature.visual.endsWith('.mp4') ? '' : 'bg-muted/50 border'}`}>
                 {feature.visual.endsWith('.mp4') ? (
                   <video
                     ref={(el) => {
@@ -109,7 +109,7 @@ export const Features = () => {
                         });
                       }
                     }}
-                    className={`w-full h-full ${feature.visual === '/box1.mp4' ? 'object-contain' : 'object-contain'}`}
+                    className="w-full h-full object-contain"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">

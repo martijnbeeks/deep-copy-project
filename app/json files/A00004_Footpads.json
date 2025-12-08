@@ -1,0 +1,218 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FootpadsAdvertorialContent",
+  "description": "Template for Footpads advertorial. Please rewrite each attribute using the example provided below.",
+  "type": "object",
+  "required": [
+    "hero",
+    "story",
+    "section1",
+    "section2",
+    "section3",
+    "section4",
+    "section5",
+    "section6",
+    "sidebar",
+    "cta",
+    "footer"
+  ],
+  "properties": {
+    "hero": {
+      "type": "object",
+      "required": [
+        "headline",
+        "subheadline",
+        "date",
+        "author"
+      ],
+      "properties": {
+        "headline": {
+          "type": "string",
+          "description": "Example: Uncover the Surprising Truth Behind Your Aches and Pains."
+        },
+        "date": {
+          "type": "string",
+          "description": "Example: October 16, 2025."
+        },
+        "author": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Example: Andrea Stewart."
+            }
+          }
+        }
+      }
+    },
+    "story": {
+      "type": "object",
+      "required": [
+        "intro"
+      ],
+      "properties": {
+        "intro": {
+          "type": "string",
+          "description": "Example: Your body is constantly sending you signals, but decoding them can feel like cracking a secret code. Every little twinge or ache could be a warning sign of a deeper issue, yet we struggle to understand the language of our own bodies. That's where medical experts come in – to help us uncover the root cause of our symptoms and find effective solutions. But navigating the complex medical system can be a frustrating, time-consuming, and costly process, as Elizabeth discovered firsthand. Don't let the language barrier between you and your body hold you back. Discover the key to achieving optimal health."
+        }
+      }
+    },
+    "section1": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Meet Elizabeth."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: After working at a nursing home for many years, Elizabeth describes herself as a \"creature of habit.\" In part due to her work, she prefers to carefully schedule each part of her daily life in order to be the best nurse she can be – while still having time left to spend with her family. \"I remember waking up one morning with a dull ache in my hip. At the time, I didn't think much of it.\" She later told her friend, \"It's not uncommon to get some joint aches after a long day at work at my age.\" But as the day wore on, Elizabeth's pain intensified."
+        }
+      }
+    },
+    "section2": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: The doctors were struggling to diagnose the issue."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Despite a windfall of tests, nothing conclusive was found. Arthritis? No. Dysplasia? No. They simply couldn't figure out why this otherwise healthy 50-year-old lady was in so much pain. As a final resort, Elizabeth was referred to a physiotherapist to help with mobility and joint movement. She recalls, \"The physical therapy sessions were incredibly painful. After a few of them, I talked to the therapist, and he mentioned that he had seen situations like mine in the past and had noticed that these Detox Foot Patches had been helpful for others.\" Despite being skeptical, Elizabeth understood that she had nothing to lose, so she decided to give them a try."
+        }
+      }
+    },
+    "section3": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Elizabeth's experience."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: By this point, the pain in Elizabeth's body was so intense that she was willing to try anything. \"I remember putting on the Detox Foot Patches before bed and feeling like I was taking a chance,\" she recalls. \"My husband rolled his eyes when I told him what I was doing.\" To her surprise, the next morning, she woke up feeling more rested than she had in weeks. \"I couldn't believe it,\" she says. \"Even my husband was shocked. He said I slept like a baby the whole night.\" Despite her initial reservations, Elizabeth kept using the Detox Foot Patches every night. And when she removed them, she was shocked to see the dark, gooey substance they had absorbed. But as she continued to use the patches, something incredible happened: the pain began to fade away. \"It was a gradual process,\" she says. \"But I will never forget the morning when I woke up and realized the pain was gone. It was like a weight had been lifted off me.\""
+        }
+      }
+    },
+    "section4": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: About the Detox Foot Patches."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: For centuries, people in Asia have relied on natural remedies to help their bodies. Elizabeth discovered this firsthand when she tried Detox Foot Patches, which are based on the holistic medicine practices of traditional Asian medicine. Made from herbs and extracts sourced from the mountains of Asia, Bandoo Detox Foot Patches contain ingredients that have been used for generations. These ingredients work to detoxify the body, boost energy, and promote overall wellness."
+        }
+      }
+    },
+    "section5": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: What do others say about Detox Foot Patches."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Customer testimonials include: Michelle D. - \"I used them for the 1st time last night and got one of the best nights' sleep in a long time. Can only put it down to the cleanser foot pads.\" Rosalia G. - \"I received my first order yesterday, and I was blown away by the results. I tried the product right away and was able to walk without a knee cup for the first time in ages.\" Steven J. - \"As a happy repeat customer, I can confidently say that I love these patches. They have been a game-changer for me, especially when it comes to my feet.\""
+        }
+      }
+    },
+    "section6": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: [SALE ALERT]: Special 75% Off Offer Available Now."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: [SALE ALERT]: You can access the SPECIAL SALE and save 75% by clicking this exclusive link below. Stock is currently low in United States of America, so if you want to try Bandoo Detox Foot Patches for 75% OFF, you'd better hurry! ⚡️Flash Sale: 75% Off - Limited Time ⚡️"
+        }
+      }
+    },
+    "sidebar": {
+      "type": "object",
+      "required": [
+        "title"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Customer Reviews."
+        }
+      }
+    },
+    "cta": {
+      "type": "object",
+      "required": [
+        "primary",
+        "secondary"
+      ],
+      "properties": {
+        "primary": {
+          "type": "string",
+          "description": "Example: APPLY 75% DISCOUNT."
+        },
+        "secondary": {
+          "type": "string",
+          "description": "Example: CHECK AVAILABILITY."
+        }
+      }
+    },
+    "footer": {
+      "type": "object",
+      "required": [
+        "copyright",
+        "disclaimer",
+        "links"
+      ],
+      "properties": {
+        "copyright": {
+          "type": "string",
+          "description": "Example: COPYRIGHT, Bandoo."
+        },
+        "disclaimer": {
+          "type": "string",
+          "description": "Example: MARKETING DISCLOSURE: This website is a market place. As such you should know that the owner has a monetary connection to the product and services advertised on the site. The owner receives payment whenever a qualified lead is referred but that is the extent of it. ADVERTISING DISCLOSURE: This website and the products & services referred to on the site are advertising marketplaces. This website is an advertisement and not a news publication. Any photographs of persons used on this site are models. The owner of this site and of the products and services referred to on this site only provides a service where consumers can obtain and compare."
+        },
+        "links": {
+          "type": "object",
+          "required": [],
+          "properties": {}
+        }
+      }
+    }
+  }
+}
