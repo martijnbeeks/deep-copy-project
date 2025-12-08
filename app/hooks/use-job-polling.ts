@@ -21,7 +21,7 @@ export function useJobPolling({
   jobId,
   enabled = true,
   interval = 5000, // Poll every 5 seconds
-  maxAttempts = 120, // Max 10 minutes of polling
+  maxAttempts = 240, // Max 20 minutes of polling
   onStatusChange,
   onComplete,
   onError

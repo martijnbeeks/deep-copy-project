@@ -259,6 +259,16 @@ export function escapeHtml(text: string): string {
  */
 function getSectionContent(results: any, section: string): string {
   const key = section.toLowerCase().replace(/\s+/g, '_')
-  return results[key] || results[section] || ''
+  const content = results[key] || results[section] || ''
+  
+  // Ensure we always return a string
+  if (typeof content === 'string') {
+    return content
+  } else if (Array.isArray(content)) {
+    return content.join(' ')
+  } else if (typeof content === 'object' && content !== null) {
+    return JSON.stringify(content)
+  }
+  return String(content || '')
 }
 
