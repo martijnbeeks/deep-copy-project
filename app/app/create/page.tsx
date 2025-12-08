@@ -91,6 +91,8 @@ export default function CreatePage() {
   const [generalError, setGeneralError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [avatarExtractionJobId, setAvatarExtractionJobId] = useState<string | null>(null)
+  // Use ref to avoid async state timing issues when submitting immediately after avatar extraction
+  const avatarExtractionJobIdRef = useRef<string | null>(null)
 
   // Avatar extraction dialog state
   const [showAvatarDialog, setShowAvatarDialog] = useState(false)
@@ -216,9 +218,11 @@ export default function CreatePage() {
 
       // If we have an avatar extraction job ID, UPDATE it instead of creating new
       // The API will automatically detect if execution_id is missing and submit to DeepCopy
-      if (avatarExtractionJobId) {
+      // Use ref to avoid async state timing issues when submitting immediately after avatar extraction
+      const jobIdToUse = avatarExtractionJobIdRef.current || avatarExtractionJobId
+      if (jobIdToUse) {
         createdMarketingAngle = await updateMarketingAngleMutation.mutateAsync({
-          id: avatarExtractionJobId,
+          id: jobIdToUse,
           title: dataToSubmit.title,
           brand_info: dataToSubmit.brand_info || '',
           sales_page_url: dataToSubmit.sales_page_url,
@@ -242,7 +246,8 @@ export default function CreatePage() {
       setCurrentMarketingAngleId(createdMarketingAngle.id)
 
       // Clear avatar extraction job ID after successful update
-      if (avatarExtractionJobId) {
+      if (jobIdToUse) {
+        avatarExtractionJobIdRef.current = null
         setAvatarExtractionJobId(null)
       }
 
@@ -346,6 +351,7 @@ export default function CreatePage() {
                 })
                 setErrors({})
                 setGeneralError(null)
+                avatarExtractionJobIdRef.current = null
                 setAvatarExtractionJobId(null) // Clear avatar extraction job ID
 
                 // Redirect to results page
@@ -472,7 +478,9 @@ export default function CreatePage() {
   const handleAvatarsSelected = async (selectedAvatars: any[], allAvatars: any[], shouldClose: boolean = true, autoSubmit: boolean = false, productImage?: string, extractionJobId?: string) => {
     try {
       // Store the avatar extraction job ID if provided (from initial extraction)
+      // Set both ref (immediate) and state (for UI) to avoid async timing issues
       if (extractionJobId) {
+        avatarExtractionJobIdRef.current = extractionJobId
         setAvatarExtractionJobId(extractionJobId)
       }
 

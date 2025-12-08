@@ -45,7 +45,7 @@ export default function ResultDetailPage({ params }: { params: { id: string } })
     jobId: params.id,
     enabled: currentJob ? isProcessingStatus(currentJob.status) : false,
     interval: 5000, // Poll every 5 seconds
-    maxAttempts: 120, // Max 10 minutes
+    maxAttempts: 240, // Max 20 minutes
     onStatusChange: (status, progress) => {
       refetch()
     },
