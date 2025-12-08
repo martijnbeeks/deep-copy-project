@@ -187,7 +187,8 @@
       "type": "object",
       "required": [
         "title",
-        "body"
+        "body",
+        "comparison"
       ],
       "properties": {
         "title": {
@@ -197,6 +198,90 @@
         "body": {
           "type": "string",
           "description": "Example: Customers Reported: We used to keep a bottle of bug spray in our homes at all times. Not because of some pest infestation, but because my wife is terribly afraid of roaches. So as soon as we saw one we sprayed the entire area and hope they'd never come back. But they did… Until we started using this BugMD. It works amazing! I'm not breathing in those odd smelling ingredients like with the other bug sprays we had. This one works wonders and smells amazing. My wife and I love it. Bottom line: If you're tired of living with disgusting pests… and if you want an easy way to eliminate pests… then you should give BugMD a try!"
+        },
+        "comparison": {
+          "type": "object",
+          "required": [
+            "alternativeLabel",
+            "feature1",
+            "feature2",
+            "feature3",
+            "feature4"
+          ],
+          "properties": {
+            "alternativeLabel": {
+              "type": "string",
+              "description": "Example: Alternative."
+            },
+            "feature1": {
+              "type": "object",
+              "required": [
+                "product",
+                "alternative"
+              ],
+              "properties": {
+                "product": {
+                  "type": "string",
+                  "description": "Example: Clove and Cotton Seed Oil Active Ingredients."
+                },
+                "alternative": {
+                  "type": "string",
+                  "description": "Example: Odd Smelling Fumes."
+                }
+              }
+            },
+            "feature2": {
+              "type": "object",
+              "required": [
+                "product",
+                "alternative"
+              ],
+              "properties": {
+                "product": {
+                  "type": "string",
+                  "description": "Example: Works on Many Pests."
+                },
+                "alternative": {
+                  "type": "string",
+                  "description": "Example: May be Targeted for One Pest."
+                }
+              }
+            },
+            "feature3": {
+              "type": "object",
+              "required": [
+                "product",
+                "alternative"
+              ],
+              "properties": {
+                "product": {
+                  "type": "string",
+                  "description": "Example: Safe for Children & Pet Areas * When Used as Directed."
+                },
+                "alternative": {
+                  "type": "string",
+                  "description": "Example: May Not be Safe for these Areas."
+                }
+              }
+            },
+            "feature4": {
+              "type": "object",
+              "required": [
+                "product",
+                "alternative"
+              ],
+              "properties": {
+                "product": {
+                  "type": "string",
+                  "description": "Example: Affordable."
+                },
+                "alternative": {
+                  "type": "string",
+                  "description": "Example: Costly Exterminators."
+                }
+              }
+            }
+          }
         }
       }
     },
