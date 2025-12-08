@@ -23,6 +23,7 @@
     "sidebar",
     "cta",
     "sticky",
+    "reactions",
     "footer"
   ],
   "properties": {
@@ -312,12 +313,393 @@
     "sticky": {
       "type": "object",
       "required": [
-        "cta"
+        "cta",
+        "bottomBarText"
       ],
       "properties": {
         "cta": {
           "type": "string",
           "description": "Example: GET 50% OFF Spartan Red Light Growth Cap!"
+        },
+        "bottomBarText": {
+          "type": "string",
+          "description": "Example:GET 50% OFF Spartan Red Light Growth Cap! "
+        }
+      }
+    },
+    "reactions": {
+      "type": "object",
+      "required": [
+        "title",
+        "r1",
+        "r4",
+        "r5",
+        "r6",
+        "r7",
+        "r8",
+        "r9",
+        "r10",
+        "r11",
+        "r12"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Comments."
+        },
+        "r1": {
+          "type": "object",
+          "required": [
+            "name",
+            "text",
+            "likes",
+            "time"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Example: Barbara Miller."
+            },
+            "text": {
+              "type": "string",
+              "description": "Example: It is amazing how God created us so perfectly!"
+            },
+            "likes": {
+              "type": "string",
+              "description": "Example: 4."
+            },
+            "time": {
+              "type": "string",
+              "description": "Example: 51 min."
+            }
+          }
+        },
+        "r4": {
+          "type": "object",
+          "required": [
+            "name",
+            "text",
+            "likes",
+            "time"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Example: Richard Wilson."
+            },
+            "text": {
+              "type": "string",
+              "description": "Example: Just ordered mine."
+            },
+            "likes": {
+              "type": "string",
+              "description": "Example: 6."
+            },
+            "time": {
+              "type": "string",
+              "description": "Example: 1 h."
+            }
+          }
+        },
+        "r5": {
+          "type": "object",
+          "required": [
+            "name",
+            "text",
+            "likes",
+            "time",
+            "reply1"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Example: Doug Johnson."
+            },
+            "text": {
+              "type": "string",
+              "description": "Example: Would love to hear reviews from people who bought it. Like 6 months after, is it still working?"
+            },
+            "likes": {
+              "type": "string",
+              "description": "Example: 2."
+            },
+            "time": {
+              "type": "string",
+              "description": "Example: 2 h."
+            },
+            "reply1": {
+              "type": "object",
+              "required": [
+                "name",
+                "text",
+                "likes",
+                "time"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Example: Jose Martinez."
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Example: Doug Johnson I just started using mine, and I'm already impressed. The red light feels like it's stimulating just the scalp, not heating everything up like I feared. Looking forward to the next few months."
+                },
+                "likes": {
+                  "type": "string",
+                  "description": "Example: 3."
+                },
+                "time": {
+                  "type": "string",
+                  "description": "Example: 1 h."
+                }
+              }
+            }
+          }
+        },
+        "r6": {
+          "type": "object",
+          "required": [
+            "name",
+            "text",
+            "likes",
+            "time"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Example: Lionel Beckett."
+            },
+            "text": {
+              "type": "string",
+              "description": "Example: Really informative. I've tried other treatments before but never heard red light therapy explained so clearly."
+            },
+            "likes": {
+              "type": "string",
+              "description": "Example: 1."
+            },
+            "time": {
+              "type": "string",
+              "description": "Example: 3 h."
+            }
+          }
+        },
+        "r7": {
+          "type": "object",
+          "required": [
+            "name",
+            "text",
+            "likes",
+            "time",
+            "reply1"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Example: Mark Owens."
+            },
+            "text": {
+              "type": "string",
+              "description": "Example: I would like to buy a cap."
+            },
+            "likes": {
+              "type": "string",
+              "description": "Example: 1."
+            },
+            "time": {
+              "type": "string",
+              "description": "Example: 3 h."
+            },
+            "reply1": {
+              "type": "object",
+              "required": [
+                "name",
+                "text",
+                "likes",
+                "time"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Example: Rowena Barron."
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Example: Mark Owens i am trying to buy from Australia but only America is accepted."
+                },
+                "likes": {
+                  "type": "string",
+                  "description": "Example: 3."
+                },
+                "time": {
+                  "type": "string",
+                  "description": "Example: 2 h."
+                }
+              }
+            }
+          }
+        },
+        "r8": {
+          "type": "object",
+          "required": [
+            "name",
+            "text",
+            "likes",
+            "time"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Example: Cecelia Pruitt."
+            },
+            "text": {
+              "type": "string",
+              "description": "Example: I'm truly amazed at how our bodies can respond to light therapy. I recently read how it supports natural growth without harsh chemicals such a blessing! Grateful for the science and the doctors behind this technology!"
+            },
+            "likes": {
+              "type": "string",
+              "description": "Example: 8."
+            },
+            "time": {
+              "type": "string",
+              "description": "Example: 3 h."
+            }
+          }
+        },
+        "r9": {
+          "type": "object",
+          "required": [
+            "name",
+            "text",
+            "likes",
+            "time"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Example: Lucille Langley."
+            },
+            "text": {
+              "type": "string",
+              "description": "Example: Just got mine a few days ago. So far, I'm loving how easy it is to use and how it makes my scalp feel!"
+            },
+            "likes": {
+              "type": "string",
+              "description": "Example: 1."
+            },
+            "time": {
+              "type": "string",
+              "description": "Example: 4 h."
+            }
+          }
+        },
+        "r10": {
+          "type": "object",
+          "required": [
+            "name",
+            "text",
+            "likes",
+            "time"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Example: Sharon Harper."
+            },
+            "text": {
+              "type": "string",
+              "description": "Example: Sounds promising if it really works. I've tried all sorts of treatments and would love to give this cap a shot."
+            },
+            "likes": {
+              "type": "string",
+              "description": "Example: 2."
+            },
+            "time": {
+              "type": "string",
+              "description": "Example: 2 h."
+            }
+          }
+        },
+        "r11": {
+          "type": "object",
+          "required": [
+            "name",
+            "text",
+            "likes",
+            "time",
+            "reply1"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Example: Zelda Montgomery."
+            },
+            "text": {
+              "type": "string",
+              "description": "Example: me too."
+            },
+            "likes": {
+              "type": "string",
+              "description": "Example: 2."
+            },
+            "time": {
+              "type": "string",
+              "description": "Example: 1 h."
+            },
+            "reply1": {
+              "type": "object",
+              "required": [
+                "name",
+                "text",
+                "likes",
+                "time"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Example: Zelda Montgomery."
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Example: me too."
+                },
+                "likes": {
+                  "type": "string",
+                  "description": "Example: 2."
+                },
+                "time": {
+                  "type": "string",
+                  "description": "Example: 1 h."
+                }
+              }
+            }
+          }
+        },
+        "r12": {
+          "type": "object",
+          "required": [
+            "name",
+            "text",
+            "likes",
+            "time"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Example: Curtis Reynolds."
+            },
+            "text": {
+              "type": "string",
+              "description": "Example: Really informative read. I've been struggling with thinning hair and have looked into everything this looks like it could be a great solution."
+            },
+            "likes": {
+              "type": "string",
+              "description": "Example: 3."
+            },
+            "time": {
+              "type": "string",
+              "description": "Example: 4 h."
+            }
+          }
         }
       }
     },

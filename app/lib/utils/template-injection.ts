@@ -64,6 +64,12 @@ export interface ContentData {
     subheadline: string
     image: string
     imageAlt: string
+    summary?: string  // For Javvy Coffee listicle
+    author?: {        // For Javvy Coffee listicle
+      name: string
+      image?: string
+    }
+    date?: string     // For Javvy Coffee listicle
   }
   author: {
     name: string
@@ -137,6 +143,8 @@ export interface ContentData {
     body: string
     image: string
     imageAlt: string
+    offerBadge?: string  // For Javvy Coffee listicle
+    offerBox?: string    // For Javvy Coffee listicle
   }
   section10: {
     title: string
@@ -243,6 +251,8 @@ export interface ContentData {
   reviews: {
     url: string
   }
+  // Allow additional properties from API response (dynamic extraction)
+  [key: string]: any
 }
 
 export function extractContentFromAngle(results: any, swipe: any, angleIndex: number): ContentData {
@@ -502,7 +512,18 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
         200
       ),
       image: sanitizeUrl(swipeContent.hero?.image || 'https://placehold.co/600x400?text=Hero+Image'),
-      imageAlt: sanitizeTextContent(swipeContent.hero?.imageAlt || 'Hero Image', 50)
+      imageAlt: sanitizeTextContent(swipeContent.hero?.imageAlt || 'Hero Image', 50),
+      // For Javvy Coffee listicle - extract summary, author, and date from hero object
+      summary: swipeContent.hero?.summary ? sanitizeBodyContent(swipeContent.hero.summary, 500) : undefined,
+      author: swipeContent.hero?.author ? {
+        name: sanitizeTextContent(
+          swipeContent.hero.author?.name || 
+          (typeof swipeContent.hero.author === 'string' ? swipeContent.hero.author : 'Health Expert'),
+          50
+        ),
+        image: swipeContent.hero.author?.image ? sanitizeUrl(swipeContent.hero.author.image) : undefined
+      } : undefined,
+      date: swipeContent.hero?.date ? sanitizeTextContent(swipeContent.hero.date, 100) : undefined
     },
 
     // Author section - handle both formats
@@ -539,10 +560,11 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
       )
     },
 
-    // Story intro - handle both formats
+    // Story intro - handle both formats and check multiple locations
     story: {
       intro: sanitizeBodyContent(
         swipeContent.story?.intro ||
+        swipeContent.intro ||  // Alternative location
         (isListicle ? swipeContent.summary : null) ||
         (isAdvertorial ? swipeContent.body?.substring(0, 300) : null) ||
         'Here\'s what you need to know about this breakthrough solution...',
@@ -720,7 +742,10 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
         500
       ),
       image: sanitizeUrl(swipeContent.section9?.image || 'https://placehold.co/600x400?text=Expert+Endorsement'),
-      imageAlt: sanitizeTextContent(swipeContent.section9?.imageAlt || 'Expert recommendation', 50)
+      imageAlt: sanitizeTextContent(swipeContent.section9?.imageAlt || 'Expert recommendation', 50),
+      // For Javvy Coffee listicle - extract offerBadge and offerBox
+      offerBadge: swipeContent.section9?.offerBadge ? sanitizeTextContent(swipeContent.section9.offerBadge, 200) : undefined,
+      offerBox: swipeContent.section9?.offerBox ? sanitizeBodyContent(swipeContent.section9.offerBox, 500) : undefined
     },
     section10: {
       title: sanitizeTextContent(
@@ -922,7 +947,16 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     }
   }
 
-  return content
+  // DYNAMIC EXTRACTION: Extract ALL remaining fields from API response
+  // This ensures any field in the API response is available for injection,
+  // even if it's not in the predefined ContentData structure
+  // The dynamic injection will automatically find and inject matching placeholders
+  const allExtractedFields = extractAllFieldsFromApi(swipeContent, content)
+  
+  // Deep merge extracted fields into content (preserving typed structure, adding new fields)
+  const finalContent = deepMerge(content, allExtractedFields) as ContentData
+
+  return finalContent
 }
 
 // Extract content data from DeepCopy results (fallback function)
@@ -1250,6 +1284,98 @@ function removeDuplicateContent(htmlContent: string, content: ContentData): stri
   return htmlContent
 }
 
+// Helper function to recursively extract all fields from API response and merge into content object
+// This makes extraction truly dynamic - extracts ALL fields, not just predefined ones
+// Strategy: Extract everything, then merge with existing content (existing takes precedence for typed fields)
+function extractAllFieldsFromApi(swipeContent: any, existingContent: any = {}): any {
+  const extracted: any = {}
+  
+  // Skip if swipeContent is null, undefined, or not an object
+  if (!swipeContent || typeof swipeContent !== 'object' || Array.isArray(swipeContent)) {
+    return extracted
+  }
+  
+  // Iterate through all properties in swipeContent
+  for (const key in swipeContent) {
+    if (!swipeContent.hasOwnProperty(key)) continue
+    
+    const value = swipeContent[key]
+    
+    // Skip if value is null or undefined
+    if (value === null || value === undefined) {
+      continue
+    }
+    
+    // If this field already exists in typed content, check if we need to merge nested fields
+    if (existingContent && existingContent[key] !== undefined && typeof existingContent[key] === 'object' && !Array.isArray(existingContent[key])) {
+      // Field exists in typed structure - recursively extract nested fields that might be missing
+      if (typeof value === 'object' && !Array.isArray(value)) {
+        const nestedExtracted = extractAllFieldsFromApi(value, existingContent[key])
+        // Only add if there are new nested fields
+        if (Object.keys(nestedExtracted).length > 0) {
+          extracted[key] = nestedExtracted
+        }
+      }
+      // Skip top-level field if it's already in typed structure (don't overwrite)
+      continue
+    }
+    
+    // Extract and sanitize the value based on its type and field name
+    if (typeof value === 'string') {
+      // Apply appropriate sanitization based on field name patterns
+      if (key.toLowerCase().includes('url') || key.toLowerCase().includes('image') || key.toLowerCase().includes('link') || key.toLowerCase().includes('src')) {
+        extracted[key] = sanitizeUrl(value)
+      } else if (key.toLowerCase().includes('body') || key.toLowerCase().includes('description') || key.toLowerCase().includes('intro') || key.toLowerCase().includes('summary') || key.toLowerCase().includes('text') || key.toLowerCase().includes('content')) {
+        extracted[key] = sanitizeBodyContent(value)
+      } else {
+        extracted[key] = sanitizeTextContent(value)
+      }
+    } else if (typeof value === 'number' || typeof value === 'boolean') {
+      extracted[key] = value // Keep numbers and booleans as-is
+    } else if (Array.isArray(value)) {
+      // For arrays, recursively process each element
+      extracted[key] = value.map((item) => {
+        if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+          return extractAllFieldsFromApi(item, {})
+        } else if (typeof item === 'string') {
+          return sanitizeTextContent(item)
+        }
+        return item
+      })
+    } else if (typeof value === 'object') {
+      // Recursively extract nested objects
+      extracted[key] = extractAllFieldsFromApi(value, {})
+    }
+  }
+  
+  return extracted
+}
+
+// Helper function to deep merge objects (merge extracted fields into content)
+function deepMerge(target: any, source: any): any {
+  const output = { ...target }
+  
+  if (isObject(target) && isObject(source)) {
+    Object.keys(source).forEach(key => {
+      if (isObject(source[key])) {
+        if (!(key in target)) {
+          Object.assign(output, { [key]: source[key] })
+        } else {
+          output[key] = deepMerge(target[key], source[key])
+        }
+      } else {
+        Object.assign(output, { [key]: source[key] })
+      }
+    })
+  }
+  
+  return output
+}
+
+function isObject(item: any): boolean {
+  return item && typeof item === 'object' && !Array.isArray(item)
+}
+
 // Helper function to get a value from a nested object using dot notation path
 function getNestedValue(obj: any, path: string): any {
   const keys = path.split('.')
@@ -1281,7 +1407,13 @@ function valueToString(value: any): string {
     return value.map(v => valueToString(v)).join(', ')
   }
   if (typeof value === 'object') {
-    // For objects, try to stringify or return empty
+    // Special handling for objects with a 'text' property (like breadcrumbs)
+    // If template uses {{content.breadcrumbs}} instead of {{content.breadcrumbs.text}},
+    // return the text value directly instead of stringifying the object
+    if (value.text !== undefined && typeof value.text === 'string') {
+      return value.text
+    }
+    // For other objects, try to stringify or return empty
     try {
       return JSON.stringify(value)
     } catch {

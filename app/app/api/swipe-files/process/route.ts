@@ -118,6 +118,46 @@ export async function POST(request: NextRequest) {
         // Handle both { full_advertorial: {...} } and direct content
         const swipeContent = (swipeData as any).full_advertorial || swipeData
         
+        // DEBUG: Log the actual structure for inspection
+        if (templateId === 'A00002' || templateId === 'L00002') {
+          console.log(`\n🔍 DEBUG: Template ${templateId} - Swipe Content Structure:`)
+          console.log(`   Top-level keys: ${Object.keys(swipeContent || {}).join(', ')}`)
+          
+          // Check for specific fields
+          if (swipeContent) {
+            console.log(`   story: ${swipeContent.story ? 'EXISTS' : 'MISSING'}`)
+            if (swipeContent.story) {
+              console.log(`     story.intro: ${swipeContent.story.intro ? 'EXISTS' : 'MISSING'}`)
+            }
+            console.log(`   breadcrumbs: ${swipeContent.breadcrumbs ? 'EXISTS' : 'MISSING'} (type: ${typeof swipeContent.breadcrumbs})`)
+            console.log(`   reactions: ${swipeContent.reactions ? 'EXISTS' : 'MISSING'}`)
+            console.log(`   hero: ${swipeContent.hero ? 'EXISTS' : 'MISSING'}`)
+            if (swipeContent.hero) {
+              console.log(`     hero.summary: ${swipeContent.hero.summary ? 'EXISTS' : 'MISSING'}`)
+              console.log(`     hero.author: ${swipeContent.hero.author ? 'EXISTS' : 'MISSING'}`)
+              console.log(`     hero.date: ${swipeContent.hero.date ? 'EXISTS' : 'MISSING'}`)
+            }
+            console.log(`   section9: ${swipeContent.section9 ? 'EXISTS' : 'MISSING'}`)
+            if (swipeContent.section9) {
+              console.log(`     section9.offerBadge: ${swipeContent.section9.offerBadge ? 'EXISTS' : 'MISSING'}`)
+              console.log(`     section9.offerBox: ${swipeContent.section9.offerBox ? 'EXISTS' : 'MISSING'}`)
+            }
+            
+            // Log full structure for debugging (first 2 levels)
+            console.log(`   Full structure (sample):`)
+            Object.keys(swipeContent).slice(0, 10).forEach(key => {
+              const value = swipeContent[key]
+              const type = Array.isArray(value) ? 'array' : typeof value
+              const preview = typeof value === 'object' && value !== null && !Array.isArray(value)
+                ? `{${Object.keys(value).slice(0, 5).join(', ')}}`
+                : typeof value === 'string' 
+                  ? value.substring(0, 50) + (value.length > 50 ? '...' : '')
+                  : type
+              console.log(`     ${key}: ${type} ${preview}`)
+            })
+          }
+        }
+        
         // Check if swipe content is empty or has minimal data
         if (!swipeContent || (typeof swipeContent === 'object' && Object.keys(swipeContent).length === 0)) {
           console.warn(`⚠️ Template ${templateId} has empty or minimal swipe content`)
@@ -127,6 +167,18 @@ export async function POST(request: NextRequest) {
 
         // Extract structured content
         const contentData = extractContentFromSwipeResult(swipeContent, advertorialType)
+        
+        // DEBUG: Log what was extracted
+        if (templateId === 'A00002' || templateId === 'L00002') {
+          console.log(`\n🔍 DEBUG: Template ${templateId} - Extracted Content:`)
+          console.log(`   content.story?.intro: ${contentData.story?.intro ? 'EXISTS' : 'MISSING'} ${contentData.story?.intro ? `(${contentData.story.intro.substring(0, 50)}...)` : ''}`)
+          console.log(`   content.breadcrumbs?.text: ${contentData.breadcrumbs?.text ? 'EXISTS' : 'MISSING'} ${contentData.breadcrumbs?.text ? `(${contentData.breadcrumbs.text.substring(0, 50)})` : ''}`)
+          console.log(`   content.reactions: ${contentData.reactions ? 'EXISTS' : 'MISSING'}`)
+          console.log(`   content.hero?.summary: ${contentData.hero?.summary ? 'EXISTS' : 'MISSING'}`)
+          console.log(`   content.hero?.author: ${contentData.hero?.author ? 'EXISTS' : 'MISSING'}`)
+          console.log(`   content.section9?.offerBadge: ${contentData.section9?.offerBadge ? 'EXISTS' : 'MISSING'}`)
+          console.log(`   content.section9?.offerBox: ${contentData.section9?.offerBox ? 'EXISTS' : 'MISSING'}`)
+        }
 
         // Inject content into template
         const injectedHtml = injectContentIntoTemplate(injectableTemplate, contentData)
