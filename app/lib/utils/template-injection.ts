@@ -163,6 +163,8 @@ export interface ContentData {
     secondaryUrl: string
   }
   sidebar: {
+    title?: string
+    subtitle?: string
     ctaHeadline: string
     ctaButton: string
     ctaUrl: string
@@ -800,8 +802,13 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
       secondaryUrl: '#learn'
     },
 
-    // Sidebar section - exact field mapping with comprehensive fallbacks
+    // Sidebar section - extract ALL fields from API response dynamically
     sidebar: {
+      // Extract title if it exists in API response
+      title: sanitizeTextContent(swipeContent.sidebar?.title || '', 200),
+      // Extract subtitle if it exists in API response
+      subtitle: sanitizeTextContent(swipeContent.sidebar?.subtitle || '', 200),
+      // Keep existing fields for backward compatibility
       ctaHeadline: sanitizeTextContent(swipeContent.sidebar?.ctaHeadline || swipeContent.sidebar?.title || swipeContent.cta?.primary || 'Special Offer', 100),
       ctaButton: sanitizeTextContent(swipeContent.sidebar?.ctaButton || swipeContent.cta?.primary || 'Get Started', 100),
       ctaUrl: '#order',
@@ -1243,6 +1250,47 @@ function removeDuplicateContent(htmlContent: string, content: ContentData): stri
   return htmlContent
 }
 
+// Helper function to get a value from a nested object using dot notation path
+function getNestedValue(obj: any, path: string): any {
+  const keys = path.split('.')
+  let current = obj
+  
+  for (const key of keys) {
+    if (current === null || current === undefined || typeof current !== 'object') {
+      return undefined
+    }
+    current = current[key]
+  }
+  
+  return current
+}
+
+// Helper function to convert a value to string safely
+function valueToString(value: any): string {
+  if (value === null || value === undefined) {
+    return ''
+  }
+  if (typeof value === 'string') {
+    return value
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  if (Array.isArray(value)) {
+    // For arrays, join with comma or return first element as string
+    return value.map(v => valueToString(v)).join(', ')
+  }
+  if (typeof value === 'object') {
+    // For objects, try to stringify or return empty
+    try {
+      return JSON.stringify(value)
+    } catch {
+      return ''
+    }
+  }
+  return ''
+}
+
 export function injectContentIntoTemplate(template: InjectableTemplate, content: ContentData): string {
   try {
     let htmlContent = template.html_content
@@ -1252,101 +1300,45 @@ export function injectContentIntoTemplate(template: InjectableTemplate, content:
       return createFallbackTemplate(content)
     }
 
-
-    // Replace all placeholders with actual content (content is already sanitized)
-    const replacements: { [key: string]: string } = {
-      '{{content.hero.headline}}': content.hero.headline,
-      '{{content.hero.subheadline}}': content.hero.subheadline,
-      '{{content.author.name}}': content.author.name,
-      '{{content.author.image}}': content.author.image,
-      '{{content.author.date}}': content.author.date,
-      '{{content.topbar.label}}': content.topbar.label,
-      '{{content.topbar.image}}': content.topbar.image,
-      '{{content.alert.banner}}': content.alert.banner,
-      '{{content.breadcrumbs.text}}': content.breadcrumbs.text,
-      '{{content.story.intro}}': content.story.intro,
-      '{{content.section1.title}}': content.section1.title,
-      '{{content.section1.body}}': content.section1.body,
-      '{{content.section1.image}}': content.section1.image,
-      '{{content.section1.imageAlt}}': content.section1.imageAlt,
-      '{{content.section2.title}}': content.section2.title,
-      '{{content.section2.body}}': content.section2.body,
-      '{{content.section2.image}}': content.section2.image,
-      '{{content.section2.imageAlt}}': content.section2.imageAlt,
-      '{{content.section3.title}}': content.section3.title,
-      '{{content.section3.body}}': content.section3.body,
-      '{{content.section3.image}}': content.section3.image,
-      '{{content.section3.imageAlt}}': content.section3.imageAlt,
-      '{{content.section4.title}}': content.section4.title,
-      '{{content.section4.body}}': content.section4.body,
-      '{{content.section4.image}}': content.section4.image,
-      '{{content.section4.imageAlt}}': content.section4.imageAlt,
-      '{{content.section5.title}}': content.section5.title,
-      '{{content.section5.body}}': content.section5.body,
-      '{{content.section5.image}}': content.section5.image,
-      '{{content.section5.imageAlt}}': content.section5.imageAlt,
-      '{{content.section6.title}}': content.section6.title,
-      '{{content.section6.body}}': content.section6.body,
-      '{{content.section6.image}}': content.section6.image,
-      '{{content.section6.imageAlt}}': content.section6.imageAlt,
-      '{{content.section7.title}}': content.section7.title,
-      '{{content.section7.body}}': content.section7.body,
-      '{{content.section7.image}}': content.section7.image,
-      '{{content.section7.imageAlt}}': content.section7.imageAlt,
-      '{{content.section8.title}}': content.section8.title,
-      '{{content.section8.body}}': content.section8.body,
-      '{{content.section8.image}}': content.section8.image,
-      '{{content.section8.imageAlt}}': content.section8.imageAlt,
-      '{{content.section9.title}}': content.section9.title,
-      '{{content.section9.body}}': content.section9.body,
-      '{{content.section9.image}}': content.section9.image,
-      '{{content.section9.imageAlt}}': content.section9.imageAlt,
-      '{{content.section10.title}}': content.section10.title,
-      '{{content.section10.body}}': content.section10.body,
-      '{{content.section10.image}}': content.section10.image,
-      '{{content.section10.imageAlt}}': content.section10.imageAlt,
-      '{{content.section11.title}}': content.section11.title,
-      '{{content.section11.body}}': content.section11.body,
-      '{{content.section11.image}}': content.section11.image,
-      '{{content.section11.imageAlt}}': content.section11.imageAlt,
-      '{{content.section12.title}}': content.section12.title,
-      '{{content.section12.body}}': content.section12.body,
-      '{{content.section12.image}}': content.section12.image,
-      '{{content.section12.imageAlt}}': content.section12.imageAlt,
-      '{{content.cta.primary}}': content.cta.primary,
-      '{{content.cta.primaryUrl}}': content.cta.primaryUrl,
-      '{{content.cta.secondary}}': content.cta.secondary,
-      '{{content.cta.secondaryUrl}}': content.cta.secondaryUrl,
-      '{{content.sidebar.ctaHeadline}}': content.sidebar.ctaHeadline,
-      '{{content.sidebar.ctaButton}}': content.sidebar.ctaButton,
-      '{{content.sidebar.ctaUrl}}': content.sidebar.ctaUrl,
-      '{{content.sticky.cta}}': content.sticky.cta,
-      '{{content.sticky.ctaUrl}}': content.sticky.ctaUrl,
-      '{{content.reactions.title}}': content.reactions.title,
-      '{{content.reactions.r1.name}}': content.reactions.r1.name,
-      '{{content.reactions.r1.text}}': content.reactions.r1.text,
-      '{{content.reactions.r1.time}}': content.reactions.r1.time,
-      '{{content.reactions.r1.likes}}': content.reactions.r1.likes.toString(),
-      '{{content.reactions.r2.name}}': content.reactions.r2.name,
-      '{{content.reactions.r2.text}}': content.reactions.r2.text,
-      '{{content.reactions.r2.time}}': content.reactions.r2.time,
-      '{{content.reactions.r2.likes}}': content.reactions.r2.likes.toString(),
-      '{{content.reactions.r3.name}}': content.reactions.r3.name,
-      '{{content.reactions.r3.text}}': content.reactions.r3.text,
-      '{{content.reactions.r3.time}}': content.reactions.r3.time,
-      '{{content.reactions.r3.likes}}': content.reactions.r3.likes.toString(),
-      '{{content.brands.brand1.name}}': content.brands.brand1.name,
-      '{{content.brands.brand1.logo}}': content.brands.brand1.logo,
-      '{{content.guarantee.badge}}': content.guarantee.badge,
-      '{{content.assurances.blurb}}': content.assurances.blurb,
-      '{{content.footer.copyright}}': content.footer.copyright,
-      '{{content.footer.disclaimer}}': content.footer.disclaimer,
-      '{{content.shipping.threshold}}': content.shipping.threshold
+    // STEP 1: Find ALL placeholders in the template using regex
+    // This makes the system future-proof - it will handle any placeholder the template uses
+    const placeholderRegex = /\{\{content\.([^}]+)\}\}/g
+    const foundPlaceholders = new Set<string>()
+    let match
+    
+    while ((match = placeholderRegex.exec(htmlContent)) !== null) {
+      foundPlaceholders.add(match[1]) // match[1] is the field path (e.g., "sidebar.title")
     }
-
-    // Apply all replacements
+    
+    // STEP 2: Build replacements dynamically based on what's in the template AND what's in the content
+    // This approach ensures we only inject fields that:
+    // 1. Exist in the template (found via regex)
+    // 2. Exist in the content object (from API response)
+    const replacements: { [key: string]: string } = {}
+    
+    for (const fieldPath of foundPlaceholders) {
+      const placeholder = `{{content.${fieldPath}}}`
+      
+      // Check if this field exists in the content object
+      const value = getNestedValue(content, fieldPath)
+      
+      if (value !== undefined && value !== null) {
+        // Field exists - convert to string and add to replacements
+        // Content is already sanitized from extractContentFromSwipeResult
+        const stringValue = valueToString(value)
+        replacements[placeholder] = stringValue
+      } else {
+        // Field doesn't exist in content - replace with empty string for cleaner output
+        // This prevents placeholders from appearing in the final HTML
+        replacements[placeholder] = ''
+      }
+    }
+    
+    // STEP 3: Apply all replacements
     for (const [placeholder, value] of Object.entries(replacements)) {
-      htmlContent = htmlContent.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value || '')
+      // Escape special regex characters in placeholder
+      const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      htmlContent = htmlContent.replace(new RegExp(escapedPlaceholder, 'g'), value)
     }
 
     // Comprehensive deduplication - remove ALL duplicate content
