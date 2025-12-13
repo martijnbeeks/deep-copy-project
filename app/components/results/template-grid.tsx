@@ -5,21 +5,24 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Copy, Download, Eye, FileText, DownloadCloud } from "lucide-react"
+import { Copy, Download, Eye, FileText, DownloadCloud, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import JSZip from "jszip"
 
 interface Template {
+    id?: string
     name: string
     type: string
     html: string
     angle?: string
     timestamp?: string
+    swipe_file_name?: string
 }
 
 interface TemplateGridProps {
     templates: Template[]
     isLoading?: boolean
+    onDelete?: (templateId: string) => void
 }
 
 // Lazy iframe component that only loads when visible
@@ -65,8 +68,9 @@ function LazyIframe({ srcDoc, className, style, sandbox, title, ...props }: Reac
     )
 }
 
-export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
+export function TemplateGrid({ templates, isLoading, onDelete }: TemplateGridProps) {
     const [copied, setCopied] = useState(false)
+    const [deleting, setDeleting] = useState<string | null>(null)
     const { toast } = useToast()
 
     // Memoize HTML processing function
@@ -178,6 +182,52 @@ export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
         }
     }
 
+    const handleDelete = async (templateId: string, templateName: string) => {
+        if (!confirm(`Are you sure you want to delete "${templateName}"?`)) {
+            return
+        }
+
+        if (!templateId) {
+            toast({
+                title: "Cannot delete",
+                description: "Template ID is missing.",
+                variant: "destructive",
+            })
+            return
+        }
+
+        setDeleting(templateId)
+        try {
+            const response = await fetch(`/api/templates/injected/${templateId}`, {
+                method: 'DELETE',
+            })
+
+            if (!response.ok) {
+                const error = await response.json()
+                throw new Error(error.error || 'Failed to delete template')
+            }
+
+            toast({
+                title: "Template deleted",
+                description: `"${templateName}" has been deleted.`,
+            })
+
+            // Call the onDelete callback to refresh the list
+            if (onDelete) {
+                onDelete(templateId)
+            }
+        } catch (err) {
+            console.error('Failed to delete template:', err)
+            toast({
+                title: "Delete failed",
+                description: err instanceof Error ? err.message : "Failed to delete template.",
+                variant: "destructive",
+            })
+        } finally {
+            setDeleting(null)
+        }
+    }
+
     const handleDownloadAll = async () => {
         if (templates.length === 0) {
             toast({
@@ -282,12 +332,21 @@ export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
                         <CardContent className="p-6">
                             <div className="space-y-4">
                                 <div>
+                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                        {template.type && (
+                                            <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20 hover:bg-purple-500/20 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-500/30">
+                                                {template.type}
+                                            </Badge>
+                                        )}
+                                        {template.swipe_file_name && (
+                                            <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20 hover:bg-purple-500/20 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-500/30">
+                                                {template.swipe_file_name}
+                                            </Badge>
+                                        )}
+                                    </div>
                                     <h4 className="font-semibold text-foreground mb-1 break-words">
                                         {template.angle || template.name}
                                     </h4>
-                                    <p className="text-sm text-muted-foreground">
-                                        {template.type}
-                                    </p>
                                     {template.timestamp && (
                                         <p className="text-xs text-muted-foreground mt-1">
                                             {new Date(template.timestamp).toLocaleDateString()}
@@ -326,6 +385,18 @@ export function TemplateGrid({ templates, isLoading }: TemplateGridProps) {
                                         <Download className="h-4 w-4 mr-2" />
                                         Download
                                     </Button>
+                                    {template.id && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleDelete(template.id!, template.angle || template.name)}
+                                            disabled={deleting === template.id}
+                                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            {deleting === template.id ? 'Deleting...' : 'Delete'}
+                                        </Button>
+                                    )}
                                     <Dialog>
                                         <DialogTrigger asChild>
                                             <Button className="flex-1" size="sm">

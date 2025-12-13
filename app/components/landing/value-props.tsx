@@ -4,24 +4,24 @@ import { Card } from "@/components/ui/card";
 export const ValueProps = () => {
   const props = [
     {
-      icon: TrendingUp,
-      title: "Rising Acquisition Costs Make Conversion Critical",
-      description: "CAC is up 60% since 2019. DeepCopy allows you to find unique angles and avatars that drives your conversion up and makes you scale again!"
+      icon: Brain,
+      title: "Know What Converts Before You Write a Single Word",
+      description: "Most landing pages fail because they guess instead of know. DeepCopy's AI analyzes thousands of reviews, forums, and competitor pages to uncover the exact words that drive purchases."
     },
     {
       icon: Target,
-      title: "Reach Untapped Audiences with Research-Driven Pre-landers in Minutes",
-      description: "The biggest companies spend $20,000+ on pre-lander creation, hiring teams of researchers and copywriters because pre-landers convert cold audience 5x better than cold traffic to landing pages. Now you get the same research-backed prelanders in 15 minutes instead of 5 weeks. What cost enterprises millions is now accessible to everyone."
+      title: "Built on Pre-landers That Already Convert Millions",
+      description: "Why start from scratch when winning formulas already exist? DeepCopy analyzes top-performing pre-landers from leading brands and applies their proven frameworks to your offer — enterprise-quality pages in 15 minutes."
+    },
+    {
+      icon: TrendingUp,
+      title: "Rising Acquisition Costs Make Conversion Critical",
+      description: "CAC is up 60% since 2019 and no industry has been spared. DeepCopy finds the messaging angles that turn your expensive clicks into paying customers."
     },
     {
       icon: RefreshCw,
-      title: "Stop Endless Inconsistent Prompting Without the Results You Want",
-      description: "Businesses waste 15+ hours weekly wrestling with ChatGPT - managing SOPs, tweaking prompts, getting different outputs every time. DeepCopy eliminates prompt engineering entirely with one platform that knows your brand and delivers consistent, high-converting copy. No more prompt libraries, no more inconsistency, no more wasted hours."
-    },
-    {
-      icon: Brain,
-      title: "Customer Intelligence Is Your Competitive Edge",
-      description: "You can't convert customers you don't understand - most pages fail because they guess instead of know. DeepCopy's AI analyzes thousands of reviews, forums, and competitor pages to uncover the exact words and desires that drive purchases. Stop writing blind - know what makes customers buy before you write."
+      title: "Consistent High-Converting Pages Without Hours of Prompting",
+      description: "Businesses waste 15+ hours weekly wrestling with ChatGPT — managing prompts, tweaking outputs, getting inconsistent results. DeepCopy eliminates prompt engineering with one platform that researches, writes, and designs on-brand copy automatically."
     }
   ];
 

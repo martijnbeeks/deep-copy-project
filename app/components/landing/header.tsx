@@ -18,11 +18,10 @@ export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
+    { href: "#how-it-works", label: "How it works" },
+    { href: "#value-props", label: "Why DeepCopy?" },
     { href: "#results", label: "Results" },
-    { href: "#value-props", label: "Why Choose" },
-    { href: "#features", label: "How it Works" },
-    { href: "#faqs", label: "FAQs" },
-    { href: "#contact", label: "Contact" },
+    { href: "#faqs", label: "FAQ" },
   ];
 
   return (
