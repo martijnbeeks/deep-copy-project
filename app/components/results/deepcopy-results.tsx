@@ -41,6 +41,7 @@ import {
   Download,
   Globe,
   DownloadCloud,
+  Trash2,
 } from "lucide-react";
 import JSZip from "jszip";
 import { useState, useEffect, useMemo, memo } from "react";
@@ -265,16 +266,16 @@ function DeepCopyResultsComponent({
   customerAvatars,
   salesPageUrl,
 }: DeepCopyResultsProps) {
-  const [templates, setTemplates] = useState<
-    Array<{
-      name: string;
-      type: string;
-      html: string;
-      angle?: string;
-      timestamp?: string;
-      templateId?: string;
-    }>
-  >([]);
+  const [templates, setTemplates] = useState<Array<{
+    id?: string;
+    name: string;
+    type: string;
+    html: string;
+    angle?: string;
+    timestamp?: string;
+    templateId?: string;
+    swipe_file_name?: string;
+  }>>([]);
   const [templatesLoading, setTemplatesLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<{
     name: string;
@@ -480,26 +481,21 @@ function DeepCopyResultsComponent({
   // Helper function to filter templates by angle (DRY: used in multiple places)
   const filterTemplatesByAngle = (
     templatesList: Array<{
+      id?: string;
       name: string;
       type: string;
       html: string;
       angle?: string;
       timestamp?: string;
       templateId?: string;
+      swipe_file_name?: string;
     }>,
     angleFilter: string
   ) => {
     if (angleFilter === "all") return templatesList;
 
     return templatesList.filter(
-      (template: {
-        name: string;
-        type: string;
-        html: string;
-        angle?: string;
-        timestamp?: string;
-        templateId?: string;
-      }) => {
+      (template) => {
         // Direct match
         if (template.angle === angleFilter) return true;
 
@@ -521,12 +517,14 @@ function DeepCopyResultsComponent({
   // Helper function to filter templates by type (advertorial/listical)
   const filterTemplatesByType = (
     templatesList: Array<{
+      id?: string;
       name: string;
       type: string;
       html: string;
       angle?: string;
       timestamp?: string;
       templateId?: string;
+      swipe_file_name?: string;
     }>,
     typeFilter: string
   ) => {
@@ -541,12 +539,14 @@ function DeepCopyResultsComponent({
   // Combined filter function for both angle and type
   const filterTemplates = (
     templatesList: Array<{
+      id?: string;
       name: string;
       type: string;
       html: string;
       angle?: string;
       timestamp?: string;
       templateId?: string;
+      swipe_file_name?: string;
     }>,
     angleFilter: string,
     typeFilter: string
@@ -573,10 +573,6 @@ function DeepCopyResultsComponent({
           try {
             const injectedTemplatesResponse =
               (await internalApiClient.getInjectedTemplates(jobId)) as any;
-            logger.log(
-              `📦 Initial load: Raw response:`,
-              injectedTemplatesResponse
-            );
 
             // Handle different response formats
             let injectedTemplates: any[] = [];
@@ -600,12 +596,14 @@ function DeepCopyResultsComponent({
 
             if (injectedTemplates.length > 0) {
               const templates = injectedTemplates.map((injected: any) => ({
+                id: injected.id,
                 name: `${injected.template_id} - ${injected.angle_name}`,
-                type: "Marketing Angle",
+                type: injected.template_id?.startsWith('L') ? 'Listicle' : injected.template_id?.startsWith('A') ? 'Advertorial' : "Marketing Angle",
                 html: injected.html_content,
                 angle: injected.angle_name,
                 templateId: injected.template_id,
                 timestamp: injected.created_at,
+                swipe_file_name: injected.swipe_file_name || undefined,
               }));
 
               // Sort by angle name and template ID
@@ -617,11 +615,62 @@ function DeepCopyResultsComponent({
               });
 
               setTemplates(templates);
+              
+              // Update generatedAngles based on loaded templates
+              const uniqueAngles = new Set<string>();
+              templates.forEach((template) => {
+                if (template.angle) {
+                  // Extract the angle description part if it's in "Title: Description" format
+                  let angleDescription = template.angle;
+                  if (template.angle.includes(": ")) {
+                    const parts = template.angle.split(": ");
+                    if (parts.length >= 2) {
+                      angleDescription = parts[1];
+                    }
+                  }
+                  
+                  // Add the description part
+                  uniqueAngles.add(angleDescription);
+                  // Also add the full angle string for matching
+                  uniqueAngles.add(template.angle);
+                  
+                  // Find matching marketing angle to get the full "Title: Description" format
+                  if (fullResult?.results?.marketing_angles) {
+                    const matchingAngle = fullResult.results.marketing_angles.find((ma: any) => {
+                      if (typeof ma === "string") {
+                        return ma === angleDescription || ma === template.angle;
+                      }
+                      // Match by angle description
+                      if (ma.angle === angleDescription || ma.angle === template.angle) {
+                        return true;
+                      }
+                      return false;
+                    });
+                    
+                    // If we found a matching marketing angle, add it in "Title: Description" format
+                    if (matchingAngle && typeof matchingAngle === "object" && matchingAngle.title && matchingAngle.angle) {
+                      uniqueAngles.add(`${matchingAngle.title}: ${matchingAngle.angle}`);
+                    }
+                  }
+                }
+              });
+              
+              // Add all unique angles to generatedAngles
+              if (uniqueAngles.size > 0) {
+                setGeneratedAngles((prev) => {
+                  const newSet = new Set(prev);
+                  uniqueAngles.forEach((angle) => newSet.add(angle));
+                  return newSet;
+                });
+                logger.log(
+                  `✅ Updated generatedAngles with ${uniqueAngles.size} angles from loaded templates`
+                );
+              }
+              
               logger.log(
                 `✅ Loaded ${templates.length} templates into UI for job ${jobId}`
               );
             } else {
-              logger.log(`⚠️ No templates found in database for job ${jobId}`);
               setTemplates([]);
             }
           } catch (error) {
@@ -679,9 +728,42 @@ function DeepCopyResultsComponent({
               `✅ Processed ${processResult.processed} templates for angle "${angle}"`
             );
 
-            // Mark this angle as generated
+            // Mark this angle as generated - add both full angle and description part for matching
             setGeneratedAngles((prev) => {
-              const newSet = new Set(prev).add(angle);
+              const newSet = new Set(prev);
+              newSet.add(angle);
+              
+              // Also add the description part if angle is in "Title: Description" format
+              let angleDescription = angle;
+              if (angle.includes(": ")) {
+                const parts = angle.split(": ");
+                if (parts.length >= 2) {
+                  angleDescription = parts[1];
+                  newSet.add(angleDescription); // Add just the description part
+                }
+              } else {
+                angleDescription = angle;
+              }
+              
+              // Find matching marketing angle to get the full "Title: Description" format
+              if (fullResult?.results?.marketing_angles) {
+                const matchingAngle = fullResult.results.marketing_angles.find((ma: any) => {
+                  if (typeof ma === "string") {
+                    return ma === angleDescription || ma === angle;
+                  }
+                  // Match by angle description
+                  if (ma.angle === angleDescription || ma.angle === angle) {
+                    return true;
+                  }
+                  return false;
+                });
+                
+                // If we found a matching marketing angle, add it in "Title: Description" format
+                if (matchingAngle && typeof matchingAngle === "object" && matchingAngle.title && matchingAngle.angle) {
+                  newSet.add(`${matchingAngle.title}: ${matchingAngle.angle}`);
+                }
+              }
+              
               return newSet;
             });
 
@@ -704,10 +786,6 @@ function DeepCopyResultsComponent({
               // Reload templates
               const injectedTemplatesResponse =
                 (await internalApiClient.getInjectedTemplates(jobId!)) as any;
-              logger.log(
-                `📦 Raw response from getInjectedTemplates:`,
-                injectedTemplatesResponse
-              );
 
               // Handle different response formats
               let injectedTemplates: any[] = [];
@@ -725,21 +803,19 @@ function DeepCopyResultsComponent({
                 injectedTemplates = injectedTemplatesResponse.data;
               }
 
-              logger.log(
-                `📦 Processed ${injectedTemplates.length} injected templates for job ${jobId}`
-              );
-
               // Always set loading to false, even if no templates found
               setTemplatesLoading(false);
 
               if (injectedTemplates.length > 0) {
                 const templates = injectedTemplates.map((injected: any) => ({
+                  id: injected.id,
                   name: `${injected.template_id} - ${injected.angle_name}`,
-                  type: "Injected Template",
+                  type: injected.template_id?.startsWith('L') ? 'Listicle' : injected.template_id?.startsWith('A') ? 'Advertorial' : "Injected Template",
                   html: injected.html_content,
                   angle: injected.angle_name,
                   templateId: injected.template_id,
                   timestamp: injected.created_at,
+                  swipe_file_name: injected.swipe_file_name || undefined,
                 }));
 
                 templates.sort((a: any, b: any) => {
@@ -748,6 +824,54 @@ function DeepCopyResultsComponent({
                   }
                   return (a.templateId || "").localeCompare(b.templateId || "");
                 });
+
+                // Update generatedAngles based on loaded templates
+                const uniqueAngles = new Set<string>();
+                templates.forEach((template) => {
+                  if (template.angle) {
+                    // Extract the angle description part if it's in "Title: Description" format
+                    let angleDescription = template.angle;
+                    if (template.angle.includes(": ")) {
+                      const parts = template.angle.split(": ");
+                      if (parts.length >= 2) {
+                        angleDescription = parts[1];
+                      }
+                    }
+                    
+                    // Add the description part
+                    uniqueAngles.add(angleDescription);
+                    // Also add the full angle string for matching
+                    uniqueAngles.add(template.angle);
+                    
+                    // Find matching marketing angle to get the full "Title: Description" format
+                    if (fullResult?.results?.marketing_angles) {
+                      const matchingAngle = fullResult.results.marketing_angles.find((ma: any) => {
+                        if (typeof ma === "string") {
+                          return ma === angleDescription || ma === template.angle;
+                        }
+                        // Match by angle description
+                        if (ma.angle === angleDescription || ma.angle === template.angle) {
+                          return true;
+                        }
+                        return false;
+                      });
+                      
+                      // If we found a matching marketing angle, add it in "Title: Description" format
+                      if (matchingAngle && typeof matchingAngle === "object" && matchingAngle.title && matchingAngle.angle) {
+                        uniqueAngles.add(`${matchingAngle.title}: ${matchingAngle.angle}`);
+                      }
+                    }
+                  }
+                });
+                
+                // Add all unique angles to generatedAngles
+                if (uniqueAngles.size > 0) {
+                  setGeneratedAngles((prev) => {
+                    const newSet = new Set(prev);
+                    uniqueAngles.forEach((angle) => newSet.add(angle));
+                    return newSet;
+                  });
+                }
 
                 logger.log(
                   `✅ Setting ${templates.length} templates in UI state`
@@ -1258,6 +1382,52 @@ function DeepCopyResultsComponent({
     // Return the description part (or full string if not in "Title: Description" format)
     return angleDescription;
   };
+
+  const handleDeleteTemplate = async (templateId: string, templateName: string) => {
+    if (!confirm(`Are you sure you want to delete "${templateName}"?`)) {
+      return
+    }
+
+    if (!templateId) {
+      showError(new Error("Template ID is missing"), "Cannot delete template")
+      return
+    }
+
+    // Store the template in case we need to restore it
+    const templateToDelete = templates.find(t => t.id === templateId)
+    
+    // Optimistically remove from UI immediately
+    setTemplates(prev => prev.filter(t => t.id !== templateId))
+
+    toast({
+      title: "Template deleted",
+      description: `"${templateName}" has been deleted.`,
+    })
+
+    // Delete from database in the background
+    try {
+      const response = await fetch(`/api/templates/injected/${templateId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete template')
+      }
+    } catch (err) {
+      // If deletion fails, restore the template
+      if (templateToDelete) {
+        setTemplates(prev => [...prev, templateToDelete].sort((a, b) => {
+          // Maintain original order
+          const indexA = templates.findIndex(t => t.id === a.id)
+          const indexB = templates.findIndex(t => t.id === b.id)
+          return indexA - indexB
+        }))
+      }
+      
+      showError(err, "Failed to delete template from server. Template has been restored.")
+    }
+  }
 
   const handleDownloadAll = async () => {
     try {
@@ -2998,18 +3168,35 @@ function DeepCopyResultsComponent({
                                       return (
                                         <div className="space-y-2">
                                           {/* Number Badge and File Type */}
-                                          <div className="flex items-center gap-2 flex-wrap">
-                                            {/*angleIndex >= 0 && (
-                                              <Badge variant="outline" className="text-xs font-semibold bg-muted text-foreground border-border w-fit">
-                                                #{angleIndex + 1}
+                                          <div className="flex items-center gap-2 flex-wrap justify-between">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              {/*angleIndex >= 0 && (
+                                                <Badge variant="outline" className="text-xs font-semibold bg-muted text-foreground border-border w-fit">
+                                                  #{angleIndex + 1}
+                                                </Badge>
+                                              )*/}
+                                              <Badge
+                                                variant="outline"
+                                                className="text-xs font-semibold bg-primary/10 text-primary border-primary/20 w-fit"
+                                              >
+                                                {formatFileType(fileType)}
                                               </Badge>
-                                            )*/}
-                                            <Badge
-                                              variant="outline"
-                                              className="text-xs font-semibold bg-primary/10 text-primary border-primary/20 w-fit"
-                                            >
-                                              {formatFileType(fileType)}
-                                            </Badge>
+                                              {template.swipe_file_name && template.swipe_file_name.trim() !== '' && (
+                                                <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20 hover:bg-purple-500/20 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-500/30">
+                                                  {template.swipe_file_name}
+                                                </Badge>
+                                              )}
+                                            </div>
+                                            {template.id && (
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleDeleteTemplate(template.id!, template.angle || template.name)}
+                                                className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                              >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                              </Button>
+                                            )}
                                           </div>
                                           {/* Title with Icon */}
                                           <div className="flex items-center gap-2">

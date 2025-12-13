@@ -509,11 +509,41 @@ export const createInjectedTemplate = async (
 }
 
 export const getInjectedTemplatesByJob = async (jobId: string): Promise<any[]> => {
-  const result = await query(
+  // First get all injected templates
+  const injectedTemplates = await query(
     'SELECT * FROM injected_templates WHERE job_id = $1 ORDER BY angle_index, created_at',
     [jobId]
   )
-  return result.rows
+  
+  // Then for each template, get the swipe file name from injectable_templates
+  const result = await Promise.all(
+    injectedTemplates.rows.map(async (row) => {
+      let swipe_file_name = null
+      
+      if (row.template_id) {
+        try {
+          const templateIdParam = String(row.template_id).trim()
+          const nameResult = await query(
+            'SELECT name FROM injectable_templates WHERE id::text = $1::text',
+            [templateIdParam]
+          )
+          
+          if (nameResult.rows.length > 0) {
+            swipe_file_name = nameResult.rows[0].name
+          }
+        } catch (error) {
+          console.error(`Error fetching swipe_file_name for template_id "${row.template_id}":`, error)
+        }
+      }
+      
+      return {
+        ...row,
+        swipe_file_name
+      }
+    })
+  )
+  
+  return result
 }
 
 export const getGeneratedAnglesForJob = async (jobId: string): Promise<string[]> => {
