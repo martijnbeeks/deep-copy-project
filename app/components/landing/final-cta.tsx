@@ -25,9 +25,9 @@ const TEMPLATE_IDS = [
 ];
 
 const TEMPLATE_NAMES = [
-  "JAVVY HYROX",
-  "TRY AURA BUGMD",
-  "TRY AURA SPARTAN",
+  "Javvy Listicle - Hypowered",
+  "BugMD Advertorial - NewAura",
+  "BugMD Spartan - NewAura",
 ];
 
 export const FinalCTA = () => {
@@ -79,23 +79,23 @@ export const FinalCTA = () => {
           </div>
 
           <h2 className="text-3xl md:text-5xl font-bold mb-6">
-            Transform Your Landing Page Conversions with{" "}
+            Transform Your Pre-Lander Conversions with{" "}
             <span className="bg-gradient-primary bg-clip-text text-transparent">
               AI-Powered Intelligence
             </span>
           </h2>
 
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join forward-thinking marketers who've discovered the unfair advantage of AI-driven landing pages. Limited spots available for our early adopter program — secure yours now.
+            Join forward-thinking marketers who've discovered the unfair advantage of AI-driven Pre-Landers. Limited spots available for our early adopter program — secure yours now.
           </p>
 
           <Button size="lg" className="text-lg px-12 hover:scale-105 transition-transform" asChild>
-            <Link href="/login">Start Your Free Trial →</Link>
+            <Link href="/login?waitlist=true">Join Waitlist Only 5 More Spots Available →</Link>
           </Button>
 
-          <p className="text-sm text-muted-foreground mt-6">
+          {/*<p className="text-sm text-muted-foreground mt-6">
             No credit card required • 14-day free trial • Cancel anytime
-          </p>
+          </p>*/}
 
           <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
             {loading ? (
@@ -110,8 +110,8 @@ export const FinalCTA = () => {
             ) : templates.length > 0 ? (
               // Display fetched templates
               templates.map((template, index) => (
-                <div 
-                  key={template.id} 
+                <div
+                  key={template.id}
                   className="bg-muted/50 rounded-lg p-4 border hover:border-primary/50 transition-colors cursor-pointer group"
                   onClick={() => setPreviewTemplate(template)}
                 >
@@ -172,7 +172,7 @@ export const FinalCTA = () => {
 
       {/* Preview Modal */}
       <Dialog open={!!previewTemplate} onOpenChange={(open) => !open && setPreviewTemplate(null)}>
-        <DialogContent 
+        <DialogContent
           showCloseButton={false}
           className="w-[95vw] max-h-[95vh] overflow-hidden !max-w-none sm:!max-w-[95vw] p-0 flex flex-col"
         >

@@ -9,10 +9,22 @@ import { Search } from "lucide-react";
 
 export const FAQ = () => {
   const faqs = [
-    {
-      question: "When will my first improved landing page be live?",
+    /*{
+      question: "When will my first improved Pre-Lander be live?",
       answer: "Most users have their first AI-optimized page live within 5-10 minutes of signing up. Our onboarding wizard guides you through selecting a high-impact page to optimize first."
     },
+     {
+       question: "How does DeepCopy ensure brand consistency?",
+       answer: "You can input brand guidelines, tone preferences, and compliance requirements. The AI adheres to these while optimizing for conversion. Plus, you maintain full editorial control."
+     },
+     {
+       question: "Which platforms can I integrate with DeepCopy?",
+       answer: "DeepCopy integrates with all major platforms including WordPress, Shopify, HubSpot, Salesforce, ActiveCampaign, Mailchimp, Google Analytics, Facebook Pixel, and 100+ others via Zapier."
+     },*/
+    /*{
+      question: "What if the AI copy needs adjustments?",
+      answer: "You have full editing control over all AI-generated content. Most users find they only need minor tweaks. You can also regenerate sections or entire pages with different angles instantly."
+    }*/
     {
       question: "Is there a free trial?",
       answer: "Yes! Start with our 14-day free trial. No credit card required. Most users see conversion improvements within the first week."
@@ -23,24 +35,12 @@ export const FAQ = () => {
     },
     {
       question: "What kind of research does DeepCopy perform?",
-      answer: "Our AI analyzes competitor landing pages, customer reviews, forum discussions, social media mentions, and search data to identify proven conversion triggers specific to your market."
-    },
-    {
-      question: "How does DeepCopy ensure brand consistency?",
-      answer: "You can input brand guidelines, tone preferences, and compliance requirements. The AI adheres to these while optimizing for conversion. Plus, you maintain full editorial control."
-    },
-    {
-      question: "Which platforms can I integrate with DeepCopy?",
-      answer: "DeepCopy integrates with all major platforms including WordPress, Shopify, HubSpot, Salesforce, ActiveCampaign, Mailchimp, Google Analytics, Facebook Pixel, and 100+ others via Zapier."
+      answer: "Our AI analyzes competitor Pre-Landers, customer reviews, forum discussions, social media mentions, and search data to identify proven conversion triggers specific to your market."
     },
     {
       question: "How do I get started?",
-      answer: "Click 'Start Free Trial', input your product URL or description, and watch DeepCopy generate your first high-converting landing page in minutes. Our success team is available 24/7 via chat."
+      answer: "Click “Join the Waitlist for a Free Trial, input your product URL, watch DeepCopy generated research and spit out high-converting copywriting”"
     },
-    {
-      question: "What if the AI copy needs adjustments?",
-      answer: "You have full editing control over all AI-generated content. Most users find they only need minor tweaks. You can also regenerate sections or entire pages with different angles instantly."
-    }
   ];
 
   return (

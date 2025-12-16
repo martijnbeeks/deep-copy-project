@@ -385,7 +385,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
                 <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
                   <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-muted-foreground">
-                    Scanning competitor landing pages and dissecting their messaging strategies...
+                    Scanning competitor Pre-Landers and dissecting their messaging strategies...
                   </p>
                 </div>
               )}

@@ -16,7 +16,7 @@ export const Testimonials = () => {
       company: "Digital Growth Agency"
     },
     {
-      quote: "The competitor analysis alone was worth 10x the price. DeepCopy showed us exactly why our pages weren't converting — we were addressing the wrong pain points entirely. After implementing DeepCopy's research-based approach, our landing page conversion went from 1.5% to 6.7% in just two weeks. That's a 347% increase that transformed our unit economics overnight.",
+      quote: "The competitor analysis alone was worth 10x the price. DeepCopy showed us exactly why our pages weren't converting — we were addressing the wrong pain points entirely. After implementing DeepCopy's research-based approach, our Pre-Lander conversion went from 1.5% to 6.7% in just two weeks. That's a 347% increase that transformed our unit economics overnight.",
       author: "Jennifer Park",
       role: "E-commerce Founder",
       company: "Boutique Fashion Brand"

@@ -23,8 +23,8 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DeepCopy - Turn Deep Research Into High-Converting Landing Pages",
-  description: "DeepCopy - Turn Deep Research Into High-Converting Landing Pages",
+  title: "DeepCopy - Turn Deep Research Into High-Converting Pre-Landers",
+  description: "DeepCopy - Turn Deep Research Into High-Converting Pre-Landers",
   generator: "v0.app",
   robots: "index, follow",
   icons: {
@@ -33,8 +33,8 @@ export const metadata: Metadata = {
     apple: "/favicon.svg",
   },
   openGraph: {
-    title: "DeepCopy - Turn Deep Research Into High-Converting Landing Pages",
-    description: "DeepCopy - Turn Deep Research Into High-Converting Landing Pages",
+    title: "DeepCopy - Turn Deep Research Into High-Converting Pre-Landers",
+    description: "DeepCopy - Turn Deep Research Into High-Converting Pre-Landers",
     type: "website",
   },
 };

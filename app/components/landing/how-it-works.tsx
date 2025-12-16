@@ -22,7 +22,7 @@ export const HowItWorks = () => {
       icon: Sparkles,
       title: "Generate",
       subtitle: "Create unlimited high-converting variations",
-      description: "Prioritize the angles that matter most — watch as AI generates complete landing pages with compelling headlines, benefit-driven copy, social proof, and conversion-optimized designs. Test different approaches for different audiences, all created in seconds."
+      description: "Prioritize the angles that matter most — watch as AI generates complete Pre-Landers with compelling headlines, benefit-driven copy, social proof, and conversion-optimized designs. Test different approaches for different audiences, all created in seconds."
     }
   ];
 
@@ -37,7 +37,7 @@ export const HowItWorks = () => {
             From Zero to High-Converting Page in Minutes
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Transform your landing page creation from a weeks-long struggle into a streamlined, AI-powered process.
+            Transform your Pre-Lander creation from a weeks-long struggle into a streamlined, AI-powered process.
           </p>
         </div>
 

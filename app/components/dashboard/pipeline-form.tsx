@@ -158,7 +158,7 @@ function PipelineFormComponent({ onSubmit, isLoading = false }: PipelineFormProp
             </Label>
             <Input
               id="title"
-              placeholder="e.g., Product Launch Landing Page"
+              placeholder="e.g., Product Launch Pre-Lander"
               value={formData.title}
               onChange={(e) => {
                 setFormData((prev) => ({ ...prev, title: e.target.value }))

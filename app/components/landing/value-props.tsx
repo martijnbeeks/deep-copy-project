@@ -6,7 +6,7 @@ export const ValueProps = () => {
     {
       icon: Brain,
       title: "Know What Converts Before You Write a Single Word",
-      description: "Most landing pages fail because they guess instead of know. DeepCopy's AI analyzes thousands of reviews, forums, and competitor pages to uncover the exact words that drive purchases."
+      description: "Most Pre-Landers fail because they guess instead of know. DeepCopy's AI analyzes thousands of reviews, forums, and competitor pages to uncover the exact words that drive purchases."
     },
     {
       icon: Target,
@@ -33,7 +33,7 @@ export const ValueProps = () => {
             💰 Why Choose DeepCopy
           </div>
           <h2 className="text-3xl md:text-5xl font-bold mb-4">
-            Supercharge Your Landing Page Conversions
+            Supercharge Your Pre-Lander Conversions
           </h2>
           <p className="text-lg text-accent font-semibold max-w-3xl mx-auto">
             The cost of doing nothing has never been higher – and the technology to solve it has never been more powerful.

@@ -57,10 +57,10 @@ function LoginPageContent() {
                   <span className="block text-primary">Deep Research</span>
                   <span className="block">Into</span>
                   <span className="block">High-Converting</span>
-                  <span className="block text-primary">Landing Pages</span>
+                  <span className="block text-primary">Pre-Landers</span>
                 </h1>
                 <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                  Transform customer insights into conversion-optimized landing pages with AI-powered deep research.
+                  Transform customer insights into conversion-optimized Pre-Landers with AI-powered deep research.
                 </p>
               </div>
             </div>

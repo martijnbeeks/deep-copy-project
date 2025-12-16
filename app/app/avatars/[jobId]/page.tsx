@@ -859,7 +859,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                     <div>
                                         <p className="text-sm font-semibold text-foreground">Compiling Your Results</p>
                                         <p className="text-xs text-muted-foreground mt-1">
-                                            All research sources have been analyzed. We're now generating your high-converting landing pages...
+                                            All research sources have been analyzed. We're now generating your high-converting Pre-Landers...
                                         </p>
                                     </div>
                                 </div>
@@ -872,7 +872,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                 <div>
                                     <p className="text-sm font-semibold text-foreground mb-1">You can close this window</p>
                                     <p className="text-sm text-muted-foreground">
-                                        We'll send you an email notification when your landing pages are ready. Feel free to continue working on other things.
+                                        We'll send you an email notification when your Pre-Landers are ready. Feel free to continue working on other things.
                                     </p>
                                 </div>
                             </div>
