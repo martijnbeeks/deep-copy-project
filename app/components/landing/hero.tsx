@@ -28,33 +28,17 @@ export const Hero = () => {
             Our AI analyzes top-performing Pre-Landers from industry leaders, conducts deep customer research, and creates conversion-optimized Pre-Landers tailored to your unique marketing angle.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" className="text-lg px-8 shadow-primary hover:scale-105 transition-transform" asChild>
-              <a href="/login?waitlist=true">Join Waitlist →</a>
-            </Button>
-            {/*<Button size="lg" variant="outline" className="text-lg px-8 group">
-              <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-              Watch Demo
-            </Button>*/}
-          </div>
-
-          {/*<div className="relative max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-feature bg-card border animate-slide-up">
-            <div className="aspect-video bg-muted flex items-center justify-center">
-              <div className="text-center">
-                <Play className="w-16 h-16 mx-auto mb-4 text-primary" />
-                <p className="text-muted-foreground">Watch DeepCopy in Action</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Shows AI analyzing competitor sites, extracting customer pain points from reviews,<br />
-                  and generating a complete Pre-Lander in real-time - 2:48 duration
-                </p>
+          <div className="flex flex-col items-center gap-3 mb-12">
+            <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
+              <Button size="lg" className="text-lg px-8 shadow-primary hover:scale-105 transition-transform" asChild>
+                <a href="/login?waitlist=true">Join Waitlist →</a>
+              </Button>
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <span className="h-1 w-1 rounded-full bg-primary animate-pulse"></span>
+                <span>
+                  Only <span className="text-primary font-medium">5</span> More Spots Available
+                </span>
               </div>
-            </div>
-          </div>*/}
-          <div className="relative max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-feature bg-card border animate-slide-up py-8">
-            <div className="text-center">
-              <p className="text-2xl md:text-3xl font-bold">
-                Only <span className="text-primary">5</span> More Spots Available
-              </p>
             </div>
           </div>
         </div>

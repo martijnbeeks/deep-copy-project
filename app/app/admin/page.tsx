@@ -69,6 +69,22 @@ interface DatabaseStats {
   results: number
 }
 
+interface WaitlistEntry {
+  id: string
+  email: string
+  name: string
+  company?: string | null
+  company_website: string
+  platforms: string[]
+  shopify_app_name?: string | null
+  platform_other?: string | null
+  monthly_volume: string
+  interest_reasons: string[]
+  interest_other?: string | null
+  created_at: string
+  updated_at: string
+}
+
 interface InviteLink {
   id: string
   token: string
@@ -94,6 +110,8 @@ export default function AdminPage() {
   const [jobStatuses, setJobStatuses] = useState<JobStatus[]>([])
   const [inviteLinks, setInviteLinks] = useState<InviteLink[]>([])
   const [isCreatingInviteLink, setIsCreatingInviteLink] = useState(false)
+  const [waitlistEntries, setWaitlistEntries] = useState<WaitlistEntry[]>([])
+  const [loadingWaitlist, setLoadingWaitlist] = useState(false)
 
   // Template grid view state
   const [selectedCategory, setSelectedCategory] = useState("all")
@@ -106,6 +124,7 @@ export default function AdminPage() {
   // Invite link form state
   const [newInviteLink, setNewInviteLink] = useState({ waitlist_email: '', expiration_days: '7', expiration_hours: '' })
   const [inviteLinkDialogOpen, setInviteLinkDialogOpen] = useState(false)
+  const [selectedWaitlistEmail, setSelectedWaitlistEmail] = useState<string>('')
 
   // Form states
   const [newTemplate, setNewTemplate] = useState({ id: '', name: '', description: '', category: '', htmlContent: '' })
@@ -161,6 +180,65 @@ export default function AdminPage() {
     setCurrentPage(1)
   }, [selectedCategory])
 
+  // Load waitlist entries
+  const loadWaitlistEntries = async () => {
+    setLoadingWaitlist(true)
+    try {
+      const response = await fetch('/api/waitlist')
+      if (response.ok) {
+        const data = await response.json()
+
+        // Handle response structure - createSuccessResponse returns data directly
+        // So response is: { waitlist: [...], count: N }
+        const waitlistData = data.waitlist
+
+        if (!Array.isArray(waitlistData)) {
+          console.error('Waitlist data is not an array:', waitlistData)
+          setWaitlistEntries([])
+          return
+        }
+
+        // Ensure arrays are properly parsed (PostgreSQL TEXT[] might come as strings or already be arrays)
+        const entries = waitlistData.map((entry: any) => ({
+          ...entry,
+          platforms: Array.isArray(entry.platforms)
+            ? entry.platforms
+            : (typeof entry.platforms === 'string'
+              ? (entry.platforms.startsWith('[')
+                ? JSON.parse(entry.platforms)
+                : entry.platforms ? [entry.platforms] : [])
+              : []),
+          interest_reasons: Array.isArray(entry.interest_reasons)
+            ? entry.interest_reasons
+            : (typeof entry.interest_reasons === 'string'
+              ? (entry.interest_reasons.startsWith('[')
+                ? JSON.parse(entry.interest_reasons)
+                : entry.interest_reasons ? [entry.interest_reasons] : [])
+              : [])
+        }))
+
+        setWaitlistEntries(entries)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Failed to load waitlist:', errorData)
+        toast({
+          title: "Error",
+          description: "Failed to load waitlist entries",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Error loading waitlist:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load waitlist entries",
+        variant: "destructive"
+      })
+    } finally {
+      setLoadingWaitlist(false)
+    }
+  }
+
   // Load all data
   const loadData = async () => {
     setLoading(true)
@@ -192,6 +270,9 @@ export default function AdminPage() {
         const inviteLinksData = await inviteLinksRes.json()
         setInviteLinks(inviteLinksData.invite_links || [])
       }
+
+      // Load waitlist entries
+      await loadWaitlistEntries()
     } catch (error) {
       console.error('Error loading data:', error)
       toast({
@@ -500,6 +581,62 @@ export default function AdminPage() {
   }
 
 
+  // Helper functions for formatting waitlist data
+  const formatPlatform = (platform: string, entry: WaitlistEntry): string => {
+    switch (platform) {
+      case 'funnelish':
+        return 'Funnelish'
+      case 'checkoutchamp':
+        return 'CheckoutChamp'
+      case 'shopify':
+        return `Shopify App: ${entry.shopify_app_name || 'N/A'}`
+      case 'none':
+        return "Don't make pre-landers yet"
+      case 'other':
+        return `Other: ${entry.platform_other || 'N/A'}`
+      default:
+        return platform
+    }
+  }
+
+  const formatInterestReason = (reason: string, entry: WaitlistEntry): string => {
+    switch (reason) {
+      case 'autopilot':
+        return 'Creating converting pre-landers on autopilot'
+      case 'customer-insights':
+        return 'Deeper understanding of customer'
+      case 'team-efficiency':
+        return 'Reducing team size while increasing output'
+      case 'other':
+        return `Other: ${entry.interest_other || 'N/A'}`
+      default:
+        return reason
+    }
+  }
+
+  const formatMonthlyVolume = (volume: string): string => {
+    switch (volume) {
+      case 'below-10':
+        return 'Below 10'
+      case '10-50':
+        return '10-50'
+      case '50-plus':
+        return '50 or more'
+      default:
+        return volume
+    }
+  }
+
+  const hasInviteLink = (email: string): boolean => {
+    return inviteLinks.some(link => link.waitlist_email?.toLowerCase() === email.toLowerCase())
+  }
+
+  const openInviteLinkDialogForWaitlist = (email: string) => {
+    setSelectedWaitlistEmail(email)
+    setNewInviteLink({ waitlist_email: email, expiration_days: '7', expiration_hours: '' })
+    setInviteLinkDialogOpen(true)
+  }
+
   // Invite link management
   const handleNumericInput = (value: string): string => {
     // Only allow digits
@@ -509,8 +646,9 @@ export default function AdminPage() {
   const createInviteLink = async () => {
     setIsCreatingInviteLink(true)
 
-    // Save form values before clearing
-    const formData = { ...newInviteLink }
+    // Save form values before clearing, use selectedWaitlistEmail if set
+    const emailToUse = selectedWaitlistEmail || newInviteLink.waitlist_email
+    const formData = { ...newInviteLink, waitlist_email: emailToUse }
 
     // Calculate expiration for optimistic UI
     let expiresAt: Date
@@ -547,8 +685,10 @@ export default function AdminPage() {
 
     // Add optimistic link to the list immediately
     setInviteLinks(prev => [optimisticLink, ...prev])
-    setNewInviteLink({ waitlist_email: '', expiration_days: '7', expiration_hours: '' })
+    const emailToKeep = selectedWaitlistEmail || formData.waitlist_email
+    setNewInviteLink({ waitlist_email: emailToKeep, expiration_days: '7', expiration_hours: '' })
     setInviteLinkDialogOpen(false)
+    setSelectedWaitlistEmail('')
 
     try {
       const body: any = {}
@@ -591,6 +731,9 @@ export default function AdminPage() {
           title: "Success",
           description: "Invite link created successfully"
         })
+
+        // Refresh waitlist entries to update "Has Invite" badges
+        await loadWaitlistEntries()
       } else {
         // Remove optimistic link on error
         setInviteLinks(prev => prev.filter(link => link.id !== tempId))
@@ -670,8 +813,8 @@ export default function AdminPage() {
                 <h1 className="text-base font-semibold tracking-tight">Admin Dashboard</h1>
                 <p className="text-xs text-muted-foreground hidden sm:block">
                   Manage users, templates, and system statistics
-              </p>
-            </div>
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-1.5">
               <ThemeToggle />
@@ -690,85 +833,85 @@ export default function AdminPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Stats Overview */}
-          {stats && (
+        {/* Stats Overview */}
+        {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div className="rounded-lg border bg-card p-4">
               <div className="flex items-center justify-between">
-                    <div>
+                <div>
                   <p className="text-2xl font-semibold">{stats.users}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Users</p>
-                    </div>
+                </div>
                 <Users className="h-5 w-5 text-muted-foreground/60" />
-                  </div>
+              </div>
             </div>
             <div className="rounded-lg border bg-card p-4">
               <div className="flex items-center justify-between">
-                    <div>
+                <div>
                   <p className="text-2xl font-semibold">{stats.templates}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Templates</p>
-                    </div>
+                </div>
                 <FileText className="h-5 w-5 text-muted-foreground/60" />
-                  </div>
+              </div>
             </div>
             <div className="rounded-lg border bg-card p-4">
               <div className="flex items-center justify-between">
-                    <div>
+                <div>
                   <p className="text-2xl font-semibold">{stats.jobs}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Jobs</p>
-                    </div>
+                </div>
                 <Database className="h-5 w-5 text-muted-foreground/60" />
-                  </div>
+              </div>
             </div>
             <div className="rounded-lg border bg-card p-4">
               <div className="flex items-center justify-between">
-                    <div>
+                <div>
                   <p className="text-2xl font-semibold">{stats.results}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Results</p>
-                    </div>
-                <CheckCircle className="h-5 w-5 text-muted-foreground/60" />
-                  </div>
-            </div>
-            </div>
-          )}
-
-          {/* Job Status Breakdown */}
-          {jobStatuses.length > 0 && (
-          <div className="rounded-lg border bg-card p-4 mb-6">
-                <div className="flex flex-wrap gap-2">
-                  {jobStatuses.map((status) => (
-                <Badge key={status.status} variant="secondary" className="text-xs font-normal">
-                      {status.status}: {status.count}
-                    </Badge>
-                  ))}
                 </div>
+                <CheckCircle className="h-5 w-5 text-muted-foreground/60" />
+              </div>
+            </div>
           </div>
-          )}
+        )}
 
-          {/* Main Management Tabs */}
+        {/* Job Status Breakdown */}
+        {jobStatuses.length > 0 && (
+          <div className="rounded-lg border bg-card p-4 mb-6">
+            <div className="flex flex-wrap gap-2">
+              {jobStatuses.map((status) => (
+                <Badge key={status.status} variant="secondary" className="text-xs font-normal">
+                  {status.status}: {status.count}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Main Management Tabs */}
         <Tabs defaultValue="users" className="space-y-6">
           <TabsList className="bg-muted/50 h-9">
             <TabsTrigger value="users" className="text-xs">Users</TabsTrigger>
             <TabsTrigger value="templates" className="text-xs">Templates</TabsTrigger>
             <TabsTrigger value="injectable-templates" className="text-xs">Injectable</TabsTrigger>
             <TabsTrigger value="jobs" className="text-xs">Jobs</TabsTrigger>
-            <TabsTrigger value="invite-links" className="text-xs">Invites</TabsTrigger>
+            <TabsTrigger value="invite-links" className="text-xs">Waitlist & Invites</TabsTrigger>
             <TabsTrigger value="usage-limits" className="text-xs">Limits</TabsTrigger>
-            </TabsList>
+          </TabsList>
 
-            {/* Users Tab */}
-            <TabsContent value="users" className="space-y-4">
-              <AdminUsersTab />
-            </TabsContent>
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-4">
+            <AdminUsersTab />
+          </TabsContent>
 
-            {/* Templates Tab */}
-            <TabsContent value="templates" className="space-y-4">
+          {/* Templates Tab */}
+          <TabsContent value="templates" className="space-y-4">
             <div className="rounded-lg border bg-card">
               <div className="flex items-center justify-between p-4 border-b">
-                  <div>
+                <div>
                   <h3 className="text-sm font-semibold">Templates</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">Upload and manage HTML templates</p>
-                  </div>
+                </div>
                 <div className="flex items-center gap-2">
                   <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                     <SelectTrigger className="w-40 h-8 text-xs">
@@ -875,8 +1018,8 @@ export default function AdminPage() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                          </div>
-                        </div>
+                </div>
+              </div>
               <div className="p-6">
                 {templatesLoading ? (
                   <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -895,21 +1038,21 @@ export default function AdminPage() {
                             onClick={() => handlePreviewTemplate(template)}
                           />
                           <div className="absolute bottom-3 right-3">
-                          <Button
-                            variant="destructive"
-                            size="sm"
+                            <Button
+                              variant="destructive"
+                              size="sm"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 deleteTemplate(template.id)
                               }}
                               className="h-8 px-3 text-xs shadow-lg"
-                          >
+                            >
                               <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                            Delete
-                          </Button>
+                              Delete
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                     </div>
 
                     {/* Pagination */}
@@ -958,26 +1101,26 @@ export default function AdminPage() {
                 )}
               </div>
             </div>
-            </TabsContent>
+          </TabsContent>
 
-            {/* Injectable Templates Tab */}
-            <TabsContent value="injectable-templates" className="space-y-4">
+          {/* Injectable Templates Tab */}
+          <TabsContent value="injectable-templates" className="space-y-4">
             <div className="rounded-lg border bg-card">
               <div className="flex items-center justify-between p-4 border-b">
-                  <div>
+                <div>
                   <h3 className="text-sm font-semibold">Injectable Templates</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">Manage dynamic content injection templates</p>
-                  </div>
-                  <Button
-                    onClick={handleCreateNewTemplate}
+                </div>
+                <Button
+                  onClick={handleCreateNewTemplate}
                   size="sm"
                   className="h-8"
-                    type="button"
-                  >
+                  type="button"
+                >
                   <Plus className="h-3.5 w-3.5 mr-1.5" />
                   Add
-                  </Button>
-                        </div>
+                </Button>
+              </div>
               <div className="p-6">
                 {injectableTemplates?.length > 0 ? (
                   <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -1035,308 +1178,483 @@ export default function AdminPage() {
                       Create your first injectable template to get started
                     </p>
                   </div>
-                    )}
-                  </div>
+                )}
+              </div>
             </div>
-            </TabsContent>
+          </TabsContent>
 
-            {/* Invite Links Tab */}
-            <TabsContent value="invite-links" className="space-y-4">
+          {/* Waitlist & Invite Links Tab */}
+          <TabsContent value="invite-links" className="space-y-4">
+            {/* Waitlist Entries Section */}
             <div className="rounded-lg border bg-card">
               <div className="flex items-center justify-between p-4 border-b">
-                  <div>
-                  <h3 className="text-sm font-semibold">Invite Links</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Generate invite links for users</p>
+                <div>
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Waitlist Entries
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {waitlistEntries.length} {waitlistEntries.length === 1 ? 'entry' : 'entries'}
+                  </p>
+                </div>
+              </div>
+              <div className="p-4">
+                {loadingWaitlist ? (
+                  <div className="text-center py-12">
+                    <RefreshCw className="h-6 w-6 text-muted-foreground mx-auto mb-2 animate-spin" />
+                    <p className="text-sm text-muted-foreground">Loading waitlist...</p>
                   </div>
-                  <Dialog open={inviteLinkDialogOpen} onOpenChange={setInviteLinkDialogOpen}>
-                    <DialogTrigger asChild>
+                ) : waitlistEntries.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-sm font-medium mb-2">No waitlist entries</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Waitlist entries will appear here when users sign up
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {waitlistEntries.map((entry) => {
+                      const hasInvite = hasInviteLink(entry.email)
+                      return (
+                        <Accordion key={entry.id} type="single" collapsible className="border rounded-lg">
+                          <AccordionItem value={entry.id} className="border-0">
+                            <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                              <div className="flex items-center justify-between w-full pr-4">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <p className="text-sm font-medium truncate">{entry.name}</p>
+                                      {hasInvite && (
+                                        <Badge variant="default" className="text-xs font-normal">
+                                          Has Invite
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground truncate mt-0.5">{entry.email}</p>
+                                  </div>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    openInviteLinkDialogForWaitlist(entry.email)
+                                  }}
+                                  className="h-7 px-3 text-xs"
+                                >
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Create Invite
+                                </Button>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="px-4 pb-4">
+                              <div className="space-y-3 pt-2">
+                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                  {/*<div>
+                                    <p className="text-xs text-muted-foreground mb-1">Company</p>
+                                    <p className="font-medium">{entry.company || 'N/A'}</p>
+                                  </div>*/}
+                                  <div>
+                                    <p className="text-xs text-muted-foreground mb-1">Company Website</p>
+                                    <a
+                                      href={entry.company_website}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="font-medium text-primary hover:underline break-all"
+                                    >
+                                      {entry.company_website}
+                                    </a>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground mb-1">Monthly Volume</p>
+                                    <p className="font-medium">{formatMonthlyVolume(entry.monthly_volume)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground mb-1">Joined</p>
+                                    <p className="font-medium">{new Date(entry.created_at).toLocaleDateString()}</p>
+                                  </div>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-2">Platforms</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {entry.platforms.map((platform) => (
+                                      <Badge key={platform} variant="secondary" className="text-xs font-normal">
+                                        {formatPlatform(platform, entry)}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-2">Interest Reasons</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {entry.interest_reasons.map((reason) => (
+                                      <Badge key={reason} variant="secondary" className="text-xs font-normal">
+                                        {formatInterestReason(reason, entry)}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Invite Links Section */}
+            <div className="rounded-lg border bg-card">
+              <div className="flex items-center justify-between p-4 border-b">
+                <div>
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <Copy className="h-4 w-4" />
+                    Invite Links
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {inviteLinks.length} {inviteLinks.length === 1 ? 'link' : 'links'} • Generate invite links for users
+                  </p>
+                </div>
+                <Dialog open={inviteLinkDialogOpen} onOpenChange={(open) => {
+                  setInviteLinkDialogOpen(open)
+                  if (!open) {
+                    setSelectedWaitlistEmail('')
+                    setNewInviteLink({ waitlist_email: '', expiration_days: '7', expiration_hours: '' })
+                  }
+                }}>
+                  <DialogTrigger asChild>
                     <Button size="sm" className="h-8">
                       <Plus className="h-3.5 w-3.5 mr-1.5" />
                       Create
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
                     <DialogHeader className="space-y-1 pb-4">
                       <DialogTitle className="text-base">Create Invite Link</DialogTitle>
                       <DialogDescription className="text-xs text-muted-foreground">
-                          Generate a new invite link for users
-                        </DialogDescription>
-                      </DialogHeader>
+                        Generate a new invite link for users
+                      </DialogDescription>
+                    </DialogHeader>
 
-                      <div className="space-y-6 py-2">
-                        <div className="space-y-2">
-                          <Label htmlFor="waitlistEmail" className="text-sm font-medium">
-                            Waitlist Email
-                            <span className="text-muted-foreground font-normal ml-1">(optional)</span>
-                          </Label>
-                          <Input
-                            id="waitlistEmail"
-                            type="email"
-                            value={newInviteLink.waitlist_email}
-                            onChange={(e) => setNewInviteLink(prev => ({ ...prev, waitlist_email: e.target.value }))}
-                            placeholder="user@example.com"
-                            className="h-10"
-                          />
+                    <div className="space-y-6 py-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="waitlistEmail" className="text-sm font-medium">
+                          Waitlist Email
+                          <span className="text-muted-foreground font-normal ml-1">(optional)</span>
+                        </Label>
+                        <Input
+                          id="waitlistEmail"
+                          type="email"
+                          value={selectedWaitlistEmail || newInviteLink.waitlist_email}
+                          onChange={(e) => {
+                            setSelectedWaitlistEmail('')
+                            setNewInviteLink(prev => ({ ...prev, waitlist_email: e.target.value }))
+                          }}
+                          placeholder="user@example.com"
+                          className="h-10"
+                        />
+                      </div>
+
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t" />
                         </div>
-
-                        <div className="relative">
-                          <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t" />
-                          </div>
-                          <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-background px-2 text-muted-foreground">Expiration</span>
-                          </div>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <div className="flex-1">
-                              <Label htmlFor="expirationDays" className="text-sm font-medium mb-2 block">
-                                Days
-                              </Label>
-                              <Input
-                                id="expirationDays"
-                                type="text"
-                                inputMode="numeric"
-                                value={newInviteLink.expiration_days}
-                                onChange={(e) => {
-                                  const numericValue = handleNumericInput(e.target.value)
-                                  setNewInviteLink(prev => ({ ...prev, expiration_days: numericValue, expiration_hours: '' }))
-                                }}
-                                placeholder="7"
-                                className="h-10"
-                              />
-                            </div>
-                            <div className="pt-7 text-muted-foreground">or</div>
-                            <div className="flex-1">
-                              <Label htmlFor="expirationHours" className="text-sm font-medium mb-2 block">
-                                Hours
-                              </Label>
-                              <Input
-                                id="expirationHours"
-                                type="text"
-                                inputMode="numeric"
-                                value={newInviteLink.expiration_hours}
-                                onChange={(e) => {
-                                  const numericValue = handleNumericInput(e.target.value)
-                                  setNewInviteLink(prev => ({ ...prev, expiration_hours: numericValue, expiration_days: '' }))
-                                }}
-                                placeholder="24"
-                                className="h-10"
-                              />
-                            </div>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Default: 7 days if left empty
-                          </p>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-background px-2 text-muted-foreground">Expiration</span>
                         </div>
                       </div>
 
-                      <DialogFooter className="gap-2 pt-4">
-                        <Button
-                          variant="outline"
-                          onClick={() => setInviteLinkDialogOpen(false)}
-                          className="w-full sm:w-auto"
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          onClick={createInviteLink}
-                          disabled={isCreatingInviteLink}
-                          className="w-full sm:w-auto"
-                        >
-                          {isCreatingInviteLink ? (
-                            <>
-                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                              Creating...
-                            </>
-                          ) : (
-                            'Create Link'
-                          )}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <Label htmlFor="expirationDays" className="text-sm font-medium mb-2 block">
+                              Days
+                            </Label>
+                            <Input
+                              id="expirationDays"
+                              type="text"
+                              inputMode="numeric"
+                              value={newInviteLink.expiration_days}
+                              onChange={(e) => {
+                                const numericValue = handleNumericInput(e.target.value)
+                                setNewInviteLink(prev => ({ ...prev, expiration_days: numericValue, expiration_hours: '' }))
+                              }}
+                              placeholder="7"
+                              className="h-10"
+                            />
+                          </div>
+                          <div className="pt-7 text-muted-foreground">or</div>
+                          <div className="flex-1">
+                            <Label htmlFor="expirationHours" className="text-sm font-medium mb-2 block">
+                              Hours
+                            </Label>
+                            <Input
+                              id="expirationHours"
+                              type="text"
+                              inputMode="numeric"
+                              value={newInviteLink.expiration_hours}
+                              onChange={(e) => {
+                                const numericValue = handleNumericInput(e.target.value)
+                                setNewInviteLink(prev => ({ ...prev, expiration_hours: numericValue, expiration_days: '' }))
+                              }}
+                              placeholder="24"
+                              className="h-10"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Default: 7 days if left empty
+                        </p>
+                      </div>
+                    </div>
+
+                    <DialogFooter className="gap-2 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setInviteLinkDialogOpen(false)}
+                        className="w-full sm:w-auto"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={createInviteLink}
+                        disabled={isCreatingInviteLink}
+                        className="w-full sm:w-auto"
+                      >
+                        {isCreatingInviteLink ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Creating...
+                          </>
+                        ) : (
+                          'Create Link'
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
               <div className="p-4">
-                  <div className="space-y-2">
-                    {inviteLinks.map((inviteLink) => {
-                      const isOptimistic = inviteLink.id.startsWith('temp-')
-                      const isExpired = new Date(inviteLink.expires_at) < new Date()
-                      const isUsed = !!inviteLink.used_at
-                      const inviteUrl = `${window.location.origin}/invite/${inviteLink.token}`
+                <div className="space-y-2">
+                  {inviteLinks.map((inviteLink) => {
+                    const isOptimistic = inviteLink.id.startsWith('temp-')
+                    const isExpired = new Date(inviteLink.expires_at) < new Date()
+                    const isUsed = !!inviteLink.used_at
+                    const inviteUrl = `${window.location.origin}/invite/${inviteLink.token}`
 
-                      return (
-                        <div
-                          key={inviteLink.id}
+                    return (
+                      <div
+                        key={inviteLink.id}
                         className={`flex items-center justify-between p-3 rounded-md hover:bg-muted/50 transition-colors group ${isOptimistic ? 'opacity-60' : ''}`}
-                        >
+                      >
                         <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              {isOptimistic ? (
+                          <div className="flex items-center gap-2">
+                            {isOptimistic ? (
                               <div className="h-4 w-32 bg-muted animate-pulse rounded" />
-                              ) : (
+                            ) : (
                               <p className="text-sm font-medium truncate">
-                                  {inviteLink.waitlist_email || 'No email'}
-                                </p>
-                              )}
-                              {!isOptimistic && (
-                              <Badge variant={isUsed ? 'secondary' : isExpired ? 'destructive' : 'default'} className="text-xs font-normal">
-                                    {isUsed ? 'Used' : isExpired ? 'Expired' : 'Active'}
-                                  </Badge>
-                              )}
-                              {isOptimistic && (
-                              <Badge variant="secondary" className="text-xs font-normal animate-pulse">
-                                  Creating...
-                                </Badge>
-                              )}
-                            </div>
-                          <p className="text-xs text-muted-foreground font-mono mt-1 truncate">
-                              {isOptimistic ? (
-                              <span className="inline-block h-3 w-64 bg-muted animate-pulse rounded" />
-                              ) : (
-                                inviteUrl
-                              )}
-                            </p>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                              {isOptimistic ? (
-                                <span className="inline-block h-3 w-48 bg-muted animate-pulse rounded" />
-                              ) : (
-                                <>
-                                <span>Expires: {new Date(inviteLink.expires_at).toLocaleDateString()}</span>
-                                  {inviteLink.used_at && (
-                                  <span>Used: {new Date(inviteLink.used_at).toLocaleDateString()}</span>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        <div className="flex items-center gap-1.5">
+                                {inviteLink.waitlist_email || 'No email'}
+                              </p>
+                            )}
                             {!isOptimistic && (
+                              <Badge variant={isUsed ? 'secondary' : isExpired ? 'destructive' : 'default'} className="text-xs font-normal">
+                                {isUsed ? 'Used' : isExpired ? 'Expired' : 'Active'}
+                              </Badge>
+                            )}
+                            {isOptimistic && (
+                              <Badge variant="secondary" className="text-xs font-normal animate-pulse">
+                                Creating...
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground font-mono mt-1 truncate">
+                            {isOptimistic ? (
+                              <span className="inline-block h-3 w-64 bg-muted animate-pulse rounded" />
+                            ) : (
+                              inviteUrl
+                            )}
+                          </p>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                            {isOptimistic ? (
+                              <span className="inline-block h-3 w-48 bg-muted animate-pulse rounded" />
+                            ) : (
                               <>
-                                <Button
-                                variant="ghost"
-                                  size="sm"
-                                  onClick={() => copyInviteLink(inviteLink.token)}
-                                  disabled={isUsed || isExpired}
-                                className="h-7 px-2 text-xs"
-                                >
-                                  <Copy className="h-3 w-3 mr-1" />
-                                  Copy
-                                </Button>
-                                <Button
-                                variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteInviteLink(inviteLink.id)}
-                                  disabled={isUsed}
-                                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                                >
-                                <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
+                                <span>Expires: {new Date(inviteLink.expires_at).toLocaleDateString()}</span>
+                                {inviteLink.used_at && (
+                                  <span>Used: {new Date(inviteLink.used_at).toLocaleDateString()}</span>
+                                )}
                               </>
                             )}
                           </div>
                         </div>
-                      )
-                    })}
-                    {inviteLinks.length === 0 && !isCreatingInviteLink && (
-                    <p className="text-center text-sm text-muted-foreground py-12">No invite links created yet</p>
-                    )}
-                  </div>
+                        <div className="flex items-center gap-1.5">
+                          {!isOptimistic && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyInviteLink(inviteLink.token)}
+                                disabled={isUsed || isExpired}
+                                className="h-7 px-2 text-xs"
+                              >
+                                <Copy className="h-3 w-3 mr-1" />
+                                Copy
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteInviteLink(inviteLink.id)}
+                                disabled={isUsed}
+                                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {inviteLinks.length === 0 && !isCreatingInviteLink && (
+                    <div className="text-center py-12">
+                      <Copy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-sm font-medium mb-2">No invite links created yet</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Create your first invite link to get started
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-            </TabsContent>
+          </TabsContent>
 
-            {/* Jobs Tab */}
-            <TabsContent value="jobs" className="space-y-4">
+          {/* Jobs Tab */}
+          <TabsContent value="jobs" className="space-y-4">
             <div className="rounded-lg border bg-card">
               <div className="p-4 border-b">
                 <h3 className="text-sm font-semibold">Jobs</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">View and manage job records</p>
               </div>
               <div className="p-4">
-                  <div className="space-y-2">
-                    {jobs.map((job) => (
-                    <div key={job.id} className="flex items-center justify-between p-3 rounded-md hover:bg-muted/50 transition-colors group">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{job.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                          {job.user_email}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                          <Badge variant={job.status === 'completed' ? 'default' : 'secondary'} className="text-xs font-normal">
-                              {job.status}
-                            </Badge>
-                            {job.template_name && (
-                            <Badge variant="secondary" className="text-xs font-normal">
-                              {job.template_name}
+                {jobs.length === 0 ? (
+                  <p className="text-center text-sm text-muted-foreground py-12">No jobs found</p>
+                ) : (
+                  <Accordion type="multiple" className="w-full">
+                    {(() => {
+                      // Group jobs by user_email
+                      const jobsByUser = new Map<string, Job[]>()
+                      jobs.forEach((job) => {
+                        const email = job.user_email || 'Unknown User'
+                        if (!jobsByUser.has(email)) {
+                          jobsByUser.set(email, [])
+                        }
+                        jobsByUser.get(email)!.push(job)
+                      })
+
+                      // Sort users by email
+                      const sortedUsers = Array.from(jobsByUser.entries()).sort(([a], [b]) =>
+                        a.localeCompare(b)
+                      )
+
+                      return sortedUsers.map(([email, userJobs]) => (
+                        <AccordionItem key={email} value={email} className="border rounded-lg mb-2 px-4">
+                          <AccordionTrigger className="hover:no-underline">
+                            <div className="flex items-center gap-2 flex-1">
+                              <Users className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-semibold truncate">{email}</span>
+                              <Badge variant="outline" className="ml-2">
+                                {userJobs.length} {userJobs.length === 1 ? 'job' : 'jobs'}
                               </Badge>
-                            )}
-                            <span className="text-xs text-muted-foreground">
-                            {new Date(job.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                        <Button
-                        variant="ghost"
-                          size="sm"
-                          onClick={() => deleteJob(job.id)}
-                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                        >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    ))}
-                    {jobs.length === 0 && (
-                    <p className="text-center text-sm text-muted-foreground py-12">No jobs found</p>
-                    )}
-                  </div>
-              </div>
-            </div>
-            </TabsContent>
-
-            {/* Usage Limits Tab */}
-            <TabsContent value="usage-limits" className="space-y-4">
-              <UsageLimitsTab />
-            </TabsContent>
-          </Tabs>
-
-          {/* Template Editor Dialog */}
-          <Dialog open={templateEditorOpen} onOpenChange={setTemplateEditorOpen}>
-          <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[95vw] max-h-[95vh] flex flex-col">
-              <div className="flex-1 overflow-y-auto min-h-0">
-                {editingTemplate && (
-                  <TemplateEditor
-                    template={{
-                      name: editingTemplate.name,
-                      type: editingTemplate.type,
-                      description: editingTemplate.description || '',
-                      htmlContent: editingTemplate.html_content
-                    }}
-                    onSave={handleSaveTemplate}
-                    onCancel={() => {
-                      setTemplateEditorOpen(false)
-                      setEditingTemplate(null)
-                    }}
-                  />
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="space-y-2 pt-2">
+                              {userJobs.map((job) => (
+                                <div key={job.id} className="flex items-center justify-between p-3 rounded-md hover:bg-muted/50 transition-colors group">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{job.title}</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <Badge variant={job.status === 'completed' ? 'default' : 'secondary'} className="text-xs font-normal">
+                                        {job.status}
+                                      </Badge>
+                                      {job.template_name && (
+                                        <Badge variant="secondary" className="text-xs font-normal">
+                                          {job.template_name}
+                                        </Badge>
+                                      )}
+                                      <span className="text-xs text-muted-foreground">
+                                        {new Date(job.created_at).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => deleteJob(job.id)}
+                                    className="h-7 w-7 p-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                    aria-label={`Delete job ${job.title}`}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))
+                    })()}
+                  </Accordion>
                 )}
               </div>
-            </DialogContent>
-          </Dialog>
+            </div>
+          </TabsContent>
 
-          {/* Template Preview Dialog */}
-          <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+          {/* Usage Limits Tab */}
+          <TabsContent value="usage-limits" className="space-y-4">
+            <UsageLimitsTab />
+          </TabsContent>
+        </Tabs>
+
+        {/* Template Editor Dialog */}
+        <Dialog open={templateEditorOpen} onOpenChange={setTemplateEditorOpen}>
+          <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[95vw] max-h-[95vh] flex flex-col">
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {editingTemplate && (
+                <TemplateEditor
+                  template={{
+                    name: editingTemplate.name,
+                    type: editingTemplate.type,
+                    description: editingTemplate.description || '',
+                    htmlContent: editingTemplate.html_content
+                  }}
+                  onSave={handleSaveTemplate}
+                  onCancel={() => {
+                    setTemplateEditorOpen(false)
+                    setEditingTemplate(null)
+                  }}
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Template Preview Dialog */}
+        <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
           <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-[95vw] max-h-[90vh] flex flex-col p-0">
             <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
               <DialogTitle className="text-base">
                 Preview: {previewTemplate?.name || previewInjectableTemplate?.name}
-                </DialogTitle>
+              </DialogTitle>
               <DialogDescription className="text-xs">
                 HTML template preview
-                </DialogDescription>
-              </DialogHeader>
+              </DialogDescription>
+            </DialogHeader>
             <div className="flex-1 overflow-auto min-h-0">
-                {(previewTemplate || previewInjectableTemplate) && (
+              {(previewTemplate || previewInjectableTemplate) && (
                 <div className="space-y-6">
                   {/* Preview Section */}
                   <div className="px-6 pt-6">
@@ -1345,8 +1663,8 @@ export default function AdminPage() {
                       <p className="text-xs text-muted-foreground">Live preview of your template</p>
                     </div>
                     <div className="rounded-lg border bg-muted/20 overflow-hidden">
-                    <iframe
-                      srcDoc={`<!DOCTYPE html>
+                      <iframe
+                        srcDoc={`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1381,48 +1699,48 @@ export default function AdminPage() {
 </head>
 <body>
   ${(() => {
-                          const raw = (previewTemplate?.html_content || previewInjectableTemplate?.html_content) || '';
-                          const name = (previewTemplate?.name || previewInjectableTemplate?.name) || '';
-                          const isJavvy = /javvy/i.test(name) || /\bL00002\b/i.test(name) || /javvy/i.test(raw) || /\bL00002\b/i.test(raw);
-                          if (!isJavvy) return raw;
-                          const noOnError = raw
-                            .replace(/\s+onerror="[^"]*"/gi, '')
-                            .replace(/\s+onerror='[^']*'/gi, '');
-                          const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
-                            const lower = block.toLowerCase();
-                            return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
-                              ? ''
-                              : block;
-                          });
-                          return stripFallbackScripts;
-                        })()}
+                            const raw = (previewTemplate?.html_content || previewInjectableTemplate?.html_content) || '';
+                            const name = (previewTemplate?.name || previewInjectableTemplate?.name) || '';
+                            const isJavvy = /javvy/i.test(name) || /\bL00002\b/i.test(name) || /javvy/i.test(raw) || /\bL00002\b/i.test(raw);
+                            if (!isJavvy) return raw;
+                            const noOnError = raw
+                              .replace(/\s+onerror="[^"]*"/gi, '')
+                              .replace(/\s+onerror='[^']*'/gi, '');
+                            const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+                              const lower = block.toLowerCase();
+                              return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+                                ? ''
+                                : block;
+                            });
+                            return stripFallbackScripts;
+                          })()}
 </body>
 </html>`}
                         className="w-full h-[60vh] border-0"
-                      title={`Preview of ${previewTemplate?.name || previewInjectableTemplate?.name}`}
-                    />
+                        title={`Preview of ${previewTemplate?.name || previewInjectableTemplate?.name}`}
+                      />
                     </div>
                   </div>
 
                   {/* Template Tester Section */}
-                    {previewInjectableTemplate && (
+                  {previewInjectableTemplate && (
                     <div className="px-6 pb-6 border-t pt-6">
                       <TemplateTester
                         htmlContent={previewInjectableTemplate.html_content}
                         templateName={previewInjectableTemplate.name}
                       />
                     </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
+            </div>
             <DialogFooter className="px-6 pb-6 pt-4 flex-shrink-0 border-t">
               <Button variant="outline" onClick={() => setPreviewDialogOpen(false)} size="sm" className="h-8">
-                  Close
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   )

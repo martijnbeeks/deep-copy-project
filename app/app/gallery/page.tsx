@@ -318,7 +318,11 @@ export default function ResultsGalleryPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {paginatedTemplates.map((template) => (
-                  <Card key={template.id} className="group hover:shadow-md transition-all duration-300 h-[420px] md:h-[460px] flex flex-col border-2 hover:border-primary/20">
+                  <Card
+                    key={template.id}
+                    className="group hover:shadow-md transition-all duration-300 h-[420px] md:h-[460px] flex flex-col border-2 hover:border-primary/20 cursor-pointer"
+                    onClick={() => handlePreview(template)}
+                  >
                     <CardHeader className="pb-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="space-y-2 flex-1 min-w-0">
@@ -382,7 +386,7 @@ export default function ResultsGalleryPage() {
                         <div className="text-sm text-muted-foreground font-medium">
                           {new Date(template.createdAt).toLocaleDateString()}
                         </div>
-                        <div className="flex items-center gap-1 sm:gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button
                             variant="outline"
                             size="sm"
@@ -623,20 +627,20 @@ export default function ResultsGalleryPage() {
                     </head>
                     <body>
                       ${(() => {
-                        const raw = selectedTemplate.html;
-                        const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(raw);
-                        if (!hasRealImages) return raw;
-                        const noOnError = raw
-                          .replace(/\s+onerror=\"[^\"]*\"/gi, '')
-                          .replace(/\s+onerror='[^']*'/gi, '');
-                        const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
-                          const lower = block.toLowerCase();
-                          return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
-                            ? ''
-                            : block;
-                        });
-                        return stripFallbackScripts;
-                      })()}
+                      const raw = selectedTemplate.html;
+                      const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(raw);
+                      if (!hasRealImages) return raw;
+                      const noOnError = raw
+                        .replace(/\s+onerror=\"[^\"]*\"/gi, '')
+                        .replace(/\s+onerror='[^']*'/gi, '');
+                      const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
+                        const lower = block.toLowerCase();
+                        return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
+                          ? ''
+                          : block;
+                      });
+                      return stripFallbackScripts;
+                    })()}
                       <script>
                         (function(){
                           function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }

@@ -25,13 +25,13 @@ export const FAQ = () => {
       question: "What if the AI copy needs adjustments?",
       answer: "You have full editing control over all AI-generated content. Most users find they only need minor tweaks. You can also regenerate sections or entire pages with different angles instantly."
     }*/
+    /*{
+      question: "How much does DeepCopy cost?",
+      answer: "Plans start at $97/month for solopreneurs (10 pages/month), $297/month for growth teams (unlimited pages), and custom enterprise pricing. All plans include AI research, copywriting, and hosting."
+    },*/
     {
       question: "Is there a free trial?",
       answer: "Yes! Start with our 14-day free trial. No credit card required. Most users see conversion improvements within the first week."
-    },
-    {
-      question: "How much does DeepCopy cost?",
-      answer: "Plans start at $97/month for solopreneurs (10 pages/month), $297/month for growth teams (unlimited pages), and custom enterprise pricing. All plans include AI research, copywriting, and hosting."
     },
     {
       question: "What kind of research does DeepCopy perform?",
@@ -66,7 +66,7 @@ export const FAQ = () => {
         </div>*/}
 
         <div className="max-w-3xl mx-auto">
-          <Accordion type="single" collapsible defaultValue="item-0" className="space-y-4">
+          <Accordion type="single" collapsible className="space-y-4">
             {faqs.map((faq, index) => (
               <AccordionItem
                 key={index}

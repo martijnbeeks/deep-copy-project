@@ -201,16 +201,16 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
         : 'border-border bg-card'
         }`}
       onClick={(e) => {
-        // Don't navigate if:
+        // Don't open dialog if:
         // 1. Preview dialog is currently open or closing
         // 2. Click is on a button (like "Full Preview")
         const target = e.target as HTMLElement
         const isButton = target.closest('button') !== null
 
-        // Only prevent click if preview dialog is open, not parent modals
+        // Open preview dialog when clicking on the box
         if (!isDialogOpen && !isDialogClosing && !isButton) {
           e.stopPropagation()
-          onClick()
+          setIsDialogOpen(true)
         }
       }}
     >
@@ -230,12 +230,20 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
       </div>
 
       {/* Preview Area */}
-      <div className="flex-1 relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border">
+      <div
+        className="flex-1 relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation()
+          if (!isDialogOpen && !isDialogClosing) {
+            setIsDialogOpen(true)
+          }
+        }}
+      >
 
         <LazyIframe
           key={template.id}
           srcDoc={smallPreviewHTML}
-          className="w-full h-full border-0"
+          className="w-full h-full border-0 pointer-events-none"
           title={`Preview of ${template.name}`}
           onLoad={() => {
             setTimeout(() => setIsLoaded(true), 200)

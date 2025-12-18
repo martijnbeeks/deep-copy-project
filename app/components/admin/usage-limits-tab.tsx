@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,6 +37,7 @@ export function UsageLimitsTab() {
   const [resetDialogOpen, setResetDialogOpen] = useState(false)
   const [resettingOrg, setResettingOrg] = useState<OrganizationUsageData | null>(null)
   const [resetType, setResetType] = useState<'all' | 'deep_research' | 'pre_lander'>('all')
+  const hasLoadedRef = useRef(false)
   
   const [editForm, setEditForm] = useState({
     deep_research_limit: '3',
@@ -60,6 +61,32 @@ export function UsageLimitsTab() {
   }
 
   const loadOrganizations = async () => {
+    // Check sessionStorage first for cached data
+    const cachedData = sessionStorage.getItem('usageLimitsData')
+    const cacheTimestamp = sessionStorage.getItem('usageLimitsTimestamp')
+    const now = Date.now()
+    const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+    
+    // Use cached data if it exists and is less than 5 minutes old
+    if (cachedData && cacheTimestamp) {
+      const age = now - parseInt(cacheTimestamp, 10)
+      if (age < CACHE_DURATION) {
+        try {
+          const data = JSON.parse(cachedData)
+          setOrganizations(data.organizations || [])
+          return // Don't fetch if we have fresh cache
+        } catch (e) {
+          // If cache is invalid, clear it and continue to fetch
+          sessionStorage.removeItem('usageLimitsData')
+          sessionStorage.removeItem('usageLimitsTimestamp')
+        }
+      } else {
+        // Cache is too old, clear it
+        sessionStorage.removeItem('usageLimitsData')
+        sessionStorage.removeItem('usageLimitsTimestamp')
+      }
+    }
+
     setLoading(true)
     try {
       const response = await fetch('/api/admin/organizations/usage-limits', {
@@ -69,6 +96,9 @@ export function UsageLimitsTab() {
       if (response.ok) {
         const data = await response.json()
         setOrganizations(data.organizations || [])
+        // Cache the data
+        sessionStorage.setItem('usageLimitsData', JSON.stringify(data))
+        sessionStorage.setItem('usageLimitsTimestamp', now.toString())
       } else {
         throw new Error('Failed to load organizations')
       }
@@ -84,7 +114,11 @@ export function UsageLimitsTab() {
   }
 
   useEffect(() => {
-    loadOrganizations()
+    // Only load if we haven't loaded data yet
+    if (!hasLoadedRef.current) {
+      hasLoadedRef.current = true
+      loadOrganizations()
+    }
   }, [])
 
   const handleEdit = (org: OrganizationUsageData) => {
@@ -133,6 +167,10 @@ export function UsageLimitsTab() {
         })
         setEditDialogOpen(false)
         setEditingOrg(null)
+        // Clear cache and reload fresh data
+        sessionStorage.removeItem('usageLimitsData')
+        sessionStorage.removeItem('usageLimitsTimestamp')
+        hasLoadedRef.current = false
         loadOrganizations()
       } else {
         const error = await response.json()
@@ -170,6 +208,10 @@ export function UsageLimitsTab() {
         setResetDialogOpen(false)
         setResettingOrg(null)
         setResetType('all')
+        // Clear cache and reload fresh data
+        sessionStorage.removeItem('usageLimitsData')
+        sessionStorage.removeItem('usageLimitsTimestamp')
+        hasLoadedRef.current = false
         loadOrganizations()
       } else {
         const error = await response.json()
@@ -223,7 +265,12 @@ export function UsageLimitsTab() {
               Manage Deep Research and Pre-Lander limits per organization
             </p>
           </div>
-          <Button onClick={loadOrganizations} disabled={loading} variant="ghost" size="sm" className="h-8">
+          <Button onClick={() => {
+            sessionStorage.removeItem('usageLimitsData')
+            sessionStorage.removeItem('usageLimitsTimestamp')
+            hasLoadedRef.current = false
+            loadOrganizations()
+          }} disabled={loading} variant="ghost" size="sm" className="h-8">
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>

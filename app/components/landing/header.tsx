@@ -33,9 +33,9 @@ export const Header = () => {
             <Image
               src="/deepcopy-logo.svg"
               alt="DeepCopy"
-              width={100}
-              height={40}
-              className="h-7 md:h-10 w-auto"
+              width={70}
+              height={28}
+              className="h-5 md:h-7 w-auto"
               priority
             />
           </Link>

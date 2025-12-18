@@ -63,21 +63,21 @@ export function Sidebar() {
       <UISidebar className="h-full w-full bg-sidebar" collapsible="none">
         <SidebarContent>
           <Link href="/dashboard" className="p-4 pb-0 flex items-center justify-center gap-2 transition-opacity">
-            <div className="w-10 h-10 group-hover:w-48 group-hover:h-12 flex items-center justify-center flex-shrink-0 relative transition-all duration-300">
+            <div className="w-7 h-7 group-hover:w-[134px] group-hover:h-[34px] flex items-center justify-center flex-shrink-0 relative transition-all duration-300">
               {/* Favicon - shown when collapsed */}
               <Image
                 src="/favicon.svg"
                 alt="DeepCopy"
-                width={40}
-                height={40}
+                width={28}
+                height={28}
                 className="opacity-100 group-hover:opacity-0 transition-opacity duration-300"
               />
               {/* Full logo - shown when expanded */}
               <Image
                 src="/deepcopy-logo.svg"
                 alt="DeepCopy"
-                width={192}
-                height={48}
+                width={134}
+                height={34}
                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 object-contain"
               />
             </div>

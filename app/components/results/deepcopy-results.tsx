@@ -42,6 +42,7 @@ import {
   Globe,
   DownloadCloud,
   Trash2,
+  Zap,
 } from "lucide-react";
 import JSZip from "jszip";
 import { useState, useEffect, useMemo, memo } from "react";
@@ -615,7 +616,7 @@ function DeepCopyResultsComponent({
               });
 
               setTemplates(templates);
-              
+
               // Update generatedAngles based on loaded templates
               const uniqueAngles = new Set<string>();
               templates.forEach((template) => {
@@ -628,12 +629,12 @@ function DeepCopyResultsComponent({
                       angleDescription = parts[1];
                     }
                   }
-                  
+
                   // Add the description part
                   uniqueAngles.add(angleDescription);
                   // Also add the full angle string for matching
                   uniqueAngles.add(template.angle);
-                  
+
                   // Find matching marketing angle to get the full "Title: Description" format
                   if (fullResult?.results?.marketing_angles) {
                     const matchingAngle = fullResult.results.marketing_angles.find((ma: any) => {
@@ -646,7 +647,7 @@ function DeepCopyResultsComponent({
                       }
                       return false;
                     });
-                    
+
                     // If we found a matching marketing angle, add it in "Title: Description" format
                     if (matchingAngle && typeof matchingAngle === "object" && matchingAngle.title && matchingAngle.angle) {
                       uniqueAngles.add(`${matchingAngle.title}: ${matchingAngle.angle}`);
@@ -654,7 +655,7 @@ function DeepCopyResultsComponent({
                   }
                 }
               });
-              
+
               // Add all unique angles to generatedAngles
               if (uniqueAngles.size > 0) {
                 setGeneratedAngles((prev) => {
@@ -666,7 +667,7 @@ function DeepCopyResultsComponent({
                   `✅ Updated generatedAngles with ${uniqueAngles.size} angles from loaded templates`
                 );
               }
-              
+
               logger.log(
                 `✅ Loaded ${templates.length} templates into UI for job ${jobId}`
               );
@@ -732,7 +733,7 @@ function DeepCopyResultsComponent({
             setGeneratedAngles((prev) => {
               const newSet = new Set(prev);
               newSet.add(angle);
-              
+
               // Also add the description part if angle is in "Title: Description" format
               let angleDescription = angle;
               if (angle.includes(": ")) {
@@ -744,7 +745,7 @@ function DeepCopyResultsComponent({
               } else {
                 angleDescription = angle;
               }
-              
+
               // Find matching marketing angle to get the full "Title: Description" format
               if (fullResult?.results?.marketing_angles) {
                 const matchingAngle = fullResult.results.marketing_angles.find((ma: any) => {
@@ -757,13 +758,13 @@ function DeepCopyResultsComponent({
                   }
                   return false;
                 });
-                
+
                 // If we found a matching marketing angle, add it in "Title: Description" format
                 if (matchingAngle && typeof matchingAngle === "object" && matchingAngle.title && matchingAngle.angle) {
                   newSet.add(`${matchingAngle.title}: ${matchingAngle.angle}`);
                 }
               }
-              
+
               return newSet;
             });
 
@@ -837,12 +838,12 @@ function DeepCopyResultsComponent({
                         angleDescription = parts[1];
                       }
                     }
-                    
+
                     // Add the description part
                     uniqueAngles.add(angleDescription);
                     // Also add the full angle string for matching
                     uniqueAngles.add(template.angle);
-                    
+
                     // Find matching marketing angle to get the full "Title: Description" format
                     if (fullResult?.results?.marketing_angles) {
                       const matchingAngle = fullResult.results.marketing_angles.find((ma: any) => {
@@ -855,7 +856,7 @@ function DeepCopyResultsComponent({
                         }
                         return false;
                       });
-                      
+
                       // If we found a matching marketing angle, add it in "Title: Description" format
                       if (matchingAngle && typeof matchingAngle === "object" && matchingAngle.title && matchingAngle.angle) {
                         uniqueAngles.add(`${matchingAngle.title}: ${matchingAngle.angle}`);
@@ -863,7 +864,7 @@ function DeepCopyResultsComponent({
                     }
                   }
                 });
-                
+
                 // Add all unique angles to generatedAngles
                 if (uniqueAngles.size > 0) {
                   setGeneratedAngles((prev) => {
@@ -1395,7 +1396,7 @@ function DeepCopyResultsComponent({
 
     // Store the template in case we need to restore it
     const templateToDelete = templates.find(t => t.id === templateId)
-    
+
     // Optimistically remove from UI immediately
     setTemplates(prev => prev.filter(t => t.id !== templateId))
 
@@ -1424,7 +1425,7 @@ function DeepCopyResultsComponent({
           return indexA - indexB
         }))
       }
-      
+
       showError(err, "Failed to delete template from server. Template has been restored.")
     }
   }
@@ -1600,6 +1601,19 @@ function DeepCopyResultsComponent({
                         <p className="text-sm text-muted-foreground">
                           Key elements of your marketing strategy
                         </p>
+                        {salesPageUrl && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <Globe className="h-4 w-4 text-muted-foreground" />
+                            <a
+                              href={salesPageUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary hover:underline break-all"
+                            >
+                              {salesPageUrl}
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2805,16 +2819,52 @@ function DeepCopyResultsComponent({
               <AccordionContent>
                 <div className="px-8 pb-8 border-t border-border/50 pt-6">
                   {templatesLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                       {Array.from({ length: 3 }).map((_, index) => (
                         <Card
                           key={`skeleton-${index}`}
-                          className="animate-pulse"
+                          className="group p-0 overflow-hidden transition-all duration-200 flex flex-col h-full border-border/50 animate-pulse"
                         >
-                          <CardContent className="p-6">
-                            <div className="h-4 bg-muted rounded mb-2"></div>
-                            <div className="h-3 bg-muted rounded mb-4 w-2/3"></div>
-                            <div className="h-32 bg-muted rounded"></div>
+                          <CardContent className="p-0 flex flex-col flex-1 min-h-0">
+                            {/* Preview Section Skeleton */}
+                            <div className="relative h-48 bg-muted overflow-hidden border-b border-border/50">
+                              <div className="absolute inset-0 bg-muted/50"></div>
+                            </div>
+                            {/* Content Section Skeleton */}
+                            <div className="p-5 flex flex-col flex-1 min-h-0">
+                              <div className="flex-1 space-y-2">
+                                {/* Badges Skeleton */}
+                                <div className="flex items-center gap-2 flex-wrap justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-5 w-16 bg-muted rounded-full"></div>
+                                    <div className="h-5 w-20 bg-muted rounded-full"></div>
+                                  </div>
+                                  <div className="h-6 w-6 bg-muted rounded"></div>
+                                </div>
+                                {/* Title Skeleton */}
+                                <div className="flex items-center gap-2">
+                                  <div className="h-5 w-8 bg-muted rounded-full"></div>
+                                  <div className="h-6 w-3/4 bg-muted rounded"></div>
+                                </div>
+                                {/* Description Skeleton */}
+                                <div className="space-y-1.5">
+                                  <div className="h-4 w-full bg-muted rounded"></div>
+                                  <div className="h-4 w-2/3 bg-muted rounded"></div>
+                                </div>
+                                {/* Date Skeleton */}
+                                <div className="flex items-center gap-1.5 pt-2">
+                                  <div className="h-3.5 w-3.5 bg-muted rounded"></div>
+                                  <div className="h-3.5 w-20 bg-muted rounded"></div>
+                                  <div className="h-3.5 w-3.5 bg-muted rounded ml-1"></div>
+                                  <div className="h-3.5 w-16 bg-muted rounded"></div>
+                                </div>
+                              </div>
+                              {/* Action Buttons Skeleton */}
+                              <div className="flex gap-2 mt-4 pt-4 border-t border-border/50">
+                                <div className="h-9 flex-1 bg-muted rounded"></div>
+                                <div className="h-9 flex-1 bg-muted rounded"></div>
+                              </div>
+                            </div>
                           </CardContent>
                         </Card>
                       ))}
@@ -2828,6 +2878,21 @@ function DeepCopyResultsComponent({
                     </div>
                   ) : (
                     <div className="space-y-4">
+                      {/* Coming Soon Feature Banner */}
+                      <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-4 flex items-center justify-center gap-3">
+                        <div className="flex-shrink-0">
+                          <Zap className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-foreground">
+                            Direct Export Integration is Coming..!
+                          </p>
+                          {/*<p className="text-xs text-muted-foreground mt-0.5">
+                            We're working on a new feature to export your pre-landers directly to your favorite platforms.
+                          </p>*/}
+                        </div>
+                      </div>
+
                       {generatingAngles.size > 0 && (
                         <div className="text-center py-2">
                           <p className="text-sm text-muted-foreground">
@@ -3069,7 +3134,7 @@ function DeepCopyResultsComponent({
                             }
                           );
 
-                          if (filteredTemplates.length === 0) {
+                          if (filteredTemplates.length === 0 && generatingAngles.size === 0) {
                             return (
                               <div className="col-span-full text-center py-12">
                                 <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -3376,15 +3441,52 @@ function DeepCopyResultsComponent({
                         {/* Skeleton loaders for generating angles */}
                         {Array.from({ length: generatingAngles.size }).map(
                           (_, i) => (
-                            <div
-                              key={`skeleton-${i}`}
-                              className="border border-border rounded-lg p-6 bg-card"
+                            <Card
+                              key={`skeleton-generating-${i}`}
+                              className="group p-0 overflow-hidden transition-all duration-200 flex flex-col h-full border-border/50 animate-pulse"
                             >
-                              <div className="h-6 w-3/4 bg-muted animate-pulse rounded-md mb-3" />
-                              <div className="h-4 w-full bg-muted animate-pulse rounded-md mb-2" />
-                              <div className="h-4 w-2/3 bg-muted animate-pulse rounded-md mb-4" />
-                              <div className="h-48 w-full bg-muted animate-pulse rounded-md" />
-                            </div>
+                              <CardContent className="p-0 flex flex-col flex-1 min-h-0">
+                                {/* Preview Section Skeleton */}
+                                <div className="relative h-48 bg-muted overflow-hidden border-b border-border/50">
+                                  <div className="absolute inset-0 bg-muted/50"></div>
+                                </div>
+                                {/* Content Section Skeleton */}
+                                <div className="p-5 flex flex-col flex-1 min-h-0">
+                                  <div className="flex-1 space-y-2">
+                                    {/* Badges Skeleton */}
+                                    <div className="flex items-center gap-2 flex-wrap justify-between mb-2">
+                                      <div className="flex items-center gap-2">
+                                        <div className="h-5 w-16 bg-muted rounded-full"></div>
+                                        <div className="h-5 w-20 bg-muted rounded-full"></div>
+                                      </div>
+                                      <div className="h-6 w-6 bg-muted rounded"></div>
+                                    </div>
+                                    {/* Title Skeleton */}
+                                    <div className="flex items-center gap-2">
+                                      <div className="h-5 w-8 bg-muted rounded-full"></div>
+                                      <div className="h-6 w-3/4 bg-muted rounded"></div>
+                                    </div>
+                                    {/* Description Skeleton */}
+                                    <div className="space-y-1.5">
+                                      <div className="h-4 w-full bg-muted rounded"></div>
+                                      <div className="h-4 w-2/3 bg-muted rounded"></div>
+                                    </div>
+                                    {/* Date Skeleton */}
+                                    <div className="flex items-center gap-1.5 pt-2">
+                                      <div className="h-3.5 w-3.5 bg-muted rounded"></div>
+                                      <div className="h-3.5 w-20 bg-muted rounded"></div>
+                                      <div className="h-3.5 w-3.5 bg-muted rounded ml-1"></div>
+                                      <div className="h-3.5 w-16 bg-muted rounded"></div>
+                                    </div>
+                                  </div>
+                                  {/* Action Buttons Skeleton */}
+                                  <div className="flex gap-2 mt-4 pt-4 border-t border-border/50">
+                                    <div className="h-9 flex-1 bg-muted rounded"></div>
+                                    <div className="h-9 flex-1 bg-muted rounded"></div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
                           )
                         )}
                       </div>

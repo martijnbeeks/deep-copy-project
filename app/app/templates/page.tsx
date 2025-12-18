@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,7 +11,6 @@ import { TemplatePreview } from "@/components/template-preview"
 import { Filter, FileText } from "lucide-react"
 
 export default function TemplatesPage() {
-  const router = useRouter()
   const [selectedCategory, setSelectedCategory] = useState("all")
 
   // Get filters from UI store
@@ -51,10 +49,6 @@ export default function TemplatesPage() {
     setCurrentPage(1)
   }, [selectedCategory])
 
-  const handleTemplateSelect = (templateId: string) => {
-    router.push(`/create?template=${templateId}`)
-  }
-
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar />
@@ -75,7 +69,7 @@ export default function TemplatesPage() {
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Category</SelectItem>
+                <SelectItem value="all">Categories</SelectItem>
                 <SelectItem value="advertorial">Advertorial</SelectItem>
                 <SelectItem value="listicle">Listicle</SelectItem>
               </SelectContent>
@@ -106,7 +100,7 @@ export default function TemplatesPage() {
                           key={template.id}
                           template={template}
                           isSelected={false}
-                          onClick={() => handleTemplateSelect(template.id)}
+                          onClick={() => { }}
                         />
                       ))}
                     </div>

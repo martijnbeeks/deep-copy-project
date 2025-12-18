@@ -69,18 +69,7 @@ function LoginPageContent() {
             <div className="flex items-center justify-center lg:justify-end">
               <div className="w-full max-w-md">
                 {showWaitlist ? (
-                  <>
-                    <WaitlistForm onSuccess={() => setShowWaitlist(false)} />
-                    <div className="mt-4 text-center">
-                      <Button 
-                        variant="ghost" 
-                        className="text-sm text-muted-foreground hover:text-foreground"
-                        onClick={() => setShowWaitlist(false)}
-                      >
-                        Already have an account? Sign in
-                      </Button>
-                    </div>
-                  </>
+                  <WaitlistForm onSuccess={() => setShowWaitlist(false)} />
                 ) : (
                   <>
                     <LoginForm onLogin={login} isLoading={isLoading} error={error || undefined} />

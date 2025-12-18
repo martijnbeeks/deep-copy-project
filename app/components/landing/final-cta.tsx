@@ -89,9 +89,17 @@ export const FinalCTA = () => {
             Join forward-thinking marketers who've discovered the unfair advantage of AI-driven Pre-Landers. Limited spots available for our early adopter program — secure yours now.
           </p>
 
-          <Button size="lg" className="text-lg px-12 hover:scale-105 transition-transform" asChild>
-            <Link href="/login?waitlist=true">Join Waitlist Only 5 More Spots Available →</Link>
-          </Button>
+          <div className="flex flex-col sm:flex-row items-center gap-3 justify-center mb-6">
+            <Button size="lg" className="text-lg px-12 hover:scale-105 transition-transform" asChild>
+              <Link href="/login?waitlist=true">Join Waitlist →</Link>
+            </Button>
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <span className="h-1 w-1 rounded-full bg-primary animate-pulse"></span>
+              <span>
+                Only <span className="text-primary font-medium">5</span> More Spots Available
+              </span>
+            </div>
+          </div>
 
           {/*<p className="text-sm text-muted-foreground mt-6">
             No credit card required • 14-day free trial • Cancel anytime
