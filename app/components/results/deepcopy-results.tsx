@@ -937,7 +937,7 @@ function DeepCopyResultsComponent({
             return newMap;
           });
 
-          // Show user-friendly error notification
+          // Show user-friendly error notification (only once)
           toast({
             title: "Pre-lander generation failed",
             description: errorMessage,
@@ -945,7 +945,8 @@ function DeepCopyResultsComponent({
             duration: 5000,
           });
 
-          throw new Error(`Swipe file generation job failed: ${errorMessage}`);
+          // Return immediately to stop polling - don't throw error to prevent loop continuation
+          return;
         }
       } catch (err: any) {
         logger.error(
@@ -1550,13 +1551,6 @@ function DeepCopyResultsComponent({
       setSelectedTemplateForRefinement(null);
       setSelectedAngleForRefinement(null);
       setTemplateModalStep(1);
-
-      toast({
-        title: "Success",
-        description: `Swipe file generation started for ${templateIds.length
-          } template${templateIds.length !== 1 ? "s" : ""
-          }! Templates will appear when ready.`,
-      });
     } catch (error) {
       toast({
         title: "Error",
@@ -2363,6 +2357,12 @@ function DeepCopyResultsComponent({
                             >
                               {fullResult.results.marketing_angles.map(
                                 (angle: string | Angle, index: number) => {
+                                  // Debug: Log all angles being rendered
+                                  if (index === 0) {
+                                    console.log('Total marketing angles:', fullResult.results.marketing_angles.length)
+                                  }
+                                  console.log(`Rendering marketing angle ${index + 1}:`, angle)
+                                  
                                   const {
                                     angleObj,
                                     angleTitle,
@@ -2823,7 +2823,7 @@ function DeepCopyResultsComponent({
                       {Array.from({ length: 3 }).map((_, index) => (
                         <Card
                           key={`skeleton-${index}`}
-                          className="group p-0 overflow-hidden transition-all duration-200 flex flex-col h-full border-border/50 animate-pulse"
+                          className="group p-0 overflow-hidden transition-all duration-200 flex flex-col h-full border-border/50 animate-pulse-subtle"
                         >
                           <CardContent className="p-0 flex flex-col flex-1 min-h-0">
                             {/* Preview Section Skeleton */}
@@ -3443,7 +3443,7 @@ function DeepCopyResultsComponent({
                           (_, i) => (
                             <Card
                               key={`skeleton-generating-${i}`}
-                              className="group p-0 overflow-hidden transition-all duration-200 flex flex-col h-full border-border/50 animate-pulse"
+                              className="group p-0 overflow-hidden transition-all duration-200 flex flex-col h-full border-border/50 animate-pulse-subtle"
                             >
                               <CardContent className="p-0 flex flex-col flex-1 min-h-0">
                                 {/* Preview Section Skeleton */}

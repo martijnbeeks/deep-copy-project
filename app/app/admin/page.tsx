@@ -92,6 +92,7 @@ interface InviteLink {
   waitlist_email?: string | null
   expires_at: string
   used_at?: string | null
+  used_by_email?: string | null
   created_at: string
 }
 
@@ -732,8 +733,8 @@ export default function AdminPage() {
           description: "Invite link created successfully"
         })
 
-        // Refresh waitlist entries to update "Has Invite" badges
-        await loadWaitlistEntries()
+        // No need to refetch waitlist - the "Has Invite" badges update automatically
+        // because hasInviteLink() checks the inviteLinks state which we just updated
       } else {
         // Remove optimistic link on error
         setInviteLinks(prev => prev.filter(link => link.id !== tempId))
@@ -792,6 +793,26 @@ export default function AdminPage() {
         variant: "destructive"
       })
     }
+  }
+
+  // Helper function to format dates as dd/mm/yyyy
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString)
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}/${month}/${year}`
+  }
+
+  // Helper function to format dates with time as dd/mm/yyyy HH:mm
+  const formatDateTime = (dateString: string): string => {
+    const date = new Date(dateString)
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${day}/${month}/${year} ${hours}:${minutes}`
   }
 
   if (!isAuthenticated) {
@@ -1444,6 +1465,11 @@ export default function AdminPage() {
                     const isExpired = new Date(inviteLink.expires_at) < new Date()
                     const isUsed = !!inviteLink.used_at
                     const inviteUrl = `${window.location.origin}/invite/${inviteLink.token}`
+                    
+                    // Determine which email to display - show used_by_email if invite is used
+                    const displayEmail = isUsed && inviteLink.used_by_email 
+                      ? inviteLink.used_by_email 
+                      : inviteLink.waitlist_email || 'No email'
 
                     return (
                       <div
@@ -1456,7 +1482,7 @@ export default function AdminPage() {
                               <div className="h-4 w-32 bg-muted animate-pulse rounded" />
                             ) : (
                               <p className="text-sm font-medium truncate">
-                                {inviteLink.waitlist_email || 'No email'}
+                                {displayEmail}
                               </p>
                             )}
                             {!isOptimistic && (
@@ -1482,10 +1508,11 @@ export default function AdminPage() {
                               <span className="inline-block h-3 w-48 bg-muted animate-pulse rounded" />
                             ) : (
                               <>
-                                <span>Expires: {new Date(inviteLink.expires_at).toLocaleDateString()}</span>
+                                <span>Expires: {formatDate(inviteLink.expires_at)}</span>
                                 {inviteLink.used_at && (
-                                  <span>Used: {new Date(inviteLink.used_at).toLocaleDateString()}</span>
+                                  <span>Used: {formatDate(inviteLink.used_at)}</span>
                                 )}
+                                <span>Created: {formatDateTime(inviteLink.created_at)}</span>
                               </>
                             )}
                           </div>

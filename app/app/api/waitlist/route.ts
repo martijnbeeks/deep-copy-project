@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db/connection'
 import { handleApiError, createSuccessResponse, createValidationErrorResponse } from '@/lib/middleware/error-handler'
-import { isValidEmail, isValidUrl } from '@/lib/utils/validation'
+import { isValidEmail, isValidUrl, normalizeUrl } from '@/lib/utils/validation'
 import { logger } from '@/lib/utils/logger'
 
 // Create waitlist table if it doesn't exist
@@ -106,8 +106,9 @@ export async function POST(request: NextRequest) {
       return createValidationErrorResponse('Invalid email format')
     }
 
-    // Validate URL format
-    if (!isValidUrl(company_website)) {
+    // Normalize and validate URL format
+    const normalizedWebsite = normalizeUrl(company_website)
+    if (!isValidUrl(normalizedWebsite)) {
       return createValidationErrorResponse('Invalid company website URL format')
     }
 
@@ -181,7 +182,7 @@ export async function POST(request: NextRequest) {
         email.toLowerCase().trim(),
         name.trim(),
         company?.trim() || null,
-        company_website.trim(),
+        normalizedWebsite.trim(),
         platforms || [],
         shopify_app_name?.trim() || null,
         platform_other?.trim() || null,

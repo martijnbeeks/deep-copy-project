@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, CheckCircle, ArrowLeft, ArrowRight, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { isValidEmail, isValidUrl } from "@/lib/utils/validation"
+import { isValidEmail, isValidUrl, normalizeUrl } from "@/lib/utils/validation"
 import { cn } from "@/lib/utils"
 
 interface WaitlistFormProps {
@@ -161,7 +161,7 @@ export function WaitlistForm({ onSuccess }: WaitlistFormProps) {
         body: JSON.stringify({
           email: formData.email.trim(),
           name: formData.name.trim(),
-          company_website: formData.company_website.trim(),
+          company_website: normalizeUrl(formData.company_website.trim()),
           platforms: formData.platforms,
           shopify_app_name: formData.platforms.includes('shopify') ? formData.shopify_app_name.trim() : undefined,
           platform_other: formData.platforms.includes('other') ? formData.platform_other.trim() : undefined,
@@ -427,8 +427,11 @@ export function WaitlistForm({ onSuccess }: WaitlistFormProps) {
                         }
                       }}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' && formData.company_website.trim() && isValidUrl(formData.company_website)) {
-                          handleNext()
+                        if (e.key === 'Enter') {
+                          const normalized = normalizeUrl(formData.company_website.trim())
+                          if (formData.company_website.trim() && isValidUrl(normalized)) {
+                            handleNext()
+                          }
                         }
                       }}
                       className="h-14 text-lg bg-background border-2 focus:border-primary transition-colors"

@@ -64,7 +64,7 @@ const getFirstSelectedAvatar = (avatars?: CustomerAvatar[]): CustomerAvatar | un
 const getSelectedAvatarIndex = (avatars?: CustomerAvatar[]): number => {
   const selectedAvatars = getSelectedAvatars(avatars)
   if (selectedAvatars.length === 0) return 1
-  
+
   const firstSelected = selectedAvatars[0]
   const index = avatars?.findIndex(a => a.persona_name === firstSelected.persona_name) ?? -1
   return index >= 0 ? index + 1 : 1 // 1-based index
@@ -273,12 +273,14 @@ export default function CreatePage() {
           return Math.max(prev, Math.floor(baseProgress))
         })
 
-        // Update source status based on elapsed time
-        const elapsedMinutes = elapsed / 60
-        if (elapsedMinutes >= 0.5) setSourceStatus(prev => ({ ...prev, webSearch: true }))
-        if (elapsedMinutes >= 1) setSourceStatus(prev => ({ ...prev, amazonReviews: true }))
-        if (elapsedMinutes >= 1.5) setSourceStatus(prev => ({ ...prev, redditDiscussions: true }))
-        // Industry Blogs, Competitor Analysis, and Market Trends remain in progress until completion
+        // Update source status based on elapsed time (in seconds) - 45 second intervals
+        const elapsedSeconds = elapsed
+        if (elapsedSeconds >= 45) setSourceStatus(prev => ({ ...prev, webSearch: true }))
+        if (elapsedSeconds >= 90) setSourceStatus(prev => ({ ...prev, amazonReviews: true }))
+        if (elapsedSeconds >= 135) setSourceStatus(prev => ({ ...prev, redditDiscussions: true }))
+        if (elapsedSeconds >= 180) setSourceStatus(prev => ({ ...prev, industryBlogs: true }))
+        if (elapsedSeconds >= 225) setSourceStatus(prev => ({ ...prev, competitorAnalysis: true }))
+        // Market Trends remains in progress until actual completion (not time-based)
       }, 1000) // Update every second for smoother progress
 
       // Update stages based on elapsed time (more spread out for longer processing)
@@ -993,7 +995,7 @@ export default function CreatePage() {
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Selected Avatar</p>
                 <p className="text-base font-semibold text-foreground">
-                  {getFirstSelectedAvatar(formData.avatars)?.persona_name 
+                  {getFirstSelectedAvatar(formData.avatars)?.persona_name
                     ? `Avatar ${getSelectedAvatarIndex(formData.avatars)}: ${getFirstSelectedAvatar(formData.avatars)!.persona_name}`
                     : `Avatar ${getSelectedAvatarIndex(formData.avatars)}: Evidence-seeking fitness enthusiasts`}
                 </p>

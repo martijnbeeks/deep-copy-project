@@ -103,7 +103,7 @@ function AvatarExtractionDialogComponent({
           .map((avatar: ExtractedAvatar, index: number) => avatar.is_researched ? index : -1)
           .filter((index: number) => index >= 0)
         setSelectedAvatars(new Set(researchedIndices))
-        
+
         // Show verification dialog when reusing existing avatars
         setShowVerification(true)
       } else {
@@ -151,14 +151,14 @@ function AvatarExtractionDialogComponent({
     setLoadingProgress(0)
     setLoadingStage(0)
 
-    // Start progress animation - slower to accommodate 90+ seconds
-    // Updates every 500ms, increments by 0.5% to reach 90% in ~90 seconds
+    // Start progress animation - slower to accommodate 120+ seconds
+    // Updates every 500ms, increments by 0.375% to reach 90% in ~120 seconds
     const progressInterval = setInterval(() => {
       setLoadingProgress(prev => {
         if (prev >= 90) {
           return 90 // Keep at 90% until completion
         }
-        return prev + 0.5
+        return prev + 0.375
       })
     }, 500)
 

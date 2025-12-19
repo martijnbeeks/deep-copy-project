@@ -88,7 +88,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Admin user not found' }, { status: 500 })
     }
 
-    const inviteLinks = await getInviteLinksByCreator(adminUserId)
+    // Join with users table to get email of user who used the invite
+    const result = await query(
+      `SELECT 
+        il.*,
+        u.email as used_by_email
+      FROM invite_links il
+      LEFT JOIN users u ON il.used_by = u.id
+      WHERE il.created_by = $1 
+      ORDER BY il.created_at DESC`,
+      [adminUserId]
+    )
+    
+    const inviteLinks = result.rows.map(row => ({
+      id: row.id,
+      token: row.token,
+      invite_type: row.invite_type,
+      waitlist_email: row.waitlist_email,
+      expires_at: row.expires_at,
+      used_at: row.used_at,
+      used_by: row.used_by,
+      used_by_email: row.used_by_email, // Add this field
+      created_at: row.created_at
+    }))
     
     return NextResponse.json({ invite_links: inviteLinks })
   } catch (error) {

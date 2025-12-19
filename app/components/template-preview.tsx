@@ -201,16 +201,14 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
         : 'border-border bg-card'
         }`}
       onClick={(e) => {
-        // Don't open dialog if:
-        // 1. Preview dialog is currently open or closing
-        // 2. Click is on a button (like "Full Preview")
+        // Call the selection handler when clicking on the template
         const target = e.target as HTMLElement
         const isButton = target.closest('button') !== null
 
-        // Open preview dialog when clicking on the box
-        if (!isDialogOpen && !isDialogClosing && !isButton) {
+        // Only handle selection if not clicking a button
+        if (!isButton) {
           e.stopPropagation()
-          setIsDialogOpen(true)
+          onClick() // Call the selection handler
         }
       }}
     >
@@ -234,9 +232,8 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
         className="flex-1 relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border cursor-pointer"
         onClick={(e) => {
           e.stopPropagation()
-          if (!isDialogOpen && !isDialogClosing) {
-            setIsDialogOpen(true)
-          }
+          // Call the selection handler when clicking the preview area
+          onClick()
         }}
       >
 
