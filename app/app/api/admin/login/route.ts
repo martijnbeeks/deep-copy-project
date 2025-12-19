@@ -7,15 +7,15 @@ import { createSessionToken } from '@/lib/auth/admin-auth'
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json()
-    
+
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
     }
 
     // Hardcoded admin credentials for production
-    const ADMIN_USERNAME = 'admin'
-    const ADMIN_PASSWORD = 'admin123'
-    
+    const ADMIN_USERNAME = 'superPoweredAdmin'
+    const ADMIN_PASSWORD = '97RE$$aVXsZ(pgIR'
+
     // Simple credential check
     if (email !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
 
     // Create session token
     const sessionToken = createSessionToken(email)
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       success: true,
       user: {
         id: 'admin-user',
