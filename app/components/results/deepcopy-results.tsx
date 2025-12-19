@@ -2357,12 +2357,6 @@ function DeepCopyResultsComponent({
                             >
                               {fullResult.results.marketing_angles.map(
                                 (angle: string | Angle, index: number) => {
-                                  // Debug: Log all angles being rendered
-                                  if (index === 0) {
-                                    console.log('Total marketing angles:', fullResult.results.marketing_angles.length)
-                                  }
-                                  console.log(`Rendering marketing angle ${index + 1}:`, angle)
-                                  
                                   const {
                                     angleObj,
                                     angleTitle,

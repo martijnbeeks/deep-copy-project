@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db/connection'
+import { requireAuth, createAuthErrorResponse } from '@/lib/auth/user-auth'
+import { handleApiError, createSuccessResponse, createValidationErrorResponse } from '@/lib/middleware/error-handler'
 
 export async function GET(
   request: NextRequest,
@@ -59,5 +61,64 @@ export async function GET(
       { error: 'Failed to fetch template', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Check authentication
+    const authResult = await requireAuth(request)
+    if (authResult.error) {
+      return createAuthErrorResponse(authResult)
+    }
+
+    const { id } = params
+
+    if (!id) {
+      return createValidationErrorResponse('Template ID is required')
+    }
+
+    // Check if template exists and get job_id to verify ownership
+    const templateResult = await query(
+      'SELECT job_id FROM injected_templates WHERE id = $1',
+      [id]
+    )
+
+    if (templateResult.rows.length === 0) {
+      return createValidationErrorResponse('Template not found', 404)
+    }
+
+    const jobId = templateResult.rows[0].job_id
+
+    // Verify the user owns the job
+    const jobResult = await query(
+      'SELECT user_id FROM jobs WHERE id = $1',
+      [jobId]
+    )
+
+    if (jobResult.rows.length === 0 || jobResult.rows[0].user_id !== authResult.user.id) {
+      return createValidationErrorResponse('Unauthorized', 403)
+    }
+
+    // Delete the template
+    const deleteResult = await query(
+      'DELETE FROM injected_templates WHERE id = $1',
+      [id]
+    )
+
+    if (deleteResult.rowCount === 0) {
+      return createValidationErrorResponse('Template not found', 404)
+    }
+
+    return createSuccessResponse({ 
+      message: 'Template deleted successfully',
+      id 
+    })
+
+  } catch (error) {
+    return handleApiError(error)
   }
 }
