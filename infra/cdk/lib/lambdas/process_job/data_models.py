@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
 class Demographics(BaseModel):
     """Demographic & general information about the avatar."""
-    age_range: Optional[int] = Field(
+    age_range: Optional[str] = Field(
         None, description="Inclusive min/max age in years. Note it like: 45-55, 60-70, etc."
     )
     gender: Optional[List[str]] = Field(

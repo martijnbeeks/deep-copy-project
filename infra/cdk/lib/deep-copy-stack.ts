@@ -70,6 +70,7 @@ export class DeepCopyStack extends Stack {
     resultsBucket.grantPutAcl(processJobLambda);
     resultsBucket.grantRead(processJobLambda, 'content_library/*');
     resultsBucket.grantRead(processJobLambda, 'projects/*'); // Allow reading pre-computed results
+    resultsBucket.grantRead(processJobLambda, 'results/*'); // Allow reading results for dev mode
 
     // Small Lambda to submit jobs (Python version)
     const submitLambda = new lambda.Function(this, 'SubmitJobLambda', {

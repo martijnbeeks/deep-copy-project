@@ -209,7 +209,7 @@ def extract_avatars_from_url(url: str, openai_api_key: str, model: str = "gpt-5"
         image_bytes = capture_page_as_image_bytes(url)
         print(f"Page capture completed in {time.time() - capture_start:.2f}s")
         
-        # Compress and encode the image (max 0.5MB)
+        # Compress and encode the image (max 0.5MB). Note: compression converts to JPEG.
         encode_start = time.time()
         base64_image = compress_image_if_needed(image_bytes, max_size_mb=0.5)
         print(f"Image processed in {time.time() - encode_start:.2f}s ({len(base64_image)} chars)")
@@ -246,7 +246,7 @@ Provide at least 5 avatars that represent distinct customer segments. Please als
                     {
                         "type": "image_url",
                         "image_url": {
-                            "url": f"data:image/png;base64,{base64_image}"
+                            "url": f"data:image/jpeg;base64,{base64_image}"
                         }
                     }
                 ]
@@ -259,98 +259,6 @@ Provide at least 5 avatars that represent distinct customer segments. Please als
         result = response.choices[0].message.parsed
         print(f"Successfully extracted avatars from OpenAI - Total time: {total_time:.2f}s")
         
-        
-        
-        # result = AvatarCollection(
-        #     avatars=[
-        #         CustomerAvatar(
-        #             persona_name='Appearance-Conscious Man (General)',
-        #             characteristics=['grooming-focused', 'time-poor', 'results-driven'],
-        #             description='A man who cares about first impressions, needs a reliable scalp/dandruff solution that restores confidence without a complicated routine.',
-        #             age_range='25-44',
-        #             gender='male',
-        #             key_buying_motivation='A clinically backed, visible-results treatment that removes flakes and restores confidence.',
-        #             pain_point='Visible flakes/itchy scalp that undermines confidence in social and professional settings.',
-        #             emotion='Embarrassment',
-        #             desire='A fast, effective, non-irritating product with proven results and low effort.',
-        #             objections=['Is it actually effective or just marketing?', 'Too expensive compared to drugstore brands', 'May irritate my scalp or smell too strong', 'Subscription/auto-renewal concerns'],
-        #             failed_alternatives=['Generic anti-dandruff shampoos', 'Home remedies (oils, vinegar rinses)', 'Changing shampoo frequently with no lasting improvement'],
-        #             is_broad_avatar=True
-        #         ),
-        #         CustomerAvatar(
-        #             persona_name='Young Urban Professional',
-        #             characteristics=['career-driven', 'socially-active', 'image-conscious'],
-        #             description='A young professional who needs a discreet, fast-working solution so flakes don\'t interfere with networking, dates or client meetings.',
-        #             age_range='25-34',
-        #             gender='male',
-        #             key_buying_motivation='Restore a polished appearance quickly so he can feel confident at work and socially.',
-        #             pain_point='Flakes showing on dark clothing and in photos during important events.',
-        #             emotion='Anxiety',
-        #             desire='A low-effort product that delivers visible improvement and keeps his look professional.',
-        #             objections=['Won\'t show results fast enough for an upcoming event', 'Product might be too strong or leave residue', 'Price vs perceived short-term benefit'],
-        #             failed_alternatives=['Dry shampoo to hide flakes', 'One-off medicated shampoos that temporarily help', 'Stylists\' quick fixes'],
-        #             is_broad_avatar=False
-        #         ),
-        #         CustomerAvatar(
-        #             persona_name='Busy Parent / Time-Pressed Guy',
-        #             characteristics=['time-poor', 'practical', 'family-oriented'],
-        #             description='A busy dad who wants a simple, reliable treatment he can use without extra steps or frequent visits to specialists.',
-        #             age_range='35-44',
-        #             gender='male',
-        #             key_buying_motivation='A straightforward product that fits a rushed routine and actually stops flakes long-term.',
-        #             pain_point='Persistent scalp issues but no time for complex treatments or repeated pharmacy trips.',
-        #             emotion='Frustration',
-        #             desire='An easy-to-use product with a clear guarantee (money-back) so he can try it risk-free.',
-        #             objections=['Won\'t stick with a multi-step regimen', 'Subscription or recurring cost concerns', 'Unclear instructions for quick use'],
-        #             failed_alternatives=['Occasional use of medicated shampoos', 'Home remedies between washes', 'Inconsistent products bought on sale'],
-        #             is_broad_avatar=False
-        #         ),
-        #         CustomerAvatar(
-        #             persona_name='Sensitive-Scalp / Ingredient-Conscious Man',
-        #             characteristics=['health-aware', 'ingredient-focused', 'cautious'],
-        #             description='A man whose scalp reacts easily and who carefully reads labels, seeking a gentle, clinically supported formula that won\'t cause irritation.',
-        #             age_range='30-50',
-        #             gender='male',
-        #             key_buying_motivation='A clinically backed, gentle formula with clear ingredient transparency that soothes rather than aggravates the scalp.',
-        #             pain_point='Past treatments caused burning, dryness or allergic reactions.',
-        #             emotion='Worry',
-        #             desire='A safe, proven product with gentle actives and evidence or certifications to support claims.',
-        #             objections=['Contains harsh chemicals or allergens', 'Scent/added fragrances will irritate me', 'Clinical claims are exaggerated'],
-        #             failed_alternatives=['High-strength medicated shampoos that dried skin', 'Prescription creams with unpleasant side effects', 'Natural remedies that didn\'t work'],
-        #             is_broad_avatar=False
-        #         ),
-        #         CustomerAvatar(
-        #             persona_name='Aging Man Concerned About Hair & Scalp',
-        #             characteristics=['appearance-concerned', 'conservative', 'value-seeking'],
-        #             description='An older man noticing thinning hair and scalp flaking who wants a reputable product that improves scalp health and looks age-appropriate.',
-        #             age_range='45-60',
-        #             gender='male',
-        #             key_buying_motivation='Improve scalp condition to make hair look healthier and reduce signs of aging or neglect.',
-        #             pain_point='Thinning hair combined with flakes makes him look older and less groomed.',
-        #             emotion='Concern',
-        #             desire='A credible, long-term solution that addresses scalp health and restores a neater appearance.',
-        #             objections=['Skeptical of \'miracle\' or marketing claims', 'Cost vs long-term benefit', 'Worried product won\'t address thinning as promised'],
-        #             failed_alternatives=['Expensive salon or clinic treatments with little benefit', 'Switching shampoos frequently', 'Over-the-counter anti-hair-loss products that didn\'t help flakes'],
-        #             is_broad_avatar=False
-        #         ),
-        #         CustomerAvatar(
-        #             persona_name='Deal-Seeking Trial Shopper',
-        #             characteristics=['price-sensitive', 'curiosity-driven', 'digital-shopper'],
-        #             description='A shopper who follows grooming trends and wants to try a low-risk solution (trial/demo or money-back) before committing to full price.',
-        #             age_range='18-34',
-        #             gender='male',
-        #             key_buying_motivation='Low-risk trial offers, discounts, and clear guarantees that lower the barrier to test the product.',
-        #             pain_point='Has limited budget and is unsure which product will actually work long-term.',
-        #             emotion='Skepticism mixed with curiosity',
-        #             desire='An affordable trial or guarantee so they can test results without financial regret.',
-        #             objections=['Worries about hidden subscription or auto-renewal', 'Doubts about the validity of testimonials', 'Shipping or return hassles'],
-        #             failed_alternatives=['Cheap drugstore brands that didn\'t last', 'Free sample promotions with no clear results', 'Impulse buys from social ads'],
-        #             is_broad_avatar=False
-        #         )
-        #     ],
-        #     company_type="Direct-to-consumer men's grooming / scalp care brand",
-        #     product_description="A clinically backed scalp treatment (jar formula) targeted primarily at men to reduce flakes and soothe itchy scalp; marketed with real-life testimonials, a money-back results guarantee (e.g., results in 120 days or you don't pay), and clear ingredient/certification claims to reassure customers."
-        # )
         
         return result
         

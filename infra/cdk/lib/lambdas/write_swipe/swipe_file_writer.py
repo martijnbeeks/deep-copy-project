@@ -312,7 +312,7 @@ def make_structured_request_with_retry(
             model=model,
             max_tokens=max_tokens,
             messages=messages,
-            system=system_prompt if system_prompt else None,
+            # system=system_prompt if system_prompt else None,
             tools=[{
                 "name": tool_name,
                 "description": tool_description,
@@ -338,11 +338,7 @@ def make_structured_request_with_retry(
                 input_data = tool_use.input
                 logger.info(f"Input data type: {type(input_data)}")
                 logger.info(f"Input data keys (if dict): {list(input_data.keys()) if isinstance(input_data, dict) else 'N/A (not a dict)'}")
-                
-                # rerun if less then 10 fields
-                if len(input_data) < 10:
-                    logger.info(f"Less then 10 fields, rerunning...")
-                    return make_structured_request()
+            
                 
                 if isinstance(input_data, dict):
                     structured_result = input_data
@@ -398,7 +394,7 @@ def make_streaming_request_with_retry(
             model=model,
             max_tokens=max_tokens,
             messages=messages,
-            system=system_prompt if system_prompt else None,
+            system=system_prompt if system_prompt else [],
         ) as stream:
             for text in stream.text_stream:
                 response_text += text
@@ -421,6 +417,7 @@ def rewrite_swipe_file(
     deep_research_output: str,
     offer_brief: str,
     marketing_philosophy_analysis: str,
+    summary: str,
     swipe_file_config: dict[str, dict[str, Any]],
     anthropic_client: anthropic.Anthropic,
     model: str = "claude-sonnet-4-5-20250929",
@@ -439,52 +436,7 @@ def rewrite_swipe_file(
     # Turn 1: Familiarize with documents
     # ============================================================
     logger.info("Turn 1: Familiarizing with documents")
-    field_prompt = f"""Hey, Claude, I want you to please analyze system prompt above. I've done a significant amount of research of a product that I'm going to be selling, and it's your role as my direct response copywriter to understand this research, the avatar document, the offer brief, and the necessary beliefs document to an extremely high degree. So please familiarize yourself with these documents before we proceed with writing anything.
-    """
-    system_prompt = [{
-            "type": "text",
-            "text": f"""
-            Text that need to be analyzed:
-            Avatar sheet:
-            {avatar_sheet}
-            - Deep research output:
-            {deep_research_output}
-            - Offer brief:
-            {offer_brief}
-            - Marketing philosophy analysis:
-            {marketing_philosophy_analysis}
-            """,
-            "cache_control": {"type": "ephemeral"}
-    }]
     
-    # TODO: test performance with only a summary of deep research.
-    
-    # Add first user message
-    messages.append({
-        "role": "user",
-        "content": field_prompt
-    })
-    
-    # Get first response using streaming
-    first_response_text, first_usage = make_streaming_request_with_retry(
-        messages=messages,
-        max_tokens=max_tokens,
-        model=model,
-        anthropic_client=anthropic_client,
-        system_prompt=system_prompt
-    )
-    
-    # Add assistant response to messages
-    messages.append({
-        "role": "assistant",
-        "content": first_response_text
-    })
-    
-    logger.info(f"Turn 1 completed. Response length: {len(first_response_text)} chars")
-    logger.info(f"Turn 1 usage: {first_usage}")
-    
-    # After this step, it is specific to the swipe file template that was selected
-    logger.info("Turn 2: Make it specific to the swipe file template")
     
     swipe_file_results = {}
     for swipe_file_id, swipe_file_data in swipe_file_config.items():
@@ -494,73 +446,251 @@ def rewrite_swipe_file(
         # Pepare Step 2
         raw_swipe_file_text = swipe_file_data["raw_text"]
         
-        generate_content_prompt = f"""Excellent work. Now we're going to be writing an advertorial, which is a type of pre-sales page designed to nurture customers before they actually see the main product offer page. I'm going to send you an indirect competitor with a very successful advertorial, and I want you to please analyze this advertorial and let me know your thoughts
-        Raw text from the pdf advertorial with HTML formatting preserved:
-        {raw_swipe_file_text}
-        """
-        user_content_with_pdf = [
-            {"type": "text", "text": generate_content_prompt},
-        ]
+        logger.info("Turn 1: Generate a style guide")
+        
+        
+        first_query_prompt = f"""
+        You are an expert copywriter analyzing an advertorial's style to create a detailed style guide for rewriting.
+        YOUR TASK:
+        Analyze the provided original advertorial and output a comprehensive style guide in JSON format. This guide will be used by a second process to generate new copy that matches the original's style exactly.
 
-    
-        # Add second user message with PDF
-        message_swipe.append({
-            "role": "user",
-            "content": user_content_with_pdf
-        })
-    
-        # Get second response using streaming
-        second_response_text, second_usage = make_streaming_request_with_retry(
-            messages=message_swipe,
+        ANALYSIS REQUIREMENTS:
+        1. Sentence Structure Analysis
+        Count and analyze:
+
+        Average words per sentence in body sections (calculate across all section bodies)
+        Shortest sentence length (in words)
+        Longest sentence length (in words)
+        Fragment frequency (count intentional fragments like "No X. Just Y.")
+        Fragment examples (list 3-5 examples from original)
+
+        2. White Space & Line Break Analysis
+        Map the formatting:
+        <br> tag count in story intro
+        Average <br> tags per section body (count across sections 1-11)
+        Line break pattern (describe: frequent breaks between every 2-3 sentences, or longer paragraphs?)
+        White space philosophy (dense prose vs. scannable chunks)
+
+        3. Tone & Voice Markers
+        Identify:
+        Formality level (casual/conversational or formal/authoritative - choose one)
+        Contraction frequency (count contractions like "you're", "don't" and calculate per 100 words)
+        Direct address frequency (count uses of "you/your" per 100 words)
+        Energy level (punchy/urgent or calm/educational - choose one)
+        Confidence style (assertive claims or hedged language - choose one)
+
+        4. Repetition & Rhythm Devices
+        Catalog patterns:
+        Parallel structure examples (find patterns like "Ditch X, ditch Y" - list 3-5)
+        Rule of threes (find "X, Y, and Z" patterns - list examples)
+        Rhetorical questions (count and list examples)
+        Repeated phrases (any phrases that appear multiple times)
+
+        5. Pacing & Information Density
+        Measure:
+        Facts per section body (average number of specific claims/facts per section)
+        Explanation depth (light touch with benefits only, or detailed mechanisms? - describe)
+        Speed variation (where does copy speed up with short sentences vs. slow down? - note patterns)
+
+        6. Formatting & CTA Patterns
+        Document:
+        HTML elements used (list all: <br>, <b>, <strong>, <ul>, <ol>, etc.)
+        Bold/emphasis frequency (count uses of <b> or <strong> tags)
+        Inline CTA presence (yes/no)
+        Inline CTA sections (if yes, list which section numbers have them: e.g., 3, 5, 7, 9, 11)
+        CTA format (if present, show exact format like "👉 [Text]")
+        Emoji usage (list any emojis used, or "none")
+
+        7. Punctuation & Special Characters
+        Identify:
+        Ellipsis usage (count "..." occurrences)
+        Exclamation points (count and note if used sparingly or frequently)
+
+        8. Section-Specific Patterns
+        Analyze structure:
+        Story intro word count
+        Story intro sentence count
+        Story intro structure (describe the flow: problem → agitation → hope, or other pattern)
+        Average section body word count (calculate across sections 1-11)
+        Average section body sentence count
+        Section body structure (describe pattern: benefit → detail → proof, or other)
+
+
+        OUTPUT FORMAT:
+        Return your analysis as style report that can be used to rewrite the advertorial.
+
+        CRITICAL INSTRUCTIONS:
+        Be precise with counts - actually count, don't estimate
+        Calculate averages accurately - show your math if needed
+        Provide specific examples - use exact quotes from original
+        Fill every field - no null or empty values
+        Set hard rules in criticalRules - based on your analysis, set the limits for Call 2
+
+
+        INPUT:
+        Original Advertorial:
+        {raw_swipe_file_text}
+
+        """
+        
+        style_message = [
+            {
+                "role": "user",
+                "content": first_query_prompt
+            }
+        ]
+        
+
+        
+        style_guide, usage_style = make_streaming_request_with_retry(
+            messages=style_message,
             max_tokens=max_tokens,
             model=model,
             anthropic_client=anthropic_client,
-            system_prompt=system_prompt
         )
         
-        # Add assistant response to messages
-        message_swipe.append({
-            "role": "assistant",
-            "content": second_response_text
-        })
-    
-        logger.info(f"Turn 2 completed for {swipe_file_id}. Response length: {len(second_response_text)} chars")
-        logger.info(f"Turn 2 usage for {swipe_file_id}: {second_usage}")
+        
+        third_query_prompt = f"""
+        You are an expert copywriter creating a complete advertorial for a new product, following an exact style guide.
+        YOUR TASK:
+        Write a complete advertorial using:
 
-        logger.info("Turn 3: Writing advertorial with structured output")
-        third_query_prompt = f"""You are an expert copywriter creating a complete, polished advertorial for a new product.
+        The style specifications from the provided style guide (from Call 1)
+        All relevant product information from the product data
+        The specified marketing angle (focus the copy around this emotional driver)
+        The output schema structure
 
-        Your task:
-        1. Rewrite the advertorial using ALL the relevant information about the new product.  
-        2. Focus specifically on the marketing angle: {angle}.  
-        3. Generate **a full and complete output** following the schema provided below.  
-        4. DO NOT skip or leave out any fields — every field in the schema must be filled.  
-        5. Match the FORMATTING style of the original advertorial exactly:
-        - Use short, punchy paragraphs (1-2 sentences each where dramatic)
-        - Create white space and breathing room between key moments
-        - Keep the rhythm snappy and scannable
-        - Aim for similar total word count as the original example
-        - Use similar HTML formatting elements within your text as the original advertorial, only <br>, <b>, <strong>
-        - In addition to using standard HTML formatting elements found in the example, you must actively incorporate **ordered lists** (`<ol>`) for numbered steps, **unordered lists** (`<ul>`) for bullet points, and **list items** (`<li>`) for individual entries whenever you present a series, steps, important points, or grouped information. Use these tags natively (not just plain text) to match real advertorial HTML style.
-        6. Avoid using AI-specific markers, emojis and unusual punctuation (such as long em dashes "—") in your writing.
-        8. If any data is missing, intelligently infer or create realistic content that fits the schema.  
-        9. Write fluently and naturally, with complete sentences. Do not stop mid-thought or end with ellipses ("...").
-        10. Prioritize EMOTIONAL PACING over information density — shorter is often stronger in direct response copy.
-        11. At the end, verify your own output is **100% complete** — all schema fields filled.
+        CRITICAL: The marketing angle should be woven throughout the copy, not just stated once. It should drive the emotional arc, headline choices, and benefit framing.
+        Generate a full and complete output with every schema field filled. Do NOT skip or leave out any fields.
 
-        CRITICAL FORMATTING RULES:
-        - Break up dense paragraphs into shorter ones
-        - Use paragraph breaks for dramatic pauses
-        - Single impactful sentences should stand alone
-        - Match the "fascination-style" pacing of the original
+        STYLE GUIDE (FROM CALL 1):
+        {style_guide}
 
-        When ready, output ONLY the completed schema with all fields filled in. Do not include explanations or notes.
+        CRITICAL WRITING RULES (EXTRACT FROM STYLE GUIDE):
+        Read the style guide above carefully and extract these key values:
+        Sentence Construction
+
+        MAXIMUM sentence length: Extract from "Maximum sentence length" in Critical Rules section - NO EXCEPTIONS
+        Fragment requirement: Extract from "Fragments required" in Critical Rules section
+        Fragment patterns to use: Use examples from "Fragment examples" in Sentence Structure section
+        Average target: Extract from "Average words per sentence" in Sentence Structure section
+        Before writing each sentence: Count the words. If over max, split it.
+
+        White Space & Line Breaks
+        Story intro <br> tags: Extract from "<br> tags in story intro" in White Space section
+        Section body <br> tags: Extract from "Mandatory <br> tags per section" in Critical Rules section
+        Placement pattern: Extract from "Line break pattern" in White Space section
+        Philosophy: Extract from "White space philosophy" in White Space section
+        Format: Use <br><br> to separate idea chunks (double break for visual space)
+
+        Tone & Voice
+        Formality: Extract from "Formality level" in Tone & Voice section
+        Contractions: Extract rate from "Contractions per 100 words" in Tone & Voice section
+        Direct address: Extract rate from "Direct address per 100 words" in Tone & Voice section
+        Energy: Extract from "Energy level" in Tone & Voice section
+        Confidence: Extract from "Confidence style" in Tone & Voice section
+
+        Rhythm & Repetition
+        Use parallel structures: Extract examples from "Parallel structure examples" in Rhythm & Repetition section
+        Rule of threes: Extract examples from "Rule of threes examples" in Rhythm & Repetition section
+        Rhetorical questions: Extract frequency from "Rhetorical questions found" in Rhythm & Repetition section
+
+        Pacing & Density
+        Facts per section: Extract from "Average facts/claims per section" in Pacing section
+        Explanation depth: Extract from "Explanation depth" in Pacing section
+
+        Formatting & CTAs
+        HTML elements allowed: Extract from "HTML elements used" in Formatting section
+        Inline CTAs:
+        Required: Extract from "Inline CTAs required" in Critical Rules section
+        If yes, sections: Extract from "If yes, which sections" in Formatting section
+        Format: Extract from "CTA format" in Formatting section
+
+
+        Emojis: Extract from "Emojis used" in Formatting section
+        Punctuation
+        Do not allow em dashes. Use commas, periods, or rewrite differently.
+        If normal dashes are used, please use appropriate spacing around them, never use dashes without spaces.
+        Preferred dash style: Extract from "Preferred dash style" in Punctuation section
+
+        Section Targets
+        Story intro word count: Extract from "Target intro word count" in Critical Rules section (±20 words)
+        Story intro sentences: Extract from "Story intro sentence count" in Section-Specific Patterns
+        Story intro flow: Extract from "Story intro structure" in Section-Specific Patterns
+        Section body word count: Extract from "Target section word count" in Critical Rules section (±15 words)
+        Section body sentences: Extract from "Average section body sentence count" in Section-Specific Patterns
+        Section body flow: Extract from "Section body structure" in Section-Specific Patterns
+
+
+        PRODUCT INFORMATION:
+        Marketing Angle:
+        {angle}
+        Product Data:
+        Deep research output:
+        {deep_research_output}
+        Offer brief:
+        {offer_brief}
+        Marketing philosophy analysis:
+        {marketing_philosophy_analysis}
+
+
+
+        PRE-SUBMISSION VERIFICATION CHECKLIST:
+        STOP. Before submitting, verify these items:
+        1. Sentence Length Audit
+        Every sentence in story intro ≤ [Max from Critical Rules section] words
+        Every sentence in sections 1-11 ≤ [Max from Critical Rules section] words
+        If any exceed limit, they are split into shorter sentences or fragments
+
+        2. Line Break Audit
+        Story intro contains ≥ [Number from White Space section] <br><br> tags
+        Each section body contains ≥ [Number from Critical Rules section] <br><br> tags
+        Line breaks separate distinct ideas/emotional beats
+
+        3. Inline CTA Audit
+        If inline CTAs required per Critical Rules section, CTAs are added
+        CTAs appear in correct sections per Formatting section
+        CTA format matches example in Formatting section
+
+        4. Punctuation Audit
+        Do not allow em dashes. Use commas, periods, or rewrite differently.
+        If normal dashes are used, please use appropriate spacing around them, never use dashes without spaces.
+        Ellipses (...) avoided unless Punctuation section shows usage
+        Exclamation points match original frequency from Punctuation section
+
+        5. Fragment Audit
+        If fragments required per Critical Rules section, fragments included
+        Fragment style matches examples from Sentence Structure section
+        Used for emphasis and rhythm
+
+        6. Word Count Audit
+        Story intro: [Target from Critical Rules section] ±20 words
+        Each section body: [Target from Critical Rules section] ±15 words
+        Staying within targets = stronger, more scannable copy
+
+        7. Schema Audit
+        Every required field is filled
+        Character counts fall within minLength/maxLength
+        No placeholder text or incomplete thoughts
+
+        If you cannot verify all 7 audits above, DO NOT SUBMIT. Fix first.
+
+        OUTPUT INSTRUCTIONS:
+        Output ONLY the completed JSON schema with all fields filled.
+        Do not include:
+
+        Explanations or process notes
+        Style guide references
+        Meta-commentary
+        Preambles or conclusions
+
+        Just the raw JSON schema, fully populated and verified against all checklists.
         """
-        # Add third user message
-        message_swipe.append({
+        
+        test_message = [{
             "role": "user",
             "content": third_query_prompt
-        })
+        }]
     
         # Prepare schema for tool use
         # Use JSON schema from config (already parsed as dict)
@@ -572,14 +702,14 @@ def rewrite_swipe_file(
     
         # Get structured response
         full_advertorial, third_usage = make_structured_request_with_retry(
-            messages=message_swipe,
+            messages=test_message,
             tool_name=tool_name,
             tool_description=tool_description,
             tool_schema=tool_schema,
-            max_tokens=20000,
+            max_tokens=10000,
             model=model,
             anthropic_client=anthropic_client,
-            system_prompt=system_prompt
+            # system_prompt=system_prompt
         )
         
         # save the full_advertorial to the swipe_file_results
@@ -591,36 +721,6 @@ def rewrite_swipe_file(
         logger.info(f"Turn 3 completed. Received {len(full_advertorial) if isinstance(full_advertorial, dict) else 0} fields in structured output")
         logger.info(f"Turn 3 usage: {third_usage}")
         # Check if enough fields are present, else retry
-        if len(full_advertorial) < 10:
-            logger.error(f"Less then 10 fields, rerunning...")
-            # return rewrite_swipe_file(angle, avatar_sheet, deep_research_output, offer_brief, marketing_philosophy_analysis, swipe_file_config, anthropic_client, model, max_tokens)
-    # ============================================================
-    # Turn 4: Quality check (commented out for now)
-    # ============================================================
-    # fifth_query_prompt = f"""Amazing! I'm going to send you the full advertorial that I just completed. I want you to please analyze it and let me know your thoughts. I would specifically analyze how in line all of the copy is in relation to all the research amongst the avatar, the competitors, the research, necessary beliefs, levels of consciousness, the objections, etc., that you did earlier.
-    #
-    # Please include the deep research output such that you can verify whether all factual information is used.
-    #
-    # Rate the advertorial and provide me with a quality metrics.
-    #
-    # Find all research content can be found above and verify whether all factual information is used.
-    #
-    # Here is the full advertorial:
-    #
-    # {full_advertorial}"""
-    # 
-    # # Use only the first turn for quality check (reset messages to first turn only)
-    # first_turn_messages = [
-    #     messages[0],  # First user message
-    #     messages[1],  # First assistant response
-    #     {"role": "user", "content": fifth_query_prompt}
-    # ]
-    # 
-    # quality_report, quality_usage = make_streaming_request_with_retry(
-    #     messages=first_turn_messages,
-    #     max_tokens=MAX_TOKENS,
-    #     model=MODEL,
-    #     anthropic_client=self.anthropic_client
-    # )
+        
     
     return swipe_file_results

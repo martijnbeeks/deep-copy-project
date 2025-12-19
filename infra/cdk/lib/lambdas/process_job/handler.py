@@ -776,7 +776,8 @@ def run_pipeline(event, context):
             logger.info(f"Dev mode detected for job {job_id}. Using mock results.")
             try:
                 # Mock source
-                mock_key = "projects/test/20251121_114946/comprehensive_results.json"
+                # mock_key = "projects/test/20251121_114946/comprehensive_results.json" #new aura
+                mock_key = "results/a34fd6f2-b0aa-4369-82a4-51eb4f60d03b/comprehensive_results.json" #hypowered
                 
                 logger.info(f"Loading mock results from S3: {mock_key}")
                 s3_response = generator.s3_client.get_object(Bucket=s3_bucket, Key=mock_key)
@@ -983,7 +984,7 @@ if __name__ == "__main__":
         raise Exception("Failed to load JOB_EVENT_JSON")
     
 
-    event["dev_mode"] = os.environ.get("dev_mode", "false").lower() == "true"
+    event["dev_mode"] = "true"
     event["RESULTS_BUCKET"] = os.environ.get("RESULTS_BUCKET", "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih")
     event["s3_bucket"] = os.environ.get("s3_bucket", event["RESULTS_BUCKET"])
     event["project_name"] = os.environ.get("project_name", "test")

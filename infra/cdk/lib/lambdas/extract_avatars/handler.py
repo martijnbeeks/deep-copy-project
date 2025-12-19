@@ -198,6 +198,6 @@ if __name__ == "__main__":
         "job_id": os.environ.get('job_id'),
         "url": os.environ.get('url', "https://trynewaura.com/products/seborrheic-dermatitis-cream"),
         # "dev_mode": os.environ.get('dev_mode', '').lower() == 'true'
-        "dev_mode": True
+        "dev_mode": False
     }
     print(lambda_handler(test_event, {}))
