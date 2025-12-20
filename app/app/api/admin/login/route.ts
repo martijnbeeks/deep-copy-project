@@ -13,8 +13,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Hardcoded admin credentials for production
-    const ADMIN_USERNAME = 'superPoweredAdmin'
-    const ADMIN_PASSWORD = '97RE$$aVXsZ(pgIR'
+    const ADMIN_USERNAME = 'admin'
+    const ADMIN_PASSWORD = 'admin123'
 
     // Simple credential check
     if (email !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
