@@ -107,12 +107,13 @@ export interface OrganizationMember {
   updated_at: string
 }
 
-export type UsageType = 'deep_research' | 'pre_lander'
+export type UsageType = 'deep_research' | 'pre_lander' | 'static_ads'
 
 export interface OrganizationUsageLimits {
   organization_id: string
   deep_research_limit: number
   pre_lander_limit: number
+  static_ads_limit: number
   created_at: string
   updated_at: string
 }

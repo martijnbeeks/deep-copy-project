@@ -127,7 +127,7 @@ export const checkUsageLimit = async (
     limit,
     organizationId,
     error: !allowed 
-      ? `You've reached your weekly limit of ${limit} ${usageType === 'deep_research' ? 'Deep Research' : 'Pre-Lander'} actions. Your limit resets automatically based on a rolling 7-day window.`
+      ? `You've reached your weekly limit of ${limit} ${usageType === 'deep_research' ? 'Deep Research' : usageType === 'static_ads' ? 'Static Ads' : 'Pre-Lander'} actions. Your limit resets automatically based on a rolling 7-day window.`
       : undefined
   }
 }

@@ -11,10 +11,10 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const usageType = searchParams.get('type') as 'deep_research' | 'pre_lander' | null
+    const usageType = searchParams.get('type') as 'deep_research' | 'pre_lander' | 'static_ads' | null
 
-    if (!usageType || (usageType !== 'deep_research' && usageType !== 'pre_lander')) {
-      return createValidationErrorResponse('usage type must be "deep_research" or "pre_lander"')
+    if (!usageType || (usageType !== 'deep_research' && usageType !== 'pre_lander' && usageType !== 'static_ads')) {
+      return createValidationErrorResponse('usage type must be "deep_research", "pre_lander", or "static_ads"')
     }
 
     const usageCheck = await checkUsageLimit(authResult.user, usageType)

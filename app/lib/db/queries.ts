@@ -802,11 +802,32 @@ export const ensureUsageLimitsTables = async (): Promise<void> => {
       organization_id TEXT PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
       deep_research_limit INTEGER NOT NULL DEFAULT 3,
       pre_lander_limit INTEGER NOT NULL DEFAULT 30,
+      static_ads_limit INTEGER NOT NULL DEFAULT 50,
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW()
     )
   `)
   console.log('[ENSURE_TABLES] organization_usage_limits table ensured')
+  
+  // Add static_ads_limit column if it doesn't exist (for existing tables)
+  try {
+    await query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'organization_usage_limits' 
+          AND column_name = 'static_ads_limit'
+        ) THEN
+          ALTER TABLE organization_usage_limits 
+          ADD COLUMN static_ads_limit INTEGER NOT NULL DEFAULT 50;
+        END IF;
+      END $$;
+    `)
+    console.log('[ENSURE_TABLES] static_ads_limit column ensured')
+  } catch (error) {
+    console.log('[ENSURE_TABLES] Error adding static_ads_limit column (may already exist):', error)
+  }
 
   // Create organization_usage_tracking table
   console.log('[ENSURE_TABLES] Creating organization_usage_tracking table')
@@ -814,7 +835,7 @@ export const ensureUsageLimitsTables = async (): Promise<void> => {
     CREATE TABLE IF NOT EXISTS organization_usage_tracking (
       id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
       organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-      usage_type TEXT NOT NULL CHECK (usage_type IN ('deep_research', 'pre_lander')),
+      usage_type TEXT NOT NULL CHECK (usage_type IN ('deep_research', 'pre_lander', 'static_ads')),
       week_start_date DATE NOT NULL,
       count INTEGER NOT NULL DEFAULT 0,
       created_at TIMESTAMP DEFAULT NOW(),
@@ -823,6 +844,31 @@ export const ensureUsageLimitsTables = async (): Promise<void> => {
     )
   `)
   console.log('[ENSURE_TABLES] organization_usage_tracking table ensured')
+  
+  // Update CHECK constraint to include 'static_ads' if table exists with old constraint
+  try {
+    await query(`
+      DO $$ 
+      BEGIN
+        -- Drop old constraint if it exists
+        IF EXISTS (
+          SELECT 1 FROM information_schema.table_constraints 
+          WHERE constraint_name = 'organization_usage_tracking_usage_type_check'
+        ) THEN
+          ALTER TABLE organization_usage_tracking 
+          DROP CONSTRAINT organization_usage_tracking_usage_type_check;
+        END IF;
+        
+        -- Add new constraint with static_ads
+        ALTER TABLE organization_usage_tracking 
+        ADD CONSTRAINT organization_usage_tracking_usage_type_check 
+        CHECK (usage_type IN ('deep_research', 'pre_lander', 'static_ads'));
+      END $$;
+    `)
+    console.log('[ENSURE_TABLES] usage_type CHECK constraint updated')
+  } catch (error) {
+    console.log('[ENSURE_TABLES] Error updating CHECK constraint (may already be correct):', error)
+  }
 
   // Create index for faster lookups
   console.log('[ENSURE_TABLES] Creating index')
@@ -852,7 +898,7 @@ export const getOrganizationUsageLimits = async (organizationId: string): Promis
   if (result.rows.length === 0) {
     console.log('[GET_LIMITS] No limits found, creating default limits', { organizationId })
     // Create default limits if they don't exist
-    await setOrganizationUsageLimits(organizationId, { deep_research_limit: 3, pre_lander_limit: 30 })
+    await setOrganizationUsageLimits(organizationId, { deep_research_limit: 3, pre_lander_limit: 30, static_ads_limit: 50 })
     console.log('[GET_LIMITS] Default limits created, querying again', { organizationId })
     const newResult = await query(
       'SELECT * FROM organization_usage_limits WHERE organization_id = $1',
@@ -868,7 +914,7 @@ export const getOrganizationUsageLimits = async (organizationId: string): Promis
 
 export const setOrganizationUsageLimits = async (
   organizationId: string,
-  limits: { deep_research_limit?: number; pre_lander_limit?: number }
+  limits: { deep_research_limit?: number; pre_lander_limit?: number; static_ads_limit?: number }
 ): Promise<OrganizationUsageLimits> => {
   console.log('[SET_LIMITS] Starting setOrganizationUsageLimits', { organizationId, limits, timestamp: new Date().toISOString() })
   
@@ -900,6 +946,11 @@ export const setOrganizationUsageLimits = async (
       params.push(limits.pre_lander_limit)
     }
     
+    if (limits.static_ads_limit !== undefined) {
+      updates.push(`static_ads_limit = $${params.length + 1}`)
+      params.push(limits.static_ads_limit)
+    }
+    
     console.log('[SET_LIMITS] Executing UPDATE query', { organizationId, updates })
     const result = await query(
       `UPDATE organization_usage_limits SET ${updates.join(', ')} WHERE organization_id = $1 RETURNING *`,
@@ -910,12 +961,13 @@ export const setOrganizationUsageLimits = async (
   } else {
     console.log('[SET_LIMITS] Inserting new limits', { organizationId, limits })
     const result = await query(
-      `INSERT INTO organization_usage_limits (organization_id, deep_research_limit, pre_lander_limit) 
-       VALUES ($1, $2, $3) RETURNING *`,
+      `INSERT INTO organization_usage_limits (organization_id, deep_research_limit, pre_lander_limit, static_ads_limit) 
+       VALUES ($1, $2, $3, $4) RETURNING *`,
       [
         organizationId,
         limits.deep_research_limit ?? 3,
-        limits.pre_lander_limit ?? 30
+        limits.pre_lander_limit ?? 30,
+        limits.static_ads_limit ?? 50
       ]
     )
     console.log('[SET_LIMITS] INSERT completed', { organizationId, resultId: result.rows[0]?.organization_id })
@@ -1021,15 +1073,17 @@ export const getAllOrganizationsWithLimits = async (): Promise<Array<Organizatio
   organization: Organization
   current_deep_research_usage: number
   current_pre_lander_usage: number
+  current_static_ads_usage: number
   deep_research_week_start: string | null
   pre_lander_week_start: string | null
+  static_ads_week_start: string | null
 }>> => {
   await ensureUsageLimitsTables()
   
   // First, ensure all organizations have limits (create defaults if missing) in a single query
   await query(`
-    INSERT INTO organization_usage_limits (organization_id, deep_research_limit, pre_lander_limit)
-    SELECT id, 3, 30
+    INSERT INTO organization_usage_limits (organization_id, deep_research_limit, pre_lander_limit, static_ads_limit)
+    SELECT id, 3, 30, 50
     FROM organizations
     WHERE id NOT IN (SELECT organization_id FROM organization_usage_limits)
     ON CONFLICT (organization_id) DO NOTHING
@@ -1058,6 +1112,13 @@ export const getAllOrganizationsWithLimits = async (): Promise<Array<Organizatio
         AND usage_type = 'pre_lander'
         AND week_start_date >= CURRENT_DATE - INTERVAL '7 days'
       ), 0) as current_pre_lander_usage,
+      COALESCE((
+        SELECT SUM(count) 
+        FROM organization_usage_tracking 
+        WHERE organization_id = oul.organization_id 
+        AND usage_type = 'static_ads'
+        AND week_start_date >= CURRENT_DATE - INTERVAL '7 days'
+      ), 0) as current_static_ads_usage,
       (
         SELECT MAX(week_start_date)
         FROM organization_usage_tracking
@@ -1071,7 +1132,14 @@ export const getAllOrganizationsWithLimits = async (): Promise<Array<Organizatio
         WHERE organization_id = oul.organization_id
         AND usage_type = 'pre_lander'
         AND week_start_date >= CURRENT_DATE - INTERVAL '7 days'
-      ) as pre_lander_week_start
+      ) as pre_lander_week_start,
+      (
+        SELECT MAX(week_start_date)
+        FROM organization_usage_tracking
+        WHERE organization_id = oul.organization_id
+        AND usage_type = 'static_ads'
+        AND week_start_date >= CURRENT_DATE - INTERVAL '7 days'
+      ) as static_ads_week_start
     FROM organization_usage_limits oul
     INNER JOIN organizations o ON oul.organization_id = o.id
     ORDER BY o.name
@@ -1081,6 +1149,7 @@ export const getAllOrganizationsWithLimits = async (): Promise<Array<Organizatio
     organization_id: row.organization_id,
     deep_research_limit: row.deep_research_limit,
     pre_lander_limit: row.pre_lander_limit,
+    static_ads_limit: row.static_ads_limit || 50,
     created_at: row.created_at,
     updated_at: row.updated_at,
     organization: {
@@ -1092,7 +1161,387 @@ export const getAllOrganizationsWithLimits = async (): Promise<Array<Organizatio
     },
     current_deep_research_usage: parseInt(row.current_deep_research_usage) || 0,
     current_pre_lander_usage: parseInt(row.current_pre_lander_usage) || 0,
+    current_static_ads_usage: parseInt(row.current_static_ads_usage) || 0,
     deep_research_week_start: row.deep_research_week_start,
-    pre_lander_week_start: row.pre_lander_week_start
+    pre_lander_week_start: row.pre_lander_week_start,
+    static_ads_week_start: row.static_ads_week_start
   }))
+}
+
+// ==================== STATIC ADS QUERIES ====================
+
+export interface StaticAdJob {
+  id: string
+  original_job_id: string
+  external_job_id: string
+  user_id: string
+  status: string
+  progress: number
+  error_message: string | null
+  selected_angles: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface GeneratedStaticAd {
+  id: string
+  static_ad_job_id: string
+  original_job_id: string
+  image_url: string
+  angle_index: number
+  variation_number: number
+  angle_name: string
+  status: string
+  created_at: string
+  updated_at: string
+}
+
+export interface ImageLibraryItem {
+  id: number
+  library_id: string
+  url: string
+  created_at: string
+}
+
+// Ensure static ads tables exist
+const ensureStaticAdsTables = async (): Promise<void> => {
+  // Create static_ad_jobs table
+  await query(`
+    CREATE TABLE IF NOT EXISTS static_ad_jobs (
+      id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+      original_job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+      external_job_id TEXT NOT NULL,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      status TEXT NOT NULL DEFAULT 'pending',
+      progress INTEGER NOT NULL DEFAULT 0,
+      error_message TEXT,
+      selected_angles TEXT,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    )
+  `)
+  
+  // Add selected_angles column if it doesn't exist (for existing tables)
+  await query(`
+    ALTER TABLE static_ad_jobs 
+    ADD COLUMN IF NOT EXISTS selected_angles TEXT
+  `).catch(() => {
+    // Column might already exist, ignore error
+  })
+  
+  // Create generated_static_ads table
+  await query(`
+    CREATE TABLE IF NOT EXISTS generated_static_ads (
+      id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+      static_ad_job_id TEXT NOT NULL REFERENCES static_ad_jobs(id) ON DELETE CASCADE,
+      original_job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+      image_url TEXT NOT NULL,
+      angle_index INTEGER NOT NULL,
+      variation_number INTEGER NOT NULL,
+      angle_name TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'generating',
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    )
+  `)
+  
+  // Create image_library table
+  await query(`
+    CREATE TABLE IF NOT EXISTS image_library (
+      id SERIAL PRIMARY KEY,
+      library_id TEXT NOT NULL UNIQUE,
+      url TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `)
+  
+  // Create indexes
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_static_ad_jobs_original_job 
+    ON static_ad_jobs(original_job_id)
+  `)
+  
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_static_ad_jobs_user 
+    ON static_ad_jobs(user_id)
+  `)
+  
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_generated_static_ads_job 
+    ON generated_static_ads(static_ad_job_id)
+  `)
+  
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_generated_static_ads_original_job 
+    ON generated_static_ads(original_job_id)
+  `)
+}
+
+export const getImageLibrary = async (): Promise<ImageLibraryItem[]> => {
+  await ensureStaticAdsTables()
+  const result = await query('SELECT * FROM image_library ORDER BY id ASC')
+  return result.rows
+}
+
+export const createStaticAdJob = async (data: {
+  original_job_id: string
+  external_job_id: string
+  user_id: string
+  selected_angles?: string[]
+}): Promise<StaticAdJob> => {
+  await ensureStaticAdsTables()
+  const selectedAnglesJson = data.selected_angles ? JSON.stringify(data.selected_angles) : null
+  const result = await query(
+    `INSERT INTO static_ad_jobs (original_job_id, external_job_id, user_id, status, progress, selected_angles)
+     VALUES ($1, $2, $3, 'pending', 0, $4) RETURNING *`,
+    [data.original_job_id, data.external_job_id, data.user_id, selectedAnglesJson]
+  )
+  return result.rows[0]
+}
+
+export const getStaticAdJob = async (id: string): Promise<StaticAdJob | null> => {
+  await ensureStaticAdsTables()
+  const result = await query('SELECT * FROM static_ad_jobs WHERE id = $1', [id])
+  return result.rows[0] || null
+}
+
+export const getStaticAdJobByExternalId = async (externalJobId: string): Promise<StaticAdJob | null> => {
+  await ensureStaticAdsTables()
+  const result = await query('SELECT * FROM static_ad_jobs WHERE external_job_id = $1', [externalJobId])
+  return result.rows[0] || null
+}
+
+export const updateStaticAdJobStatus = async (
+  id: string,
+  status: string,
+  progress?: number,
+  errorMessage?: string | null
+): Promise<void> => {
+  await ensureStaticAdsTables()
+  const updates: string[] = ['status = $2', 'updated_at = NOW()']
+  const params: any[] = [id, status]
+
+  if (progress !== undefined) {
+    updates.push('progress = $' + (params.length + 1))
+    params.push(progress)
+  }
+
+  if (errorMessage !== undefined) {
+    updates.push('error_message = $' + (params.length + 1))
+    params.push(errorMessage)
+  }
+
+  await query(`UPDATE static_ad_jobs SET ${updates.join(', ')} WHERE id = $1`, params)
+}
+
+export const getStaticAdJobsByOriginalJob = async (originalJobId: string): Promise<StaticAdJob[]> => {
+  await ensureStaticAdsTables()
+  const result = await query(
+    'SELECT * FROM static_ad_jobs WHERE original_job_id = $1 ORDER BY created_at DESC',
+    [originalJobId]
+  )
+  return result.rows
+}
+
+// Ensure unique index exists on generated_static_ads to prevent duplicates
+const ensureGeneratedStaticAdsUniqueConstraint = async (): Promise<boolean> => {
+  try {
+    // Check if unique index already exists
+    const indexCheck = await query(`
+      SELECT 1 FROM pg_indexes 
+      WHERE indexname = 'generated_static_ads_job_url_unique'
+      LIMIT 1
+    `)
+    
+    if (indexCheck.rows.length > 0) {
+      // Index already exists
+      return true
+    }
+    
+    // Index doesn't exist, check if we have duplicates that would prevent creation
+    const duplicateCheck = await query(`
+      SELECT static_ad_job_id, image_url, COUNT(*) as count
+      FROM generated_static_ads
+      GROUP BY static_ad_job_id, image_url
+      HAVING COUNT(*) > 1
+      LIMIT 1
+    `)
+    
+    if (duplicateCheck.rows.length > 0) {
+      // We have duplicates, clean them up first (keep the oldest record for each job+url)
+      console.log('[ENSURE_INDEX] Cleaning up duplicates before creating unique index...')
+      await query(`
+        DELETE FROM generated_static_ads
+        WHERE id NOT IN (
+          SELECT DISTINCT ON (static_ad_job_id, image_url) id
+          FROM generated_static_ads
+          ORDER BY static_ad_job_id, image_url, created_at ASC
+        )
+      `)
+      console.log('[ENSURE_INDEX] Duplicates cleaned up')
+    }
+    
+    // Now create unique index to prevent duplicate images per job
+    // This will be used by ON CONFLICT clause
+    await query(`
+      CREATE UNIQUE INDEX generated_static_ads_job_url_unique 
+      ON generated_static_ads(static_ad_job_id, image_url)
+    `)
+    console.log('[ENSURE_INDEX] Unique index created successfully')
+    return true
+  } catch (error: any) {
+    // If index creation fails, log but don't throw
+    // Common reasons: already exists, permission issues, or still has duplicates
+    if (error.message?.includes('already exists') || error.message?.includes('duplicate')) {
+      // Index might exist with different name or was just created
+      return true
+    }
+    console.log('[ENSURE_INDEX] Error ensuring unique index:', error.message)
+    return false
+  }
+}
+
+export const createGeneratedStaticAd = async (data: {
+  static_ad_job_id: string
+  original_job_id: string
+  image_url: string
+  angle_index: number
+  variation_number: number
+  angle_name: string
+  status?: string
+}): Promise<{ record: GeneratedStaticAd | null; isNew: boolean }> => {
+  await ensureStaticAdsTables()
+  // Ensure unique constraint exists (idempotent)
+  // Returns true if index exists/created, false otherwise
+  const indexExists = await ensureGeneratedStaticAdsUniqueConstraint()
+  
+  // Try using ON CONFLICT first (if index exists)
+  if (indexExists) {
+    try {
+      const result = await query(
+        `INSERT INTO generated_static_ads 
+         (static_ad_job_id, original_job_id, image_url, angle_index, variation_number, angle_name, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (static_ad_job_id, image_url) DO NOTHING
+         RETURNING *`,
+        [
+          data.static_ad_job_id,
+          data.original_job_id,
+          data.image_url,
+          data.angle_index,
+          data.variation_number,
+          data.angle_name,
+          data.status || 'generating'
+        ]
+      )
+      
+      // If INSERT returned a row, it's a new image
+      if (result.rows.length > 0) {
+        return { record: result.rows[0], isNew: true }
+      }
+      
+      // If no row returned, the image already exists (ON CONFLICT prevented insert)
+      // Fetch and return the existing record
+      const existing = await query(
+        `SELECT * FROM generated_static_ads 
+         WHERE static_ad_job_id = $1 AND image_url = $2 
+         LIMIT 1`,
+        [data.static_ad_job_id, data.image_url]
+      )
+      
+      if (existing.rows.length > 0) {
+        return { record: existing.rows[0], isNew: false }
+      }
+      
+      return { record: null, isNew: false }
+    } catch (error: any) {
+      // If ON CONFLICT fails (index doesn't actually exist), fall back to WHERE NOT EXISTS
+      if (error.code === '42P10' || error.message?.includes('no unique or exclusion constraint')) {
+        console.log('[CREATE_STATIC_AD] ON CONFLICT failed, falling back to WHERE NOT EXISTS')
+        // Fall through to fallback logic below
+      } else {
+        // Re-throw other errors
+        throw error
+      }
+    }
+  }
+  
+  // Fallback: Use WHERE NOT EXISTS (atomic but works without unique index)
+  // This handles cases where the index doesn't exist or couldn't be created
+  const result = await query(
+    `INSERT INTO generated_static_ads 
+     (static_ad_job_id, original_job_id, image_url, angle_index, variation_number, angle_name, status)
+     SELECT $1, $2, $3, $4, $5, $6, $7
+     WHERE NOT EXISTS (
+       SELECT 1 FROM generated_static_ads 
+       WHERE static_ad_job_id = $1 AND image_url = $3
+     )
+     RETURNING *`,
+    [
+      data.static_ad_job_id,
+      data.original_job_id,
+      data.image_url,
+      data.angle_index,
+      data.variation_number,
+      data.angle_name,
+      data.status || 'generating'
+    ]
+  )
+  
+  // If INSERT returned a row, it's a new image
+  if (result.rows.length > 0) {
+    return { record: result.rows[0], isNew: true }
+  }
+  
+  // If no row returned, the image already exists (WHERE NOT EXISTS prevented insert)
+  // Fetch and return the existing record
+  const existing = await query(
+    `SELECT * FROM generated_static_ads 
+     WHERE static_ad_job_id = $1 AND image_url = $2 
+     LIMIT 1`,
+    [data.static_ad_job_id, data.image_url]
+  )
+  
+  if (existing.rows.length > 0) {
+    return { record: existing.rows[0], isNew: false }
+  }
+  
+  // This shouldn't happen, but handle edge case
+  return { record: null, isNew: false }
+}
+
+export const updateGeneratedStaticAdStatus = async (
+  id: string,
+  status: string
+): Promise<void> => {
+  await ensureStaticAdsTables()
+  await query(
+    'UPDATE generated_static_ads SET status = $2, updated_at = NOW() WHERE id = $1',
+    [id, status]
+  )
+}
+
+export const getGeneratedStaticAds = async (
+  staticAdJobId: string
+): Promise<GeneratedStaticAd[]> => {
+  await ensureStaticAdsTables()
+  const result = await query(
+    'SELECT * FROM generated_static_ads WHERE static_ad_job_id = $1 ORDER BY angle_index, variation_number',
+    [staticAdJobId]
+  )
+  return result.rows
+}
+
+export const getGeneratedStaticAdsByOriginalJob = async (
+  originalJobId: string
+): Promise<GeneratedStaticAd[]> => {
+  await ensureStaticAdsTables()
+  const result = await query(
+    `SELECT gsa.* FROM generated_static_ads gsa
+     INNER JOIN static_ad_jobs saj ON gsa.static_ad_job_id = saj.id
+     WHERE saj.original_job_id = $1
+     ORDER BY gsa.angle_index, gsa.variation_number`,
+    [originalJobId]
+  )
+  return result.rows
 }
