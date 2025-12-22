@@ -19,7 +19,7 @@ Inputs (invoked asynchronously by submit_image_gen.py):
 Persistence:
 - DynamoDB: JobsTable (jobId/status/updatedAt + extra attrs)
 - S3: results/image-gen/{jobId}/image_gen_results.json
-- Cloudinary: generated image uploads
+- Cloudflare Images: generated image uploads
 
 Reference library:
 - S3: s3://$RESULTS_BUCKET/$IMAGE_LIBRARY_PREFIX/...
@@ -40,12 +40,11 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 import boto3
-import cloudinary
-import cloudinary.uploader
 import requests
 from botocore.exceptions import ClientError
 from openai import OpenAI
 import google.generativeai as genai
+from cloudflare import Cloudflare
 
 
 
@@ -121,21 +120,14 @@ def _configure_from_secrets(secrets: dict) -> None:
         "OPENAI_API_KEY",
         "ANTHROPIC_API_KEY",
         "GEMINI_API_KEY",
-        "CLOUDINARY_CLOUD_NAME",
-        "CLOUDINARY_API_KEY",
-        "CLOUDINARY_API_SECRET",
+        "CLOUDFLARE_API_TOKEN",
+        "CLOUDFLARE_ACCOUNT_ID",
         "IMAGE_GENERATION_PROVIDER",
         "CONVERSATION_PROVIDER",
         "CLAUDE_MODEL",
     ]:
         if secrets.get(k) and not os.environ.get(k):
             os.environ[k] = str(secrets[k])
-
-    cloudinary.config(
-        cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", ""),
-        api_key=os.environ.get("CLOUDINARY_API_KEY", ""),
-        api_secret=os.environ.get("CLOUDINARY_API_SECRET", ""),
-    )
 
 
 def _slug(s: str) -> str:
@@ -224,40 +216,92 @@ def _extract_openai_image_b64(response_obj: Any) -> Optional[str]:
         return None
 
 
-def _upload_base64_to_cloudinary(base64_data: str, filename: str, product_name: Optional[str], angle_num: str, variation_num: str) -> dict:
-    folder_parts = ["orbit-lab", "creative_testing"]
-    if product_name:
-        folder_parts.append(_slug(product_name))
-    folder_parts.append("image_gen")
-    folder = "/".join(folder_parts)
+def _upload_base64_to_cloudflare_images(
+    base64_data: str,
+    filename: str,
+    product_name: Optional[str],
+    angle_num: str,
+    variation_num: str,
+    job_id: Optional[str] = None,
+) -> dict:
+    """
+    Uploads an image to Cloudflare Images and returns an object with id + variants.
+    Uses the official Cloudflare Python SDK (cloudflare-python).
+    """
 
-    public_id = f"{folder}/{_slug(filename)}"
-    tags = ["orbit-lab", "creative-testing", "image-gen", f"angle-{angle_num}", f"var-{variation_num}"]
-    if product_name:
-        tags.append(_slug(product_name))
 
-    # ensure data uri
+    api_token = os.environ.get("CLOUDFLARE_API_TOKEN", "").strip()
+    account_id = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
+    if not api_token:
+        raise RuntimeError("CLOUDFLARE_API_TOKEN not set")
+    if not account_id:
+        raise RuntimeError("CLOUDFLARE_ACCOUNT_ID not set")
+
+    # Decode base64
     base64_data = base64_data.strip()
     if base64_data.startswith("data:") and "," in base64_data:
         base64_only = base64_data.split(",", 1)[1]
     else:
         base64_only = base64_data
-    data_uri = f"data:image/png;base64,{base64_only}"
+    img_bytes = base64.b64decode(base64_only)
 
-    result = cloudinary.uploader.upload(
-        data_uri,
-        resource_type="image",
-        folder=folder,
-        public_id=public_id,
-        tags=tags,
-    )
-    return {
-        "secure_url": result.get("secure_url", result.get("url")),
-        "public_id": result.get("public_id"),
-        "format": result.get("format"),
-        "width": result.get("width"),
-        "height": result.get("height"),
-    }
+    cf = Cloudflare(api_token=api_token)
+
+    # Cloudflare Images expects multipart/form-data; using the SDK "custom request" path
+    # with multipart_syntax="json" ensures nested fields (like metadata) are encoded correctly.
+    # See Cloudflare Python SDK docs (custom/undocumented requests).
+    try:
+        import httpx  # type: ignore
+
+        metadata_obj = {
+            "product": product_name or "",
+            "angle_num": angle_num,
+            "variation_num": variation_num,
+            "job_id": job_id or "",
+        }
+
+        resp = cf.post(
+            f"/accounts/{account_id}/images/v1",
+            cast_to=httpx.Response,
+            options={
+                "headers": {"Content-Type": "multipart/form-data"},
+                "multipart_syntax": "json",
+            },
+            body={
+                "requireSignedURLs": False,
+                "metadata": metadata_obj,
+            },
+            files={
+                "file": (filename, img_bytes, "image/png"),
+            },
+        )
+
+        payload = resp.json()
+        if not payload.get("success", False):
+            raise RuntimeError(f"Cloudflare Images upload failed: {payload}")
+
+        result = payload.get("result") or {}
+        return {
+            "id": result.get("id"),
+            "filename": result.get("filename", filename),
+            "variants": result.get("variants", []),
+            "meta": result.get("meta") or {},
+        }
+    except Exception as e:
+        # Make sure these failures are visible in CloudWatch logs.
+        status_code = getattr(e, "status_code", None)
+        response = getattr(e, "response", None)
+        logger.error(
+            "Cloudflare Images upload failed: job_id=%s filename=%s angle=%s var=%s status_code=%s response=%s err=%s",
+            job_id,
+            filename,
+            angle_num,
+            variation_num,
+            status_code,
+            response,
+            e,
+        )
+        raise
 
 
 def _summarize_docs_if_needed(openai_client: OpenAI, foundational_text: str, language: str) -> Optional[str]:
@@ -584,12 +628,13 @@ def lambda_handler(event, _context):
                     else:
                         img_b64 = _generate_image_openai(openai_client, prompt, ref_data, product_image_data)
 
-                    upload = _upload_base64_to_cloudinary(
+                    upload = _upload_base64_to_cloudflare_images(
                         img_b64,
                         filename=f"job-{job_id}-angle-{angle_num}-var-{variation_num}.png",
                         product_name=product_name,
                         angle_num=angle_num,
                         variation_num=variation_num,
+                        job_id=job_id,
                     )
 
                     generated.append(
@@ -599,10 +644,18 @@ def lambda_handler(event, _context):
                             "angle": angle,
                             "referenceImageId": ref_id,
                             "status": "success",
-                            "cloudinary": upload,
+                            "cloudflare": upload,
                         }
                     )
                 except Exception as e:
+                    # Do not allow failures to go silent (even if we keep processing other images).
+                    logger.exception(
+                        "Image generation/upload failed: job_id=%s angle=%s var=%s ref_id=%s",
+                        job_id,
+                        angle_num,
+                        variation_num,
+                        ref_id,
+                    )
                     generated.append(
                         {
                             "angle_num": angle_num,
