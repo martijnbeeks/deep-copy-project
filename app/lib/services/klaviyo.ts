@@ -84,39 +84,18 @@ export class KlaviyoService {
   }
 
   /**
-   * Subscribe a profile to a list
-   * Uses the list's relationship endpoint to add profiles directly and immediately
-   * Note: This adds the profile to the list but subscription status will be "Never Subscribed"
-   * You can bulk subscribe profiles later in Klaviyo UI if needed
+   * Subscribe a profile to a list with proper subscription status
+   * Uses profile-subscription-bulk-create-jobs which:
+   * 1. Adds profile to the list
+   * 2. Sets subscription status to SUBSCRIBED (with single opt-in enabled)
+   * This is the recommended Klaviyo method for subscribing profiles with consent
    */
   async subscribeToList(email: string, listId: string): Promise<void> {
     try {
-      // First, get the profile ID by email (since we just created it)
-      let profileId: string | null = null
-      try {
-        const profileResponse = await fetch(`${this.baseUrl}/profiles/?filter=equals(email,"${encodeURIComponent(email)}")`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
-            'revision': '2024-02-15',
-            'Content-Type': 'application/json',
-          },
-        })
-
-        if (profileResponse.ok) {
-          const profileData = await profileResponse.json()
-          if (profileData.data && profileData.data.length > 0) {
-            profileId = profileData.data[0].id
-            logger.log('Found profile ID:', profileId)
-          }
-        }
-      } catch (profileError) {
-        logger.warn('Could not fetch profile ID, will use email instead:', profileError)
-      }
-
-      // Use the list's relationship endpoint to add the profile
-      // This adds the profile to the list immediately
-      const response = await fetch(`${this.baseUrl}/lists/${listId}/relationships/profiles/`, {
+      // Use profile-subscription-bulk-create-jobs as the primary method
+      // This endpoint handles both adding to list AND setting subscription status to SUBSCRIBED
+      // Since the list is set to single opt-in, profiles will be immediately subscribed
+      const response = await fetch(`${this.baseUrl}/profile-subscription-bulk-create-jobs/`, {
         method: 'POST',
         headers: {
           'Authorization': `Klaviyo-API-Key ${this.apiKey}`,
@@ -124,17 +103,29 @@ export class KlaviyoService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          data: [
-            profileId ? {
-              type: 'profile',
-              id: profileId,
-            } : {
-              type: 'profile',
-              attributes: {
-                email: email,
+          data: {
+            type: 'profile-subscription-bulk-create-job',
+            attributes: {
+              profiles: {
+                data: [
+                  {
+                    type: 'profile',
+                    attributes: {
+                      email: email,
+                    },
+                  },
+                ],
               },
             },
-          ],
+            relationships: {
+              list: {
+                data: {
+                  type: 'list',
+                  id: listId,
+                },
+              },
+            },
+          },
         }),
       })
 
@@ -152,9 +143,10 @@ export class KlaviyoService {
         responseData = { raw: responseText }
       }
       
-      logger.log('Successfully added profile to Klaviyo list:', email)
-      logger.log('Klaviyo subscription response:', JSON.stringify(responseData, null, 2))
-      logger.log('Note: Profile is in list. Subscription status can be updated via bulk subscribe in Klaviyo UI if needed.')
+      logger.log('Successfully created subscription job for Klaviyo list:', email)
+      logger.log('Klaviyo subscription job response:', JSON.stringify(responseData, null, 2))
+      logger.log('Note: Profile will be added to list and subscribed with SUBSCRIBED status')
+      logger.log('The bulk job processes asynchronously - profile should appear in list within 10-30 seconds')
     } catch (error) {
       logger.error('Error subscribing to Klaviyo list:', error)
     }
