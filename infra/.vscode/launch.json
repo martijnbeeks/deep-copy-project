@@ -64,5 +64,21 @@
                 "RESULTS_BUCKET": "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih",
             }
         },
+        {
+            "name": "Image Gen Process",
+            "type": "python",
+            "python": "${workspaceFolder}/ai_pipeline/.venv/bin/python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cdk/lib/lambdas/image_gen_process/handler.py",
+            "args": ["run"],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}/cdk/lib/lambdas/image_gen_process",
+            "env": {
+                "AWS_PROFILE": "personal-cdk-dev",
+                "dev_mode": "false",
+                "RESULTS_BUCKET": "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih",
+            }
+        }
     ]
 }

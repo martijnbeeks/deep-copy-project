@@ -72,13 +72,25 @@ export class DeepCopyStack extends Stack {
     resultsBucket.grantRead(processJobLambda, 'projects/*'); // Allow reading pre-computed results
     resultsBucket.grantRead(processJobLambda, 'results/*'); // Allow reading results for dev mode
 
+    // Shared asset for Python "thin" lambdas (submit/get-result). Exclude caches to keep asset staging reliable.
+    const pythonLambdasAsset = lambda.Code.fromAsset(path.join(__dirname, 'lambdas'), {
+      exclude: [
+        '**/__pycache__/**',
+        '**/*.pyc',
+        '**/*.pyo',
+        '**/.DS_Store',
+        '**/node_modules/**',
+        '**/dist/**',
+      ],
+    });
+
     // Small Lambda to submit jobs (Python version)
     const submitLambda = new lambda.Function(this, 'SubmitJobLambda', {
       runtime: lambda.Runtime.PYTHON_3_11,
       timeout: Duration.seconds(10),
       memorySize: 256,
       handler: 'submit_job.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
+      code: pythonLambdasAsset,
       environment: {
         PROCESS_LAMBDA_NAME: processJobLambda.functionName,
         JOBS_TABLE_NAME: jobsTable.tableName,
@@ -96,7 +108,7 @@ export class DeepCopyStack extends Stack {
       timeout: Duration.seconds(10),
       memorySize: 256,
       handler: 'get_job.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
+      code: pythonLambdasAsset,
       environment: {
         JOBS_TABLE_NAME: jobsTable.tableName,
       },
@@ -109,7 +121,7 @@ export class DeepCopyStack extends Stack {
       timeout: Duration.seconds(10),
       memorySize: 256,
       handler: 'get_job_result.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
+      code: pythonLambdasAsset,
       environment: {
         RESULTS_BUCKET: resultsBucket.bucketName,
       },
@@ -151,7 +163,7 @@ export class DeepCopyStack extends Stack {
       timeout: Duration.seconds(10),
       memorySize: 256,
       handler: 'submit_avatar_extraction.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
+      code: pythonLambdasAsset,
       environment: {
         JOBS_TABLE_NAME: jobsTable.tableName,
         PROCESS_LAMBDA_NAME: processAvatarExtractionLambda.functionName,
@@ -166,7 +178,7 @@ export class DeepCopyStack extends Stack {
       timeout: Duration.seconds(10),
       memorySize: 256,
       handler: 'get_avatar_result.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
+      code: pythonLambdasAsset,
       environment: {
         RESULTS_BUCKET: resultsBucket.bucketName,
       },
@@ -208,7 +220,7 @@ export class DeepCopyStack extends Stack {
       timeout: Duration.seconds(10),
       memorySize: 256,
       handler: 'submit_swipe_file.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
+      code: pythonLambdasAsset,
       environment: {
         JOBS_TABLE_NAME: jobsTable.tableName,
         PROCESS_LAMBDA_NAME: processSwipeFileLambda.functionName,
@@ -223,12 +235,67 @@ export class DeepCopyStack extends Stack {
       timeout: Duration.seconds(10),
       memorySize: 256,
       handler: 'get_swipe_file_result.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, 'lambdas')),
+      code: pythonLambdasAsset,
       environment: {
         RESULTS_BUCKET: resultsBucket.bucketName,
       },
     });
     resultsBucket.grantRead(getSwipeFileResultLambda);
+
+    // Image generation - Processing Lambda (Docker-based)
+    const processImageGenLambda = new lambda.DockerImageFunction(this, 'ProcessImageGenLambda', {
+      code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, 'lambdas', 'image_gen_process'), {
+        platform: Platform.LINUX_AMD64,
+      }),
+      timeout: Duration.seconds(900),
+      memorySize: 3008,
+      architecture: lambda.Architecture.X86_64,
+      environment: {
+        JOBS_TABLE_NAME: jobsTable.tableName,
+        RESULTS_BUCKET: resultsBucket.bucketName,
+        IMAGE_LIBRARY_PREFIX: 'image_library',
+        IMAGE_DESCRIPTIONS_KEY: 'image_library/static-library-descriptions.json',
+        SECRET_ID: 'deepcopy-secret-dev',
+      },
+    });
+    processImageGenLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['secretsmanager:GetSecretValue'],
+        resources: [secretArn],
+      }),
+    );
+    jobsTable.grantReadWriteData(processImageGenLambda);
+    resultsBucket.grantPut(processImageGenLambda);
+    resultsBucket.grantPutAcl(processImageGenLambda);
+    resultsBucket.grantRead(processImageGenLambda, 'image_library/*');
+
+    // Image generation - Submit Lambda (Python)
+    const submitImageGenLambda = new lambda.Function(this, 'SubmitImageGenLambda', {
+      runtime: lambda.Runtime.PYTHON_3_11,
+      timeout: Duration.seconds(10),
+      memorySize: 256,
+      handler: 'submit_image_gen.handler',
+      code: pythonLambdasAsset,
+      environment: {
+        JOBS_TABLE_NAME: jobsTable.tableName,
+        PROCESS_LAMBDA_NAME: processImageGenLambda.functionName,
+      },
+    });
+    jobsTable.grantReadWriteData(submitImageGenLambda);
+    processImageGenLambda.grantInvoke(submitImageGenLambda);
+
+    // Image generation - Get Result Lambda (Python)
+    const getImageGenResultLambda = new lambda.Function(this, 'GetImageGenResultLambda', {
+      runtime: lambda.Runtime.PYTHON_3_11,
+      timeout: Duration.seconds(10),
+      memorySize: 256,
+      handler: 'get_image_gen_result.handler',
+      code: pythonLambdasAsset,
+      environment: {
+        RESULTS_BUCKET: resultsBucket.bucketName,
+      },
+    });
+    resultsBucket.grantRead(getImageGenResultLambda);
 
     // Cognito User Pool for API auth
     const userPool = new cognito.UserPool(this, 'UserPool', {
@@ -394,6 +461,29 @@ export class DeepCopyStack extends Stack {
       authorizationScopes: ['https://deep-copy.api/read'],
     });
 
+    // Image generation endpoints
+    const imageGenRes = api.root.addResource('image-gen');
+    const imageGenGenerateRes = imageGenRes.addResource('generate');
+    imageGenGenerateRes.addMethod('POST', new apigw.LambdaIntegration(submitImageGenLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/write'],
+    });
+
+    const imageGenIdRes = imageGenRes.addResource('{id}');
+    imageGenIdRes.addMethod('GET', new apigw.LambdaIntegration(getJobLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/read'],
+    });
+
+    const imageGenResultRes = imageGenIdRes.addResource('result');
+    imageGenResultRes.addMethod('GET', new apigw.LambdaIntegration(getImageGenResultLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/read'],
+    });
+
     // Dev endpoints
     const devRes = api.root.addResource('dev');
 
@@ -429,6 +519,7 @@ export class DeepCopyStack extends Stack {
     new CfnOutput(this, 'ApiUrl', { value: api.url });
     new CfnOutput(this, 'AvatarsSubmitEndpoint', { value: `${api.url}avatars/extract` });
     new CfnOutput(this, 'SwipeFilesSubmitEndpoint', { value: `${api.url}swipe-files/generate` });
+    new CfnOutput(this, 'ImageGenSubmitEndpoint', { value: `${api.url}image-gen/generate` });
     new CfnOutput(this, 'ResultsBucketName', { value: resultsBucket.bucketName });
     new CfnOutput(this, 'JobsTableName', { value: jobsTable.tableName });
     new CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });

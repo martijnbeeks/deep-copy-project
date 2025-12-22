@@ -113,6 +113,40 @@ curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
 
 
 # ============================================================================
+# Image Gen API
+# ============================================================================
+
+# POST /image-gen/generate - Submit image generation job
+curl -sS -X POST "${API_URL}image-gen/generate" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "selectedAvatar": "Avatar name: Michael, 68 — “The Evidence-First Retiree Michael is a 68-year-old retired engineer who values independence and routine—morning reading, driving to errands, and staying active without needing help. He’s noticing subtle vision changes (especially contrast and low-light clarity) and feels a quiet fear about what losing vision would mean for autonomy. He is highly skeptical of supplements that use vague claims (“clinically proven,” “doctor recommended”) without specifics. He responds best to measured, conservative language that signals medical-grade credibility without promising outcomes: clear Supplement Facts, third-party lab verification, and references to established research like AREDS2. His decision trigger is not hype—it’s trustworthy evidence, transparency, and the sense that he can confidently discuss the product with his eye doctor.",
+    "selectedAngles": [
+     "Clinically-Studied Ingredients — Trust Without Overclaiming"
+    ],
+    "productName": "Clarivea",
+    "language": "english",
+    "productImageUrls": [
+      "https://img.funnelish.com/79526/0/1766338180-Untitled_design.webp"
+    ],
+    "forcedReferenceImageIds": [
+      "10.png",
+      "11.png"
+    ],
+    "imageGenerationProvider": "nano_banana"
+  }' | jq '.'
+
+# GET /image-gen/{id} - Get image gen job status
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "${API_URL}image-gen/YOUR_JOB_ID" | jq '.'
+
+# GET /image-gen/{id}/result - Get image gen results
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "${API_URL}image-gen/YOUR_JOB_ID/result" | jq '.'
+
+
+# ============================================================================
 # Deployment Commands
 # ============================================================================
 

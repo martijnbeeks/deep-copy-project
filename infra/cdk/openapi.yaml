@@ -702,6 +702,191 @@ paths:
           source: |-
             API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
             curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}swipe-files/YOUR_JOB_ID/result"
+  /image-gen/generate:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    post:
+      summary: Submit an image generation job
+      operationId: submitImageGen
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitImageGenRequest'
+            examples:
+              minimal:
+                summary: Minimal payload
+                value:
+                  selectedAvatar: "Men 50-65, skeptical, wants fast relief"
+                  selectedAngles:
+                    - "Pain relief without pills"
+                    - "Get back to walking comfortably"
+              full:
+                summary: Full payload
+                value:
+                  selectedAvatar: "Men 50-65, skeptical, wants fast relief"
+                  selectedAngles:
+                    - "Pain relief without pills"
+                    - "Get back to walking comfortably"
+                  foundationalDocText: "Long research/context text..."
+                  forcedReferenceImageIds:
+                    - "12.png"
+                    - "23.webp"
+                  productImageUrls:
+                    - "https://example-bucket.s3.eu-west-1.amazonaws.com/presigned-url"
+                  language: "english"
+                  productName: "meritrelief"
+                  imageGenerationProvider: "openai"
+      responses:
+        '202':
+          description: Job accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitJobResponse'
+              examples:
+                accepted:
+                  value:
+                    jobId: "c3f0e0c4-3a61-4c52-8b5a-2e0a8b8b4a5f"
+                    status: "SUBMITTED"
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-codeSamples:
+        - lang: bash
+          label: curl (submit image-gen)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -X POST \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "content-type: application/json" \
+              -d '{
+                "selectedAvatar": "Men 50-65, skeptical, wants fast relief",
+                "selectedAngles": ["Pain relief without pills", "Get back to walking comfortably"],
+                "productImageUrls": ["https://example-bucket.s3.eu-west-1.amazonaws.com/presigned-url"],
+                "productName": "meritrelief",
+                "language": "english"
+              }' \
+              "${API_URL}image-gen/generate"
+  /image-gen/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get image generation job status
+      operationId: getImageGenJob
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatusResponse'
+        '404':
+          description: Job not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Not found"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (status)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}image-gen/YOUR_JOB_ID"
+  /image-gen/{id}/result:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get image generation results
+      operationId: getImageGenResult
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      responses:
+        '200':
+          description: Image generation result JSON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageGenResult'
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: Result not available
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Result not available"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (result)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}image-gen/YOUR_JOB_ID/result"
   /dev/swipe-files/generate:
     options:
       summary: CORS preflight
@@ -1045,6 +1230,63 @@ components:
           type: string
           enum: [SUBMITTED]
           description: Job status
+    SubmitImageGenRequest:
+      type: object
+      additionalProperties: false
+      required: [selectedAvatar, selectedAngles]
+      properties:
+        foundationalDocText:
+          type: string
+          description: Optional research/context text blob
+        selectedAvatar:
+          type: string
+          description: Selected avatar/persona description
+        selectedAngles:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          description: List of marketing angles to generate images for
+        forcedReferenceImageIds:
+          type: array
+          items:
+            type: string
+          description: Optional reference creative IDs to force into assignments (e.g. 12.png, 23.webp)
+        productImageUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Optional presigned URLs for product images (processor downloads)
+        language:
+          type: string
+          default: english
+        productName:
+          type: string
+        imageGenerationProvider:
+          type: string
+          enum: [openai, nano_banana]
+          description: Optional override for the image generation provider
+    ImageGenResult:
+      type: object
+      additionalProperties: true
+      properties:
+        job_id:
+          type: string
+        timestamp_iso:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+        analysisResults:
+          type: object
+          additionalProperties: true
+        generatedImages:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
     SwipeFileGenerationResponse:
       type: object
       description: Swipe file generation results containing rewritten advertorial content
