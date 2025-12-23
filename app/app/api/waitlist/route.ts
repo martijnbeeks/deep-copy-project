@@ -3,6 +3,7 @@ import { query } from '@/lib/db/connection'
 import { handleApiError, createSuccessResponse, createValidationErrorResponse } from '@/lib/middleware/error-handler'
 import { isValidEmail, isValidUrl, normalizeUrl } from '@/lib/utils/validation'
 import { logger } from '@/lib/utils/logger'
+import { getKlaviyoService } from '@/lib/services/klaviyo'
 
 // Create waitlist table if it doesn't exist
 async function ensureWaitlistTable() {
@@ -191,6 +192,53 @@ export async function POST(request: NextRequest) {
         interest_other?.trim() || null
       ]
     )
+
+    // Send to Klaviyo (non-blocking - don't let failures break the signup)
+    const klaviyoService = getKlaviyoService()
+    if (klaviyoService) {
+      try {
+        const normalizedEmail = email.toLowerCase().trim()
+        
+        // Create/update profile with all form data as custom properties
+        await klaviyoService.createOrUpdateProfile({
+          email: normalizedEmail,
+          first_name: name.trim(),
+          // All form answers as custom properties
+          company_website: normalizedWebsite.trim(),
+          platforms: Array.isArray(platforms) ? platforms.join(', ') : platforms || '',
+          shopify_app_name: shopify_app_name?.trim() || '',
+          platform_other: platform_other?.trim() || '',
+          monthly_volume: monthly_volume,
+          interest_reasons: Array.isArray(interest_reasons) ? interest_reasons.join(', ') : interest_reasons || '',
+          interest_other: interest_other?.trim() || '',
+          waitlist_signup_date: new Date().toISOString(),
+        })
+
+        // Subscribe to list if list ID is provided
+        const listId = process.env.KLAVIYO_LIST_ID
+        if (listId) {
+          await klaviyoService.subscribeToList(normalizedEmail, listId)
+        }
+
+        // Track "Joined Waitlist" event
+        await klaviyoService.trackEvent({
+          profile: { email: normalizedEmail },
+          metric: { name: 'Joined Waitlist' },
+          properties: {
+            name: name.trim(),
+            company_website: normalizedWebsite.trim(),
+            monthly_volume: monthly_volume,
+            platforms: Array.isArray(platforms) ? platforms.join(', ') : platforms || '',
+            interest_reasons: Array.isArray(interest_reasons) ? interest_reasons.join(', ') : interest_reasons || '',
+          },
+        })
+
+        logger.log('Successfully synced waitlist signup to Klaviyo:', normalizedEmail)
+      } catch (klaviyoError) {
+        // Log error but don't fail the request - waitlist signup should still succeed
+        logger.error('Klaviyo integration error (non-blocking):', klaviyoError)
+      }
+    }
 
     return createSuccessResponse({
       success: true,
