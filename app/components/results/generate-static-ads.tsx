@@ -70,6 +70,9 @@ export function GenerateStaticAds({
   // Track how many images are being generated per angle (angleString -> count)
   const [generatingCounts, setGeneratingCounts] = useState<Map<string, number>>(new Map());
   
+  // Ref for file input to control it properly
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   // Credit/Usage limit state
   const [credits, setCredits] = useState<{
     currentUsage: number;
@@ -332,7 +335,12 @@ export function GenerateStaticAds({
   useEffect(() => {
     const normalizedStatus = (jobStatus || "").toLowerCase();
     
+    // CRITICAL: Don't poll if no job ID is set - this prevents polling old jobs
     if (!staticAdJobId) {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
       if (pollingInterval) {
         clearInterval(pollingInterval);
         setPollingInterval(null);
@@ -552,9 +560,16 @@ export function GenerateStaticAds({
           description: "Product image must be less than 50MB",
           variant: "destructive",
         });
+        // Clear the input if file is too large
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
         return;
       }
       setProductImage(file);
+    } else {
+      // If no file selected, clear the state
+      setProductImage(null);
     }
   };
 
@@ -571,6 +586,13 @@ export function GenerateStaticAds({
       setStep(2);
     } else if (step === 2) {
       setStep(3);
+      // Reset file input when entering step 3 to ensure it's fresh
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        if (fileInputRef.current && !productImage) {
+          fileInputRef.current.value = '';
+        }
+      });
     }
   };
 
@@ -591,6 +613,9 @@ export function GenerateStaticAds({
       });
       return;
     }
+
+    // Immediately show loading state to give instant feedback on click
+    setIsGenerating(true);
 
     // Re-check credits before submission
     try {
@@ -630,11 +655,61 @@ export function GenerateStaticAds({
         description: "No avatar available. Please ensure the job has customer avatars.",
         variant: "destructive",
       });
+      setIsGenerating(false);
       return;
     }
 
-    setIsGenerating(true);
+    // CRITICAL: Clear old job state FIRST to prevent polling old job
+    // Stop any existing polling
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+    
+    // Clear old job ID and reset state BEFORE setting new skeletons
+    setStaticAdJobId(null);
+    setJobStatus("pending");
+    setJobProgress(0);
     setError(null);
+    
+    // Save selected angles before resetting (needed for API call)
+    const selectedAnglesArray = Array.from(selectedAngles);
+    const selectedImageIdsArray = Array.from(selectedImageIds);
+    const productImageFile = productImage;
+
+    // OPTIMISTIC UI UPDATE: Set job status and skeleton loaders IMMEDIATELY
+    // This ensures skeleton loaders appear right away, before the API call completes
+    setJobStatus("processing");
+    setJobProgress(0);
+    
+    // Set skeleton loaders immediately (optimistic UI update)
+    selectedAnglesArray.forEach((angle) => {
+      setGeneratingAngles(prev => new Set(prev).add(angle));
+      // Track that we're generating 2 images per angle for this job
+      setGeneratingCounts(prev => {
+        const updated = new Map(prev);
+        const currentCount = updated.get(angle) || 0;
+        updated.set(angle, currentCount + 2); // 2 images per angle per job
+        return updated;
+      });
+    });
+
+    // Close modal and reset form immediately so skeleton loaders appear right away
+    setShowGenerateModal(false);
+    setStep(1);
+    setSelectedAngles(new Set());
+    setSelectedImageIds(new Set());
+    setProductImage(null);
+
+    // Show toast immediately so user knows action was taken
+    toast({
+      title: "Starting Generation",
+      description: "Static ads generation is being started...",
+    });
 
     try {
       const formData = new FormData();
@@ -644,7 +719,8 @@ export function GenerateStaticAds({
         `${avatarToUse.persona_name || ""}${avatarToUse.age_range ? `, ${avatarToUse.age_range}` : ""}${avatarToUse.gender ? `, ${avatarToUse.gender}` : ""}`;
       formData.append("selectedAvatar", avatarDescription);
 
-      selectedAngles.forEach((angle) => {
+      // Use saved selected angles array
+      selectedAnglesArray.forEach((angle) => {
         formData.append("selectedAngles", angle);
       });
 
@@ -652,48 +728,29 @@ export function GenerateStaticAds({
         formData.append("foundationalDocText", foundationalDocText);
       }
 
-      if (productImage) {
-        formData.append("productImage", productImage);
+      if (productImageFile) {
+        formData.append("productImage", productImageFile);
       }
 
-      selectedImageIds.forEach((id) => {
+      selectedImageIdsArray.forEach((id) => {
         formData.append("forcedReferenceImageIds", id);
       });
 
       formData.append("language", "english");
       formData.append("enableVideoScripts", "false");
 
-      // Set skeleton loaders immediately (optimistic UI update)
-      selectedAngles.forEach((angle) => {
-        setGeneratingAngles(prev => new Set(prev).add(angle));
-        // Track that we're generating 2 images per angle for this job
-        setGeneratingCounts(prev => {
-          const updated = new Map(prev);
-          const currentCount = updated.get(angle) || 0;
-          updated.set(angle, currentCount + 2); // 2 images per angle per job
-          return updated;
-        });
-      });
-
-      // Close modal and reset form immediately so skeleton loaders appear right away
-      setShowGenerateModal(false);
-      setStep(1);
-      setSelectedAngles(new Set());
-      setSelectedImageIds(new Set());
-      setProductImage(null);
-
-      // Show toast after modal closes so user sees skeleton loaders
-      toast({
-        title: "Job Submitted",
-        description: "Static ads generation has been started successfully!",
-      });
-
       const data = await internalApiClient.generateStaticAds(formData);
       
       if (data.jobId) {
+        // Only set the new job ID AFTER successful creation
+        // This will trigger the polling effect to start polling the NEW job
         setStaticAdJobId(data.jobId);
-        setJobStatus("processing");
-        setJobProgress(0);
+        // Job status is already set to "processing" above
+        // Update toast to confirm job was created
+        toast({
+          title: "Job Submitted",
+          description: "Static ads generation has been started successfully!",
+        });
       } else {
         throw new Error("No job ID returned");
       }
@@ -713,6 +770,9 @@ export function GenerateStaticAds({
         setShowUsageLimitDialog(true);
         setError("Usage limit exceeded");
         setJobStatus("failed");
+        // Clear skeleton loaders on usage limit error
+        setGeneratingAngles(new Set());
+        setGeneratingCounts(new Map());
         toast({
           title: "Usage Limit Reached",
           description: `You've reached your weekly limit of ${errorData.limit} Static Ads actions.`,
@@ -723,12 +783,14 @@ export function GenerateStaticAds({
       
       setError(error.message || "Failed to start static ads generation");
       setJobStatus("failed");
+      // Clear skeleton loaders on error
+      setGeneratingAngles(new Set());
+      setGeneratingCounts(new Map());
       toast({
         title: "Error",
         description: error.message || "Failed to start static ads generation",
         variant: "destructive",
       });
-      setGeneratingAngles(new Set());
     } finally {
       setIsGenerating(false);
     }
@@ -794,6 +856,10 @@ export function GenerateStaticAds({
     setIsGenerating(false);
     setError(null);
     setCurrentStep("");
+    // Reset file input when modal opens
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     setShowGenerateModal(true);
   };
 
@@ -807,6 +873,10 @@ export function GenerateStaticAds({
       setIsGenerating(false);
       setError(null);
       setCurrentStep("");
+      // Reset file input when modal closes
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -926,7 +996,7 @@ export function GenerateStaticAds({
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto">
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-[500px] overflow-y-auto">
               {imageLibrary.map((image) => {
                 const isSelected = selectedImageIds.has(image.library_id);
                 const canSelect = selectedImageIds.size < maxImages;
@@ -945,21 +1015,21 @@ export function GenerateStaticAds({
                     }`}
                     onClick={() => canClick && handleImageToggle(image.library_id)}
                   >
-                    <div className="relative aspect-square">
+                    <div className="relative aspect-square w-full">
                       <img
                         src={image.url}
                         alt={`Image ${image.library_id}`}
                         className="w-full h-full object-cover rounded-t-lg"
                       />
                       {isSelected && (
-                        <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-                          <CheckCircle2 className="w-4 h-4" />
+                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                          <CheckCircle2 className="w-3 h-3" />
                         </div>
                       )}
                     </div>
                     <CardContent className="p-1">
-                      <p className="text-xs text-center text-muted-foreground">
-                        Reference Image
+                      <p className="text-xs text-center text-muted-foreground truncate">
+                        Reference
                       </p>
                     </CardContent>
                   </Card>
@@ -992,18 +1062,29 @@ export function GenerateStaticAds({
           <div className="space-y-2">
             <Label htmlFor="product-image">Product Image</Label>
             <Input
+              ref={fileInputRef}
               id="product-image"
               type="file"
               accept="image/*,.pdf"
               onChange={handleProductImageChange}
+              key={`product-image-input-${step}`} // Force re-render when step changes to ensure proper initialization
             />
             {productImage && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>{productImage.name}</span>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2 p-2 bg-muted rounded-md">
+                <span className="font-medium">{productImage.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  ({(productImage.size / 1024 / 1024).toFixed(2)} MB)
+                </span>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setProductImage(null)}
+                  className="ml-auto"
+                  onClick={() => {
+                    setProductImage(null);
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = '';
+                    }
+                  }}
                 >
                   <X className="w-4 h-4" />
                 </Button>

@@ -5,6 +5,8 @@ import { requireAuth, createAuthErrorResponse } from '@/lib/auth/user-auth'
 import { handleApiError, createSuccessResponse, createValidationErrorResponse } from '@/lib/middleware/error-handler'
 import { checkUsageLimit } from '@/lib/middleware/usage-limits'
 import { logger } from '@/lib/utils/logger'
+import { getDeepCopyAccessToken } from '@/lib/auth/deepcopy-auth'
+import { uploadToCloudinary } from '@/lib/utils/cloudinary-upload'
 
 const STATIC_ADS_API_URL = process.env.STATIC_ADS_API_URL
 
@@ -89,62 +91,117 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Prepare form data for external API
-    const externalFormData = new FormData()
-    externalFormData.append('selectedAvatar', selectedAvatar)
-    
-    // Add multiple selectedAngles
-    selectedAngles.forEach(angle => {
-      externalFormData.append('selectedAngles', angle)
-    })
-
-    if (foundationalDocText) {
-      externalFormData.append('foundationalDocText', foundationalDocText)
+    // Prepare JSON body for external API (API expects JSON, not FormData)
+    const requestBody: any = {
+      selectedAvatar: selectedAvatar,
+      selectedAngles: selectedAngles,
+      language: language || 'english'
     }
 
+    if (foundationalDocText) {
+      requestBody.foundationalDocText = foundationalDocText
+    }
+
+    // Handle productImage - Upload to Cloudinary and get URL
     if (productImage) {
-      externalFormData.append('productImage', productImage)
+      try {
+        logger.log(`📤 Uploading product image to Cloudinary...`)
+        const productImageUrl = await uploadToCloudinary(productImage, 'static-ads/product-images')
+        requestBody.productImageUrls = [productImageUrl]
+        logger.log(`✅ Product image uploaded to Cloudinary: ${productImageUrl}`)
+      } catch (uploadError: any) {
+        logger.error(`❌ Failed to upload product image to Cloudinary: ${uploadError.message}`)
+        // Don't fail the entire request if image upload fails
+        // Log warning but proceed - the API might still work without product image
+        logger.warn(`⚠️ Proceeding without product image - API might still work or might require it`)
+      }
     }
 
     if (forcedReferenceImageIds.length > 0) {
-      forcedReferenceImageIds.forEach(id => {
-        externalFormData.append('forcedReferenceImageIds', id)
-      })
+      requestBody.forcedReferenceImageIds = forcedReferenceImageIds
     }
-
-    externalFormData.append('language', language)
     
     if (productName) {
-      externalFormData.append('productName', productName)
+      requestBody.productName = productName
     }
     
-    externalFormData.append('enableVideoScripts', enableVideoScripts)
+    // Note: enableVideoScripts might not be in the API spec, but keeping it for now
+    // The API might ignore unknown fields
+    if (enableVideoScripts && enableVideoScripts !== 'false') {
+      requestBody.enableVideoScripts = enableVideoScripts === 'true'
+    }
 
     // Submit to external API with long timeout (30 minutes = 1800000ms)
     logger.log(`🔧 Submitting static ad generation job to external API for job ${originalJobId}`)
+    logger.log(`🔗 API URL: ${STATIC_ADS_API_URL}`)
+    logger.log(`📋 Endpoint: /image-gen/generate`)
+    logger.log(`📦 Request body (summary): ${JSON.stringify({ ...requestBody, foundationalDocText: foundationalDocText ? `[${foundationalDocText.length} chars]` : undefined }, null, 2)}`)
+    
+    // Get OAuth2 access token
+    let accessToken: string
+    try {
+      logger.log(`🔐 Requesting OAuth2 access token...`)
+      accessToken = await getDeepCopyAccessToken()
+      logger.log(`✅ OAuth2 token acquired (length: ${accessToken.length})`)
+    } catch (authError: any) {
+      logger.error(`❌ Failed to get OAuth2 token: ${authError.message}`)
+      throw new Error(`Authentication failed: ${authError.message}`)
+    }
     
     // Use AbortSignal.timeout which handles both headers and body timeout
     // This is better than AbortController for fetch as it properly handles undici's timeout behavior
     const timeoutSignal = AbortSignal.timeout(1800000) // 30 minutes
 
+    const apiEndpoint = `${STATIC_ADS_API_URL}/image-gen/generate`
+    
+    // ============================================
+    // DETAILED REQUEST LOG FOR BACKEND ENGINEER
+    // ============================================
+    logger.log(`\n${'='.repeat(80)}`)
+    logger.log(`📤 FULL REQUEST DETAILS (for backend engineer):`)
+    logger.log(`${'='.repeat(80)}`)
+    logger.log(`Method: POST`)
+    logger.log(`URL: ${apiEndpoint}`)
+    logger.log(`Headers:`)
+    logger.log(`  Authorization: Bearer ${accessToken.substring(0, 20)}...${accessToken.substring(accessToken.length - 10)} (length: ${accessToken.length})`)
+    logger.log(`  Content-Type: application/json`)
+    logger.log(`\nRequest Body (FULL):`)
+    logger.log(`${JSON.stringify(requestBody, null, 2)}`)
+    logger.log(`${'='.repeat(80)}\n`)
+    // ============================================
+    
+    logger.log(`🌐 Making request to: ${apiEndpoint}`)
+
     try {
-      const response = await fetch(`${STATIC_ADS_API_URL}/generate-variations`, {
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
-        body: externalFormData,
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody),
         signal: timeoutSignal,
         // AbortSignal.timeout handles both headers timeout and body timeout in undici
       } as any)
+      
+      logger.log(`📡 Response status: ${response.status} ${response.statusText}`)
 
       if (!response.ok) {
         const errorText = await response.text()
-        logger.error(`❌ External API error: ${response.status} - ${errorText}`)
+        logger.error(`❌ External API error: ${response.status} ${response.statusText}`)
+        logger.error(`❌ Error response body: ${errorText}`)
+        logger.error(`❌ Request URL: ${apiEndpoint}`)
+        logger.error(`❌ Request method: POST`)
         throw new Error(`External API error: ${response.status} - ${errorText}`)
       }
 
       const result = await response.json()
+      logger.log(`📥 Response body: ${JSON.stringify(result, null, 2)}`)
+      
       const externalJobId = result.jobId
 
       if (!externalJobId) {
+        logger.error(`❌ Response missing jobId. Full response: ${JSON.stringify(result, null, 2)}`)
         throw new Error('External API did not return a job ID')
       }
 

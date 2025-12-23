@@ -9,6 +9,7 @@ import {
 import { requireAuth, createAuthErrorResponse } from '@/lib/auth/user-auth'
 import { handleApiError, createSuccessResponse, createValidationErrorResponse } from '@/lib/middleware/error-handler'
 import { logger } from '@/lib/utils/logger'
+import { getDeepCopyAccessToken } from '@/lib/auth/deepcopy-auth'
 
 const STATIC_ADS_API_URL = process.env.STATIC_ADS_API_URL
 
@@ -40,16 +41,34 @@ export async function GET(
         if (normalizedStatus === "pending" || normalizedStatus === "processing") {
           try {
             if (STATIC_ADS_API_URL && job.external_job_id) {
-              const response = await fetch(`${STATIC_ADS_API_URL}/job/${job.external_job_id}`, {
+              // Get OAuth2 access token
+              let accessToken: string
+              try {
+                logger.log(`🔐 [OriginalJob] Requesting OAuth2 token for job ${job.id}...`)
+                accessToken = await getDeepCopyAccessToken()
+              } catch (authError: any) {
+                logger.error(`❌ [OriginalJob] Failed to get OAuth2 token for job ${job.id}: ${authError.message}`)
+                // Continue without updating status if auth fails
+                return job
+              }
+              
+              const apiEndpoint = `${STATIC_ADS_API_URL}/image-gen/${job.external_job_id}`
+              logger.log(`🌐 [OriginalJob] Polling external API for job ${job.id}: ${apiEndpoint}`)
+              
+              const response = await fetch(apiEndpoint, {
                 method: 'GET',
                 headers: {
+                  'Authorization': `Bearer ${accessToken}`,
                   'Content-Type': 'application/json'
                 },
                 signal: AbortSignal.timeout(1200000) // 20 minutes timeout to match status route
               })
+              
+              logger.log(`📡 [OriginalJob] Response status for job ${job.id}: ${response.status} ${response.statusText}`)
 
               if (response.ok) {
                 const externalData = await response.json()
+                logger.log(`📥 [OriginalJob] Response data for job ${job.id}: status=${externalData.status}, progress=${externalData.progress}`)
                 
                 // Normalize status (case-insensitive)
                 const normalizeStatus = (status: string): string => {
@@ -61,8 +80,39 @@ export async function GET(
                   return lower
                 }
 
-                const result = externalData.result || {}
-                const generatedImages = result.generatedImages || []
+                const normalizedStatus = normalizeStatus(externalData.status)
+                
+                // If job is completed/succeeded, fetch from result endpoint to get actual images
+                let resultData = externalData.result || {}
+                let generatedImages = resultData.generatedImages || []
+                
+                if (normalizedStatus === 'completed' && generatedImages.length === 0) {
+                  logger.log(`📥 [OriginalJob] Job ${job.id} completed but no images in status response. Fetching from result endpoint...`)
+                  try {
+                    const resultEndpoint = `${STATIC_ADS_API_URL}/image-gen/${job.external_job_id}/result`
+                    const resultResponse = await fetch(resultEndpoint, {
+                      method: 'GET',
+                      headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                      },
+                      signal: AbortSignal.timeout(1200000)
+                    })
+                    
+                    if (resultResponse.ok) {
+                      const resultResponseData = await resultResponse.json()
+                      resultData = resultResponseData.result || resultResponseData || {}
+                      generatedImages = resultData.generatedImages || resultResponseData.generatedImages || []
+                      if (resultResponseData.metadata) {
+                        resultData.metadata = { ...resultData.metadata, ...resultResponseData.metadata }
+                      }
+                      logger.log(`📥 [OriginalJob] Fetched ${generatedImages.length} images from result endpoint for job ${job.id}`)
+                    }
+                  } catch (resultError: any) {
+                    logger.warn(`⚠️ [OriginalJob] Failed to fetch result endpoint for job ${job.id}: ${resultError.message}`)
+                  }
+                }
+                
                 const successfulExternalImages = generatedImages.filter((img: any) => img.success === true)
                 
                 // Get stored images for this job
@@ -71,7 +121,7 @@ export async function GET(
                 
                 // Calculate expected image count from metadata or unique angles
                 let expectedImageCount = 0
-                const metadata = result.metadata || externalData.metadata || {}
+                const metadata = resultData.metadata || externalData.metadata || {}
                 
                 if (metadata.selectedAnglesCount) {
                   expectedImageCount = metadata.selectedAnglesCount * 2
@@ -120,10 +170,14 @@ export async function GET(
                   }
                 }
               }
+            } else {
+              const errorText = await response.text()
+              logger.error(`❌ [OriginalJob] External API error for job ${job.id}: ${response.status} ${response.statusText}`)
+              logger.error(`❌ [OriginalJob] Error response: ${errorText}`)
             }
-          } catch (error) {
+          } catch (error: any) {
             // If status check fails, just return the job as-is
-            logger.error(`Error checking status for job ${job.id}:`, error)
+            logger.error(`❌ [OriginalJob] Error checking status for job ${job.id}: ${error.message || error}`)
           }
         }
         return job
