@@ -6,7 +6,7 @@ import { handleApiError, createSuccessResponse, createValidationErrorResponse } 
 import { checkUsageLimit } from '@/lib/middleware/usage-limits'
 import { logger } from '@/lib/utils/logger'
 import { getDeepCopyAccessToken } from '@/lib/auth/deepcopy-auth'
-import { uploadToCloudinary } from '@/lib/utils/cloudinary-upload'
+import { uploadToCloudflareImages } from '@/lib/utils/cloudflare-images'
 
 const STATIC_ADS_API_URL = process.env.STATIC_ADS_API_URL
 
@@ -102,15 +102,14 @@ export async function POST(request: NextRequest) {
       requestBody.foundationalDocText = foundationalDocText
     }
 
-    // Handle productImage - Upload to Cloudinary and get URL
+    // Handle productImage - Upload to Cloudflare Images and get URL
     if (productImage) {
       try {
-        logger.log(`📤 Uploading product image to Cloudinary...`)
-        const productImageUrl = await uploadToCloudinary(productImage, 'static-ads/product-images')
+        const productImageUrl = await uploadToCloudflareImages(productImage, { source: 'static-ads', jobId: originalJobId })
         requestBody.productImageUrls = [productImageUrl]
-        logger.log(`✅ Product image uploaded to Cloudinary: ${productImageUrl}`)
+        logger.log(`✅ Product image uploaded to Cloudflare Images: ${productImageUrl}`)
       } catch (uploadError: any) {
-        logger.error(`❌ Failed to upload product image to Cloudinary: ${uploadError.message}`)
+        logger.error(`❌ Failed to upload product image to Cloudflare Images: ${uploadError.message}`)
         // Don't fail the entire request if image upload fails
         // Log warning but proceed - the API might still work without product image
         logger.warn(`⚠️ Proceeding without product image - API might still work or might require it`)
