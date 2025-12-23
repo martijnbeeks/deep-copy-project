@@ -6,7 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Loader2, CheckCircle2, Image as ImageIcon, Upload, X, AlertCircle, Download, ExternalLink, Sparkles } from "lucide-react";
+import { Loader2, CheckCircle2, Image as ImageIcon, Upload, X, AlertCircle, Download, ExternalLink, Sparkles, Target } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { internalApiClient } from "@/lib/clients/internal-client";
 import { logger } from "@/lib/utils/logger";
@@ -69,6 +70,8 @@ export function GenerateStaticAds({
   const [generatingAngles, setGeneratingAngles] = useState<Set<string>>(new Set());
   // Track how many images are being generated per angle (angleString -> count)
   const [generatingCounts, setGeneratingCounts] = useState<Map<string, number>>(new Map());
+  // Angle filter state (similar to prelanders)
+  const [selectedAngleFilter, setSelectedAngleFilter] = useState<string>("all");
   
   // Ref for file input to control it properly
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -90,21 +93,104 @@ export function GenerateStaticAds({
   // Helper function to download image
   const downloadImage = async (imageUrl: string, filename: string) => {
     try {
-      const response = await fetch(imageUrl);
+      // Check if it's a Cloudflare CDN URL (imagedelivery.net)
+      const isCloudflareUrl = imageUrl.includes('imagedelivery.net') || imageUrl.includes('cloudflare')
+      
+      // For Cloudflare URLs, try fetching with proper CORS settings
+      // Cloudflare Images should support CORS, but we need to ensure proper headers
+      const fetchOptions: RequestInit = {
+        method: 'GET',
+        mode: 'cors',
+        cache: 'no-cache',
+        credentials: 'omit', // Don't send credentials for public images
+      }
+      
+      const response = await fetch(imageUrl, fetchOptions);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const blob = await response.blob();
+      
+      // Validate that we got an image blob
+      if (!blob.type.startsWith('image/')) {
+        throw new Error('Response is not an image');
+      }
+      
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = filename;
+      link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (error) {
+      
+      // Clean up after a short delay
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      }, 100);
+      
+    } catch (error: any) {
       logger.error("Error downloading image:", error);
+      
+      // For Cloudflare URLs, try alternative method: create an img element and download via canvas
+      if (imageUrl.includes('imagedelivery.net') || imageUrl.includes('cloudflare')) {
+        try {
+          const img = new Image();
+          img.crossOrigin = 'anonymous'; // Enable CORS for image
+          
+          img.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.width;
+              canvas.height = img.height;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0);
+                canvas.toBlob((blob) => {
+                  if (blob) {
+                    const blobUrl = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = filename;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    setTimeout(() => {
+                      document.body.removeChild(link);
+                      window.URL.revokeObjectURL(blobUrl);
+                    }, 100);
+                  }
+                }, 'image/png');
+              }
+            } catch (canvasError) {
+              logger.error("Canvas download failed:", canvasError);
+              window.open(imageUrl, '_blank');
+            }
+          };
+          
+          img.onerror = () => {
+            toast({
+              title: "Download Failed",
+              description: "Could not download image. Opening in new tab instead.",
+              variant: "destructive",
+            });
+            window.open(imageUrl, '_blank');
+          };
+          
+          img.src = imageUrl;
+          return; // Exit early, download will happen in onload
+        } catch (imgError) {
+          logger.error("Image element download failed:", imgError);
+        }
+      }
+      
+      // Final fallback: open in new tab
       toast({
         title: "Download Failed",
-        description: "Could not download image. Please try again.",
+        description: "Could not download image. Opening in new tab instead.",
         variant: "destructive",
       });
       window.open(imageUrl, '_blank');
@@ -213,24 +299,6 @@ export function GenerateStaticAds({
 
     loadPreviousImages();
   }, [originalJobId]);
-
-  // Helper function to parse angle (moved before useEffects for accessibility)
-  const parseAngle = (angle: any): { angleString: string; angleTitle: string; angleDescription: string } => {
-    if (typeof angle === "string") {
-      return {
-        angleString: angle,
-        angleTitle: "",
-        angleDescription: angle,
-      };
-    }
-    const title = angle.title || "";
-    const description = angle.angle || "";
-    return {
-      angleString: title ? `${title}: ${description}` : description,
-      angleTitle: title,
-      angleDescription: description,
-    };
-  };
 
   // Fetch credits/usage limits
   useEffect(() => {
@@ -796,17 +864,92 @@ export function GenerateStaticAds({
     }
   };
 
-  // Group images by angle
-  const imagesByAngle = useMemo(() => {
-    const grouped: Record<number, GeneratedImage[]> = {};
-    generatedImages.forEach((img) => {
-      if (!grouped[img.angleIndex]) {
-        grouped[img.angleIndex] = [];
-      }
-      grouped[img.angleIndex].push(img);
+  // Helper function to parse angle (similar to prelanders)
+  // This function handles both string and object angle formats
+  const parseAngle = (angle: any): { angleObj: any; angleTitle: string | null; angleDescription: string; angleString: string } => {
+    if (typeof angle === 'string') {
+      const parts = angle.split(':');
+      const title = parts[0]?.trim() || null;
+      const description = parts.slice(1).join(':').trim() || angle;
+      return {
+        angleObj: null,
+        angleTitle: title,
+        angleDescription: description,
+        angleString: angle
+      };
+    }
+    
+    const title = angle.title || null;
+    const description = angle.angle || angle.description || '';
+    const angleString = title ? `${title}: ${description}` : description;
+    
+    return {
+      angleObj: angle,
+      angleTitle: title,
+      angleDescription: description,
+      angleString: angleString
+    };
+  };
+
+  // Filter images by selected angle
+  const filteredImages = useMemo(() => {
+    if (selectedAngleFilter === "all") {
+      return generatedImages;
+    }
+    
+    // Find matching angle index
+    const angleIndex = marketingAngles.findIndex((angle: any) => {
+      const parsed = parseAngle(angle);
+      return parsed.angleString === selectedAngleFilter;
     });
-    return grouped;
-  }, [generatedImages]);
+    
+    if (angleIndex === -1) {
+      return generatedImages;
+    }
+    
+    // Filter by angle index (1-based in UI, 0-based in array)
+    return generatedImages.filter((img) => img.angleIndex === angleIndex + 1);
+  }, [generatedImages, selectedAngleFilter, marketingAngles]);
+
+  // Create flat list of all images with skeleton loaders
+  const allDisplayItems = useMemo(() => {
+    const items: Array<{ type: 'image' | 'skeleton'; data?: GeneratedImage; angleIndex: number; angleString: string }> = [];
+    
+    // Add existing images
+    filteredImages.forEach((img) => {
+      const angleString = marketingAngles[img.angleIndex - 1] 
+        ? parseAngle(marketingAngles[img.angleIndex - 1]).angleString 
+        : `Angle ${img.angleIndex}`;
+      items.push({ type: 'image', data: img, angleIndex: img.angleIndex, angleString });
+    });
+    
+    // Add skeleton loaders for generating angles
+    if (jobStatus === "processing" || jobStatus === "pending") {
+      marketingAngles.forEach((angle, angleIndex) => {
+        const parsed = parseAngle(angle);
+        const angleString = parsed.angleString;
+        const angleNum = angleIndex + 1;
+        
+        // Check if this angle is being generated
+        if (generatingAngles.has(angleString)) {
+          // Check if we should show skeletons (if filter is "all" or matches this angle)
+          if (selectedAngleFilter === "all" || selectedAngleFilter === angleString) {
+            const skeletonsToShow = generatingCounts.get(angleString) || 2;
+            const existingCount = filteredImages.filter(img => img.angleIndex === angleNum).length;
+            
+            // Only show skeletons if we don't have all images yet
+            if (existingCount < skeletonsToShow) {
+              for (let i = 0; i < skeletonsToShow - existingCount; i++) {
+                items.push({ type: 'skeleton', angleIndex: angleNum, angleString });
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    return items;
+  }, [filteredImages, marketingAngles, generatingAngles, generatingCounts, jobStatus, selectedAngleFilter]);
 
   // Reset modal state when it opens
   const handleModalOpen = async () => {
@@ -1053,7 +1196,7 @@ export function GenerateStaticAds({
       {step === 3 && (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-semibold mb-2">Upload Product Image (Optional)</h3>
+            <h3 className="text-lg font-semibold mb-2">Upload Product Image</h3>
             <p className="text-sm text-muted-foreground mb-4">
               Upload a product image to help generate better static ads. Max file size: 50MB
             </p>
@@ -1171,164 +1314,165 @@ export function GenerateStaticAds({
                         </div>
                       )}
 
-                      {/* Generated Images by Angle */}
-                      {Object.keys(imagesByAngle).length > 0 && (
-                        <div className="space-y-6">
-                          {Object.entries(imagesByAngle).map(([angleIndex, images]) => {
-                            const angleNum = parseInt(angleIndex);
-                            const angleName = images[0]?.angleName || `Angle ${angleNum}`;
-                            const angleString = marketingAngles[angleNum - 1] 
-                              ? parseAngle(marketingAngles[angleNum - 1]).angleString 
-                              : angleName;
-                            const currentCount = images.length;
-                            const isProcessing = jobStatus === "processing" || jobStatus === "pending";
-                            
-                            // Calculate how many skeleton loaders to show for this angle
-                            // If processing and this angle is being generated, show skeletons for all images being generated
-                            const skeletonsToShow = isProcessing && generatingAngles.has(angleString)
-                              ? generatingCounts.get(angleString) || 2 // Default to 2 if not tracked
-                              : 0;
-                            
-                            // Total slots = existing images + skeleton loaders
-                            const totalSlots = currentCount + skeletonsToShow;
-                            
-                            return (
-                              <div key={angleIndex} className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <h5 className="text-sm font-medium text-foreground">
-                                    {angleName}
-                                  </h5>
-                                  {isProcessing && skeletonsToShow > 0 && (
-                                    <Badge variant="secondary" className="flex items-center gap-1">
-                                      <Loader2 className="w-3 h-3 animate-spin" />
-                                      Generating...
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                                  {/* Show existing images */}
-                                  {images.map((img) => (
-                                    <Card key={img.id} className="overflow-hidden group">
-                                      <div className="relative aspect-[4/3] h-48 overflow-hidden">
-                                        <img
-                                          src={img.imageUrl}
-                                          alt={`${img.angleName} - Variation ${img.variationNumber}`}
-                                          className="w-full h-full object-cover"
-                                        />
-                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                          <Button
-                                            size="sm"
-                                            variant="secondary"
-                                            onClick={() => {
-                                              const filename = `${img.angleName.replace(/[^a-z0-9]/gi, '_')}_variation_${img.variationNumber}.png`;
-                                              downloadImage(img.imageUrl, filename);
-                                            }}
-                                          >
-                                            <Download className="w-4 h-4 mr-1" />
-                                            Download
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="secondary"
-                                            onClick={() => window.open(img.imageUrl, '_blank')}
-                                          >
-                                            <ExternalLink className="w-4 h-4 mr-1" />
-                                            View Full
-                                          </Button>
-                                        </div>
-                                      </div>
-                                      <CardContent className="p-1.5">
-                                        <p className="text-xs text-center text-muted-foreground">
-                                          Variation {img.variationNumber}
-                                        </p>
-                                      </CardContent>
-                                    </Card>
-                                  ))}
-                                  
-                                  {/* Show skeleton loaders for ALL images being generated - dynamic count */}
-                                  {skeletonsToShow > 0 && (
-                                    <>
-                                      {Array.from({ length: skeletonsToShow }).map((_, idx) => (
-                                        <Card key={`skeleton-${idx}`} className="overflow-hidden">
-                                          <div className="relative aspect-[4/3] h-48 bg-muted animate-pulse">
-                                            <div className="w-full h-full flex items-center justify-center">
-                                              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                                            </div>
-                                          </div>
-                                          <CardContent className="p-1.5">
-                                            <p className="text-xs text-center text-muted-foreground">
-                                              Generating...
-                                            </p>
-                                          </CardContent>
-                                        </Card>
-                                      ))}
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
+                      {/* Filter and Image Count */}
+                      {generatedImages.length > 0 && (
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold">
+                              Generated Static Ads
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              {(() => {
+                                const filteredCount = filteredImages.length;
+                                const totalCount = generatedImages.length;
+                                
+                                if (totalCount === 0) {
+                                  return "No images generated yet";
+                                }
+                                
+                                if (selectedAngleFilter !== "all") {
+                                  const selectedAngle = marketingAngles.find((ma: any) => {
+                                    const parsed = parseAngle(ma);
+                                    return parsed.angleString === selectedAngleFilter;
+                                  });
+                                  const angleTitle = selectedAngle 
+                                    ? parseAngle(selectedAngle).angleTitle || selectedAngleFilter
+                                    : selectedAngleFilter;
+                                  return `${filteredCount} of ${totalCount} image${totalCount !== 1 ? 's' : ''} (${angleTitle})`;
+                                }
+                                
+                                return `${totalCount} image${totalCount !== 1 ? 's' : ''} generated`;
+                              })()}
+                            </p>
+                          </div>
+                          {/* Angle Filter - Always show when there are any images */}
+                          <div className="w-[220px] min-w-0 max-w-[220px]">
+                            <Select
+                              value={selectedAngleFilter}
+                              onValueChange={setSelectedAngleFilter}
+                            >
+                              <SelectTrigger className="!w-full !max-w-full [&_[data-slot=select-value]]:!max-w-[calc(220px-3rem)] [&_[data-slot=select-value]]:!truncate [&_[data-slot=select-value]]:!block [&_[data-slot=select-value]]:!min-w-0">
+                                <Target className="h-4 w-4 mr-2 flex-shrink-0" />
+                                <SelectValue placeholder="Filter by angle" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">
+                                  All Angles
+                                </SelectItem>
+                                {marketingAngles.map((angle: any, index: number) => {
+                                  const parsed = parseAngle(angle);
+                                  const displayTitle = parsed.angleTitle 
+                                    ? (parsed.angleTitle.length > 35 
+                                        ? parsed.angleTitle.substring(0, 32) + "..." 
+                                        : parsed.angleTitle)
+                                    : parsed.angleDescription.substring(0, 35) + (parsed.angleDescription.length > 35 ? "..." : "");
+                                  return (
+                                    <SelectItem
+                                      key={parsed.angleString}
+                                      value={parsed.angleString}
+                                    >
+                                      {displayTitle}
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       )}
 
-                      {/* Show skeleton loaders for angles that have no images yet when processing */}
-                      {(jobStatus === "processing" || jobStatus === "pending") && (
-                        <div className="space-y-6">
-                          {marketingAngles.map((angle, angleIndex) => {
-                            const parsed = parseAngle(angle);
-                            const angleString = parsed.angleString;
-                            const angleNum = angleIndex + 1;
-                            const existingImages = imagesByAngle[angleNum] || [];
-                            
-                            // Skip if this angle already has images displayed above
-                            if (existingImages.length > 0) return null;
-                            
-                            // Skip if angle is not in generatingAngles
-                            const isInGeneratingAngles = generatingAngles.has(angleString);
-                            if (!isInGeneratingAngles) return null;
-                            
-                            // Get how many skeleton loaders to show for this angle
-                            const skeletonsToShow = generatingCounts.get(angleString) || 2;
-                            
-                            const { angleTitle, angleDescription } = parseAngle(marketingAngles[angleIndex]);
-                            const angleName = angleTitle || angleDescription || `Angle ${angleIndex + 1}`;
-                            
-                            return (
-                              <div key={angleString} className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <h5 className="text-sm font-medium text-foreground">
-                                    {angleName}
-                                  </h5>
-                                  <Badge variant="secondary" className="flex items-center gap-1">
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                    Generating...
-                                  </Badge>
-                                </div>
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                                  {/* Show skeleton loaders - dynamic count based on how many images are being generated */}
-                                  {Array.from({ length: skeletonsToShow }).map((_, idx) => (
-                                    <Card key={`skeleton-${idx}`} className="overflow-hidden">
-                                      <div className="relative aspect-[4/3] h-48 bg-muted animate-pulse">
-                                        <div className="w-full h-full flex items-center justify-center">
-                                          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                                        </div>
-                                      </div>
-                                      <CardContent className="p-1.5">
-                                        <p className="text-xs text-center text-muted-foreground">
-                                          Generating...
-                                        </p>
-                                      </CardContent>
-                                    </Card>
-                                  ))}
-                                </div>
-                              </div>
-                            );
+                      {/* Uniform Grid Display */}
+                      {allDisplayItems.length > 0 ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                          {allDisplayItems.map((item, index) => {
+                            if (item.type === 'image' && item.data) {
+                              const img = item.data;
+                              return (
+                                <Card key={img.id} className="overflow-hidden group">
+                                  <div className="relative aspect-[4/3] h-48 overflow-hidden">
+                                    <img
+                                      src={img.imageUrl}
+                                      alt={`${img.angleName} - Variation ${img.variationNumber}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        onClick={() => {
+                                          const filename = `${img.angleName.replace(/[^a-z0-9]/gi, '_')}_variation_${img.variationNumber}.png`;
+                                          downloadImage(img.imageUrl, filename);
+                                        }}
+                                      >
+                                        <Download className="w-4 h-4 mr-1" />
+                                        Download
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        onClick={() => window.open(img.imageUrl, '_blank')}
+                                      >
+                                        <ExternalLink className="w-4 h-4 mr-1" />
+                                        View Full
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  <CardContent className="p-1.5">
+                                    <div className="flex items-center justify-center gap-2">
+                                      {/* Angle number badge - same style as prelanders */}
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs font-semibold bg-muted text-foreground border-border w-fit"
+                                      >
+                                        #{img.angleIndex}
+                                      </Badge>
+                                      <p className="text-xs text-center text-muted-foreground">
+                                        Variation {img.variationNumber}
+                                      </p>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              );
+                            } else if (item.type === 'skeleton') {
+                              return (
+                                <Card key={`skeleton-${item.angleIndex}-${index}`} className="overflow-hidden">
+                                  <div className="relative aspect-[4/3] h-48 bg-muted animate-pulse">
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                                    </div>
+                                  </div>
+                                  <CardContent className="p-1.5">
+                                    <div className="flex items-center justify-center gap-2">
+                                      {/* Angle number badge - same style as prelanders */}
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs font-semibold bg-muted text-foreground border-border w-fit"
+                                      >
+                                        #{item.angleIndex}
+                                      </Badge>
+                                      <p className="text-xs text-center text-muted-foreground">
+                                        Generating...
+                                      </p>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              );
+                            }
+                            return null;
                           })}
                         </div>
+                      ) : (
+                        selectedAngleFilter !== "all" && (
+                          <div className="text-center py-12">
+                            <p className="text-sm text-muted-foreground">
+                              No images found for the selected angle filter.
+                            </p>
+                          </div>
+                        )
                       )}
 
                       {/* Empty state */}
-                      {Object.keys(imagesByAngle).length === 0 && generatingAngles.size === 0 && (
+                      {allDisplayItems.length === 0 && generatingAngles.size === 0 && (
                         <div className="text-center py-12">
                           <p className="text-sm text-muted-foreground mb-4">
                             No static ads generated yet. Click the button below to generate your first set of static ads.
@@ -1344,7 +1488,7 @@ export function GenerateStaticAds({
                       )}
 
                       {/* Generate More Button */}
-                      {(Object.keys(imagesByAngle).length > 0 || generatingAngles.size > 0) && (
+                      {(allDisplayItems.length > 0 || generatingAngles.size > 0) && (
                         <div className="pt-4 border-t">
                           <Button
                             onClick={handleModalOpen}

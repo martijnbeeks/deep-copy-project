@@ -802,7 +802,7 @@ export const ensureUsageLimitsTables = async (): Promise<void> => {
       organization_id TEXT PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
       deep_research_limit INTEGER NOT NULL DEFAULT 3,
       pre_lander_limit INTEGER NOT NULL DEFAULT 30,
-      static_ads_limit INTEGER NOT NULL DEFAULT 50,
+      static_ads_limit INTEGER NOT NULL DEFAULT 30,
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW()
     )
@@ -820,7 +820,7 @@ export const ensureUsageLimitsTables = async (): Promise<void> => {
           AND column_name = 'static_ads_limit'
         ) THEN
           ALTER TABLE organization_usage_limits 
-          ADD COLUMN static_ads_limit INTEGER NOT NULL DEFAULT 50;
+          ADD COLUMN static_ads_limit INTEGER NOT NULL DEFAULT 30;
         END IF;
       END $$;
     `)
@@ -898,7 +898,7 @@ export const getOrganizationUsageLimits = async (organizationId: string): Promis
   if (result.rows.length === 0) {
     console.log('[GET_LIMITS] No limits found, creating default limits', { organizationId })
     // Create default limits if they don't exist
-    await setOrganizationUsageLimits(organizationId, { deep_research_limit: 3, pre_lander_limit: 30, static_ads_limit: 50 })
+    await setOrganizationUsageLimits(organizationId, { deep_research_limit: 3, pre_lander_limit: 30, static_ads_limit: 30 })
     console.log('[GET_LIMITS] Default limits created, querying again', { organizationId })
     const newResult = await query(
       'SELECT * FROM organization_usage_limits WHERE organization_id = $1',
@@ -967,7 +967,7 @@ export const setOrganizationUsageLimits = async (
         organizationId,
         limits.deep_research_limit ?? 3,
         limits.pre_lander_limit ?? 30,
-        limits.static_ads_limit ?? 50
+        limits.static_ads_limit ?? 30
       ]
     )
     console.log('[SET_LIMITS] INSERT completed', { organizationId, resultId: result.rows[0]?.organization_id })
@@ -1083,7 +1083,7 @@ export const getAllOrganizationsWithLimits = async (): Promise<Array<Organizatio
   // First, ensure all organizations have limits (create defaults if missing) in a single query
   await query(`
     INSERT INTO organization_usage_limits (organization_id, deep_research_limit, pre_lander_limit, static_ads_limit)
-    SELECT id, 3, 30, 50
+    SELECT id, 3, 30, 30
     FROM organizations
     WHERE id NOT IN (SELECT organization_id FROM organization_usage_limits)
     ON CONFLICT (organization_id) DO NOTHING
@@ -1149,7 +1149,7 @@ export const getAllOrganizationsWithLimits = async (): Promise<Array<Organizatio
     organization_id: row.organization_id,
     deep_research_limit: row.deep_research_limit,
     pre_lander_limit: row.pre_lander_limit,
-    static_ads_limit: row.static_ads_limit || 50,
+    static_ads_limit: row.static_ads_limit || 30,
     created_at: row.created_at,
     updated_at: row.updated_at,
     organization: {

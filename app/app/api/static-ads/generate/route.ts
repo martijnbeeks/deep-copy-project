@@ -7,6 +7,7 @@ import { checkUsageLimit } from '@/lib/middleware/usage-limits'
 import { logger } from '@/lib/utils/logger'
 import { getDeepCopyAccessToken } from '@/lib/auth/deepcopy-auth'
 import { uploadToCloudflareImages } from '@/lib/utils/cloudflare-images'
+import { query } from '@/lib/db/connection'
 
 const STATIC_ADS_API_URL = process.env.STATIC_ADS_API_URL
 
@@ -91,10 +92,81 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get full result from database to extract avatar_sheet and full angle information
+    let avatarInfo: string = selectedAvatar // Fallback to basic description
+    const fullAngles: string[] = []
+    
+    try {
+      // Get the original job result to extract avatar_sheet and marketing_angles
+      const resultQuery = await query(
+        `SELECT metadata FROM results WHERE job_id = $1 ORDER BY created_at DESC LIMIT 1`,
+        [originalJobId]
+      )
+      
+      if (resultQuery.rows.length > 0) {
+        const metadata = resultQuery.rows[0].metadata
+        const fullResult = typeof metadata === 'string' ? JSON.parse(metadata) : metadata
+        const resultData = fullResult?.full_result || fullResult
+        
+        // Extract avatar from avatar_sheet in results
+        // avatar_sheet is a JSON string containing the full avatar object
+        const avatarSheet = resultData?.results?.avatar_sheet || resultData?.avatar_sheet
+        
+        if (avatarSheet) {
+          // avatar_sheet is already a JSON string, just use it directly
+          if (typeof avatarSheet === 'string') {
+            avatarInfo = avatarSheet
+            logger.log(`✅ Using avatar from avatar_sheet (JSON string)`)
+          } else {
+            // If it's already an object, stringify it
+            avatarInfo = JSON.stringify(avatarSheet)
+            logger.log(`✅ Using avatar from avatar_sheet (object)`)
+          }
+        }
+        
+        // Get marketing angles from results
+        const marketingAngles = resultData?.results?.marketing_angles || resultData?.marketing_angles || []
+        
+        // For each selected angle, find the full angle object and format it
+        selectedAngles.forEach((selectedAngleString) => {
+          // Find the matching angle in marketing angles
+          const fullAngle = marketingAngles.find((angle: any) => {
+            // Match by title or description
+            const angleTitle = angle.title || (typeof angle === 'string' ? angle.split(':')[0] : '')
+            const angleDesc = typeof angle === 'string' ? angle : (angle.angle || angle.description || '')
+            const angleString = angleTitle ? `${angleTitle}: ${angleDesc}` : angleDesc
+            
+            return angleString === selectedAngleString || 
+                   angleDesc === selectedAngleString ||
+                   angleTitle === selectedAngleString
+          })
+          
+          if (fullAngle) {
+            // Format the full angle information as a string
+            const angleText = formatFullAngleAsString(fullAngle)
+            fullAngles.push(angleText)
+            logger.log(`✅ Using full angle information for: ${fullAngle.title || fullAngle.angle || fullAngle}`)
+          } else {
+            // Fallback to selected angle string if not found
+            fullAngles.push(selectedAngleString)
+            logger.warn(`⚠️ Full angle not found for: ${selectedAngleString}, using basic string`)
+          }
+        })
+      } else {
+        // Fallback: use selected angles as-is if no results found
+        selectedAngles.forEach(angle => fullAngles.push(angle))
+        logger.warn(`⚠️ No results found for job ${originalJobId}, using basic angle strings`)
+      }
+    } catch (error: any) {
+      logger.error(`❌ Error getting avatar and angle information: ${error.message}`)
+      // Fallback: use selected angles as-is
+      selectedAngles.forEach(angle => fullAngles.push(angle))
+    }
+
     // Prepare JSON body for external API (API expects JSON, not FormData)
     const requestBody: any = {
-      selectedAvatar: selectedAvatar,
-      selectedAngles: selectedAngles,
+      selectedAvatar: avatarInfo, // Now contains full avatar from avatar_sheet (JSON string)
+      selectedAngles: fullAngles.length > 0 ? fullAngles : selectedAngles, // Full angle info or fallback
       language: language || 'english'
     }
 
@@ -230,5 +302,74 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return handleApiError(error)
   }
+}
+
+// Helper function to format full angle as string
+function formatFullAngleAsString(angle: any): string {
+  // Handle string angles (fallback)
+  if (typeof angle === 'string') {
+    return angle
+  }
+  
+  const parts: string[] = []
+  
+  // Title and Description
+  const title = angle.title || (angle.angle?.split(':')[0]?.trim() || '')
+  const description = angle.description || (angle.angle?.includes(':') ? angle.angle.split(':').slice(1).join(':').trim() : angle.angle || '')
+  
+  if (title) parts.push(title)
+  if (description) parts.push(description)
+  
+  // Target Age Range
+  if (angle.target_age_range) {
+    parts.push(`\nTarget Age Range\n${angle.target_age_range}`)
+  }
+  
+  // Target Audience
+  if (angle.target_audience) {
+    parts.push(`\nTarget Audience\n${angle.target_audience}`)
+  }
+  
+  // Pain Points
+  if (angle.pain_points && Array.isArray(angle.pain_points) && angle.pain_points.length > 0) {
+    parts.push(`\nPain Points`)
+    angle.pain_points.forEach((point: string) => {
+      parts.push(`• ${point}`)
+    })
+  }
+  
+  // Desires
+  if (angle.desires && Array.isArray(angle.desires) && angle.desires.length > 0) {
+    parts.push(`\nDesires`)
+    angle.desires.forEach((desire: string) => {
+      parts.push(`• ${desire}`)
+    })
+  }
+  
+  // Common Objections
+  if (angle.common_objections && Array.isArray(angle.common_objections) && angle.common_objections.length > 0) {
+    parts.push(`\nCommon Objections`)
+    angle.common_objections.forEach((objection: string) => {
+      parts.push(`• ${objection}`)
+    })
+  }
+  
+  // Failed Alternatives
+  if (angle.failed_alternatives && Array.isArray(angle.failed_alternatives) && angle.failed_alternatives.length > 0) {
+    parts.push(`\nFailed Alternatives`)
+    angle.failed_alternatives.forEach((alt: string) => {
+      parts.push(`• ${alt}`)
+    })
+  }
+  
+  // Copy Approach
+  if (angle.copy_approach && Array.isArray(angle.copy_approach) && angle.copy_approach.length > 0) {
+    parts.push(`\nCopy Approach`)
+    angle.copy_approach.forEach((approach: string) => {
+      parts.push(`• ${approach}`)
+    })
+  }
+  
+  return parts.join('\n')
 }
 
