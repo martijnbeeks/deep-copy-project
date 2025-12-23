@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Loader2, CheckCircle2, Image as ImageIcon, Upload, X, AlertCircle, Download, ExternalLink, Sparkles, Target } from "lucide-react";
+import { Loader2, CheckCircle2, Image as ImageIcon, Upload, X, AlertCircle, Download, ExternalLink, Sparkles, Target, Calendar } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { internalApiClient } from "@/lib/clients/internal-client";
@@ -1417,19 +1417,30 @@ export function GenerateStaticAds({
                                       </Button>
                                     </div>
                                   </div>
-                                  <CardContent className="p-1.5">
-                                    <div className="flex items-center justify-center gap-2">
+                                  <CardContent className="p-1.5 space-y-2">
+                                    <div className="flex items-center justify-center">
                                       {/* Angle number badge - same style as prelanders */}
                                       <Badge
                                         variant="outline"
                                         className="text-xs font-semibold bg-muted text-foreground border-border w-fit"
                                       >
-                                        #{img.angleIndex}
+                                        <Target className="h-3 w-3 mr-1" />
+                                        {img.angleIndex}
                                       </Badge>
-                                      <p className="text-xs text-center text-muted-foreground">
-                                        Variation {img.variationNumber}
-                                      </p>
                                     </div>
+                                    {/* Creation Date */}
+                                    {img.createdAt && (
+                                      <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                                        <Calendar className="h-3.5 w-3.5" />
+                                        <span>
+                                          {new Date(img.createdAt).toLocaleDateString("en-US", {
+                                            month: "short",
+                                            day: "numeric",
+                                            year: "numeric"
+                                          })}
+                                        </span>
+                                      </div>
+                                    )}
                                   </CardContent>
                                 </Card>
                               );
@@ -1441,15 +1452,18 @@ export function GenerateStaticAds({
                                       <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                                     </div>
                                   </div>
-                                  <CardContent className="p-1.5">
-                                    <div className="flex items-center justify-center gap-2">
+                                  <CardContent className="p-1.5 space-y-2">
+                                    <div className="flex items-center justify-center">
                                       {/* Angle number badge - same style as prelanders */}
                                       <Badge
                                         variant="outline"
                                         className="text-xs font-semibold bg-muted text-foreground border-border w-fit"
                                       >
-                                        #{item.angleIndex}
+                                        <Target className="h-3 w-3 mr-1" />
+                                        {item.angleIndex}
                                       </Badge>
+                                    </div>
+                                    <div className="flex items-center justify-center">
                                       <p className="text-xs text-center text-muted-foreground">
                                         Generating...
                                       </p>
