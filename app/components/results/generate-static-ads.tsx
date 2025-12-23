@@ -1345,38 +1345,88 @@ export function GenerateStaticAds({
                               })()}
                             </p>
                           </div>
-                          {/* Angle Filter - Always show when there are any images */}
-                          <div className="w-[220px] min-w-0 max-w-[220px]">
-                            <Select
-                              value={selectedAngleFilter}
-                              onValueChange={setSelectedAngleFilter}
-                            >
-                              <SelectTrigger className="!w-full !max-w-full [&_[data-slot=select-value]]:!max-w-[calc(220px-3rem)] [&_[data-slot=select-value]]:!truncate [&_[data-slot=select-value]]:!block [&_[data-slot=select-value]]:!min-w-0">
-                                <Target className="h-4 w-4 mr-2 flex-shrink-0" />
-                                <SelectValue placeholder="Filter by angle" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">
-                                  All Angles
-                                </SelectItem>
-                                {marketingAngles.map((angle: any, index: number) => {
-                                  const parsed = parseAngle(angle);
-                                  const displayTitle = parsed.angleTitle 
-                                    ? (parsed.angleTitle.length > 35 
-                                        ? parsed.angleTitle.substring(0, 32) + "..." 
-                                        : parsed.angleTitle)
-                                    : parsed.angleDescription.substring(0, 35) + (parsed.angleDescription.length > 35 ? "..." : "");
-                                  return (
-                                    <SelectItem
-                                      key={parsed.angleString}
-                                      value={parsed.angleString}
-                                    >
-                                      {displayTitle}
-                                    </SelectItem>
-                                  );
-                                })}
-                              </SelectContent>
-                            </Select>
+                          {/* Filter and Download All */}
+                          <div className="flex items-center gap-3">
+                            {/* Download All Button */}
+                            {filteredImages.length > 0 && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={async () => {
+                                  if (filteredImages.length === 0) {
+                                    toast({
+                                      title: "No images to download",
+                                      description: "There are no images available to download.",
+                                      variant: "destructive",
+                                    });
+                                    return;
+                                  }
+                                  
+                                  toast({
+                                    title: "Downloading...",
+                                    description: `Downloading ${filteredImages.length} image${filteredImages.length !== 1 ? 's' : ''}...`,
+                                  });
+                                  
+                                  // Download all filtered images with a small delay between each
+                                  for (let i = 0; i < filteredImages.length; i++) {
+                                    const img = filteredImages[i];
+                                    const angleName = img.angleName.replace(/[^a-z0-9]/gi, '_');
+                                    const filename = `${angleName}_angle_${img.angleIndex}_variation_${img.variationNumber}.png`;
+                                    
+                                    try {
+                                      await downloadImage(img.imageUrl, filename);
+                                      // Small delay to prevent browser from blocking multiple downloads
+                                      if (i < filteredImages.length - 1) {
+                                        await new Promise(resolve => setTimeout(resolve, 300));
+                                      }
+                                    } catch (error) {
+                                      logger.error(`Error downloading image ${i + 1}:`, error);
+                                    }
+                                  }
+                                  
+                                  toast({
+                                    title: "Download Complete",
+                                    description: `Successfully downloaded ${filteredImages.length} image${filteredImages.length !== 1 ? 's' : ''}.`,
+                                  });
+                                }}
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Download All ({filteredImages.length})
+                              </Button>
+                            )}
+                            {/* Angle Filter - Always show when there are any images */}
+                            <div className="w-[220px] min-w-0 max-w-[220px]">
+                              <Select
+                                value={selectedAngleFilter}
+                                onValueChange={setSelectedAngleFilter}
+                              >
+                                <SelectTrigger className="!w-full !max-w-full [&_[data-slot=select-value]]:!max-w-[calc(220px-3rem)] [&_[data-slot=select-value]]:!truncate [&_[data-slot=select-value]]:!block [&_[data-slot=select-value]]:!min-w-0">
+                                  <Target className="h-4 w-4 mr-2 flex-shrink-0" />
+                                  <SelectValue placeholder="Filter by angle" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">
+                                    All Angles
+                                  </SelectItem>
+                                  {marketingAngles.map((angle: any, index: number) => {
+                                    const parsed = parseAngle(angle);
+                                    const displayTitle = parsed.angleTitle 
+                                      ? (parsed.angleTitle.length > 35 
+                                          ? parsed.angleTitle.substring(0, 32) + "..." 
+                                          : parsed.angleTitle)
+                                      : parsed.angleDescription.substring(0, 35) + (parsed.angleDescription.length > 35 ? "..." : "");
+                                    return (
+                                      <SelectItem
+                                        key={parsed.angleString}
+                                        value={parsed.angleString}
+                                      >
+                                        {displayTitle}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1418,7 +1468,7 @@ export function GenerateStaticAds({
                                     </div>
                                   </div>
                                   <CardContent className="p-1.5 space-y-2">
-                                    <div className="flex items-center justify-center">
+                                    <div className="flex items-center justify-center gap-2 flex-wrap">
                                       {/* Angle number badge - same style as prelanders */}
                                       <Badge
                                         variant="outline"
@@ -1427,6 +1477,19 @@ export function GenerateStaticAds({
                                         <Target className="h-3 w-3 mr-1" />
                                         {img.angleIndex}
                                       </Badge>
+                                      {/* Angle name */}
+                                      {(() => {
+                                        const angle = marketingAngles[img.angleIndex - 1];
+                                        if (angle) {
+                                          const parsed = parseAngle(angle);
+                                          return (
+                                            <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                              {parsed.angleTitle || parsed.angleDescription}
+                                            </span>
+                                          );
+                                        }
+                                        return null;
+                                      })()}
                                     </div>
                                     {/* Creation Date */}
                                     {img.createdAt && (
@@ -1453,7 +1516,7 @@ export function GenerateStaticAds({
                                     </div>
                                   </div>
                                   <CardContent className="p-1.5 space-y-2">
-                                    <div className="flex items-center justify-center">
+                                    <div className="flex items-center justify-center gap-2 flex-wrap">
                                       {/* Angle number badge - same style as prelanders */}
                                       <Badge
                                         variant="outline"
@@ -1462,6 +1525,19 @@ export function GenerateStaticAds({
                                         <Target className="h-3 w-3 mr-1" />
                                         {item.angleIndex}
                                       </Badge>
+                                      {/* Angle name */}
+                                      {(() => {
+                                        const angle = marketingAngles[item.angleIndex - 1];
+                                        if (angle) {
+                                          const parsed = parseAngle(angle);
+                                          return (
+                                            <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                              {parsed.angleTitle || parsed.angleDescription}
+                                            </span>
+                                          );
+                                        }
+                                        return null;
+                                      })()}
                                     </div>
                                     <div className="flex items-center justify-center">
                                       <p className="text-xs text-center text-muted-foreground">
