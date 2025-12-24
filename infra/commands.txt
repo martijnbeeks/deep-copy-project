@@ -2,16 +2,7 @@
 # Deep Copy API - Configuration & Credentials
 # ============================================================================
 
-export AWS_PROFILE=personal-cdk-dev
-export CLIENT_ID=5mbatc7uv35hr23qip437s2ai5
-export CLIENT_SECRET=1msm19oltu7241134t5vujtldr4uvum7hvn6cj7n1s3tg1ar02k5
-export API_URL=https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/
-export TOKEN_ENDPOINT=https://deepcopy-613663743323-eu-west-1.auth.eu-west-1.amazoncognito.com/oauth2/token
 
-# Get access token
-ACCESS_TOKEN=$(curl -s -u "$CLIENT_ID:$CLIENT_SECRET" \
-  -d "grant_type=client_credentials&scope=https://deep-copy.api/read https://deep-copy.api/write" \
-  "$TOKEN_ENDPOINT" | jq -r .access_token)
 
 
 # ============================================================================
@@ -121,19 +112,15 @@ curl -sS -X POST "${API_URL}image-gen/generate" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "selectedAvatar": "Avatar name: Michael, 68 — “The Evidence-First Retiree Michael is a 68-year-old retired engineer who values independence and routine—morning reading, driving to errands, and staying active without needing help. He’s noticing subtle vision changes (especially contrast and low-light clarity) and feels a quiet fear about what losing vision would mean for autonomy. He is highly skeptical of supplements that use vague claims (“clinically proven,” “doctor recommended”) without specifics. He responds best to measured, conservative language that signals medical-grade credibility without promising outcomes: clear Supplement Facts, third-party lab verification, and references to established research like AREDS2. His decision trigger is not hype—it’s trustworthy evidence, transparency, and the sense that he can confidently discuss the product with his eye doctor.",
-    "selectedAngles": [
-     "Clinically-Studied Ingredients — Trust Without Overclaiming"
-    ],
-    "productName": "Clarivea",
-    "language": "english",
-    "productImageUrls": [
-      "https://img.funnelish.com/79526/0/1766338180-Untitled_design.webp"
-    ],
-    "forcedReferenceImageIds": [
-      "10.png",
-      "11.png"
-    ],
+    "selectedAvatar": "A 25–34-year-old office professional who’s spotted early thinning at the temples and wants a discreet solution that won’t disrupt his morning routine.",
+        "selectedAngles": [
+            "Herbal Credibility Alternative: Evidence-forward herbal alternative that balances natural positioning with clinical credibility."
+        ],
+        "language": "english",
+        "foundationalDocText": "Test",
+        "productImageUrls": [
+            "https://res.cloudinary.com/dywojytq5/image/upload/v1766473181/static-ads/product-images/static-ads/product-images/1766473178022-njnyq22rsk.jpg"
+        ],
     "imageGenerationProvider": "nano_banana"
   }' | jq '.'
 
