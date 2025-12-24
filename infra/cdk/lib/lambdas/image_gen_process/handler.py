@@ -613,6 +613,12 @@ def lambda_handler(event, _context):
                 ]
                 if product_name:
                     prompt_parts.append(f"Product name: {product_name}")
+                    # Add explicit instruction to replace any product names in reference
+                    prompt_parts.append(
+                        f"IMPORTANT: Replace ALL product names, brand names, and website URLs "
+                        f"visible in the reference image with '{product_name}'. "
+                        f"Do NOT copy any product names, brand names, or URLs from the reference image."
+                    )
                 if analysis_json_or_text:
                     prompt_parts.append(f"Research summary (JSON/text): {analysis_json_or_text}")
                 
