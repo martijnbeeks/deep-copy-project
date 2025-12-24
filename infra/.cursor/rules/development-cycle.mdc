@@ -1,0 +1,40 @@
+---
+alwaysApply: true
+---
+Please use the following workflow:
+Enforces the 'No Vibes Allowed' workflow (Research > Plan > Code) for all development tasks.
+•⁠  ⁠*Phase 1: Research (Investigation)*
+  - Use ⁠ grep ⁠, ⁠ ls ⁠, and ⁠ read_file ⁠ to map the codebase before proposing any changes.
+  - *DO NOT* rely on memory or "vibes" of how the code works; verify exact line ranges and logic.
+  - Identify all side effects and dependencies that could be impacted.
+
+•⁠  ⁠*Phase 2: Plan (User Story Creation)*
+  - Every task must begin with a User Story (US) draft in ⁠ user_stories/ ⁠.
+  - You must follow the rules in [how_cursor_should_write_user_stories.md](.cursor/rules/how-to-write-user-stories.mdc).
+  - The plan is only ⁠ 🟢 READY ⁠ once the *Desired Implementation* is technically validated by Phase 1 findings.
+
+•⁠  ⁠*Phase 3: Code (Strict Execution)*
+  - Act as a pure execution agent for the ⁠ 🟢 READY ⁠ User Story.
+  - *DO NOT* perform "drive-by refactoring" or expand the scope silently.
+  - If you encounter a technical blocker, stop and revert to Phase 1 (Research) to update the Plan.
+
+•⁠  ⁠*Phase 4: Completion & Context Hygiene*
+  - Once tasks are finished, move the US to ⁠ completed_user_stories/ ⁠ and set status to ⁠ ✅ COMPLETED ⁠.
+  - Immediately generate the ⁠ IMPLEMENTATION_SUMMARY.md ⁠ as per project requirements.
+  - Summarize what was *not* changed to maintain clear mental alignment with the user.
+
+•⁠  ⁠*Workflow Guardrails:*
+  ```typescript
+  ✅ DO: Investigate and Plan
+  1. grep "export const useAuth" 
+  2. Create US_10_AUTH_FIX.md
+  3. Execute numbered tasks in US_10
+  
+  ❌ DON'T: "Vibe" or Guess
+  "I think the auth logic is in utils.ts, I'll just change it now..."
+  ```
+
+
+
+
+
