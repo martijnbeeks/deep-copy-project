@@ -745,9 +745,9 @@ if __name__ == "__main__":
     event = {
         "job_id": results["job_id"],
         "result_prefix": f"results/{results['job_id']}",
-        "foundationalDocText": f"{results["results"]['deep_research_output']} \n Avatar Sheet: {results["results"]['avatar_sheet']} \n Offer Brief: {results["results"]['offer_brief']} \n Marketing Philosophy: {results["results"]['marketing_philosophy_analysis']} \n Summary: {results["results"]['summary']}",
+        "foundationalDocText": f"{results['results']['deep_research_output']} \n Avatar Sheet: {results['results']['avatar_sheet']} \n Offer Brief: {results['results']['offer_brief']} \n Marketing Philosophy: {results['results']['marketing_philosophy_analysis']} \n Summary: {results['results']['summary']}",
         "selectedAvatar": "Avatar name: Michael, 68 — “The Evidence-First Retiree Michael is a 68-year-old retired engineer who values independence and routine—morning reading, driving to errands, and staying active without needing help. He’s noticing subtle vision changes (especially contrast and low-light clarity) and feels a quiet fear about what losing vision would mean for autonomy. He is highly skeptical of supplements that use vague claims (“clinically proven,” “doctor recommended”) without specifics. He responds best to measured, conservative language that signals medical-grade credibility without promising outcomes: clear Supplement Facts, third-party lab verification, and references to established research like AREDS2. His decision trigger is not hype—it’s trustworthy evidence, transparency, and the sense that he can confidently discuss the product with his eye doctor.",
-        "selectedAngles": [angle["angle"] for angle in results["results"]['marketing_angles']],
+        "selectedAngles": [angle["angle"] for angle in results['results']['marketing_angles']],
         "language": "english",
         "productImageUrls": ["https://img.funnelish.com/79526/0/1766338180-Untitled_design.webp"],
         "forcedReferenceImageIds": ["10.png", "11.png"],
