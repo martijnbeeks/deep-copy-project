@@ -39,6 +39,29 @@ export class DeepCopyStack extends Stack {
     // Secret ARN for API keys (used by multiple Lambdas)
     const secretArn = `arn:aws:secretsmanager:${Stack.of(this).region}:${Stack.of(this).account}:secret:deepcopy-secret-dev*`;
 
+    // GitHub Actions OIDC Provider
+    const githubProvider = new iam.OpenIdConnectProvider(this, 'GithubProvider', {
+      url: 'https://token.actions.githubusercontent.com',
+      clientIds: ['sts.amazonaws.com'],
+    });
+
+    // IAM Role for GitHub Actions
+    const githubDeployRole = new iam.Role(this, 'GitHubDeployRole', {
+      assumedBy: new iam.WebIdentityPrincipal(githubProvider.openIdConnectProviderArn, {
+        StringEquals: {
+          'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
+          'token.actions.githubusercontent.com:sub': 'repo:martijnbeeks/deep-copy-infra:ref:refs/heads/main',
+        },
+      }),
+      description: 'Role assumed by GitHub Actions to deploy the stack',
+      roleName: 'DeepCopy-GitHubDeployRole',
+    });
+
+    // Grant administrative permissions for CDK deployment
+    githubDeployRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess'));
+
+    new CfnOutput(this, 'GitHubDeployRoleArn', { value: githubDeployRole.roleArn });
+
     // AI Pipeline - Processing Lambda (Docker-based)
     const processJobLambda = new lambda.DockerImageFunction(this, 'ProcessJobLambda', {
       code: lambda.DockerImageCode.fromImageAsset(
