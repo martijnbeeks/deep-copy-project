@@ -47,6 +47,14 @@ import google.generativeai as genai
 from cloudflare import Cloudflare
 
 
+# Reference image IDs that do NOT support product image merging
+# These images should be used as-is without forcing product images into them
+REF_IMAGES_WITHOUT_PRODUCT = {
+    "10.png", "10", "15.png", "15", "24.png", "24", "25.png", "25",
+    "27.png", "27", "29.png", "29", "30.png", "30", "33.png", "33",
+    "35.png", "35", "40.png", "40", "41.png", "41", "43.png", "43",
+    "44.png", "44", "45.png", "45", "50.png", "50", "52.png", "52",
+}
 
 s3_client = boto3.client("s3")
 ddb_client = boto3.client("dynamodb")
@@ -158,6 +166,14 @@ def _normalize_image_id(x: str) -> str:
     if "." not in x:
         return f"{x}.png"
     return x
+
+
+def _supports_product_image(ref_id: str) -> bool:
+    """Check if a reference image supports product image merging."""
+    normalized = _normalize_image_id(ref_id)
+    # Check both normalized and without extension
+    base_id = normalized.replace(".png", "").replace(".jpg", "").replace(".webp", "")
+    return normalized not in REF_IMAGES_WITHOUT_PRODUCT and base_id not in REF_IMAGES_WITHOUT_PRODUCT
 
 
 def _download_image_to_b64(url: str, timeout_s: int = 30) -> Optional[Dict[str, str]]:
@@ -615,18 +631,32 @@ def lambda_handler(event, _context):
                     prompt_parts.append(f"Product name: {product_name}")
                 if analysis_json_or_text:
                     prompt_parts.append(f"Research summary (JSON/text): {analysis_json_or_text}")
-                prompt_parts.append(
-                    "Use the provided reference creative image as the layout/style template. "
-                    "If a product image is provided, incorporate it naturally. "
-                    "Return only the final image."
-                )
+                
+                # Check if this reference image supports product images
+                supports_product = _supports_product_image(ref_id)
+                
+                if supports_product and product_image_data:
+                    prompt_parts.append(
+                        "Use the provided reference creative image as the layout/style template. "
+                        "If a product image is provided, incorporate it naturally. "
+                        "Return only the final image."
+                    )
+                else:
+                    prompt_parts.append(
+                        "Use the provided reference creative image as the layout/style template. "
+                        "Return only the final image."
+                    )
                 prompt = "\n".join(prompt_parts)
 
                 try:
                     if provider in ("nano_banana", "nanobanana", "nano-banana"):
-                        img_b64 = _generate_image_nano_banana(prompt, ref_bytes, product_image_bytes)
+                        # Only pass product image if supported
+                        product_img_bytes = product_image_bytes if supports_product else None
+                        img_b64 = _generate_image_nano_banana(prompt, ref_bytes, product_img_bytes)
                     else:
-                        img_b64 = _generate_image_openai(openai_client, prompt, ref_data, product_image_data)
+                        # Only pass product image if supported
+                        product_img_data_for_gen = product_image_data if supports_product else None
+                        img_b64 = _generate_image_openai(openai_client, prompt, ref_data, product_img_data_for_gen)
 
                     upload = _upload_base64_to_cloudflare_images(
                         img_b64,
