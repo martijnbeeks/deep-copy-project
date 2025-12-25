@@ -1605,7 +1605,7 @@ function DeepCopyResultsComponent({
                               rel="noopener noreferrer"
                               className="text-sm text-primary hover:underline break-all"
                             >
-                              {salesPageUrl}
+                              {salesPageUrl.length > 50 ? salesPageUrl.substring(0, 50) + "..." : salesPageUrl}
                             </a>
                           </div>
                         )}
