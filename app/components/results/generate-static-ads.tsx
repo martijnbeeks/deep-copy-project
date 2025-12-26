@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UsageLimitDialog } from "@/components/ui/usage-limit-dialog";
 import { useAuthStore } from "@/stores/auth-store";
+
 
 interface GenerateStaticAdsProps {
   originalJobId: string;
@@ -73,6 +74,10 @@ export function GenerateStaticAds({
   // Angle filter state (similar to prelanders)
   const [selectedAngleFilter, setSelectedAngleFilter] = useState<string>("all");
   
+  const imageLibraryScrollRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef<number>(0);
+  const [sortBy, setSortBy] = useState<"latest" | "oldest" | "angle">("latest");
+
   // Ref for file input to control it properly
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -601,7 +606,12 @@ export function GenerateStaticAds({
     setSelectedImageIds(new Set());
   };
 
-  const handleImageToggle = (libraryId: string) => {
+  const handleImageToggle = useCallback((libraryId: string) => {
+    // Save scroll position before state update
+    if (imageLibraryScrollRef.current) {
+      scrollPositionRef.current = imageLibraryScrollRef.current.scrollTop;
+    }
+    
     setSelectedImageIds((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(libraryId)) {
@@ -617,7 +627,7 @@ export function GenerateStaticAds({
       }
       return newSet;
     });
-  };
+  }, [maxImages, selectedAngles.size, toast]);
 
   const handleProductImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -651,6 +661,8 @@ export function GenerateStaticAds({
         });
         return;
       }
+      // Reset scroll position when entering step 2
+      scrollPositionRef.current = 0;
       setStep(2);
     } else if (step === 2) {
       setStep(3);
@@ -891,25 +903,42 @@ export function GenerateStaticAds({
     };
   };
 
-  // Filter images by selected angle
+  // Filter and sort images by selected angle and sort criteria
   const filteredImages = useMemo(() => {
-    if (selectedAngleFilter === "all") {
-      return generatedImages;
+    let filtered = generatedImages;
+    
+    // Filter by angle
+    if (selectedAngleFilter !== "all") {
+      const angleIndex = marketingAngles.findIndex((angle: any) => {
+        const parsed = parseAngle(angle);
+        return parsed.angleString === selectedAngleFilter;
+      });
+      
+      if (angleIndex !== -1) {
+        filtered = filtered.filter((img) => img.angleIndex === angleIndex + 1);
+      }
     }
     
-    // Find matching angle index
-    const angleIndex = marketingAngles.findIndex((angle: any) => {
-      const parsed = parseAngle(angle);
-      return parsed.angleString === selectedAngleFilter;
+    // Sort the filtered results
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "latest":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "oldest":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case "angle":
+          // Sort by angle index first, then by creation date
+          if (a.angleIndex !== b.angleIndex) {
+            return a.angleIndex - b.angleIndex;
+          }
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        default:
+          return 0;
+      }
     });
     
-    if (angleIndex === -1) {
-      return generatedImages;
-    }
-    
-    // Filter by angle index (1-based in UI, 0-based in array)
-    return generatedImages.filter((img) => img.angleIndex === angleIndex + 1);
-  }, [generatedImages, selectedAngleFilter, marketingAngles]);
+    return sorted;
+  }, [generatedImages, selectedAngleFilter, marketingAngles, sortBy]);
 
   // Create flat list of all images with skeleton loaders
   const allDisplayItems = useMemo(() => {
@@ -1023,6 +1052,40 @@ export function GenerateStaticAds({
     }
   };
 
+  // Memoize image library items to prevent scroll reset
+  const memoizedImageLibraryItems = useMemo(() => {
+    return imageLibrary.map((image) => {
+      const isSelected = selectedImageIds.has(image.library_id);
+      const canSelect = selectedImageIds.size < maxImages;
+      const canClick = isSelected || canSelect;
+
+      return {
+        image,
+        isSelected,
+        canSelect,
+        canClick,
+      };
+    });
+  }, [imageLibrary, selectedImageIds, maxImages]);
+
+  // Save scroll position on scroll
+  const handleScroll = useCallback(() => {
+    if (imageLibraryScrollRef.current) {
+      scrollPositionRef.current = imageLibraryScrollRef.current.scrollTop;
+    }
+  }, []);
+
+  // Restore scroll position after selectedImageIds changes
+  useLayoutEffect(() => {
+    if (step === 2 && imageLibraryScrollRef.current) {
+      // Restore scroll position synchronously before paint
+      const savedPosition = scrollPositionRef.current;
+      if (savedPosition > 0) {
+        imageLibraryScrollRef.current.scrollTop = savedPosition;
+      }
+    }
+  }, [selectedImageIds, step]);
+
   // Multi-step form component (for modal)
   const GenerateForm = () => (
     <div className="space-y-6">
@@ -1122,64 +1185,66 @@ export function GenerateStaticAds({
       )}
 
       {/* Step 2: Select Reference Images */}
-      {step === 2 && (
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Select Reference Images</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Select up to {maxImages} reference images ({selectedAngles.size} angles × 2). You can select fewer or none.
-            </p>
-            <p className="text-xs text-muted-foreground mb-4">
-              Selected: {selectedImageIds.size} / {maxImages}
-            </p>
-          </div>
+{step === 2 && (
+  <div className="space-y-4">
+    <div>
+      <h3 className="text-lg font-semibold mb-2">Select Reference Images</h3>
+      <p className="text-sm text-muted-foreground mb-4">We will generate 2 images per selected marketing angle.</p>
+      <p className="text-sm text-muted-foreground mb-4">
+        Select up to {maxImages} reference images ({selectedAngles.size} angles × 2) or let AI choose the best suited ones.
+      </p>
+      <p className="text-xs text-muted-foreground mb-4">
+        Selected: {selectedImageIds.size}/{maxImages}
+      </p>
+    </div>
 
-          {loadingLibrary ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+    {loadingLibrary ? (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    ) : (
+      <div 
+        ref={imageLibraryScrollRef}
+        onScroll={handleScroll}
+        className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-[500px] overflow-y-auto"
+      >
+        {memoizedImageLibraryItems.map(({ image, isSelected, canSelect, canClick }) => (
+          <Card
+            key={image.library_id}
+            className={`cursor-pointer transition-all hover:shadow-md relative ${
+              isSelected
+                ? "border-2 border-primary bg-primary/10"
+                : canSelect
+                ? "border border-border hover:border-primary/50"
+                : "border border-border opacity-50 cursor-not-allowed"
+            }`}
+            onClick={() => {
+              if (canClick) {
+                handleImageToggle(image.library_id);
+              }
+            }}
+          >
+            <div className="relative aspect-square w-full">
+              <img
+                src={image.url}
+                alt={`Image ${image.library_id}`}
+                className="w-full h-full object-cover rounded-t-lg"
+              />
+              {isSelected && (
+                <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                  <CheckCircle2 className="w-3 h-3" />
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-[500px] overflow-y-auto">
-              {imageLibrary.map((image) => {
-                const isSelected = selectedImageIds.has(image.library_id);
-                const canSelect = selectedImageIds.size < maxImages;
-                // Allow clicking if: already selected (to unselect) OR can select new one
-                const canClick = isSelected || canSelect;
+            <CardContent className="p-1">
+              <p className="text-xs text-center text-muted-foreground truncate">
 
-                return (
-                  <Card
-                    key={image.id}
-                    className={`cursor-pointer transition-all hover:shadow-md relative ${
-                      isSelected
-                        ? "border-2 border-primary bg-primary/10"
-                        : canSelect
-                        ? "border border-border hover:border-primary/50"
-                        : "border border-border opacity-50 cursor-not-allowed"
-                    }`}
-                    onClick={() => canClick && handleImageToggle(image.library_id)}
-                  >
-                    <div className="relative aspect-square w-full">
-                      <img
-                        src={image.url}
-                        alt={`Image ${image.library_id}`}
-                        className="w-full h-full object-cover rounded-t-lg"
-                      />
-                      {isSelected && (
-                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">
-                          <CheckCircle2 className="w-3 h-3" />
-                        </div>
-                      )}
-                    </div>
-                    <CardContent className="p-1">
-                      <p className="text-xs text-center text-muted-foreground truncate">
-                        Reference
-                      </p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )}
 
           <div className="flex justify-between pt-4">
             <Button variant="outline" onClick={handleBack}>
@@ -1198,7 +1263,7 @@ export function GenerateStaticAds({
           <div>
             <h3 className="text-lg font-semibold mb-2">Upload Product Image</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Upload a product image to help generate better static ads. Max file size: 50MB
+              Upload a clear product image with white or transparent background. Max file size: 50MB. Allowed file types: PNG, JPG, JPEG.
             </p>
           </div>
 
@@ -1394,6 +1459,17 @@ export function GenerateStaticAds({
                                 Download All ({filteredImages.length})
                               </Button>
                             )}
+                            {/* Sort Dropdown */}
+                            <Select value={sortBy} onValueChange={(value: "latest" | "oldest" | "angle") => setSortBy(value)}>
+                              <SelectTrigger className="w-[160px]">
+                                <SelectValue placeholder="Sort by..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="latest">Latest First</SelectItem>
+                                <SelectItem value="oldest">Oldest First</SelectItem>
+                                <SelectItem value="angle">By Angle #</SelectItem>
+                              </SelectContent>
+                            </Select>
                             {/* Angle Filter - Always show when there are any images */}
                             <div className="w-[220px] min-w-0 max-w-[220px]">
                               <Select
@@ -1437,15 +1513,28 @@ export function GenerateStaticAds({
                           {allDisplayItems.map((item, index) => {
                             if (item.type === 'image' && item.data) {
                               const img = item.data;
+                              
+                              // Calculate actual variation number dynamically
+                              const imagesForThisAngle = generatedImages
+                                .filter(gi => gi.angleIndex === img.angleIndex)
+                                .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+                              const actualVariationNumber = imagesForThisAngle.findIndex(gi => gi.id === img.id) + 1;
+                              const adNumber = `${img.angleIndex}.${actualVariationNumber}`;
+                              
                               return (
                                 <Card key={img.id} className="overflow-hidden group">
                                   <div className="relative aspect-[4/3] h-48 overflow-hidden">
                                     <img
                                       src={img.imageUrl}
-                                      alt={`${img.angleName} - Variation ${img.variationNumber}`}
+                                      alt={`${img.angleName} - Variation ${actualVariationNumber}`}
                                       className="w-full h-full object-cover"
                                     />
+                                    {/* Ad Number Label */}
+                                    <div className="absolute bottom-2 right-2 bg-gray-500/80 text-white text-xs font-semibold px-2 py-1 rounded">
+                                      {adNumber}
+                                    </div>
                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            
                                       <Button
                                         size="sm"
                                         variant="secondary"
@@ -1471,8 +1560,13 @@ export function GenerateStaticAds({
                                     <div className="flex items-center justify-center gap-2 flex-wrap">
                                       {/* Angle number badge - same style as prelanders */}
                                       <Badge
-                                        variant="outline"
-                                        className="text-xs font-semibold bg-muted text-foreground border-border w-fit"
+                                        variant="default"
+                                        className="text-xs font-semibold w-fit bg-primary/10 text-primary border-primary"
+                                        style={{
+                                          backgroundColor: 'rgba(93, 113, 244, 0.1)',
+                                          color: '#5d71f4',
+                                          borderColor: '#5d71f4'
+                                        }}
                                       >
                                         <Target className="h-3 w-3 mr-1" />
                                         {img.angleIndex}
@@ -1493,7 +1587,7 @@ export function GenerateStaticAds({
                                     </div>
                                     {/* Creation Date */}
                                     {img.createdAt && (
-                                      <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                                      <div className="flex items-center justify-start gap-1.5 text-xs text-muted-foreground ml-2">
                                         <Calendar className="h-3.5 w-3.5" />
                                         <span>
                                           {new Date(img.createdAt).toLocaleDateString("en-US", {
