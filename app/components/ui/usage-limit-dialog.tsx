@@ -8,7 +8,7 @@ import { AlertCircle } from "lucide-react"
 interface UsageLimitDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  usageType: 'deep_research' | 'pre_lander'
+  usageType: 'deep_research' | 'pre_lander' | 'static_ads'
   currentUsage: number
   limit: number
 }
@@ -20,7 +20,7 @@ export function UsageLimitDialog({
   currentUsage,
   limit
 }: UsageLimitDialogProps) {
-  const usageTypeLabel = usageType === 'deep_research' ? 'Deep Research' : 'Pre-Lander'
+  const usageTypeLabel = usageType === 'deep_research' ? 'Deep Research' : usageType === 'static_ads' ? 'Static Ads' : 'Pre-Lander'
   const usagePercentage = limit > 0 ? Math.min(100, (currentUsage / limit) * 100) : 0
 
   return (

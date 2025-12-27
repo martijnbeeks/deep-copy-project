@@ -259,6 +259,70 @@ class InternalApiClient {
     })
   }
 
+  // ==================== STATIC ADS API ====================
+
+  async getImageLibrary() {
+    return this.request<Array<{ id: number; library_id: string; url: string; created_at: string }>>('/api/static-ads/image-library')
+  }
+
+  async generateStaticAds(formData: FormData) {
+    // For multipart/form-data, we need to pass FormData directly without JSON.stringify
+    const url = `${this.baseUrl}/api/static-ads/generate`
+    const headers: Record<string, string> = {}
+    
+    // Add auth token if available
+    const token = this.getAuthToken()
+    const userEmail = this.getUserEmail()
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    } else if (userEmail) {
+      headers['Authorization'] = `Bearer ${userEmail}`
+    }
+    
+    // Don't set Content-Type for FormData - browser will set it with boundary
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+      cache: 'no-store'
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      let errorData: any
+      try {
+        errorData = JSON.parse(errorText)
+      } catch {
+        errorData = { error: errorText }
+      }
+      
+      const error = new Error(errorData.error || errorData.message || `API request failed: ${response.status}`) as Error & {
+        status?: number
+        currentUsage?: number
+        limit?: number
+        message?: string
+      }
+      error.status = response.status
+      if (errorData.currentUsage !== undefined) error.currentUsage = errorData.currentUsage
+      if (errorData.limit !== undefined) error.limit = errorData.limit
+      if (errorData.message) error.message = errorData.message
+      
+      throw error
+    }
+
+    return response.json()
+  }
+
+  async getStaticAdStatus(jobId: string) {
+    console.log(`🌐 [InternalClient] Polling static ad status for job: ${jobId}`);
+    return this.request(`/api/static-ads/${jobId}/status`)
+  }
+
+  async getStaticAdsByOriginalJob(originalJobId: string) {
+    return this.request(`/api/static-ads/original-job/${originalJobId}`)
+  }
+
   // ==================== ADMIN API ====================
 
   async getAdminInjectableTemplates(filters?: { id?: string; type?: string }) {

@@ -1,10 +1,10 @@
-##TRIGGER VERCEL
+
 
 ## Maintenance Mode
 
 The application includes a maintenance mode feature that allows you to block public access while still being able to access the app yourself.
 
-### How to Enable Maintenance Mode
+### How to Enable Maintenance 
 
 1. Add the following environment variables to your `.env.local` file:
    ```env

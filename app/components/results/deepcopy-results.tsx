@@ -80,6 +80,7 @@ import { internalApiClient } from "@/lib/clients/internal-client";
 import { Template } from "@/lib/db/types";
 import { logger } from "@/lib/utils/logger";
 import { capitalizeFirst } from "@/lib/utils/avatar-utils";
+import { GenerateStaticAds } from "@/components/results/generate-static-ads";
 
 interface DeepCopyResult extends MarketingAngleResult {
   // This now matches the MarketingAngleResult interface from the API client
@@ -1604,7 +1605,7 @@ function DeepCopyResultsComponent({
                               rel="noopener noreferrer"
                               className="text-sm text-primary hover:underline break-all"
                             >
-                              {salesPageUrl}
+                              {salesPageUrl.length > 50 ? salesPageUrl.substring(0, 50) + "..." : salesPageUrl}
                             </a>
                           </div>
                         )}
@@ -2583,6 +2584,17 @@ function DeepCopyResultsComponent({
               </AccordionItem>
             </Accordion>
           </div>
+        )}
+
+      {/* Static Ads Generation */}
+      {fullResult?.results?.marketing_angles &&
+        fullResult.results.marketing_angles.length > 0 && (
+          <GenerateStaticAds
+            originalJobId={jobId}
+            marketingAngles={fullResult.results.marketing_angles}
+            selectedAvatar={customerAvatars?.[0] || null}
+            foundationalDocText={fullResult?.results?.deep_research_output}
+          />
         )}
 
       {/* Angle Selection & Swipe File Generation */}
