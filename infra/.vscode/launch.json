@@ -31,6 +31,22 @@
             }
         },
         {
+            "name": "Debug jobs V2",
+            "type": "python",
+            "python": "${workspaceFolder}/ai_pipeline/.venv/bin/python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cdk/lib/lambdas/process_job_v2/handler.py",
+            "args": ["run"],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}/cdk/lib/lambdas/process_job_v2",
+            "env": {
+                "AWS_PROFILE": "personal-cdk-dev",
+                "JOB_EVENT_JSON": "{\"sales_page_url\": \"https://www.sciatiease.com/sciatiease.php\", \"project_name\": \"meritrelief\", \"swipe_file_id\": \"L00002\", \"advertorial_type\": \"Advertorial\"}",
+                "RESULTS_BUCKET": "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih",
+            }
+        },
+        {
             "name": "Debug avatar",
             "type": "python",
             "python": "${workspaceFolder}/ai_pipeline/.venv/bin/python",

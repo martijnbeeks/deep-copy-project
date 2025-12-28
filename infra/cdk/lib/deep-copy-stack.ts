@@ -95,6 +95,40 @@ export class DeepCopyStack extends Stack {
     resultsBucket.grantRead(processJobLambda, 'projects/*'); // Allow reading pre-computed results
     resultsBucket.grantRead(processJobLambda, 'results/*'); // Allow reading results for dev mode
 
+    // V2 AI Pipeline - Processing Lambda (Docker-based, separate from v1)
+    const processJobLambdaV2 = new lambda.DockerImageFunction(this, 'ProcessJobV2Lambda', {
+      code: lambda.DockerImageCode.fromImageAsset(
+        path.join(__dirname, 'lambdas', 'process_job_v2'),
+        {
+          platform: Platform.LINUX_AMD64,
+        }
+      ),
+      timeout: Duration.seconds(900), // 15 minutes for long-running pipeline
+      memorySize: 3008, // 3GB for Playwright + OpenAI + Anthropic
+      architecture: lambda.Architecture.X86_64,
+      environment: {
+        PLAYWRIGHT_BROWSERS_PATH: '/var/task/.playwright',
+        JOBS_TABLE_NAME: jobsTable.tableName,
+        RESULTS_BUCKET: resultsBucket.bucketName,
+        ENVIRONMENT: 'prod',
+        API_VERSION: 'v2',
+      },
+    });
+
+    // Grant access to secrets for V2 Lambda
+    processJobLambdaV2.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['secretsmanager:GetSecretValue'],
+        resources: [secretArn],
+      }),
+    );
+    jobsTable.grantReadWriteData(processJobLambdaV2);
+    resultsBucket.grantPut(processJobLambdaV2);
+    resultsBucket.grantPutAcl(processJobLambdaV2);
+    resultsBucket.grantRead(processJobLambdaV2, 'content_library/*');
+    resultsBucket.grantRead(processJobLambdaV2, 'projects/*');
+    resultsBucket.grantRead(processJobLambdaV2, 'results/*');
+
     // Shared asset for Python "thin" lambdas (submit/get-result). Exclude caches to keep asset staging reliable.
     const pythonLambdasAsset = lambda.Code.fromAsset(path.join(__dirname, 'lambdas'), {
       exclude: [
@@ -124,6 +158,22 @@ export class DeepCopyStack extends Stack {
     // Permissions for submitter - invoke Lambda instead of ECS
     processJobLambda.grantInvoke(submitLambda);
     jobsTable.grantReadWriteData(submitLambda);
+
+    // V2 Submit Lambda with stricter validation (invokes V2 process lambda)
+    const submitLambdaV2 = new lambda.Function(this, 'SubmitJobV2Lambda', {
+      runtime: lambda.Runtime.PYTHON_3_11,
+      timeout: Duration.seconds(10),
+      memorySize: 256,
+      handler: 'submit_job_v2.handler',
+      code: pythonLambdasAsset,
+      environment: {
+        PROCESS_LAMBDA_NAME: processJobLambdaV2.functionName,
+        JOBS_TABLE_NAME: jobsTable.tableName,
+        RESULTS_BUCKET: resultsBucket.bucketName,
+      },
+    });
+    processJobLambdaV2.grantInvoke(submitLambdaV2);
+    jobsTable.grantReadWriteData(submitLambdaV2);
 
     // Lambda to get job status (reads DynamoDB) - Python version
     const getJobLambda = new lambda.Function(this, 'GetJobLambda', {
@@ -536,10 +586,45 @@ export class DeepCopyStack extends Stack {
       authorizationScopes: ['https://deep-copy.api/write'],
     });
 
+    // V2 API endpoints
+    const v2Res = api.root.addResource('v2');
+
+    // V2 Jobs
+    const v2JobsRes = v2Res.addResource('jobs');
+    v2JobsRes.addMethod('POST', new apigw.LambdaIntegration(submitLambdaV2), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/write'],
+    });
+
+    const v2JobIdRes = v2JobsRes.addResource('{id}');
+    v2JobIdRes.addMethod('GET', new apigw.LambdaIntegration(getJobLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/read'],
+    });
+
+    const v2JobResultRes = v2JobIdRes.addResource('result');
+    v2JobResultRes.addMethod('GET', new apigw.LambdaIntegration(getJobResultLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/read'],
+    });
+
+    // Dev V2 endpoints
+    const devV2Res = devRes.addResource('v2');
+    const devV2JobsRes = devV2Res.addResource('jobs');
+    devV2JobsRes.addMethod('POST', new apigw.LambdaIntegration(submitLambdaV2), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/write'],
+    });
+
     // Optional: EventBridge to mark RUNNING when task starts and final status on stop
     // You can also have the container call DynamoDB directly at the end, which the Python already supports
 
     new CfnOutput(this, 'ApiUrl', { value: api.url });
+    new CfnOutput(this, 'V2JobsEndpoint', { value: `${api.url}v2/jobs` });
     new CfnOutput(this, 'AvatarsSubmitEndpoint', { value: `${api.url}avatars/extract` });
     new CfnOutput(this, 'SwipeFilesSubmitEndpoint', { value: `${api.url}swipe-files/generate` });
     new CfnOutput(this, 'ImageGenSubmitEndpoint', { value: `${api.url}image-gen/generate` });
