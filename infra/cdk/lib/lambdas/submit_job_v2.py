@@ -102,6 +102,7 @@ def handler(event, _context):
     # Detect dev mode from path
     path = event.get("path", "")
     dev_mode = "/dev/" in path or path.startswith("/dev")
+    dev_mode = True
 
     # Persist initial job record with api_version
     try:

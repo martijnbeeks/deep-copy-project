@@ -14,11 +14,13 @@ import uuid
 import anthropic
 from bs4 import BeautifulSoup
 from pathlib import Path
+import inspect
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional, Literal, Any, Dict, Union
 from pydantic import BaseModel, Field, ConfigDict, create_model
 
+from llm_usage import UsageContext, emit_llm_usage_event, normalize_anthropic_usage
 
 # Configure logger for interactive environments
 logger = logging.getLogger(__name__)
@@ -145,6 +147,20 @@ def retry_with_exponential_backoff(
     
     for attempt in range(max_retries):
         try:
+            attempt_no = attempt + 1
+            try:
+                sig = inspect.signature(func)
+                params = list(sig.parameters.values())
+                has_varargs = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+                has_positional = any(
+                    p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+                    for p in params
+                )
+                if has_varargs or has_positional:
+                    return func(attempt_no)
+            except Exception:
+                # If signature inspection fails, fall back to calling without attempt number
+                pass
             return func()
         except anthropic.APIStatusError as e:
             # Check if it's a retryable error
@@ -294,6 +310,8 @@ def make_structured_request_with_retry(
     model: str,
     anthropic_client: anthropic.Anthropic,
     system_prompt: List[Dict[str, Any]] = None,
+    usage_ctx: Optional[UsageContext] = None,
+    usage_subtask: str = "write_swipe.structured",
 ) -> tuple[Dict[str, Any], Any]:
     """
     Make a structured output request with streaming and retry logic.
@@ -305,27 +323,42 @@ def make_structured_request_with_retry(
     structured_result = None
     usage_data = None
     
-    def make_structured_request():
+    def make_structured_request(attempt_no: int = 1):
         nonlocal structured_result, usage_data
-        
-        with anthropic_client.messages.stream(
-            model=model,
-            max_tokens=max_tokens,
-            messages=messages,
-            # system=system_prompt if system_prompt else None,
-            tools=[{
-                "name": tool_name,
-                "description": tool_description,
-                "input_schema": tool_schema
-            }],
-            tool_choice={"type": "tool", "name": tool_name}
-        ) as stream:
-            # Consume the stream (tool use will be in the final message)
-            for _ in stream.text_stream:
-                pass  # We don't need text for tool use, but we need to consume the stream
-            
-            # Get the final message with usage data
-            response = stream.get_final_message()
+        t0 = time.time()
+        try:
+            with anthropic_client.messages.stream(
+                model=model,
+                max_tokens=max_tokens,
+                messages=messages,
+                # system=system_prompt if system_prompt else None,
+                tools=[{
+                    "name": tool_name,
+                    "description": tool_description,
+                    "input_schema": tool_schema
+                }],
+                tool_choice={"type": "tool", "name": tool_name}
+            ) as stream:
+                # Consume the stream (tool use will be in the final message)
+                for _ in stream.text_stream:
+                    pass  # We don't need text for tool use, but we need to consume the stream
+                
+                # Get the final message with usage data
+                response = stream.get_final_message()
+        except Exception as e:
+            if usage_ctx:
+                emit_llm_usage_event(
+                    ctx=usage_ctx,
+                    provider="anthropic",
+                    model=model,
+                    operation="messages.stream",
+                    subtask=usage_subtask,
+                    latency_ms=int((time.time() - t0) * 1000),
+                    success=False,
+                    retry_attempt=attempt_no,
+                    error_type=type(e).__name__,
+                )
+            raise
         
         # Extract structured output from tool use
         if response.stop_reason == "tool_use" and len(response.content) > 0:
@@ -361,6 +394,18 @@ def make_structured_request_with_retry(
         
         usage_data = response.usage
         logger.info(f"Output tokens used: {usage_data.output_tokens if usage_data else 'N/A'}")
+        if usage_ctx:
+            emit_llm_usage_event(
+                ctx=usage_ctx,
+                provider="anthropic",
+                model=model,
+                operation="messages.stream",
+                subtask=usage_subtask,
+                latency_ms=int((time.time() - t0) * 1000),
+                success=True,
+                retry_attempt=attempt_no,
+                usage=normalize_anthropic_usage(usage_data),
+            )
         return structured_result
     
     # Execute with retry logic
@@ -375,6 +420,8 @@ def make_streaming_request_with_retry(
     model: str,
     anthropic_client: anthropic.Anthropic,
     system_prompt: List[Dict[str, Any]] = None,
+    usage_ctx: Optional[UsageContext] = None,
+    usage_subtask: str = "write_swipe.streaming",
 ) -> tuple[str, Any]:
     """
     Make a streaming text request with retry logic.
@@ -386,23 +433,51 @@ def make_streaming_request_with_retry(
     response_text = ""
     usage_data = None
     
-    def make_stream_request():
+    def make_stream_request(attempt_no: int = 1):
         nonlocal response_text, usage_data
         response_text = ""  # Reset on retry
+        t0 = time.time()
         
-        with anthropic_client.messages.stream(
-            model=model,
-            max_tokens=max_tokens,
-            messages=messages,
-            system=system_prompt if system_prompt else [],
-        ) as stream:
-            for text in stream.text_stream:
-                response_text += text
-            
-            # Get the final message with usage data
-            message = stream.get_final_message()
-            usage_data = message.usage
-            return response_text
+        try:
+            with anthropic_client.messages.stream(
+                model=model,
+                max_tokens=max_tokens,
+                messages=messages,
+                system=system_prompt if system_prompt else [],
+            ) as stream:
+                for text in stream.text_stream:
+                    response_text += text
+                
+                # Get the final message with usage data
+                message = stream.get_final_message()
+                usage_data = message.usage
+                if usage_ctx:
+                    emit_llm_usage_event(
+                        ctx=usage_ctx,
+                        provider="anthropic",
+                        model=model,
+                        operation="messages.stream",
+                        subtask=usage_subtask,
+                        latency_ms=int((time.time() - t0) * 1000),
+                        success=True,
+                        retry_attempt=attempt_no,
+                        usage=normalize_anthropic_usage(usage_data),
+                    )
+                return response_text
+        except Exception as e:
+            if usage_ctx:
+                emit_llm_usage_event(
+                    ctx=usage_ctx,
+                    provider="anthropic",
+                    model=model,
+                    operation="messages.stream",
+                    subtask=usage_subtask,
+                    latency_ms=int((time.time() - t0) * 1000),
+                    success=False,
+                    retry_attempt=attempt_no,
+                    error_type=type(e).__name__,
+                )
+            raise
     
     # Execute with retry logic
     retry_with_exponential_backoff(make_stream_request)
@@ -420,6 +495,7 @@ def rewrite_swipe_file(
     summary: str,
     swipe_file_config: dict[str, dict[str, Any]],
     anthropic_client: anthropic.Anthropic,
+    job_id: Optional[str] = None,
     model: str = "claude-sonnet-4-5-20250929",
     max_tokens: int = 4000) -> dict[str, dict[str, Any]]:  
     # Model configuration
@@ -440,6 +516,7 @@ def rewrite_swipe_file(
     
     swipe_file_results = {}
     for swipe_file_id, swipe_file_data in swipe_file_config.items():
+        usage_ctx = UsageContext(endpoint="POST /swipe-files/generate", job_id=job_id, job_type="SWIPE_FILES")
         # Create an own messages list for the specific swipe file template
         message_swipe = messages.copy()
         
@@ -547,6 +624,8 @@ def rewrite_swipe_file(
             max_tokens=max_tokens,
             model=model,
             anthropic_client=anthropic_client,
+            usage_ctx=usage_ctx,
+            usage_subtask=f"write_swipe.turn1_style_guide.template_{swipe_file_id}",
         )
         
         
@@ -710,6 +789,8 @@ def rewrite_swipe_file(
             model=model,
             anthropic_client=anthropic_client,
             # system_prompt=system_prompt
+            usage_ctx=usage_ctx,
+            usage_subtask=f"write_swipe.turn3_generate_advertorial.template_{swipe_file_id}",
         )
         
         # save the full_advertorial to the swipe_file_results

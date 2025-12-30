@@ -151,7 +151,7 @@ def lambda_handler(event, context):
         # Extract avatars and product image in parallel
         logger.info(f'Processing avatar extraction and image capture for job {job_id}, URL: {url}')
         with ThreadPoolExecutor(max_workers=2) as executor:
-            future_avatars = executor.submit(extract_avatars_from_url, url, openai_api_key, model)
+            future_avatars = executor.submit(extract_avatars_from_url, url, openai_api_key, model, job_id)
             future_image = executor.submit(capture_product_image, url)
             
             avatars = future_avatars.result()

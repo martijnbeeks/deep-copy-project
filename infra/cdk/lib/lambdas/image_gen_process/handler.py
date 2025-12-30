@@ -36,6 +36,7 @@ import random
 import re
 import logging
 import sys
+import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -43,9 +44,16 @@ import boto3
 import requests
 from botocore.exceptions import ClientError
 from openai import OpenAI
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from cloudflare import Cloudflare
 
+from llm_usage import (
+    UsageContext,
+    emit_llm_usage_event,
+    normalize_gemini_usage,
+    normalize_openai_usage,
+)
 
 # Reference image IDs that do NOT support product image merging
 # These images should be used as-is without forcing product images into them
@@ -320,7 +328,7 @@ def _upload_base64_to_cloudflare_images(
         raise
 
 
-def _summarize_docs_if_needed(openai_client: OpenAI, foundational_text: str, language: str) -> Optional[str]:
+def _summarize_docs_if_needed(openai_client: OpenAI, foundational_text: str, language: str, job_id: Optional[str]) -> Optional[str]:
     if not foundational_text or len(foundational_text.strip()) < 50:
         return None
     # Keep short for cost/context
@@ -331,10 +339,37 @@ def _summarize_docs_if_needed(openai_client: OpenAI, foundational_text: str, lan
         f"Summarize this research into: pains, desires, objections, proof points, hooks. "
         f"Output JSON with keys pains, desires, objections, proofs, hooks. Language: {language}.\n\n{text}"
     )
-    resp = openai_client.chat.completions.create(
-        model=os.environ.get("OPENAI_TEXT_MODEL", "gpt-5-mini"),
-        messages=[{"role": "user", "content": prompt}],
-    )
+    model = os.environ.get("OPENAI_TEXT_MODEL", "gpt-5-mini")
+    t0 = time.time()
+    try:
+        resp = openai_client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        emit_llm_usage_event(
+            ctx=UsageContext(endpoint="POST /image-gen/generate", job_id=job_id, job_type="IMAGE_GEN"),
+            provider="openai",
+            model=model,
+            operation="chat.completions.create",
+            subtask="image_gen.summarize_docs_if_needed",
+            latency_ms=int((time.time() - t0) * 1000),
+            success=True,
+            retry_attempt=1,
+            usage=normalize_openai_usage(resp),
+        )
+    except Exception as e:
+        emit_llm_usage_event(
+            ctx=UsageContext(endpoint="POST /image-gen/generate", job_id=job_id, job_type="IMAGE_GEN"),
+            provider="openai",
+            model=model,
+            operation="chat.completions.create",
+            subtask="image_gen.summarize_docs_if_needed",
+            latency_ms=int((time.time() - t0) * 1000),
+            success=False,
+            retry_attempt=1,
+            error_type=type(e).__name__,
+        )
+        raise
     content = resp.choices[0].message.content or ""
     return content.strip()
 
@@ -345,6 +380,7 @@ def _match_angles_to_images(
     selected_angles: List[str],
     library: dict[str, Any],
     forced_ids: List[str],
+    job_id: Optional[str],
 ) -> Dict[Tuple[str, str], str]:
     """
     Returns mapping (angle_num, variation_num) -> image_id
@@ -417,9 +453,22 @@ def _match_angles_to_images(
         f"Library (imageId: description):\n{json.dumps(images, ensure_ascii=False)}\n"
     )
     try:
+        model = os.environ.get("OPENAI_TEXT_MODEL", "gpt-5-mini")
+        t0 = time.time()
         resp = openai_client.chat.completions.create(
-            model=os.environ.get("OPENAI_TEXT_MODEL", "gpt-5-mini"),
+            model=model,
             messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+        )
+        emit_llm_usage_event(
+            ctx=UsageContext(endpoint="POST /image-gen/generate", job_id=job_id, job_type="IMAGE_GEN"),
+            provider="openai",
+            model=model,
+            operation="chat.completions.create",
+            subtask="image_gen.match_angles_to_images",
+            latency_ms=int((time.time() - t0) * 1000),
+            success=True,
+            retry_attempt=1,
+            usage=normalize_openai_usage(resp),
         )
         content = resp.choices[0].message.content or ""
         parsed = json.loads(content)
@@ -463,6 +512,7 @@ def _generate_image_openai(
     prompt: str,
     reference_image_data: Optional[Dict[str, str]],
     product_image_data: Optional[Dict[str, str]],
+    job_id: Optional[str],
 ) -> str:
     content: List[Dict[str, Any]] = [{"type": "input_text", "text": prompt}]
     if reference_image_data and reference_image_data.get("base64"):
@@ -481,12 +531,39 @@ def _generate_image_openai(
                 "detail": "high",
             }
         )
-    resp = openai_client.responses.create(
-        model=os.environ.get("OPENAI_IMAGE_MODEL", "gpt-4o"),
-        input=[{"role": "user", "content": content}],
-        tools=[{"type": "image_generation"}],
-        max_output_tokens=1000,
-    )
+    model = os.environ.get("OPENAI_IMAGE_MODEL", "gpt-4o")
+    t0 = time.time()
+    try:
+        resp = openai_client.responses.create(
+            model=model,
+            input=[{"role": "user", "content": content}],
+            tools=[{"type": "image_generation"}],
+            max_output_tokens=1000,
+        )
+        emit_llm_usage_event(
+            ctx=UsageContext(endpoint="POST /image-gen/generate", job_id=job_id, job_type="IMAGE_GEN"),
+            provider="openai",
+            model=model,
+            operation="responses.create",
+            subtask="image_gen.generate_image_openai",
+            latency_ms=int((time.time() - t0) * 1000),
+            success=True,
+            retry_attempt=1,
+            usage={**normalize_openai_usage(resp), "imagesGenerated": 1},
+        )
+    except Exception as e:
+        emit_llm_usage_event(
+            ctx=UsageContext(endpoint="POST /image-gen/generate", job_id=job_id, job_type="IMAGE_GEN"),
+            provider="openai",
+            model=model,
+            operation="responses.create",
+            subtask="image_gen.generate_image_openai",
+            latency_ms=int((time.time() - t0) * 1000),
+            success=False,
+            retry_attempt=1,
+            error_type=type(e).__name__,
+        )
+        raise
     img_b64 = _extract_openai_image_b64(resp)
     if not img_b64:
         raise RuntimeError("OpenAI returned no image")
@@ -497,14 +574,10 @@ def _generate_image_nano_banana(
     prompt: str,
     reference_image_bytes: Optional[bytes],
     product_image_bytes: Optional[bytes],
+    job_id: Optional[str],
 ) -> str:
     # Best-effort Gemini image generation. Returns base64 (PNG).
     import PIL.Image
-
-    api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY") or ""
-    if not api_key:
-        raise RuntimeError("GOOGLE_API_KEY/GEMINI_API_KEY not set")
-    genai.configure(api_key=api_key)
 
     contents: List[Any] = [prompt]
     if reference_image_bytes:
@@ -512,24 +585,97 @@ def _generate_image_nano_banana(
     if product_image_bytes:
         contents.append(PIL.Image.open(io.BytesIO(product_image_bytes)))
 
-    model = genai.GenerativeModel("gemini-3-pro-image-preview")
-    resp = model.generate_content(contents)
+    model_name = "gemini-3-pro-image-preview"
+    # Image size must use uppercase 'K' (e.g., 1K, 2K, 4K). Lowercase is rejected.
+    image_size = "1K"
+    t0 = time.time()
 
-    # The response format varies; attempt to find inline_data bytes
-    # Common path: resp.candidates[0].content.parts[*].inline_data.data
-    try:
-        candidates = getattr(resp, "candidates", None) or []
-        for cand in candidates:
-            content = getattr(cand, "content", None)
-            parts = getattr(content, "parts", None) or []
+    def _extract_first_image_bytes(response: Any) -> Optional[bytes]:
+        """
+        google-genai response objects commonly expose:
+        - response.parts[*] with part.inline_data + part.as_image()
+        but we keep fallbacks to handle schema drift.
+        """
+        try:
+            parts = getattr(response, "parts", None) or []
             for part in parts:
                 inline = getattr(part, "inline_data", None)
-                if inline and getattr(inline, "data", None):
-                    data_bytes = inline.data
-                    return base64.b64encode(data_bytes).decode("utf-8")
-    except Exception:
-        pass
-    raise RuntimeError("Gemini returned no image bytes")
+                if inline is None:
+                    continue
+                # Preferred: helper method to return a PIL image object
+                try:
+                    img = part.as_image()
+                    if img is not None:
+                        buf = io.BytesIO()
+                        img.save(buf, format="PNG")
+                        return buf.getvalue()
+                except Exception:
+                    pass
+                # Fallback: raw bytes access if present
+                data = getattr(inline, "data", None)
+                if isinstance(data, (bytes, bytearray)):
+                    return bytes(data)
+        except Exception:
+            pass
+
+        # Fallback to candidate-based structure (older / alternate shapes)
+        try:
+            candidates = getattr(response, "candidates", None) or []
+            for cand in candidates:
+                content = getattr(cand, "content", None)
+                parts = getattr(content, "parts", None) or []
+                for part in parts:
+                    inline = getattr(part, "inline_data", None)
+                    data = getattr(inline, "data", None) if inline else None
+                    if isinstance(data, (bytes, bytearray)):
+                        return bytes(data)
+        except Exception:
+            pass
+
+        return None
+
+    # Client auto-picks GOOGLE_API_KEY / GEMINI_API_KEY from env per google-genai docs.
+    client = genai.Client()
+    try:
+        resp = client.models.generate_content(
+            model=model_name,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                response_modalities=["IMAGE"],
+                image_config=types.ImageConfig(
+                    image_size=image_size,
+                ),
+            ),
+        )
+        emit_llm_usage_event(
+            ctx=UsageContext(endpoint="POST /image-gen/generate", job_id=job_id, job_type="IMAGE_GEN"),
+            provider="google",
+            model=model_name,
+            operation="models.generate_content",
+            subtask="image_gen.generate_image_nano_banana",
+            latency_ms=int((time.time() - t0) * 1000),
+            success=True,
+            retry_attempt=1,
+            usage={**normalize_gemini_usage(resp), "imagesGenerated": 1},
+        )
+    except Exception as e:
+        emit_llm_usage_event(
+            ctx=UsageContext(endpoint="POST /image-gen/generate", job_id=job_id, job_type="IMAGE_GEN"),
+            provider="google",
+            model=model_name,
+            operation="models.generate_content",
+            subtask="image_gen.generate_image_nano_banana",
+            latency_ms=int((time.time() - t0) * 1000),
+            success=False,
+            retry_attempt=1,
+            error_type=type(e).__name__,
+        )
+        raise
+
+    data_bytes = _extract_first_image_bytes(resp)
+    if not data_bytes:
+        raise RuntimeError("Gemini returned no image bytes")
+    return base64.b64encode(data_bytes).decode("utf-8")
 
 
 def lambda_handler(event, _context):
@@ -587,9 +733,9 @@ def lambda_handler(event, _context):
                 product_image_bytes = base64.b64decode(product_image_data["base64"])
 
         # Optional doc analysis (short)
-        analysis_json_or_text = _summarize_docs_if_needed(openai_client, foundational_text, language)
+        analysis_json_or_text = _summarize_docs_if_needed(openai_client, foundational_text, language, job_id)
 
-        assignments = _match_angles_to_images(openai_client, selected_avatar, selected_angles, library, forced_ids)
+        assignments = _match_angles_to_images(openai_client, selected_avatar, selected_angles, library, forced_ids, job_id)
         logger.info("Assigned %s slots to reference images", len(assignments))
 
         generated: List[dict] = []
@@ -740,6 +886,7 @@ if __name__ == "__main__":
         results = json.load(f)
         
     results = results["full_result"]
+    r = results["results"]
     event = {
         "job_id": results["job_id"],
         "result_prefix": f"results/{results['job_id']}",

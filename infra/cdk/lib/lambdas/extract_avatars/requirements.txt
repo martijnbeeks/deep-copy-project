@@ -1,7 +1,0 @@
-playwright==1.42.0
-openai==1.99.3
-pydantic==2.6.1
-boto3
-requests
-beautifulsoup4
-Pillow

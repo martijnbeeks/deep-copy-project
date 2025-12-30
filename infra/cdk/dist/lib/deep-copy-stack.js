@@ -88,6 +88,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
                 PLAYWRIGHT_BROWSERS_PATH: '/var/task/.playwright',
                 JOBS_TABLE_NAME: jobsTable.tableName,
                 RESULTS_BUCKET: resultsBucket.bucketName,
+                LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
                 ENVIRONMENT: 'prod',
             },
         });
@@ -114,6 +115,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
                 PLAYWRIGHT_BROWSERS_PATH: '/var/task/.playwright',
                 JOBS_TABLE_NAME: jobsTable.tableName,
                 RESULTS_BUCKET: resultsBucket.bucketName,
+                LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
                 ENVIRONMENT: 'prod',
                 API_VERSION: 'v2',
             },
@@ -207,6 +209,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
                 PLAYWRIGHT_BROWSERS_PATH: '/var/task/.playwright',
                 JOBS_TABLE_NAME: jobsTable.tableName,
                 RESULTS_BUCKET: resultsBucket.bucketName,
+                LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
             },
         });
         // Grant access to the same secret as the ECS pipeline
@@ -254,6 +257,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
             environment: {
                 JOBS_TABLE_NAME: jobsTable.tableName,
                 RESULTS_BUCKET: resultsBucket.bucketName,
+                LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
             },
         });
         // Grant access to the same secret as the ECS pipeline
@@ -302,6 +306,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
             environment: {
                 JOBS_TABLE_NAME: jobsTable.tableName,
                 RESULTS_BUCKET: resultsBucket.bucketName,
+                LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
                 IMAGE_LIBRARY_PREFIX: 'image_library',
                 IMAGE_DESCRIPTIONS_KEY: 'image_library/static-library-descriptions.json',
                 SECRET_ID: 'deepcopy-secret-dev',

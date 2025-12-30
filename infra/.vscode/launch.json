@@ -16,7 +16,7 @@
         {
             "name": "Debug jobs",
             "type": "python",
-            "python": "${workspaceFolder}/ai_pipeline/.venv/bin/python",
+            "python": "${workspaceFolder}/cdk/lib/lambdas/process_job/.venv/bin/python",
             "request": "launch",
             "program": "${workspaceFolder}/cdk/lib/lambdas/process_job/handler.py",
             "args": ["run"],
@@ -33,7 +33,7 @@
         {
             "name": "Debug jobs V2",
             "type": "python",
-            "python": "${workspaceFolder}/ai_pipeline/.venv/bin/python",
+            "python": "${workspaceFolder}/cdk/lib/lambdas/process_job_v2/.venv/bin/python",
             "request": "launch",
             "program": "${workspaceFolder}/cdk/lib/lambdas/process_job_v2/handler.py",
             "args": ["run"],
@@ -49,13 +49,13 @@
         {
             "name": "Debug avatar",
             "type": "python",
-            "python": "${workspaceFolder}/ai_pipeline/.venv/bin/python",
+            "python": "${workspaceFolder}/cdk/lib/lambdas/extract_avatars/.venv/bin/python",
             "request": "launch",
             "program": "${workspaceFolder}/cdk/lib/lambdas/extract_avatars/handler.py",
             "args": ["run"],
             "console": "integratedTerminal",
             "justMyCode": true,
-            "cwd": "${workspaceFolder}/ai_pipeline",
+            "cwd": "${workspaceFolder}/cdk/lib/lambdas/extract_avatars",
             "env": {
                 "AWS_PROFILE": "personal-cdk-dev",
                 "job_id": "2a122590-f4a3-4770-a275-81e7cc5d8062",
@@ -67,7 +67,7 @@
         {
             "name": "Debug swipe",
             "type": "python",
-            "python": "${workspaceFolder}/ai_pipeline/.venv/bin/python",
+            "python": "${workspaceFolder}/cdk/lib/lambdas/write_swipe/.venv/bin/python",
             "request": "launch",
             "program": "${workspaceFolder}/cdk/lib/lambdas/write_swipe/handler.py",
             "args": ["run"],
@@ -83,7 +83,7 @@
         {
             "name": "Image Gen Process",
             "type": "python",
-            "python": "${workspaceFolder}/ai_pipeline/.venv/bin/python",
+            "python": "${workspaceFolder}/cdk/lib/lambdas/image_gen_process/.venv/bin/python",
             "request": "launch",
             "program": "${workspaceFolder}/cdk/lib/lambdas/image_gen_process/handler.py",
             "args": ["run"],

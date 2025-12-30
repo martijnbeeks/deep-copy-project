@@ -2,21 +2,18 @@
 name = "deepcopy-image-gen-process"
 version = "0.1.0"
 description = "Lambda image generation processor (static ad variations)"
-readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "openai>=1.40.0",
   "requests>=2.31.0",
   "cloudflare>=4.0.0",
   "pillow>=10.0.0",
-  "google-generativeai>=0.8.0",
+  "google-genai>=1.0.0",
   "boto3>=1.26.0",
 ]
 
 [tool.setuptools]
-
-[tool.setuptools.packages.find]
-where = ["src"]
+py-modules = ["handler", "llm_usage"]
 
 [build-system]
 requires = ["setuptools", "wheel"]
