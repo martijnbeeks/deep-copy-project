@@ -1434,7 +1434,7 @@ def run_pipeline(event, context):
             }
         
         avatar_results = []
-        with ThreadPoolExecutor(max_workers=min(6, len(identified_avatars.avatars))) as executor:
+        with ThreadPoolExecutor(max_workers=min(10, len(identified_avatars.avatars))) as executor:
             futures = {executor.submit(complete_avatar_with_beliefs, ia): ia for ia in identified_avatars.avatars}
             for future in as_completed(futures):
                 ia = futures[future]
