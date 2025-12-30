@@ -47,7 +47,6 @@ RUN echo "Build timestamp: $(date)" > /tmp/build_timestamp
 COPY handler.py ${LAMBDA_TASK_ROOT}/
 COPY data_models.py ${LAMBDA_TASK_ROOT}/
 COPY llm_usage.py ${LAMBDA_TASK_ROOT}/
-COPY content/ ${LAMBDA_TASK_ROOT}/content/
 
 # Set the CMD to your handler
 CMD [ "handler.lambda_handler" ]
