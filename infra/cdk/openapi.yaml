@@ -1256,10 +1256,6 @@ components:
             research_page_analysis:
               type: string
               description: Analysis of the sales page
-            doc1_analysis:
-              type: string
-            doc2_analysis:
-              type: string
             deep_research_prompt:
               type: string
               description: The prompt used for deep research
@@ -1345,6 +1341,9 @@ components:
         status:
           type: string
           description: Current job status, e.g. SUBMITTED, RUNNING, SUCCEEDED, FAILED
+        api_version:
+          type: string
+          description: API version used to submit the job (e.g., 'v2')
     JobResult:
       type: object
       description: Structured JSON produced by the pipeline including rewritten advertorial content.
@@ -1357,6 +1356,9 @@ components:
           format: date-time
         job_id:
           type: string
+        api_version:
+          type: string
+          description: API version (v1)
         results:
           type: object
           additionalProperties: false

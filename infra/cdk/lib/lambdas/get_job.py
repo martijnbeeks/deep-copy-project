@@ -39,14 +39,15 @@ def handler(event, _context):
         return _response(404, "Not found")
 
     status = item.get("status", {}).get("S")
+    api_version = item.get("apiVersion", {}).get("S")
 
+    response_body = {
+        "jobId": job_id,
+        "status": status,
+    }
+    if api_version:
+        response_body["api_version"] = api_version
 
-    return _response(
-        200,
-        {
-            "jobId": job_id,
-            "status": status,
-        },
-    )
+    return _response(200, response_body)
 
 

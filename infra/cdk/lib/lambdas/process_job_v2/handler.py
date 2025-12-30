@@ -485,112 +485,340 @@ class DeepCopy:
             logger.error(f"Error analyzing research page: {e}")
             raise
     
-    def analyze_research_document(self, doc_path, doc_name):
-        """Analyze a research document"""
-        try:
-            with open(doc_path, "r", encoding="utf-8") as f:
-                content = f.read()
-            
-            prompt = f"""
-            Please analyze this research document and provide a summary of the key insights for conducting market research:\n\n{content}
-            """
-            
-            logger.info(f"Calling GPT-5 API for research document analysis: {doc_name}")
-            t0 = time.time()
-            try:
-                response = self.client.responses.create(
-                    model=self.openai_model,
-                    input=[{
-                        "role": "user",
-                        "content": [{"type": "input_text", "text": prompt}]
-                    }]
-                )
-                self._emit_openai(
-                    operation="responses.create",
-                    subtask=f"process_job_v2.analyze_research_document.{doc_name}",
-                    model=self.openai_model,
-                    t0=t0,
-                    success=True,
-                    response=response,
-                )
-            except Exception as e:
-                self._emit_openai(
-                    operation="responses.create",
-                    subtask=f"process_job_v2.analyze_research_document.{doc_name}",
-                    model=self.openai_model,
-                    t0=t0,
-                    success=False,
-                    error=e,
-                )
-                raise
-            logger.info(f"GPT-5 API call completed for research document analysis: {doc_name}")
-            
-            return response.output_text
-            
-        except Exception as e:
-            logger.error(f"Error analyzing research document {doc_name}: {e}")
-            raise
-    
-    def create_deep_research_prompt(self, sales_page_url, research_page_analysis, doc1_analysis, doc2_analysis, gender=None, location=None, research_requirements=None):
+    def create_deep_research_prompt(self, sales_page_url, research_page_analysis, gender=None, location=None, research_requirements=None, language_of_output="English"):
         """Create a comprehensive research prompt"""
-        try:
-            prompt = f"""
-            Now that you understand how to conduct research, create a full, best-practice prompt for Deep Research tool to research products from {sales_page_url} according to the sections below. 
-            Please only return the actual prompt that directly can be used in the Deep Research tool, no other text or return questions.
-            Do not ask to add any appendices, everything should be text and in a single document.
+        # try:
+        #     prompt = f"""
+        #     Now that you understand how to conduct research, create a full, best-practice prompt for Deep Research tool to research products from {sales_page_url} according to the sections below. 
+        #     Please only return the actual prompt that directly can be used in the Deep Research tool, no other text or return questions.
+        #     Do not ask to add any appendices, everything should be text and in a single document.
             
-            Please ensure that the deep research prompt covers multiple potential customer avatars and marketing angles.
+        #     Please ensure that the deep research prompt covers multiple potential customer avatars and marketing angles.
             
-            Inputs to consider:
-            - Gender: {gender if gender else "Not specified"}
-            - Location: {location if location else "Not specified"}
-            - Specific Research Requirements: {research_requirements if research_requirements else "None"}
+        #     Inputs to consider:
+        #     - Gender: {gender if gender else "Not specified"}
+        #     - Location: {location if location else "Not specified"}
+        #     - Specific Research Requirements: {research_requirements if research_requirements else "None"}
 
-            Research Page analysis:
-            {research_page_analysis}
+        #     Research Page analysis:
+        #     {research_page_analysis}
 
-            Research doc1 analysis:
-            {doc1_analysis}
+        #     Research doc1 analysis:
+        #     {doc1_analysis}
 
-            Research doc2 analysis:
-            {doc2_analysis}
-            """
+        #     Research doc2 analysis:
+        #     {doc2_analysis}
+        #     """
             
-            logger.info("Calling GPT-5 API to create deep research prompt")
-            t0 = time.time()
-            try:
-                response = self.client.responses.create(
-                    model=self.openai_model,
-                    input=[{
-                        "role": "user",
-                        "content": [{"type": "input_text", "text": prompt}]
-                    }]
-                )
-                self._emit_openai(
-                    operation="responses.create",
-                    subtask="process_job_v2.create_deep_research_prompt",
-                    model=self.openai_model,
-                    t0=t0,
-                    success=True,
-                    response=response,
-                )
-            except Exception as e:
-                self._emit_openai(
-                    operation="responses.create",
-                    subtask="process_job_v2.create_deep_research_prompt",
-                    model=self.openai_model,
-                    t0=t0,
-                    success=False,
-                    error=e,
-                )
-                raise
-            logger.info("GPT-5 API call completed for deep research prompt creation")
+        #     logger.info("Calling GPT-5 API to create deep research prompt")
+        #     t0 = time.time()
+        #     try:
+        #         response = self.client.responses.create(
+        #             model=self.openai_model,
+        #             input=[{
+        #                 "role": "user",
+        #                 "content": [{"type": "input_text", "text": prompt}]
+        #             }]
+        #         )
+        #         self._emit_openai(
+        #             operation="responses.create",
+        #             subtask="process_job_v2.create_deep_research_prompt",
+        #             model=self.openai_model,
+        #             t0=t0,
+        #             success=True,
+        #             response=response,
+        #         )
+        #     except Exception as e:
+        #         self._emit_openai(
+        #             operation="responses.create",
+        #             subtask="process_job_v2.create_deep_research_prompt",
+        #             model=self.openai_model,
+        #             t0=t0,
+        #             success=False,
+        #             error=e,
+        #         )
+        #         raise
+        #     logger.info("GPT-5 API call completed for deep research prompt creation")
             
-            return response.output_text
+        #     return response.output_text
             
-        except Exception as e:
-            logger.error(f"Error creating deep research prompt: {e}")
-            raise
+        # except Exception as e:
+        #     logger.error(f"Error creating deep research prompt: {e}")
+        #     raise
+        prompt = f"""
+        You are the Deep Research tool. Conduct comprehensive, unbiased, full-spectrum research ONLY (no marketing, no copywriting) using the inputs and requirements below.
+
+        ===============================================================================
+        INPUTS (PLACEHOLDERS — DO NOT ASK QUESTIONS)
+        ===============================================================================
+        - sales_page_url: {sales_page_url}
+        - gender: {gender}                                         (e.g., “Female”, “Male”, “Mixed”, “Not specified”)
+        - location: {location}                                     (country/region/city; “Not specified” allowed)
+        - specific_research_requirements: {research_requirements}   (“None” allowed)
+        - language_of_output: {language_of_output}                 (e.g., “English”)
+        - Product Page analysis: {research_page_analysis}
+
+        ===============================================================================
+        NON-NEGOTIABLE RULES (RESEARCH ONLY)
+        ===============================================================================
+        This is RESEARCH ONLY. Do NOT:
+        - Choose marketing angles or hooks
+        - Identify “avatars to target” as recommendations
+        - Make positioning recommendations
+        - Suggest creative direction
+        - Write any marketing copy (ads, landing copy, headlines, email copy, scripts)
+
+        You MUST:
+        - Mine real customer language from actual sources
+        - Document the complete emotional landscape
+        - Extract exact quotes, phrases, and words people use (no paraphrasing for quotes)
+        - Map all failed solutions and why they failed
+        - Identify patterns across large volumes of data
+        - Cover multiple potential customer avatars AND multiple marketing angles ONLY as OBSERVATIONS found in the data (no recommendations)
+
+        If any instruction conflicts, obey “RESEARCH ONLY” and “NO RECOMMENDATIONS”.
+
+        ===============================================================================
+        SCOPE & CONTEXT SETUP (MANDATORY FIRST STEPS)
+        ===============================================================================
+        1) Visit and analyze {sales_page_url} to extract and summarize (briefly) the factual product context needed for research:
+        - What the product is, category, promised outcomes/claims, mechanism, format (supplement/device/service/app), pricing if visible, usage protocol, risk/contraindications if stated, and any compliance disclaimers.
+        - Capture exact on-page phrases that describe outcomes, mechanisms, or target use-cases (quote small excerpts as needed).
+
+        2) Define research search terms and synonyms from:
+        - product_name, product_brief_description, category keywords inferred from {sales_page_url}, and the problem the product solves.
+        - Include condition/problem synonyms, colloquial terms, and common misspellings.
+
+        3) Respect the inputs:
+        - Gender: {gender}
+        - Location/Primary market: {location}
+        - Specific Research Requirements: {research_requirements}
+        If “Not specified”, broaden the search and then report what the evidence shows.
+
+        ===============================================================================
+        SOURCES TO MINE (PRIORITIZE REAL CUSTOMER LANGUAGE)
+        ===============================================================================
+        Mine and cite evidence from:
+        - Reddit threads in relevant subreddits
+        - Amazon product reviews (1-star, 3-star, 5-star) and other major retailers where applicable
+        - YouTube video comments on relevant videos
+        - Quora Q&A
+        - Public Facebook groups/pages (publicly accessible content only)
+        - Health/hobby forums and communities
+        - Google “People Also Ask” queries (capture the query language verbatim)
+        - Independent review sites, niche communities, and reputable publications where relevant
+        - Competitor sites and competitor review pages
+
+        For every claim, pattern, or notable point, provide source evidence. For every quote, provide attribution details.
+
+        ===============================================================================
+        EVIDENCE, QUOTATION, AND ATTRIBUTION REQUIREMENTS
+        ===============================================================================
+        - Quotes must be copied verbatim. Do not “clean up” grammar.
+        - For each quote include:
+        - Source type (Reddit/Amazon/YouTube/etc.)
+        - Identifier (subreddit + thread title, product listing name, video title/channel, forum name/thread)
+        - Date (if available)
+        - Link/reference (as available in the environment)
+        - Distinguish between:
+        - (A) Customer-reported experiences
+        - (B) Opinions/beliefs/narratives (including conspiratorial or suppression claims)
+        - (C) Clinically or scientifically supported statements (only when backed by reputable sources)
+
+        Do not validate misinformation. Document it as “observed narrative” with attribution.
+
+        ===============================================================================
+        OUTPUT FORMAT REQUIREMENTS (SINGLE DOCUMENT)
+        ===============================================================================
+        - Output language: {language_of_output}
+        - Single document, no appendices, text only
+        - Minimum length: 6 pages equivalent
+        - Clear section headers matching Parts 1–9 below
+        - Dense with evidence: include citations/attribution throughout
+        - No marketing recommendations; no copywriting
+
+        ===============================================================================
+        RESEARCH DOCUMENT STRUCTURE (FOLLOW EXACTLY)
+        ===============================================================================
+
+        PART 1: UNDERSTANDING THE MARKET DEMOGRAPHIC
+        1. WHO ARE THESE PEOPLE?
+        - Demographics: age ranges, gender, income levels, occupations
+        - Life stage and circumstances
+        - Where they spend time online (forums, platforms, communities)
+        - Note differences by {location} vs other regions where observed
+
+        2. ATTITUDES AND WORLDVIEW
+        - How do they see themselves?
+        - What do they value most?
+        - What are they proud of? Ashamed of?
+        - How do they want others to perceive them?
+
+        3. HOPES AND DREAMS
+        - Ideal outcome: what does success look like?
+        - What would life be like if the problem was solved?
+        - What would they be able to do that they can’t do now?
+        - What identity do they want to reclaim or achieve?
+
+        4. VICTORIES AND FAILURES
+        - Small wins
+        - Crushing defeats
+        - The moment they realized it was a real problem
+        - “Rock bottom” stories (quote-heavy)
+
+        5. OUTSIDE FORCES THEY BLAME
+        - Who/what they blame: doctors, system, genetics, age, society, employers, family, etc.
+        - Past bad advice
+        - Companies/products that failed them
+
+        6. PREJUDICES AND BIASES
+        - Skepticism triggers
+        - What they’ve been burned by
+        - Solutions dismissed immediately
+        - Claims that cause eye-rolls
+
+        7. CORE BELIEFS ABOUT THE PROBLEM
+        - Believed causes
+        - Believed requirements to fix
+        - What they believe is impossible
+        - Limiting beliefs
+
+        PART 2: EXISTING SOLUTIONS LANDSCAPE
+        8. WHAT ARE THEY CURRENTLY USING?
+        - Exhaustive list: OTC, prescriptions, devices, services, DIY remedies, lifestyle changes
+        - “Default” solutions and the most popular ones
+        - Differences by {location} where observed
+
+        9. EXPERIENCE WITH CURRENT SOLUTIONS
+        - What they like
+        - What they hate
+        - What’s missing from everything they tried
+        - Price/effort/time/trust barriers (from evidence)
+
+        10. HORROR STORIES AND FAILURES
+            - Specific stories of failure
+            - Things that made the issue worse
+            - Money wasted
+            - Side effects/negative experiences
+
+        11. BELIEF IN SOLUTIONS
+            - Do they believe a real solution exists?
+            - Hopeful vs defeated language
+            - What would convince them something new works? (evidence only)
+
+        PART 3: CURIOSITY AND INTRIGUE ELEMENTS
+        12. UNIQUE HISTORICAL APPROACHES
+            - Forgotten solutions and pre-1960s approaches
+            - Traditional/folk medicine and historical practices
+            - “Before modern solutions” behaviors
+            - Clearly separate history vs anecdote; cite sources
+
+        13. SUPPRESSION OR CONSPIRACY NARRATIVES
+            - “Hidden solutions” beliefs
+            - Suppression/cover-up narratives
+            - “They don’t want you to know” themes
+            - Present as observed narratives only; do not endorse; attribute sources
+
+        PART 4: “FALL FROM EDEN” RESEARCH
+        14. WHEN DID THIS PROBLEM NOT EXIST?
+            - Historical prevalence or when it was rarer
+            - What changed and when
+            - Epidemiology or credible historical data (cite reputable sources)
+
+        15. CORRUPTING FORCES
+            - Environmental/diet/lifestyle shifts
+            - Policies/industry changes blamed
+            - “Real reason this is happening now” (separate evidence vs narrative)
+
+        16. ISOLATED POPULATIONS
+            - Populations with low prevalence (if supported by credible evidence)
+            - What differs in lifestyle/diet/environment
+            - Lessons as neutral observations, not recommendations
+
+        PART 5: COMPETITOR LANDSCAPE
+        17. TOP COMPETITORS
+            - Top competitors
+            - Positioning and price points (as stated/observable)
+            - Mechanisms/claims (quote competitors directly where useful)
+            - What seems to be working in their marketing (observable signals only, no recommendations)
+
+        18. COMPETITOR CUSTOMER REVIEWS
+            - What customers love
+            - What customers hate
+            - Gaps not being filled (from review evidence)
+            - Recurring complaints across competitors
+
+        19. COMPETITOR WEAKNESSES
+            - Vulnerabilities evidenced by customer complaints
+            - Claims they are not making (observable)
+            - Objections not being addressed (evidence-based)
+
+        PART 6: RAW LANGUAGE MAP (CRITICAL)
+
+        Sources to mine:
+        - Reddit
+        - Amazon/retailer reviews
+        - YouTube comments
+        - Quora
+        - Public Facebook groups/pages
+        - Forums/communities
+        - “People Also Ask” queries (verbatim)
+
+        Organize into these categories (quotes only, minimal commentary):
+        20. PAIN STATEMENTS (15–20 quotes)
+        21. DESIRE STATEMENTS (15–20 quotes)
+        22. FAILURE STATEMENTS (10–15 quotes)
+        23. FRUSTRATION STATEMENTS (10–15 quotes)
+        24. BELIEF STATEMENTS (10–15 quotes)
+        25. OBJECTION STATEMENTS (10–15 quotes)
+
+        Each quote must include source + identifier + date if available.
+
+        PART 7: PATTERN SYNTHESIS (EVIDENCE-BASED)
+        26. TOP 10 PAIN PATTERNS
+            - Rank by frequency and intensity; cite representative quotes for each
+
+        27. TOP 10 DESIRE PATTERNS
+            - Rank by emotional pull and frequency; cite representative quotes for each
+
+        28. TOP 5 FAILED SOLUTION PATTERNS
+            - What failed most and why; cite representative quotes
+
+        29. TOP 5 OBJECTION PATTERNS
+            - Common objections to new solutions; cite representative quotes
+
+        30. TOP 5 BELIEF PATTERNS
+            - Most common beliefs; label misconceptions; cite representative quotes
+
+        31. EMOTIONAL LANDSCAPE MAP
+            - Map primary emotions, intensity, and journey stages (awareness → experimentation → fatigue/hope)
+            - Support with quotes
+
+        PART 8: OBSERVABLE MARKET SEGMENTS (OBSERVATION ONLY)
+        32. SEGMENTS VISIBLE IN RESEARCH (no recommendations)
+            - Different types visible in the data (life stage, severity, constraints, motivation)
+            - Different trigger moments/entry points
+            - For each segment: defining features + representative quotes
+            - Do NOT recommend targeting; only document
+
+        PART 9: TOP INSIGHTS SUMMARY (NO RECOMMENDATIONS)
+        33. KEY DISCOVERIES
+            - 10–15 most important insights (evidence-backed)
+            - Surprising findings
+            - Market gaps as observed unmet needs (no strategy)
+            - What “success” language looks like vs “failure” language (quote-supported)
+
+        ===============================================================================
+        QUALITY CONTROL CHECKLIST (MUST EXECUTE)
+        ===============================================================================
+        Before finalizing, confirm:
+        - At least 6 pages equivalent length
+        - No marketing copy, no positioning advice, no creative direction
+        - Multiple potential customer avatars and angles are covered as OBSERVATIONS only
+        - Specific Research Requirements ({research_requirements}) are addressed across relevant sections
+        - Clear labeling of narratives vs evidence where necessary
+        """
+        return prompt
     
     def execute_deep_research(self, prompt):
         """Execute deep research using Perplexity SDK"""
@@ -1174,17 +1402,11 @@ def run_pipeline(event, context):
         logger.info("Step 2: Analyzing research documents")
         
         
-        doc1_analysis = open(f"{content_dir}doc1_analysis.txt", "r").read()
-        doc2_analysis = open(f"{content_dir}doc2_analysis.txt", "r").read()
-
-        
         # Step 3: Create deep research prompt
         logger.info("Step 3: Creating deep research prompt")
         deep_research_prompt = generator.create_deep_research_prompt(
             sales_page_url, 
             research_page_analysis, 
-            doc1_analysis, 
-            doc2_analysis, 
             gender=gender,
             location=location,
             research_requirements=research_requirements
@@ -1242,8 +1464,6 @@ def run_pipeline(event, context):
         logger.info("Step 7: Saving results")
         all_results = {
             "research_page_analysis": research_page_analysis,
-            "doc1_analysis": doc1_analysis,
-            "doc2_analysis": doc2_analysis,
             "deep_research_prompt": deep_research_prompt,
             "deep_research_output": deep_research_output,
             "avatars": avatar_list.model_dump(),

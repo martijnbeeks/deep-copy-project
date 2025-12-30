@@ -11,5 +11,6 @@ __pycache__
 *.pyzw
 .env
 *.txt
+!**/lambdas/**/content/*.txt
 .venv/
 **/lambdas/**/.venv/
