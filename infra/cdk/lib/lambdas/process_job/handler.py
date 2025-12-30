@@ -12,12 +12,14 @@ import io
 from PIL import Image
 from botocore.exceptions import ClientError
 from openai import OpenAI
+from perplexity import Perplexity
 import boto3
 import sys
 import logging
 from datetime import datetime, timezone
 import uuid
 import anthropic
+import time
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional, Literal, Any, Dict, Union
@@ -27,6 +29,8 @@ from playwright.sync_api import sync_playwright
 
 
 from data_models import Avatar, OfferBrief
+
+from llm_usage import UsageContext, emit_llm_usage_event, normalize_openai_usage, normalize_perplexity_usage
 
 # Import extract_clean_text_from_html from test_anthropic since utils.py was removed
 def extract_clean_text_from_html(html_file_path: str) -> str:
@@ -341,6 +345,7 @@ class DeepCopy:
         self.openai_model = "gpt-5-mini"
         self.secrets = self.get_secrets(secret_id)
         self.client = OpenAI(api_key=self.secrets["OPENAI_API_KEY"]) 
+        self.pplx_client = Perplexity(api_key=self.secrets["PERPLEXITY_API_KEY"])
         self.anthropic_client = anthropic.Anthropic(api_key=self.secrets["ANTHROPIC_API_KEY"])
         aws_region = os.environ.get('AWS_REGION') or os.environ.get('AWS_DEFAULT_REGION') or 'eu-west-1'
         self.s3_client = boto3.client('s3', region_name=aws_region)
@@ -349,7 +354,64 @@ class DeepCopy:
         # Optional DynamoDB for job status updates
         self.ddb_client = boto3.client('dynamodb', region_name=aws_region)
         self.jobs_table_name = os.environ.get('JOBS_TABLE_NAME', "DeepCopyStack-JobsTable1970BC16-1BVYVOHK8WXTU")
-        
+        # Telemetry context (set by run_pipeline)
+        self.usage_ctx: UsageContext | None = None
+        self.aws_request_id: str | None = None
+
+    def _emit_openai(
+        self,
+        *,
+        operation: str,
+        subtask: str,
+        model: str,
+        t0: float,
+        success: bool,
+        response: object | None = None,
+        error: Exception | None = None,
+    ) -> None:
+        if not self.usage_ctx:
+            return
+        emit_llm_usage_event(
+            ctx=self.usage_ctx,
+            provider="openai",
+            model=model,
+            operation=operation,
+            subtask=subtask,
+            latency_ms=int((time.time() - t0) * 1000),
+            success=success,
+            retry_attempt=1,
+            aws_request_id=self.aws_request_id,
+            error_type=type(error).__name__ if error else None,
+            usage=normalize_openai_usage(response) if response is not None else None,
+        )
+
+    def _emit_perplexity(
+        self,
+        *,
+        operation: str,
+        subtask: str,
+        model: str,
+        t0: float,
+        success: bool,
+        response: object | None = None,
+        error: Exception | None = None,
+    ) -> None:
+        if not self.usage_ctx:
+            return
+        emit_llm_usage_event(
+            ctx=self.usage_ctx,
+            provider="perplexity",
+            model=model,
+            operation=operation,
+            subtask=subtask,
+            latency_ms=int((time.time() - t0) * 1000),
+            success=success,
+            retry_attempt=1,
+            aws_request_id=self.aws_request_id,
+            error_type=type(error).__name__ if error else None,
+            usage=normalize_perplexity_usage(response) if response is not None else None,
+        )
+
     def get_secrets(self, secret_id):
         """Get secrets from AWS Secrets Manager"""
         try:
@@ -441,10 +503,30 @@ class DeepCopy:
             logger.info("Calling GPT-5 Vision API for research page analysis")
             content_payload = [{"type": "input_text", "text": prompt}, {"type": "input_image", "image_url": f"data:image/jpeg;base64,{base64_image}"}]
             
-            response = self.client.responses.create(
-                model=self.openai_model,
-                input=[{"role": "user", "content": content_payload}]
-            )
+            t0 = time.time()
+            try:
+                response = self.client.responses.create(
+                    model=self.openai_model,
+                    input=[{"role": "user", "content": content_payload}]
+                )
+                self._emit_openai(
+                    operation="responses.create",
+                    subtask="process_job.analyze_research_page",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=True,
+                    response=response,
+                )
+            except Exception as e:
+                self._emit_openai(
+                    operation="responses.create",
+                    subtask="process_job.analyze_research_page",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=False,
+                    error=e,
+                )
+                raise
             logger.info("GPT-5 Vision API call completed for research page analysis")
             return response.output_text
             
@@ -463,13 +545,33 @@ class DeepCopy:
             """
             
             logger.info(f"Calling GPT-5 API for research document analysis: {doc_name}")
-            response = self.client.responses.create(
-                model=self.openai_model,
-                input=[{
-                    "role": "user", 
-                    "content": [{"type": "input_text", "text": prompt}]
-                }]
-            )
+            t0 = time.time()
+            try:
+                response = self.client.responses.create(
+                    model=self.openai_model,
+                    input=[{
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": prompt}]
+                    }]
+                )
+                self._emit_openai(
+                    operation="responses.create",
+                    subtask=f"process_job.analyze_research_document.{doc_name}",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=True,
+                    response=response,
+                )
+            except Exception as e:
+                self._emit_openai(
+                    operation="responses.create",
+                    subtask=f"process_job.analyze_research_document.{doc_name}",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=False,
+                    error=e,
+                )
+                raise
             logger.info(f"GPT-5 API call completed for research document analysis: {doc_name}")
             
             return response.output_text
@@ -500,13 +602,33 @@ class DeepCopy:
             """
             
             logger.info("Calling GPT-5 API to create deep research prompt")
-            response = self.client.responses.create(
-                model=self.openai_model,
-                input=[{
-                    "role": "user", 
-                    "content": [{"type": "input_text", "text": prompt}]
-                }]
-            )
+            t0 = time.time()
+            try:
+                response = self.client.responses.create(
+                    model=self.openai_model,
+                    input=[{
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": prompt}]
+                    }]
+                )
+                self._emit_openai(
+                    operation="responses.create",
+                    subtask="process_job.create_deep_research_prompt",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=True,
+                    response=response,
+                )
+            except Exception as e:
+                self._emit_openai(
+                    operation="responses.create",
+                    subtask="process_job.create_deep_research_prompt",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=False,
+                    error=e,
+                )
+                raise
             logger.info("GPT-5 API call completed for deep research prompt creation")
             
             return response.output_text
@@ -516,34 +638,40 @@ class DeepCopy:
             raise
     
     def execute_deep_research(self, prompt):
-        """Execute deep research using Perplexity API"""
+        """Execute deep research using Perplexity SDK"""
         try:
             model_name = "sonar-deep-research"
-            api_key = self.secrets["PERPLEXITY_API_KEY"]
-            if not api_key:
-                raise RuntimeError("PERPLEXITY_API_KEY not set in environment")
-
-            url = "https://api.perplexity.ai/chat/completions"
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            }
-            payload = {
-                "model": model_name,
-                "messages": [
-                    {"role": "system", "content": "You are a world-class research assistant. Please execute the research prompt below and adhere to the instructions provided."},
-                    {"role": "user", "content": prompt},
-                ],
-            }
             
             logger.info("Calling Perplexity API for deep research execution")
-            resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=1000)
-            resp.raise_for_status()
-            data = resp.json()
-            logger.info("Perplexity API call completed for deep research execution")
-            
-            content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-            return content or json.dumps(data)
+            t0 = time.time()
+            try:
+                response = self.pplx_client.chat.completions.create(
+                    model=model_name,
+                    messages=[
+                        {"role": "system", "content": "You are a world-class research assistant. Please execute the research prompt below and adhere to the instructions provided."},
+                        {"role": "user", "content": prompt},
+                    ],
+                )
+                self._emit_perplexity(
+                    operation="chat.completions.create",
+                    subtask="process_job.execute_deep_research",
+                    model=model_name,
+                    t0=t0,
+                    success=True,
+                    response=response,
+                )
+                logger.info("Perplexity API call completed for deep research execution")
+                return response.choices[0].message.content
+            except Exception as e:
+                self._emit_perplexity(
+                    operation="chat.completions.create",
+                    subtask="process_job.execute_deep_research",
+                    model=model_name,
+                    t0=t0,
+                    success=False,
+                    error=e,
+                )
+                raise
             
         except Exception as e:
             logger.error(f"Error executing deep research: {e}")
@@ -561,14 +689,34 @@ class DeepCopy:
             """
 
             logger.info("Calling GPT-5 API to complete avatar sheet")
-            response = self.client.responses.parse(
-                model=self.openai_model,
-                input=[{
-                    "role": "user", 
-                    "content": [{"type": "input_text", "text": prompt}]
-                }],
-                text_format=Avatar,
-            )
+            t0 = time.time()
+            try:
+                response = self.client.responses.parse(
+                    model=self.openai_model,
+                    input=[{
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": prompt}]
+                    }],
+                    text_format=Avatar,
+                )
+                self._emit_openai(
+                    operation="responses.parse",
+                    subtask="process_job.complete_avatar_sheet",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=True,
+                    response=response,
+                )
+            except Exception as e:
+                self._emit_openai(
+                    operation="responses.parse",
+                    subtask="process_job.complete_avatar_sheet",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=False,
+                    error=e,
+                )
+                raise
             logger.info("GPT-5 API call completed for avatar sheet completion")
             
             return response.output_parsed, response.output_text
@@ -588,14 +736,34 @@ class DeepCopy:
             """
 
             logger.info("Calling GPT-5 API to complete offer brief")
-            response = self.client.responses.parse(
-                model=self.openai_model,
-                input=[{
-                    "role": "user", 
-                    "content": [{"type": "input_text", "text": prompt}]
-                }],
-                text_format=OfferBrief,
-            )
+            t0 = time.time()
+            try:
+                response = self.client.responses.parse(
+                    model=self.openai_model,
+                    input=[{
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": prompt}]
+                    }],
+                    text_format=OfferBrief,
+                )
+                self._emit_openai(
+                    operation="responses.parse",
+                    subtask="process_job.complete_offer_brief",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=True,
+                    response=response,
+                )
+            except Exception as e:
+                self._emit_openai(
+                    operation="responses.parse",
+                    subtask="process_job.complete_offer_brief",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=False,
+                    error=e,
+                )
+                raise
             logger.info("GPT-5 API call completed for offer brief completion")
             
             return response.output_parsed, response.output_text
@@ -630,13 +798,33 @@ class DeepCopy:
             """
 
             logger.info("Calling GPT-5 API to analyze marketing philosophy")
-            response = self.client.responses.create(
-                model=self.openai_model,
-                input=[{
-                    "role": "user", 
-                    "content": [{"type": "input_text", "text": prompt}]
-                }]
-            )
+            t0 = time.time()
+            try:
+                response = self.client.responses.create(
+                    model=self.openai_model,
+                    input=[{
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": prompt}]
+                    }]
+                )
+                self._emit_openai(
+                    operation="responses.create",
+                    subtask="process_job.analyze_marketing_philosophy",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=True,
+                    response=response,
+                )
+            except Exception as e:
+                self._emit_openai(
+                    operation="responses.create",
+                    subtask="process_job.analyze_marketing_philosophy",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=False,
+                    error=e,
+                )
+                raise
             logger.info("GPT-5 API call completed for marketing philosophy analysis")
             
             return response.output_text
@@ -665,13 +853,33 @@ class DeepCopy:
             """
             
             logger.info("Calling GPT-5 API to create summary")
-            response = self.client.responses.create(
-                model=self.openai_model,
-                input=[{
-                    "role": "user", 
-                    "content": [{"type": "input_text", "text": prompt}]
-                }]
-            )
+            t0 = time.time()
+            try:
+                response = self.client.responses.create(
+                    model=self.openai_model,
+                    input=[{
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": prompt}]
+                    }]
+                )
+                self._emit_openai(
+                    operation="responses.create",
+                    subtask="process_job.create_summary",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=True,
+                    response=response,
+                )
+            except Exception as e:
+                self._emit_openai(
+                    operation="responses.create",
+                    subtask="process_job.create_summary",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=False,
+                    error=e,
+                )
+                raise
             logger.info("GPT-5 API call completed for summary creation")
             
             return response.output_text
@@ -762,6 +970,7 @@ def run_pipeline(event, context):
         job_id = event.get("job_id") or os.environ.get("JOB_ID") or str(uuid.uuid4())
         # Initialize the generator
         generator = DeepCopy()
+        generator.aws_request_id = getattr(context, "aws_request_id", None)
         generator.update_job_status(job_id, "RUNNING", {"message": "Job started"})
         
         # Extract parameters from event (fallback to env vars)
@@ -769,6 +978,13 @@ def run_pipeline(event, context):
         s3_bucket = event.get("s3_bucket", generator.s3_bucket)
         project_name = event.get("project_name") or os.environ.get("PROJECT_NAME") or "default-project"
         customer_avatars = event.get("customer_avatars", [])
+        generator.usage_ctx = UsageContext(
+            endpoint="POST /jobs",
+            job_id=job_id,
+            job_type="V1_JOB",
+            api_version=event.get("api_version") or os.environ.get("API_VERSION") or "v1",
+            project_name=project_name,
+        )
         
         content_dir = "content/"
         

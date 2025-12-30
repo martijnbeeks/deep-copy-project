@@ -234,7 +234,15 @@ def lambda_handler(event, context):
         
         # Generate swipe files based on the selected templates
         swipe_files = rewrite_swipe_file(
-            select_angle, avatar_sheet, deep_research_output, offer_brief, marketing_philosophy_analysis, summary, swipe_file_config, anthropic_client
+            select_angle,
+            avatar_sheet,
+            deep_research_output,
+            offer_brief,
+            marketing_philosophy_analysis,
+            summary,
+            swipe_file_config,
+            anthropic_client,
+            job_id=job_id,
         )
         
 

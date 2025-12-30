@@ -6,11 +6,12 @@ import base64
 import os
 import logging
 import time
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, Field
 from openai import OpenAI
 from playwright.sync_api import sync_playwright
 from get_largest_image import compress_image_if_needed
+from llm_usage import UsageContext, emit_llm_usage_event, normalize_openai_usage
 
 logger = logging.getLogger(__name__)
 
@@ -184,7 +185,12 @@ def encode_image_bytes(image_bytes: bytes) -> str:
     return base64.b64encode(image_bytes).decode("utf-8")
 
 
-def extract_avatars_from_url(url: str, openai_api_key: str, model: str = "gpt-5") -> AvatarCollection:
+def extract_avatars_from_url(
+    url: str,
+    openai_api_key: str,
+    model: str = "gpt-5",
+    job_id: Optional[str] = None,
+) -> AvatarCollection:
     """
     Extract customer avatars from a product page URL using OpenAI vision.
     Optimized for AWS Lambda - no file storage required.
@@ -237,22 +243,48 @@ Provide at least 5 avatars that represent distinct customer segments. Please als
         # Call OpenAI API with structured output
         logger.info(f"Calling OpenAI API ({model}) to extract avatars")
         api_start = time.time()
-        response = client.beta.chat.completions.parse(
-            model=model,
-            messages=[{
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{base64_image}"
+        t0 = time.time()
+        try:
+            response = client.beta.chat.completions.parse(
+                model=model,
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
                         }
-                    }
-                ]
-            }],
-            response_format=AvatarCollection,
-        )
+                    ]
+                }],
+                response_format=AvatarCollection,
+            )
+            emit_llm_usage_event(
+                ctx=UsageContext(endpoint="POST /avatars/extract", job_id=job_id, job_type="AVATAR_EXTRACTION"),
+                provider="openai",
+                model=model,
+                operation="beta.chat.completions.parse",
+                subtask="extract_avatars.extract_avatars_from_url",
+                latency_ms=int((time.time() - t0) * 1000),
+                success=True,
+                retry_attempt=1,
+                usage=normalize_openai_usage(response),
+            )
+        except Exception as e:
+            emit_llm_usage_event(
+                ctx=UsageContext(endpoint="POST /avatars/extract", job_id=job_id, job_type="AVATAR_EXTRACTION"),
+                provider="openai",
+                model=model,
+                operation="beta.chat.completions.parse",
+                subtask="extract_avatars.extract_avatars_from_url",
+                latency_ms=int((time.time() - t0) * 1000),
+                success=False,
+                retry_attempt=1,
+                error_type=type(e).__name__,
+            )
+            raise
         print(f"OpenAI API call completed in {time.time() - api_start:.2f}s")
         
         total_time = time.time() - start_time

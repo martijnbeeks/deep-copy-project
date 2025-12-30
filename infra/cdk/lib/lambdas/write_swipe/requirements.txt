@@ -1,7 +1,0 @@
-anthropic
-beautifulsoup4
-boto3
-openai==1.99.3
-pydantic==2.6.1
-requests
-

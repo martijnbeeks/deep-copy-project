@@ -77,6 +77,7 @@ export class DeepCopyStack extends Stack {
         PLAYWRIGHT_BROWSERS_PATH: '/var/task/.playwright',
         JOBS_TABLE_NAME: jobsTable.tableName,
         RESULTS_BUCKET: resultsBucket.bucketName,
+        LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
         ENVIRONMENT: 'prod',
       },
     });
@@ -110,6 +111,7 @@ export class DeepCopyStack extends Stack {
         PLAYWRIGHT_BROWSERS_PATH: '/var/task/.playwright',
         JOBS_TABLE_NAME: jobsTable.tableName,
         RESULTS_BUCKET: resultsBucket.bucketName,
+        LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
         ENVIRONMENT: 'prod',
         API_VERSION: 'v2',
       },
@@ -216,6 +218,7 @@ export class DeepCopyStack extends Stack {
         PLAYWRIGHT_BROWSERS_PATH: '/var/task/.playwright',
         JOBS_TABLE_NAME: jobsTable.tableName,
         RESULTS_BUCKET: resultsBucket.bucketName,
+        LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
       },
     });
 
@@ -272,6 +275,7 @@ export class DeepCopyStack extends Stack {
       environment: {
         JOBS_TABLE_NAME: jobsTable.tableName,
         RESULTS_BUCKET: resultsBucket.bucketName,
+        LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
       },
     });
 
@@ -326,6 +330,7 @@ export class DeepCopyStack extends Stack {
       environment: {
         JOBS_TABLE_NAME: jobsTable.tableName,
         RESULTS_BUCKET: resultsBucket.bucketName,
+        LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
         IMAGE_LIBRARY_PREFIX: 'image_library',
         IMAGE_DESCRIPTIONS_KEY: 'image_library/static-library-descriptions.json',
         SECRET_ID: 'deepcopy-secret-dev',

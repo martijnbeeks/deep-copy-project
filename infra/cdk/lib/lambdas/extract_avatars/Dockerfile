@@ -24,9 +24,20 @@ RUN dnf install -y \
     nspr \
     && dnf clean all
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt ${LAMBDA_TASK_ROOT}/
-RUN pip install --no-cache-dir -r ${LAMBDA_TASK_ROOT}/requirements.txt
+# Install uv for dependency management
+RUN pip install --no-cache-dir uv
+
+# Copy pyproject.toml and uv.lock
+COPY pyproject.toml uv.lock* ${LAMBDA_TASK_ROOT}/
+
+# Use uv to install dependencies system-wide
+RUN if [ -f uv.lock ]; then \
+        uv export --no-dev --frozen > requirements.txt; \
+    else \
+        uv export --no-dev > requirements.txt; \
+    fi && \
+    grep -v 'file:///' requirements.txt > requirements.lock && \
+    uv pip install --system --no-cache --requirement requirements.lock
 
 # Set Playwright to install browsers in a fixed location accessible by Lambda
 ENV PLAYWRIGHT_BROWSERS_PATH=/var/task/.playwright
@@ -40,6 +51,7 @@ RUN echo "Build timestamp: $(date)" > /tmp/build_timestamp
 # Copy function code
 COPY handler.py ${LAMBDA_TASK_ROOT}/
 COPY avatar_extractor.py ${LAMBDA_TASK_ROOT}/
+COPY llm_usage.py ${LAMBDA_TASK_ROOT}/
 COPY get_largest_image.py ${LAMBDA_TASK_ROOT}/
 
 # Set the CMD to your handler

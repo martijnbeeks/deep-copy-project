@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 Please use the following workflow:
 Enforces the 'No Vibes Allowed' workflow (Research > Plan > Code) for all development tasks.
