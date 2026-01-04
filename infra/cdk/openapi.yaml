@@ -1262,14 +1262,19 @@ components:
             deep_research_output:
               type: string
               description: Raw output from deep research
-            avatars:
-              $ref: '#/components/schemas/AvatarList'
-              description: Full avatar details with marketing angles for each
-            necessary_beliefs_per_avatar:
-              type: object
-              description: 6 necessary beliefs extracted per avatar (key = avatar name, value = beliefs text)
-              additionalProperties:
-                type: string
+            marketing_avatars:
+              type: array
+              description: List of marketing avatars with their generated angles and necessary beliefs
+              items:
+                type: object
+                properties:
+                  avatar:
+                    $ref: '#/components/schemas/Avatar'
+                  angles:
+                    $ref: '#/components/schemas/AvatarMarketingAngles'
+                  necessary_beliefs:
+                    type: string
+                    description: 6 necessary beliefs extracted for this avatar
             summary:
               type: string
               description: Copywriter-friendly summary of all outputs
@@ -1611,104 +1616,384 @@ components:
           full_advertorial:
             title: "Example Title"
             subtitle: "Example Subtitle"
-    Demographics:
+    AvatarDemographics:
       type: object
+      description: "Section A: Demographic Profile"
+      required: [age_range, gender, occupation, income_level, location_type, family_situation, education_level, one_sentence_description]
       properties:
         age_range:
-          type: integer
-          nullable: true
-          description: "Inclusive min/max age in years, e.g. (28, 45)"
+          type: string
+          description: "Age Range"
         gender:
-          type: array
-          nullable: true
-          description: "Gender distribution labels, e.g. ['male', 'female', 'non-binary']"
-          items:
-            type: string
-        locations:
-          type: array
-          nullable: true
-          description: "Primary regions/countries where the segment is concentrated"
-          items:
-            type: string
-        monthly_revenue:
-          type: integer
-          nullable: true
-          description: "Typical monthly revenue range (min, max) in your chosen currency"
-        professional_backgrounds:
-          type: array
-          description: "Typical professional backgrounds (e.g., 'founder', 'marketing lead')"
-          items:
-            type: string
-        typical_identities:
-          type: array
-          description: "Typical identities/lifestyles/roles (e.g., 'bootstrapped founder')"
-          items:
-            type: string
-    PainPointGroup:
+          type: string
+          description: "Gender"
+        occupation:
+          type: string
+          description: "Occupation / Life Stage"
+        income_level:
+          type: string
+          description: "Income Level"
+        location_type:
+          type: string
+          description: "Location Type: (urban / suburban / rural)"
+        family_situation:
+          type: string
+          description: "Family Situation: (single / married / divorced / kids at home / empty nest)"
+        education_level:
+          type: string
+          description: "Education Level"
+        one_sentence_description:
+          type: string
+          description: "Who they are and what makes their situation unique"
+    AvatarProblemExperience:
       type: object
-      required: [title, bullets]
+      description: "Section B: Problem Experience"
+      required: [duration, severity, frequency, trigger_event, daily_life_impact, social_impact, who_else_knows]
       properties:
-        title:
+        duration:
           type: string
-          description: "Name of the pain point theme, e.g., 'Lead Generation'"
-        bullets:
-          type: array
-          minItems: 1
-          description: "Concrete challenges/concerns under this theme"
-          items:
-            type: string
-    Goals:
+          description: "Problem Duration: How long have they been dealing with this?"
+        severity:
+          type: string
+          description: "Problem Severity: Early stage / Moderate / Severe / Crisis"
+        frequency:
+          type: string
+          description: "Problem Frequency: How often do they think about it? Daily obsession vs. occasional annoyance?"
+        trigger_event:
+          type: string
+          description: "Trigger Event: What specific moment made them start actively searching for a solution?"
+        daily_life_impact:
+          type: string
+          description: "Daily Life Impact: How does this problem affect their everyday activities?"
+        social_impact:
+          type: string
+          description: "Social Impact: How does this affect relationships, work, public situations?"
+        who_else_knows:
+          type: string
+          description: "Who Else Knows: Is this a private struggle or do others know? Who have they told?"
+    AvatarPainDimensions:
       type: object
+      description: "Section C: Pain Dimensions"
+      required: [surface_pain, emotional_pain, social_pain, identity_pain, secret_pain, dominant_negative_emotion]
       properties:
-        short_term:
-          type: array
-          description: "Short-term goals (weeks/months)"
-          items:
-            type: string
-        long_term:
-          type: array
-          description: "Long-term aspirations (quarters/years)"
-          items:
-            type: string
-    Quotes:
+        surface_pain:
+          type: string
+          description: "Surface Pain (Physical/Practical): The problem as they describe it in literal terms"
+        emotional_pain:
+          type: string
+          description: "Emotional Pain: The feelings this problem creates — shame, frustration, fear, anger"
+        social_pain:
+          type: string
+          description: "Social Pain: How this affects how others see them or how they show up in the world"
+        identity_pain:
+          type: string
+          description: "Identity Pain: How this conflicts with who they believe they are or want to be"
+        secret_pain:
+          type: string
+          description: "Secret Pain: What they won't say out loud but feel deeply"
+        dominant_negative_emotion:
+          type: string
+          description: "Dominant Negative Emotion: The ONE emotion that dominates — shame / fear / frustration / hopelessness / anger"
+    AvatarDesireDimensions:
       type: object
+      description: "Section D: Desire Dimensions"
+      required: [surface_desire, emotional_desire, social_desire, identity_desire, secret_desire, dream_outcome]
       properties:
-        general_client:
-          type: array
-          description: "General direct client quotes, e.g., \"I just need consistent leads.\""
-          items:
-            type: string
-        pain_frustrations:
-          type: array
-          description: "Quotes that express pains/frustrations"
-          items:
-            type: string
-        mindset:
-          type: array
-          description: "Quotes that capture mindset, e.g., principles or mottos"
-          items:
-            type: string
-        emotional_state_drivers:
-          type: array
-          description: "Quotes about emotional state/personal drivers"
-          items:
-            type: string
-    EmotionalJourney:
+        surface_desire:
+          type: string
+          description: "Surface Desire: What they say they want — the obvious fix"
+        emotional_desire:
+          type: string
+          description: "Emotional Desire: How they want to FEEL"
+        social_desire:
+          type: string
+          description: "Social Desire: How they want to be SEEN by others"
+        identity_desire:
+          type: string
+          description: "Identity Desire: Who they want to BECOME"
+        secret_desire:
+          type: string
+          description: "Secret Desire: The deeper want they might not admit"
+        dream_outcome:
+          type: string
+          description: "Dream Outcome: If this problem was completely solved, what does their life look like?"
+    AvatarAwareness:
       type: object
-      required: [awareness, frustration, seeking_solutions, relief_commitment]
+      description: "Section E: Awareness & Sophistication"
+      required: [problem_awareness, solution_awareness, product_awareness, market_sophistication, schwartz_awareness_level]
       properties:
-        awareness:
+        problem_awareness:
           type: string
-          description: "Initial awareness stage (problem/status quo)"
-        frustration:
+          description: "Problem Awareness: Do they know exactly what's causing this, or are they confused?"
+        solution_awareness:
           type: string
-          description: "Frustration stage (failed attempts/costs of inaction)"
-        seeking_solutions:
+          description: "Solution Awareness: Do they know solutions exist? Have they researched options?"
+        product_awareness:
           type: string
-          description: "Desperation & seeking solutions stage (research/criteria)"
-        relief_commitment:
+          description: "Product Awareness: Do they know about products like ours specifically?"
+        market_sophistication:
           type: string
-          description: "Relief & commitment stage (decision/outcome)"
+          description: "Market Sophistication: How much have they seen? First-time buyer vs. seen-it-all skeptic?"
+        schwartz_awareness_level:
+          type: string
+          description: "Schwartz Awareness Level: Unaware / Problem-Aware / Solution-Aware / Product-Aware / Most Aware"
+    AvatarFailedSolutions:
+      type: object
+      description: "Section F: Failed Solution History"
+      required: [solutions_tried, money_spent, why_failed, beliefs_about_failure, current_coping]
+      properties:
+        solutions_tried:
+          type: string
+          description: "Solutions Already Tried: List everything they've attempted"
+        money_spent:
+          type: string
+          description: "Money Already Spent: Approximate total spent on this problem"
+        why_failed:
+          type: string
+          description: "Why Past Solutions Failed: In their words — what went wrong?"
+        beliefs_about_failure:
+          type: string
+          description: "Belief About Why Nothing Works: What conclusion have they drawn about why they can't solve this?"
+        current_coping:
+          type: string
+          description: "Current Coping Mechanism: What are they doing now to manage the problem?"
+    AvatarObjections:
+      type: object
+      description: "Section G: Objections & Skepticism"
+      required: [primary_objection, secondary_objections, hidden_objection, skepticism_source, proof_needed, trusted_sources]
+      properties:
+        primary_objection:
+          type: string
+          description: "Primary Objection: The #1 reason they would NOT buy"
+        secondary_objections:
+          type: string
+          description: "Secondary Objections: Other concerns"
+        hidden_objection:
+          type: string
+          description: "Hidden Objection: What they're really worried about but won't say"
+        skepticism_source:
+          type: string
+          description: "Source of Skepticism: Why don't they trust solutions? Past experience? General cynicism?"
+        proof_needed:
+          type: string
+          description: "What Proof Would They Need: What evidence would overcome their skepticism?"
+        trusted_sources:
+          type: string
+          description: "Whose Opinion Do They Trust: Doctors? Friends? Online reviews? Celebrities? People like them?"
+    AvatarBuyingPsychology:
+      type: object
+      description: "Section H: Buying Psychology"
+      required: [decision_making_style, budget_range, price_sensitivity, risk_tolerance, decision_influencers, buying_urgency, buy_today_trigger, dealbreaker]
+      properties:
+        decision_making_style:
+          type: string
+          description: "Decision-Making Style: Impulse buyer / Careful researcher / Needs permission / Analysis paralysis"
+        budget_range:
+          type: string
+          description: "Budget Range: What would they realistically pay for a solution?"
+        price_sensitivity:
+          type: string
+          description: "Price Sensitivity: Very sensitive / Moderate / Will pay premium for results"
+        risk_tolerance:
+          type: string
+          description: "Risk Tolerance: Will they try something new easily, or need heavy reassurance?"
+        decision_influencers:
+          type: string
+          description: "Who Influences Their Decision: Spouse? Doctor? Friends? No one — solo decider?"
+        buying_urgency:
+          type: string
+          description: "Buying Urgency: Need it now / Can wait / Just browsing"
+        buy_today_trigger:
+          type: string
+          description: "What Would Make Them Buy TODAY: The specific trigger or offer that converts them immediately"
+        dealbreaker:
+          type: string
+          description: "What Would Make Them Walk Away: The dealbreaker that kills the sale"
+    AvatarInformationComm:
+      type: object
+      description: "Section I: Information & Communication"
+      required: [info_sources, content_format, language_style, problem_vocab, avoided_words, resonating_tone]
+      properties:
+        info_sources:
+          type: string
+          description: "Where They Seek Information: Google / YouTube / Reddit / Facebook Groups / Doctor / Friends"
+        content_format:
+          type: string
+          description: "Preferred Content Format: Video / Text / Images / Testimonials / Data"
+        language_style:
+          type: string
+          description: "Language Style: Clinical and technical / Casual and emotional / Direct and simple"
+        problem_vocab:
+          type: string
+          description: "Words They Use to Describe Problem: Their exact vocabulary"
+        avoided_words:
+          type: string
+          description: "Words They Avoid: Terms that feel too clinical, embarrassing, or off-putting"
+        resonating_tone:
+          type: string
+          description: "Tone That Resonates: Empathetic / Authoritative / Peer-to-peer / Clinical / Urgent"
+    AvatarRawLanguage:
+      type: object
+      description: "Section J: Raw Language Map"
+      required: [pain_language, desire_language, objection_language, failed_solution_language]
+      properties:
+        pain_language:
+          type: array
+          description: "Pain Language (3+ quotes): Direct quotes expressing pain"
+          items:
+            type: string
+        desire_language:
+          type: array
+          description: "Desire Language (3+ quotes): Direct quotes expressing desire"
+          items:
+            type: string
+        objection_language:
+          type: array
+          description: "Objection Language (2+ quotes): Direct quotes expressing skepticism/objection"
+          items:
+            type: string
+        failed_solution_language:
+          type: array
+          description: "Failed Solution Language (2+ quotes): Direct quotes about what they've tried"
+          items:
+            type: string
+    AvatarStrategicSummary:
+      type: object
+      description: "Section K: Strategic Summary"
+      required: [market_size, buying_readiness, competitive_saturation, message_match_difficulty, one_line_hook]
+      properties:
+        market_size:
+          type: string
+          description: "Market Size Estimate: Small / Medium / Large — based on frequency in research"
+        buying_readiness:
+          type: string
+          description: "Buying Readiness: Cold / Warm / Hot"
+        competitive_saturation:
+          type: string
+          description: "Competitive Saturation: Are competitors already targeting this avatar heavily?"
+        message_match_difficulty:
+          type: string
+          description: "Message Match Difficulty: Easy to reach with messaging / Requires nuanced approach"
+        one_line_hook:
+          type: string
+          description: "One-Line Hook That Would Stop Them: A headline or opening that would grab THIS avatar specifically"
+    MarketingAngle:
+      type: object
+      description: "A generated marketing angle"
+      required: [angle_title, angle_subtitle, angle_type, emotional_driver, risk_level, core_argument, target_age_range, target_audience, pain_points, desires, common_objections, failed_alternatives, pain_quotes, desire_quotes, objection_quotes]
+      properties:
+        angle_title:
+          type: string
+          description: "A name for this specific pitch"
+        angle_subtitle:
+          type: string
+          description: "A short tagline that captures the angle's promise"
+        angle_type:
+          type: string
+          description: "The category of argument being made (e.g., Pain-Lead, Desire-Lead, etc.)"
+        emotional_driver:
+          type: string
+          description: "The primary emotion this angle triggers (Fear / Hope / Anger / Shame / Desire)"
+        risk_level:
+          type: string
+          description: "Compliance or proof risk for running this angle (Low / Medium / High)"
+        core_argument:
+          type: string
+          description: "The single-sentence logical argument this angle makes"
+        target_age_range:
+          type: string
+          description: "The age bracket this angle speaks to"
+        target_audience:
+          type: string
+          description: "A refined description of who this specific angle is for"
+        pain_points:
+          type: array
+          description: "The most relevant frustrations for this particular angle"
+          items:
+            type: string
+        desires:
+          type: array
+          description: "The most relevant goals and wants for this particular angle"
+          items:
+            type: string
+        common_objections:
+          type: array
+          description: "Why this person might say 'no' to this specific pitch"
+          items:
+            type: string
+        failed_alternatives:
+          type: array
+          description: "What they've tried before that didn't work — and why this angle addresses it"
+          items:
+            type: string
+        pain_quotes:
+          type: array
+          description: "Direct quotes from research expressing the pain this angle targets"
+          items:
+            type: string
+        desire_quotes:
+          type: array
+          description: "Direct quotes from research expressing the desire this angle promises"
+          items:
+            type: string
+        objection_quotes:
+          type: array
+          description: "Direct quotes from research expressing skepticism this angle must overcome"
+          items:
+            type: string
+    TopAngle:
+      type: object
+      description: "Top selected angle"
+      required: [name, angle_type, core_argument, why_selected, primary_hook, emotional_driver, risk_level]
+      properties:
+        name:
+          type: string
+          description: "Name of the angle"
+        angle_type:
+          type: string
+          description: "Type of angle"
+        core_argument:
+          type: string
+          description: "Core argument"
+        why_selected:
+          type: string
+          description: "Reason for selection"
+        primary_hook:
+          type: string
+          description: "Primary hook"
+        emotional_driver:
+          type: string
+          description: "Emotional driver"
+        risk_level:
+          type: string
+          description: "Risk level (Low/Medium/High)"
+    Top3Angles:
+      type: object
+      description: "Top 3 angles for an avatar"
+      required: [primary_angle, secondary_angle, test_angle]
+      properties:
+        primary_angle:
+          $ref: '#/components/schemas/TopAngle'
+        secondary_angle:
+          $ref: '#/components/schemas/TopAngle'
+        test_angle:
+          $ref: '#/components/schemas/TopAngle'
+    AvatarMarketingAngles:
+      type: object
+      description: "Marketing angles generated for a specific avatar"
+      required: [avatar_name, generated_angles, top_3_angles]
+      properties:
+        avatar_name:
+          type: string
+          description: "Name of the avatar"
+        generated_angles:
+          type: array
+          items:
+            $ref: '#/components/schemas/MarketingAngle'
+          description: "List of 5-7 distinct marketing angles"
+        top_3_angles:
+          $ref: '#/components/schemas/Top3Angles'
+          description: "Selection of top 3 angles"
     Angle:
       type: object
       required: [angle, title, target_age_range, target_audience, pain_points, desires, common_objections, failed_alternatives, copy_approach]
@@ -1753,32 +2038,33 @@ components:
     Avatar:
       type: object
       description: "Marketing Avatar sheet for product–market fit & messaging research"
-      required: [demographics, pain_points, goals, quotes, emotional_journey]
+      required: [name, demographics, problem_experience, pain_dimensions, desire_dimensions, awareness, failed_solutions, objections, buying_psychology, info_comm, raw_language, strategic_summary]
       properties:
+        name:
+          type: string
+          description: "Descriptive Name of the Avatar"
         demographics:
-          $ref: '#/components/schemas/Demographics'
-        pain_points:
-          type: array
-          minItems: 1
-          description: "List of pain point themes, each with concrete challenges"
-          items:
-            $ref: '#/components/schemas/PainPointGroup'
-        goals:
-          $ref: '#/components/schemas/Goals'
-        emotional_drivers:
-          type: array
-          description: "Emotional drivers & psychological insights"
-          items:
-            type: string
-        quotes:
-          $ref: '#/components/schemas/Quotes'
-        emotional_journey:
-          $ref: '#/components/schemas/EmotionalJourney'
-        marketing_angles:
-          type: array
-          description: "Main marketing angles to test or use"
-          items:
-            $ref: '#/components/schemas/Angle'
+          $ref: '#/components/schemas/AvatarDemographics'
+        problem_experience:
+          $ref: '#/components/schemas/AvatarProblemExperience'
+        pain_dimensions:
+          $ref: '#/components/schemas/AvatarPainDimensions'
+        desire_dimensions:
+          $ref: '#/components/schemas/AvatarDesireDimensions'
+        awareness:
+          $ref: '#/components/schemas/AvatarAwareness'
+        failed_solutions:
+          $ref: '#/components/schemas/AvatarFailedSolutions'
+        objections:
+          $ref: '#/components/schemas/AvatarObjections'
+        buying_psychology:
+          $ref: '#/components/schemas/AvatarBuyingPsychology'
+        info_comm:
+          $ref: '#/components/schemas/AvatarInformationComm'
+        raw_language:
+          $ref: '#/components/schemas/AvatarRawLanguage'
+        strategic_summary:
+          $ref: '#/components/schemas/AvatarStrategicSummary'
     CustomerAvatar:
       type: object
       required: [persona_name, characteristics, description, age_range, gender, key_buying_motivation, pain_point, emotion, desire, objections, failed_alternatives]

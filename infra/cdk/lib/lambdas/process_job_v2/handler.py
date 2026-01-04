@@ -28,7 +28,7 @@ from pydantic import BaseModel, Field, ConfigDict, create_model
 from playwright.sync_api import sync_playwright
 
 
-from data_models import Avatar, AvatarList, IdentifiedAvatarList
+from data_models import Avatar, IdentifiedAvatarList, AvatarMarketingAngles
 
 from llm_usage import UsageContext, emit_llm_usage_event, normalize_openai_usage, normalize_perplexity_usage
 
@@ -865,8 +865,33 @@ class DeepCopy:
         try:
             
             prompt = f"""
-            Based on the following deep research, please identify the distinct customer avatars (personas) that would be most profitable to target.
-            Return a list of these avatars with a name and a brief description for each.
+            Now you must identify the DISTINCT AVATARS within this research — not invented 
+            personas, but real segments that emerged from the language patterns. These are 
+            people who experience the same problem but from different life circumstances, 
+            with different emotional drivers, and different buying psychology.
+
+            Extract 3-5 distinct avatars from the research based on patterns in how 
+            different people experience, describe, and seek solutions for this problem.
+            Review the research and identify avatar clusters based on:
+
+            1. LIFE CIRCUMSTANCE PATTERNS
+            - What different life situations do people mention?
+            - Age, career, family, lifestyle differences
+
+            2. PAIN EXPRESSION PATTERNS
+            - How do different people describe the SAME problem differently?
+            - Who experiences it as embarrassment vs. physical discomfort vs. inconvenience?
+
+            3. TRIGGER EVENT PATTERNS
+            - What made different people start searching for a solution?
+
+            4. FAILED SOLUTION PATTERNS
+            - What have different groups already tried?
+
+            5. OBJECTION PATTERNS
+            - What do different groups worry about most?
+
+
             
             Deep research output:
             {deep_research_output}
@@ -1190,26 +1215,308 @@ CRITICAL RULES
             logger.error(f"Error completing necessary beliefs for {identified_avatar.name}: {e}")
             raise
 
+    def generate_marketing_angles(self, avatar, deep_research_output):
+        """Generate marketing angles for a specific avatar"""
+        try:
+            avatar_name = avatar.name
+            
+            prompt = f"""
+            ANGLE GENERATION PROMPT
+            ═══════════════════════════════════════════════════════════════════════════════
+
+            CONTEXT
+            ═══════════════════════════════════════════════════════════════════════════════
+
+            You have extracted 3-5 distinct avatars from deep research, each with complete 
+            profiles including pain dimensions, desire dimensions, objections, buying 
+            psychology, awareness levels, and raw language.
+
+            Now you must generate MARKETING ANGLES for each avatar — distinct entry points 
+            into the conversation that grab their attention and lead them toward the sale.
+
+            Remember: Angles are not word variations. Each angle is a fundamentally 
+            different ARGUMENT — a different door into the same room. Different angles 
+            emphasize different pains, desires, mechanisms, or proof points to connect 
+            with the prospect.
+
+            ═══════════════════════════════════════════════════════════════════════════════
+            DOCUMENTS PROVIDED
+            ═══════════════════════════════════════════════════════════════════════════════
+
+            - Deep Research Document
+            {deep_research_output}
+
+            - Avatar Profile
+            {avatar.model_dump_json(indent=2)}
+
+            ═══════════════════════════════════════════════════════════════════════════════
+            TASK
+            ═══════════════════════════════════════════════════════════════════════════════
+
+            For this avatar, generate 5-7 distinct marketing angles. Then identify the 
+            top 3 angles for testing.
+
+            ═══════════════════════════════════════════════════════════════════════════════
+            ANGLE TYPES TO CONSIDER
+            ═══════════════════════════════════════════════════════════════════════════════
+
+            Generate angles across these categories:
+
+            1. PAIN-LEAD ANGLES
+            Lead with a specific pain point that hits hard for this avatar.
+            "Still dealing with [specific pain]?"
+
+            2. DESIRE-LEAD ANGLES
+            Lead with the outcome they desperately want.
+            "Finally [desire] without [sacrifice]"
+
+            3. ENEMY/VILLAIN ANGLES
+            Blame something external for their problem.
+            "The hidden [enemy] that's causing your [problem]"
+
+            4. SECRET/DISCOVERY ANGLES
+            Reveal something they don't know.
+            "The [surprising truth] about [problem] that [authority] won't tell you"
+
+            5. MECHANISM ANGLES
+            Lead with the unique way your solution works.
+            "The [mechanism name] method that [benefit] in [timeframe]"
+
+            6. IDENTITY ANGLES
+            Speak to who they are or want to become.
+            "For [identity] who refuse to [accept problem]"
+
+            7. SOCIAL PROOF ANGLES
+            Lead with proof and results.
+            "[Number] [people like them] have already [achieved result]"
+
+            8. FEAR/CONSEQUENCE ANGLES
+            Highlight what happens if they don't act.
+            "Why [problem] gets worse after [age/event] (and what to do now)"
+
+            9. MYTH-BUSTING ANGLES
+            Attack a misconception they hold.
+            "Why [common solution] is actually making your [problem] worse"
+
+            10. COMPARISON/ALTERNATIVE ANGLES
+                Position against what they've tried.
+                "Tried [failed solution]? Here's why it didn't work"
+
+            11. URGENCY/TIMING ANGLES
+                Create a reason to act now.
+                "The [window/age/season] when [solution] works best"
+
+            12. PERMISSION ANGLES
+                Give them permission to want what they want.
+                "It's not [self-blame] — it's [external factor]"
+
+            ═══════════════════════════════════════════════════════════════════════════════
+            STEP 1: ANGLE GENERATION PER AVATAR
+            ═══════════════════════════════════════════════════════════════════════════════
+
+            Generate 5-7 angles using this format:
+
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            AVATAR: {avatar_name}
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            ─────────────────────────────────────────────────────────────────────────────
+            ANGLE: [ANGLE TITLE]
+            ─────────────────────────────────────────────────────────────────────────────
+
+            Angle Subtitle:
+            [A short tagline that captures the angle's promise]
+
+            Angle Type:
+            [Pain-Lead / Desire-Lead / Enemy / Secret / Mechanism / Identity / etc.]
+
+            Emotional Driver:
+            [Fear / Hope / Anger / Shame / Desire]
+
+            Risk Level:
+            [Low / Medium / High]
+
+            Core Argument:
+            [The single-sentence logical argument this angle makes]
+
+            Target Age Range:
+            [The age bracket this angle speaks to]
+
+            Target Audience:
+            [A refined description of who this specific angle is for]
+
+            Pain Points (List 2-3):
+            - [Frustration 1]
+            - [Frustration 2]
+
+            Desires (List 2-3):
+            - [Goal 1]
+            - [Goal 2]
+
+            Common Objections (List 2-3):
+            - [Reason to say no 1]
+            - [Reason to say no 2]
+
+            Failed Alternatives (List 2-3):
+            - [Previous attempt 1]
+            - [Previous attempt 2]
+
+            Raw Language - Pain Quotes (List 2+):
+            - "[Quote 1]"
+            - "[Quote 2]"
+
+            Raw Language - Desire Quotes (List 2+):
+            - "[Quote 1]"
+            - "[Quote 2]"
+
+            Raw Language - Objection Quotes (List 2+):
+            - "[Quote 1]"
+            - "[Quote 2]"
+
+            ─────────────────────────────────────────────────────────────────────────────
+
+            ═══════════════════════════════════════════════════════════════════════════════
+            STEP 2: ANGLE DIFFERENTIATION CHECK
+            ═══════════════════════════════════════════════════════════════════════════════
+
+            Verify angles are MEANINGFULLY DIFFERENT using the 
+            Andromeda Difference Threshold. Each angle must change at least 3 of 5:
+
+            | Dimension                        | Angle 1 | Angle 2 | Angle 3 | Angle 4 | Angle 5 |
+            |----------------------------------|---------|---------|---------|---------|---------|
+            | Opening Moment / Hook            |         |         |         |         |         |
+            | Primary Emotion                  |         |         |         |         |         |
+            | Core Argument                    |         |         |         |         |         |
+            | Proof / Evidence Type            |         |         |         |         |         |
+            | Entry Point (Pain/Desire/Enemy)  |         |         |         |         |         |
+
+            If two angles are too similar, merge or replace one.
+
+            ═══════════════════════════════════════════════════════════════════════════════
+            STEP 3: TOP 3 ANGLES PER AVATAR
+            ═══════════════════════════════════════════════════════════════════════════════
+
+            Select the top 3 angles for this avatar based on:
+
+            SELECTION CRITERIA:
+            - Pain/Desire Intensity: Does this hit their hottest button?
+            - Differentiation: Is this angle ownable and different from competitors?
+            - Proof Availability: Do we have evidence to back this angle?
+            - Scalability: Can this angle sustain multiple ad variations?
+            - Compliance: Can this run without platform rejection?
+
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            AVATAR: {avatar_name} — TOP 3 ANGLES
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            #1 PRIMARY ANGLE: [Name]
+            - Type: [Angle type]
+            - Core Argument: [One sentence]
+            - Why Selected: [Reason this is the strongest]
+            - Primary Hook: "[Hook]"
+            - Emotional Driver: [Emotion]
+            - Risk Level: [Low / Medium / High — compliance or proof risk]
+
+            #2 SECONDARY ANGLE: [Name]
+            - Type: [Angle type]
+            - Core Argument: [One sentence]
+            - Why Selected: [Reason]
+            - Primary Hook: "[Hook]"
+            - Emotional Driver: [Emotion]
+            - Risk Level: [Low / Medium / High]
+
+            #3 TEST ANGLE: [Name]
+            - Type: [Angle type]
+            - Core Argument: [One sentence]
+            - Why Selected: [Reason — often a contrarian or unexpected approach]
+            - Primary Hook: "[Hook]"
+            - Emotional Driver: [Emotion]
+            - Risk Level: [Low / Medium / High]
+
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            ═══════════════════════════════════════════════════════════════════════════════
+            CRITICAL RULES
+            ═══════════════════════════════════════════════════════════════════════════════
+
+            1. ARGUMENTS, NOT WORDS — Each angle is a different argument, not a 
+            different way to say the same thing.
+
+            2. AVATAR-GROUNDED — Every angle must connect to a specific dimension 
+            from the avatar profile. No generic angles.
+
+            3. RESEARCH-BACKED — Angles should be validated by raw language from 
+            the research. If no one in the research expressed this pain/desire, 
+            flag as [SPECULATIVE].
+
+            4. MEANINGFULLY DIFFERENT — Use the Andromeda threshold. If angles are 
+            too similar, they're not worth testing separately.
+
+            5. EXECUTABLE — Every angle must be specific enough to hand to a 
+            copywriter or creative team and produce an ad.
+
+            6. COMPLIANT — Flag any angle with potential platform compliance issues.
+
+            ═══════════════════════════════════════════════════════════════════════════════
+            NOW GENERATE ANGLES FOR THIS AVATAR
+            ═══════════════════════════════════════════════════════════════════════════════
+            """
+
+            logger.info(f"Calling GPT-5 API to generate marketing angles for {avatar_name}")
+            t0 = time.time()
+            try:
+                response = self.client.responses.parse(
+                    model=self.openai_model,
+                    input=[{
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": prompt}]
+                    }],
+                    text_format=AvatarMarketingAngles,
+                )
+                self._emit_openai(
+                    operation="responses.parse",
+                    subtask=f"process_job_v2.generate_marketing_angles.{avatar_name}",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=True,
+                    response=response,
+                )
+            except Exception as e:
+                self._emit_openai(
+                    operation="responses.parse",
+                    subtask=f"process_job_v2.generate_marketing_angles.{avatar_name}",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=False,
+                    error=e,
+                )
+                raise
+            logger.info(f"GPT-5 API call completed for marketing angles: {avatar_name}")
+            
+            return response.output_parsed
+            
+        except Exception as e:
+            logger.error(f"Error generating marketing angles for {avatar.name}: {e}")
+            raise
+
     
-    def create_summary(self, avatar_sheet, deep_research_output, necessary_beliefs_per_avatar):
+    def create_summary(self, marketing_avatars_str, deep_research_output):
         """Create a summary of all outputs"""
         try:
-            # Format necessary beliefs for the prompt
-            beliefs_str = ""
-            for avatar_name, beliefs in necessary_beliefs_per_avatar.items():
-                beliefs_str += f"\n--- {avatar_name} ---\n{beliefs}\n"
-            
             prompt = f"""
             Great work! Please summarize the following outputs in a way that is easy to understand and use for a copywriter:
             
-            Avatar sheet:
-            {avatar_sheet}
+            Marketing Avatars (list of dicts with keys: avatar, angles, necessary_beliefs):
+            {marketing_avatars_str}
             
             Deep research output:
             {deep_research_output}
             
-            Necessary Beliefs per Avatar:
-            {beliefs_str}
+            Instructions:
+            - Extract the "avatar" key from each dict in the list to understand the customer profiles
+            - Extract the "angles" key from each dict to see the marketing angles generated for each avatar
+            - Extract the "necessary_beliefs" key from each dict to understand the belief transformation required
+            - Provide a comprehensive summary that helps a copywriter understand all avatars, their marketing angles, and the necessary beliefs for each
             """
             
             logger.info("Calling GPT-5 API to create summary")
@@ -1350,7 +1657,6 @@ def run_pipeline(event, context):
         gender = event.get("gender")
         location = event.get("location")
         
-        content_dir = "content/"
         
         if event.get("dev_mode") == "true":
             logger.info(f"Dev mode detected for job {job_id}. Using mock results.")
@@ -1390,20 +1696,13 @@ def run_pipeline(event, context):
                 raise e
         
         
-        
-        
     
-        
         # Step 1: Analyze research page
         logger.info("Step 1: Analyzing research page")
         research_page_analysis = generator.analyze_research_page(sales_page_url)
         
-        # Step 2: Analyze research documents
-        logger.info("Step 2: Analyzing research documents")
-        
-        
-        # Step 3: Create deep research prompt
-        logger.info("Step 3: Creating deep research prompt")
+        # Step 2: Create deep research prompt
+        logger.info("Step 2: Creating deep research prompt")
         deep_research_prompt = generator.create_deep_research_prompt(
             sales_page_url, 
             research_page_analysis, 
@@ -1412,15 +1711,15 @@ def run_pipeline(event, context):
             research_requirements=research_requirements
         )
         
-        # Step 4: Execute deep research
-        logger.info("Step 4: Executing deep research")
+        # Step 3: Execute deep research
+        logger.info("Step 3: Executing deep research")
         deep_research_output = generator.execute_deep_research(deep_research_prompt)
         
-        # Step 5: Identify and Complete avatars
-        logger.info("Step 5a: Identifying avatars")
+        # Step 4: Identify and Complete avatars
+        logger.info("Step 4a: Identifying avatars")
         identified_avatars = generator.identify_avatars(deep_research_output)
         
-        logger.info(f"Step 5b: Completing details AND necessary beliefs for {len(identified_avatars.avatars)} avatars in parallel")
+        logger.info(f"Step 4b: Completing details AND necessary beliefs for {len(identified_avatars.avatars)} avatars in parallel")
         
         # Run avatar completions AND necessary beliefs in parallel for faster processing
         def complete_avatar_with_beliefs(ia):
@@ -1445,20 +1744,44 @@ def run_pipeline(event, context):
                 except Exception as e:
                     logger.error(f"Failed to complete avatar for {ia.name}: {e}")
                     raise
+                
+        # Step 5: Generate marketing angles for each avatar
+        logger.info("Step 5: Generating marketing angles")
         
-        # Extract full avatars and necessary beliefs per avatar
-        full_avatars = [r["avatar_details"] for r in avatar_results]
-        necessary_beliefs_per_avatar = {r["identified_avatar"].name: r["necessary_beliefs"] for r in avatar_results}
+        def generate_angles_for_avatar(result_entry):
+            """Generate marketing angles for a single avatar and return bundled with avatar info and beliefs"""
+            avatar = result_entry["avatar_details"]
+            necessary_beliefs = result_entry["necessary_beliefs"]
+            angles = generator.generate_marketing_angles(avatar, deep_research_output)
+            return {
+                "avatar": avatar.model_dump(),
+                "angles": angles.model_dump(),
+                "necessary_beliefs": necessary_beliefs
+            }
+            
+        marketing_avatars_list = []
+        with ThreadPoolExecutor(max_workers=min(10, len(avatar_results))) as executor:
+            futures = {
+                executor.submit(generate_angles_for_avatar, result_entry): result_entry 
+                for result_entry in avatar_results
+            }
+            for future in as_completed(futures):
+                result_entry = futures[future]
+                try:
+                    result = future.result()
+                    marketing_avatars_list.append(result)
+                    logger.info(f"Completed marketing angles for: {result_entry['avatar_details'].name}")
+                except Exception as e:
+                    logger.error(f"Failed to generate angles for {result_entry['avatar_details'].name}: {e}")
+                    raise
         
-        avatar_list = AvatarList(avatars=full_avatars)
-        
-        # Stringify the avatar list for prompt inputs
-        avatar_sheet_str = str([a.model_dump() for a in full_avatars])
+        # Stringify marketing_avatars_list
+        marketing_avatars_str = json.dumps(marketing_avatars_list, ensure_ascii=False, indent=2)
         
         # Step 6: Create summary
         logger.info("Step 6: Creating summary")
         summary = generator.create_summary(
-            avatar_sheet_str, deep_research_output, necessary_beliefs_per_avatar
+            marketing_avatars_str, deep_research_output
         )
         
         logger.info("Step 7: Saving results")
@@ -1466,8 +1789,7 @@ def run_pipeline(event, context):
             "research_page_analysis": research_page_analysis,
             "deep_research_prompt": deep_research_prompt,
             "deep_research_output": deep_research_output,
-            "avatars": avatar_list.model_dump(),
-            "necessary_beliefs_per_avatar": necessary_beliefs_per_avatar,
+            "marketing_avatars": marketing_avatars_list,
             "summary": summary,
         }
         
@@ -1480,7 +1802,7 @@ def run_pipeline(event, context):
                 "message": "Prelander Generator pipeline completed successfully",
                 "project_name": project_name,
                 "s3_bucket": s3_bucket,
-                "avatars_count": len(full_avatars),
+                "avatars_count": len(marketing_avatars_list),
                 "results_location": f"s3://{s3_bucket}/projects/{project_name}/",
                 "job_results_location": f"s3://{s3_bucket}/results/{job_id}/",
                 "job_id": job_id
