@@ -788,11 +788,11 @@ def lambda_handler(event, _context):
                     if provider in ("nano_banana", "nanobanana", "nano-banana"):
                         # Only pass product image if supported
                         product_img_bytes = product_image_bytes if supports_product else None
-                        img_b64 = _generate_image_nano_banana(prompt, ref_bytes, product_img_bytes)
+                        img_b64 = _generate_image_nano_banana(prompt, ref_bytes, product_img_bytes, job_id)
                     else:
                         # Only pass product image if supported
                         product_img_data_for_gen = product_image_data if supports_product else None
-                        img_b64 = _generate_image_openai(openai_client, prompt, ref_data, product_img_data_for_gen)
+                        img_b64 = _generate_image_openai(openai_client, prompt, ref_data, product_img_data_for_gen, job_id)
 
                     upload = _upload_base64_to_cloudflare_images(
                         img_b64,
