@@ -743,6 +743,9 @@ paths:
                   forcedReferenceImageIds:
                     - "12.png"
                     - "23.webp"
+                  uploadedReferenceImageUrls:
+                    - "https://imagedelivery.net/abc123/ref-image-1.png"
+                    - "https://imagedelivery.net/abc123/ref-image-2.webp"
                   productImageUrls:
                     - "https://example-bucket.s3.eu-west-1.amazonaws.com/presigned-url"
                   language: "english"
@@ -1554,6 +1557,12 @@ components:
           items:
             type: string
           description: Optional reference creative IDs to force into assignments (e.g. 12.png, 23.webp)
+        uploadedReferenceImageUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Optional URLs for user-uploaded reference images (from Cloudflare). System will check if each contains a product image using AI vision and use product image from productImageUrls if detected.
         productImageUrls:
           type: array
           items:

@@ -43,10 +43,19 @@ def handler(event, _context):
 
     selected_avatar = body.get("selectedAvatar")
     selected_angles = body.get("selectedAngles")
+    uploaded_reference_image_urls = body.get("uploadedReferenceImageUrls", [])  # NEW FIELD
+    
     if not selected_avatar or not isinstance(selected_avatar, str):
         return _response(400, {"error": "selectedAvatar is required and must be a string"})
     if not selected_angles or not isinstance(selected_angles, list) or not all(isinstance(x, str) for x in selected_angles):
         return _response(400, {"error": "selectedAngles is required and must be a list of strings"})
+    
+    # Validate uploaded image URLs if provided
+    if uploaded_reference_image_urls:
+        if not isinstance(uploaded_reference_image_urls, list):
+            return _response(400, {"error": "uploadedReferenceImageUrls must be a list"})
+        if not all(isinstance(url, str) and url.startswith(('http://', 'https://')) for url in uploaded_reference_image_urls):
+            return _response(400, {"error": "uploadedReferenceImageUrls must be a list of valid HTTP/HTTPS URLs"})
 
     job_id = str(uuid.uuid4())
     result_prefix = f"results/{job_id}"

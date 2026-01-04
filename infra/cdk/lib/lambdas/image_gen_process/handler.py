@@ -176,12 +176,132 @@ def _normalize_image_id(x: str) -> str:
     return x
 
 
-def _supports_product_image(ref_id: str) -> bool:
+def _supports_product_image(
+    ref_id: str, 
+    uploaded_images_metadata: Optional[Dict[str, dict]] = None,
+    library_images_metadata: Optional[Dict[str, dict]] = None,
+) -> bool:
     """Check if a reference image supports product image merging."""
+    if not ref_id:
+        return True  # Default to supporting if no ID provided
+    
+    # First check if it's an uploaded image (starts with "uploaded_" prefix or is in metadata)
+    if uploaded_images_metadata and ref_id in uploaded_images_metadata:
+        img_meta = uploaded_images_metadata[ref_id]
+        has_product = img_meta.get("hasProduct", True)  # Default to True if not set
+        logger.debug("Uploaded image %s hasProduct=%s", ref_id, has_product)
+        return has_product
+    
+    # Check if it's a library image that was checked with vision
+    if library_images_metadata and ref_id in library_images_metadata:
+        img_meta = library_images_metadata[ref_id]
+        has_product = img_meta.get("hasProduct", True)
+        logger.debug("Library image (vision-checked) %s hasProduct=%s", ref_id, has_product)
+        return has_product
+    
+    # Fallback: check static library exclusion list (for images not in forced_ids)
     normalized = _normalize_image_id(ref_id)
-    # Check both normalized and without extension
-    base_id = normalized.replace(".png", "").replace(".jpg", "").replace(".webp", "")
-    return normalized not in REF_IMAGES_WITHOUT_PRODUCT and base_id not in REF_IMAGES_WITHOUT_PRODUCT
+    base_id = normalized.replace(".png", "").replace(".jpg", "").replace(".webp", "").replace(".jpeg", "")
+    
+    is_excluded = (
+        ref_id in REF_IMAGES_WITHOUT_PRODUCT
+        or normalized in REF_IMAGES_WITHOUT_PRODUCT
+        or base_id in REF_IMAGES_WITHOUT_PRODUCT
+    )
+    
+    result = not is_excluded
+    logger.debug(
+        "Static library image (fallback): ref_id=%s normalized=%s base_id=%s is_excluded=%s result=%s",
+        ref_id,
+        normalized,
+        base_id,
+        is_excluded,
+        result,
+    )
+    return result
+
+
+def _detect_product_in_image(openai_client: OpenAI, image_bytes: bytes, job_id: Optional[str]) -> bool:
+    """
+    Use OpenAI vision to detect if reference image contains a product image.
+    Returns True if product image is detected, False otherwise.
+    """
+    import PIL.Image
+    
+    # Convert bytes to PIL Image
+    img = PIL.Image.open(io.BytesIO(image_bytes))
+    
+    # Create base64 data URL
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+    
+    prompt = (
+        "Analyze this reference image for advertising/creative purposes. "
+        "Does this image contain a visible product image, product photo, or product packaging? "
+        "A product image would be a clear photo of a physical product (like a bottle, package, box, etc.) "
+        "that is distinct from the background or other elements. "
+        "Text-only ads, lifestyle images without products, or abstract designs should be 'NO'. "
+        "Respond with ONLY 'YES' if a product image is clearly visible, or 'NO' if there is no product image."
+    )
+    
+    model = os.environ.get("OPENAI_TEXT_MODEL", "gpt-5-mini")
+    t0 = time.time()
+    
+    try:
+        resp = openai_client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{img_b64}",
+                                "detail": "high"
+                            }
+                        }
+                    ]
+                }
+            ],
+            max_tokens=10,
+        )
+        
+        emit_llm_usage_event(
+            ctx=UsageContext(endpoint="POST /image-gen/generate", job_id=job_id, job_type="IMAGE_GEN"),
+            provider="openai",
+            model=model,
+            operation="chat.completions.create",
+            subtask="image_gen.detect_product_in_image",
+            latency_ms=int((time.time() - t0) * 1000),
+            success=True,
+            retry_attempt=1,
+            usage=normalize_openai_usage(resp),
+        )
+        
+        content = resp.choices[0].message.content or ""
+        has_product = "YES" in content.upper().strip()
+        
+        logger.info("Product detection: has_product=%s response=%s", has_product, content.strip())
+        return has_product
+        
+    except Exception as e:
+        emit_llm_usage_event(
+            ctx=UsageContext(endpoint="POST /image-gen/generate", job_id=job_id, job_type="IMAGE_GEN"),
+            provider="openai",
+            model=model,
+            operation="chat.completions.create",
+            subtask="image_gen.detect_product_in_image",
+            latency_ms=int((time.time() - t0) * 1000),
+            success=False,
+            retry_attempt=1,
+            error_type=type(e).__name__,
+        )
+        logger.error("Product detection failed: %s", e)
+        # Default to True (support product) if detection fails - safer default
+        return True
 
 
 def _download_image_to_b64(url: str, timeout_s: int = 30) -> Optional[Dict[str, str]]:
@@ -381,9 +501,15 @@ def _match_angles_to_images(
     library: dict[str, Any],
     forced_ids: List[str],
     job_id: Optional[str],
+    uploaded_image_ids: Optional[List[str]] = None,
 ) -> Dict[Tuple[str, str], str]:
     """
     Returns mapping (angle_num, variation_num) -> image_id
+    Priority order:
+    1. forced_ids (user selected from library) - highest priority
+    2. uploaded_image_ids (user uploaded images) - second priority
+    3. AI selection from library - fills remaining slots
+    4. Fallback random selection - if AI fails
     Ensures uniqueness across all slots as much as possible.
     """
     # Extract available ids from library
@@ -419,7 +545,7 @@ def _match_angles_to_images(
     slot_assignments: Dict[Tuple[str, str], str] = {}
     used: set[str] = set()
 
-    # Step 1: forced round-robin
+    # Step 1: forced_ids (user selected from library) - HIGHEST PRIORITY
     forced_ids = [_normalize_image_id(x) for x in (forced_ids or []) if str(x).strip()]
     forced_ids = [x for x in forced_ids if (not available_set) or (x in available_set)]
     for i, forced_id in enumerate(forced_ids):
@@ -428,10 +554,27 @@ def _match_angles_to_images(
         angle_num, variation_num, _angle = slots[i]
         slot_assignments[(angle_num, variation_num)] = forced_id
         used.add(forced_id)
+        logger.debug("Assigned forced image: slot=%s-%s image=%s", angle_num, variation_num, forced_id)
 
-    # Remaining slots
+    # Step 1.5: uploaded_image_ids (user uploaded images) - SECOND PRIORITY
+    remaining_slots_after_forced = [s for s in slots if (s[0], s[1]) not in slot_assignments]
+    if remaining_slots_after_forced and uploaded_image_ids:
+        uploaded_ids = [x for x in uploaded_image_ids if str(x).strip()]
+        # Filter to only include uploaded IDs that are in available set (they should be)
+        uploaded_ids = [x for x in uploaded_ids if x in available_set]
+        
+        for i, uploaded_id in enumerate(uploaded_ids):
+            if i >= len(remaining_slots_after_forced):
+                break
+            angle_num, variation_num, _angle = remaining_slots_after_forced[i]
+            slot_assignments[(angle_num, variation_num)] = uploaded_id
+            used.add(uploaded_id)
+            logger.debug("Assigned uploaded image: slot=%s-%s image=%s", angle_num, variation_num, uploaded_id)
+
+    # Remaining slots after forced + uploaded
     remaining_slots = [s for s in slots if (s[0], s[1]) not in slot_assignments]
     if not remaining_slots:
+        logger.info("All slots filled by forced/uploaded images, no AI selection needed")
         return slot_assignments
 
     # Ask OpenAI for suggestions for remaining slots
@@ -489,10 +632,11 @@ def _match_angles_to_images(
                     continue
                 slot_assignments[key] = image_id
                 used.add(image_id)
+                logger.debug("Assigned AI-selected image: slot=%s-%s image=%s", angle_num, variation_num, image_id)
     except Exception as e:
         logger.warning("matchAnglesToReferenceImages LLM path failed, will fallback: %s", e)
 
-    # Fallback fill
+    # Step 3: Fallback fill
     remaining_after = [s for s in remaining_slots if (s[0], s[1]) not in slot_assignments]
     if remaining_after:
         candidates = [x for x in available_ids if x not in used] or available_ids
@@ -503,6 +647,7 @@ def _match_angles_to_images(
             slot_assignments[(angle_num, variation_num)] = img
             used.add(img)
             candidates = [x for x in candidates if x not in used]
+            logger.debug("Assigned fallback image: slot=%s-%s image=%s", angle_num, variation_num, img)
 
     return slot_assignments
 
@@ -523,7 +668,9 @@ def _generate_image_openai(
                 "detail": "high",
             }
         )
+    # Safety check: only add product image if it's actually provided
     if product_image_data and product_image_data.get("base64"):
+        logger.debug("Adding product image to OpenAI generation")
         content.append(
             {
                 "type": "input_image",
@@ -531,6 +678,8 @@ def _generate_image_openai(
                 "detail": "high",
             }
         )
+    else:
+        logger.debug("No product image provided for OpenAI generation")
     model = os.environ.get("OPENAI_IMAGE_MODEL", "gpt-4o")
     t0 = time.time()
     try:
@@ -582,8 +731,12 @@ def _generate_image_nano_banana(
     contents: List[Any] = [prompt]
     if reference_image_bytes:
         contents.append(PIL.Image.open(io.BytesIO(reference_image_bytes)))
+    # Safety check: only add product image if it's actually provided
     if product_image_bytes:
+        logger.debug("Adding product image to Gemini generation")
         contents.append(PIL.Image.open(io.BytesIO(product_image_bytes)))
+    else:
+        logger.debug("No product image provided for Gemini generation")
 
     model_name = "gemini-3-pro-image-preview"
     # Image size must use uppercase 'K' (e.g., 1K, 2K, 4K). Lowercase is rejected.
@@ -703,6 +856,7 @@ def lambda_handler(event, _context):
         foundational_text = event.get("foundationalDocText") or ""
         forced_ids = event.get("forcedReferenceImageIds") or []
         product_urls = event.get("productImageUrls") or []
+        uploaded_ref_urls = event.get("uploadedReferenceImageUrls") or []  # NEW FIELD
         language = event.get("language") or "english"
         product_name = event.get("productName")
         provider = "nano_banana"
@@ -713,16 +867,119 @@ def lambda_handler(event, _context):
             raise ValueError("selectedAngles must be a non-empty list")
 
         logger.info(
-            "Inputs: angles=%s provider=%s language=%s productName=%s hasProductImage=%s",
+            "Inputs: angles=%s provider=%s language=%s productName=%s hasProductImage=%s uploadedRefImages=%s",
             len(selected_angles),
             provider,
             language,
             product_name,
             bool(product_urls),
+            len(uploaded_ref_urls),
         )
 
-        # Load descriptions
+        # Load static library
         library = _load_json_from_s3(bucket, descriptions_key)
+
+        # Check library reference images (forcedReferenceImageIds) with vision
+        library_images_metadata = {}  # Cache vision results for library images
+        if forced_ids:
+            logger.info("Checking %s library reference images with vision", len(forced_ids))
+            for ref_id in forced_ids:
+                if ref_id in library_images_metadata:
+                    continue  # Already checked
+                
+                try:
+                    # Normalize the ref_id for S3 lookup
+                    normalized_id = _normalize_image_id(ref_id)
+                    ref_key = f"{library_prefix}{normalized_id}"
+                    
+                    # Load image from S3
+                    ref_bytes = _load_bytes_from_s3(bucket, ref_key)
+                    
+                    # Check if it has product image using vision
+                    has_product = _detect_product_in_image(openai_client, ref_bytes, job_id)
+                    
+                    library_images_metadata[ref_id] = {
+                        "hasProduct": has_product,
+                        "checkedAt": _now_iso(),
+                    }
+                    
+                    # Also store under normalized ID for lookup
+                    library_images_metadata[normalized_id] = library_images_metadata[ref_id]
+                    
+                    logger.info(
+                        "Library image checked: ref_id=%s normalized=%s hasProduct=%s",
+                        ref_id,
+                        normalized_id,
+                        has_product,
+                    )
+                except Exception as e:
+                    logger.warning("Failed to check library image %s with vision: %s", ref_id, e)
+                    # Default to True (support product) if check fails
+                    library_images_metadata[ref_id] = {
+                        "hasProduct": True,
+                        "checkedAt": _now_iso(),
+                        "error": str(e),
+                    }
+
+        # Process uploaded reference images
+        uploaded_images_metadata = {}
+        uploaded_image_ids = []  # List of IDs to pass to matching function
+        if uploaded_ref_urls:
+            logger.info("Processing %s uploaded reference images", len(uploaded_ref_urls))
+            for idx, url in enumerate(uploaded_ref_urls):
+                try:
+                    # Download image from Cloudflare URL
+                    img_bytes = requests.get(url, timeout=30).content
+                    
+                    # Detect if it has product image
+                    has_product = _detect_product_in_image(openai_client, img_bytes, job_id)
+                    
+                    # Generate unique ID for this uploaded image
+                    uploaded_img_id = f"uploaded_{job_id}_{idx}"
+                    
+                    # Store in S3 for later use
+                    uploaded_key = f"user-uploads/{job_id}/reference-images/{uploaded_img_id}.png"
+                    s3_client.put_object(
+                        Bucket=bucket,
+                        Key=uploaded_key,
+                        Body=img_bytes,
+                        ContentType="image/png",
+                    )
+                    
+                    # Store metadata
+                    uploaded_images_metadata[uploaded_img_id] = {
+                        "imageId": uploaded_img_id,
+                        "s3Key": uploaded_key,
+                        "hasProduct": has_product,
+                        "sourceUrl": url,
+                        "detectedAt": _now_iso(),
+                    }
+                    
+                    # Add to list for matching
+                    uploaded_image_ids.append(uploaded_img_id)
+                    
+                    logger.info(
+                        "Uploaded image processed: id=%s hasProduct=%s url=%s",
+                        uploaded_img_id,
+                        has_product,
+                        url,
+                    )
+                except Exception as e:
+                    logger.error("Failed to process uploaded image %s: %s", url, e)
+                    # Continue with other images
+            
+            # Add uploaded images to library for matching (so they're available for AI selection too)
+            if "descriptions" not in library:
+                library["descriptions"] = {}
+            
+            for img_id, img_meta in uploaded_images_metadata.items():
+                library["descriptions"][img_id] = {
+                    "imageId": img_id,
+                    "description": f"User uploaded reference image (hasProduct: {img_meta['hasProduct']})",
+                    "hasProduct": img_meta["hasProduct"],
+                }
+            
+            logger.info("Added %s uploaded images to library", len(uploaded_images_metadata))
 
         # Download first product image (if provided) for conditioning
         product_image_data = None
@@ -735,8 +992,23 @@ def lambda_handler(event, _context):
         # Optional doc analysis (short)
         analysis_json_or_text = _summarize_docs_if_needed(openai_client, foundational_text, language, job_id)
 
-        assignments = _match_angles_to_images(openai_client, selected_avatar, selected_angles, library, forced_ids, job_id)
-        logger.info("Assigned %s slots to reference images", len(assignments))
+        # Pass uploaded_image_ids to matching function
+        assignments = _match_angles_to_images(
+            openai_client, 
+            selected_avatar, 
+            selected_angles, 
+            library, 
+            forced_ids, 
+            job_id,
+            uploaded_image_ids=uploaded_image_ids,  # NEW PARAMETER
+        )
+        logger.info(
+            "Assigned %s slots: forced=%s uploaded=%s ai_selected=%s",
+            len(assignments),
+            len(forced_ids),
+            len(uploaded_image_ids),
+            len(assignments) - len(forced_ids) - len(uploaded_image_ids),
+        )
 
         generated: List[dict] = []
         for idx, angle in enumerate(selected_angles):
@@ -747,7 +1019,14 @@ def lambda_handler(event, _context):
                 if not ref_id:
                     continue
 
-                ref_key = f"{library_prefix}{ref_id}"
+                # Determine S3 key based on whether it's uploaded or static library
+                if ref_id.startswith("uploaded_") or (uploaded_images_metadata and ref_id in uploaded_images_metadata):
+                    # It's an uploaded image
+                    ref_key = uploaded_images_metadata[ref_id]["s3Key"]
+                else:
+                    # It's from static library
+                    ref_key = f"{library_prefix}{ref_id}"
+                
                 ref_bytes = _load_bytes_from_s3(bucket, ref_key)
                 ref_b64 = base64.b64encode(ref_bytes).decode("utf-8")
                 ref_data = {"base64": ref_b64, "mimeType": _guess_mime_from_key(ref_id, "image/png")}
@@ -768,31 +1047,102 @@ def lambda_handler(event, _context):
                 if analysis_json_or_text:
                     prompt_parts.append(f"Research summary (JSON/text): {analysis_json_or_text}")
                 
-                # Check if this reference image supports product images
-                supports_product = _supports_product_image(ref_id)
+                # Check if this reference image supports product images (pass both metadata dicts)
+                supports_product = _supports_product_image(
+                    ref_id, 
+                    uploaded_images_metadata,
+                    library_images_metadata,  # NEW: pass library metadata
+                )
+                
+                # Log for debugging
+                logger.info(
+                    "Image generation check: ref_id=%s supports_product=%s has_product_image_data=%s",
+                    ref_id,
+                    supports_product,
+                    bool(product_image_data),
+                )
+                
+                # EXPLICITLY set product image to None if not supported
+                # Don't rely on conditional - be explicit
+                if supports_product and product_image_data:
+                    # This ref image supports product images AND we have product image data
+                    product_img_bytes_for_gen = product_image_bytes
+                    product_img_data_for_gen = product_image_data
+                else:
+                    # This ref image does NOT support product images OR no product image provided
+                    # EXPLICITLY set to None to ensure it's not sent
+                    product_img_bytes_for_gen = None
+                    product_img_data_for_gen = None
+                    if not supports_product:
+                        logger.info(
+                            "Blocking product image for ref_id=%s (supports_product=%s)",
+                            ref_id,
+                            supports_product,
+                        )
                 
                 if supports_product and product_image_data:
                     prompt_parts.append(
                         "Use the provided reference creative image as the layout/style template. "
                         "If a product image is provided, incorporate it naturally. "
+                        "For the color theme: intelligently decide whether to use colors from the product image "
+                        "or preserve the reference image's color scheme. "
+                        "Use product image colors when they enhance the ad's appeal and conversion potential, "
+                        "but preserve the reference image's color theme when it already works well and fits the product. "
+                        "Prioritize creating a cohesive, high-converting ad that balances visual appeal with brand consistency. "
                         "Return only the final image."
                     )
                 else:
+                    # Explicitly tell AI NOT to include product images for excluded images
+                    if not supports_product:
+                        prompt_parts.append(
+                            "CRITICAL: This reference image does NOT support product images. "
+                            "DO NOT include, merge, add, or reference any product images in the generated image. "
+                            "Use ONLY the reference creative image as provided. "
+                            "Ignore and do not copy any product images that may be visible in the reference image itself. "
+                            "Generate the image using only the reference template without any product imagery."
+                        )
                     prompt_parts.append(
                         "Use the provided reference creative image as the layout/style template. "
+                        "For the color theme and visual style, intelligently decide what works best: "
+                        "you may preserve the color theme from the reference image if it fits well, "
+                        "or choose a color scheme that better matches the target avatar and marketing angle. "
+                        "Prioritize creating a high-converting ad that resonates with the target audience. "
                         "Return only the final image."
                     )
                 prompt = "\n".join(prompt_parts)
 
                 try:
                     if provider in ("nano_banana", "nanobanana", "nano-banana"):
-                        # Only pass product image if supported
-                        product_img_bytes = product_image_bytes if supports_product else None
-                        img_b64 = _generate_image_nano_banana(prompt, ref_bytes, product_img_bytes)
+                        # Double-check: verify we're not passing product image for excluded refs
+                        if product_img_bytes_for_gen and not supports_product:
+                            logger.error(
+                                "ERROR: Attempted to pass product image for excluded ref_id=%s, forcing to None",
+                                ref_id,
+                            )
+                            product_img_bytes_for_gen = None
+                        
+                        img_b64 = _generate_image_nano_banana(
+                            prompt, 
+                            ref_bytes, 
+                            product_img_bytes_for_gen,  # This will be None for excluded images
+                            job_id
+                        )
                     else:
-                        # Only pass product image if supported
-                        product_img_data_for_gen = product_image_data if supports_product else None
-                        img_b64 = _generate_image_openai(openai_client, prompt, ref_data, product_img_data_for_gen)
+                        # Double-check: verify we're not passing product image for excluded refs
+                        if product_img_data_for_gen and not supports_product:
+                            logger.error(
+                                "ERROR: Attempted to pass product image for excluded ref_id=%s, forcing to None",
+                                ref_id,
+                            )
+                            product_img_data_for_gen = None
+                        
+                        img_b64 = _generate_image_openai(
+                            openai_client, 
+                            prompt, 
+                            ref_data, 
+                            product_img_data_for_gen,  # This will be None for excluded images
+                            job_id
+                        )
 
                     upload = _upload_base64_to_cloudflare_images(
                         img_b64,
