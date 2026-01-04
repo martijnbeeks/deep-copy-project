@@ -21,10 +21,13 @@ interface OrganizationUsageData {
   }
   deep_research_limit: number
   pre_lander_limit: number
+  static_ads_limit: number
   current_deep_research_usage: number
   current_pre_lander_usage: number
+  current_static_ads_usage: number
   deep_research_week_start: string | null
   pre_lander_week_start: string | null
+  static_ads_week_start: string | null
   created_at: string
   updated_at: string
 }
@@ -36,12 +39,13 @@ export function UsageLimitsTab() {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [resetDialogOpen, setResetDialogOpen] = useState(false)
   const [resettingOrg, setResettingOrg] = useState<OrganizationUsageData | null>(null)
-  const [resetType, setResetType] = useState<'all' | 'deep_research' | 'pre_lander'>('all')
+  const [resetType, setResetType] = useState<'all' | 'deep_research' | 'pre_lander' | 'static_ads'>('all')
   const hasLoadedRef = useRef(false)
   
   const [editForm, setEditForm] = useState({
     deep_research_limit: '3',
-    pre_lander_limit: '30'
+    pre_lander_limit: '30',
+    static_ads_limit: '30'
   })
 
   // Helper function to handle numeric input (same as invite link)
@@ -125,7 +129,8 @@ export function UsageLimitsTab() {
     setEditingOrg(org)
     setEditForm({
       deep_research_limit: org.deep_research_limit.toString(),
-      pre_lander_limit: org.pre_lander_limit.toString()
+      pre_lander_limit: org.pre_lander_limit.toString(),
+      static_ads_limit: org.static_ads_limit.toString()
     })
     setEditDialogOpen(true)
   }
@@ -136,9 +141,10 @@ export function UsageLimitsTab() {
     // Type cast to integers before sending
     const deepResearchLimit = parseInt(editForm.deep_research_limit) || 0
     const preLanderLimit = parseInt(editForm.pre_lander_limit) || 0
+    const staticAdsLimit = parseInt(editForm.static_ads_limit) || 0
 
     // Validate that values are positive
-    if (deepResearchLimit < 0 || preLanderLimit < 0) {
+    if (deepResearchLimit < 0 || preLanderLimit < 0 || staticAdsLimit < 0) {
       toast({
         title: "Validation Error",
         description: "Limits must be non-negative integers",
@@ -156,7 +162,8 @@ export function UsageLimitsTab() {
         },
         body: JSON.stringify({
           deep_research_limit: deepResearchLimit,
-          pre_lander_limit: preLanderLimit
+          pre_lander_limit: preLanderLimit,
+          static_ads_limit: staticAdsLimit
         })
       })
 
@@ -262,7 +269,7 @@ export function UsageLimitsTab() {
           <div>
             <h3 className="text-sm font-semibold">Usage Limits</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Manage Deep Research and Pre-Lander limits per organization
+              Manage Deep Research, Pre-Lander, and Static Ads limits per organization
             </p>
           </div>
           <Button onClick={() => {
@@ -360,6 +367,30 @@ export function UsageLimitsTab() {
                         Week started: {formatDate(org.pre_lander_week_start)}
                       </p>
                     </div>
+
+                    {/* Static Ads Usage */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Static Ads</Label>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={getUsageColor(org.current_static_ads_usage, org.static_ads_limit)}>
+                            {org.current_static_ads_usage} / {org.static_ads_limit}
+                          </Badge>
+                          {org.current_static_ads_usage >= org.static_ads_limit && (
+                            <AlertCircle className="h-4 w-4 text-destructive" />
+                          )}
+                        </div>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div
+                          className="bg-primary h-2 rounded-full transition-all"
+                          style={{ width: `${getUsagePercentage(org.current_static_ads_usage, org.static_ads_limit)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Week started: {formatDate(org.static_ads_week_start)}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -418,6 +449,27 @@ export function UsageLimitsTab() {
               />
               <p className="text-xs text-muted-foreground">
                 Maximum number of Pre-Lander generations per week
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="static_ads_limit" className="text-sm font-medium">
+                Static Ads Limit
+              </Label>
+              <Input
+                id="static_ads_limit"
+                type="text"
+                inputMode="numeric"
+                value={editForm.static_ads_limit}
+                onChange={(e) => {
+                  const numericValue = handleNumericInput(e.target.value)
+                  setEditForm(prev => ({ ...prev, static_ads_limit: numericValue }))
+                }}
+                placeholder="30"
+                className="h-10"
+              />
+              <p className="text-xs text-muted-foreground">
+                Maximum number of Static Ads images per week
               </p>
             </div>
           </div>
@@ -487,6 +539,17 @@ export function UsageLimitsTab() {
                   />
                   <span className="text-sm">Pre-Landers Only</span>
                 </label>
+                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
+                  <input
+                    type="radio"
+                    name="resetType"
+                    value="static_ads"
+                    checked={resetType === 'static_ads'}
+                    onChange={() => setResetType('static_ads')}
+                    className="cursor-pointer"
+                  />
+                  <span className="text-sm">Static Ads Only</span>
+                </label>
               </div>
             </div>
 
@@ -499,6 +562,9 @@ export function UsageLimitsTab() {
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Pre-Landers: <span className="font-medium text-foreground">{resettingOrg.current_pre_lander_usage}</span> / {resettingOrg.pre_lander_limit}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Static Ads: <span className="font-medium text-foreground">{resettingOrg.current_static_ads_usage}</span> / {resettingOrg.static_ads_limit}
                   </p>
                 </div>
               </div>

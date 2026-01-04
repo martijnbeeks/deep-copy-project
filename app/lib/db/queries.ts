@@ -674,7 +674,8 @@ export const createOrganization = async (name: string, created_by: string): Prom
   console.log('[CREATE_ORG] Setting organization usage limits', { orgId: organization.id })
   await setOrganizationUsageLimits(organization.id, {
     deep_research_limit: 3,
-    pre_lander_limit: 30
+    pre_lander_limit: 30,
+    static_ads_limit: 30
   })
   console.log('[CREATE_ORG] Usage limits set successfully', { orgId: organization.id })
   
