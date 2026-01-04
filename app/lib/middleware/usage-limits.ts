@@ -97,6 +97,8 @@ export const checkUsageLimit = async (
   // Get the limit for this usage type
   const limit = usageType === 'deep_research' 
     ? limits.deep_research_limit 
+    : usageType === 'static_ads'
+    ? limits.static_ads_limit
     : limits.pre_lander_limit
   
   // Get current week start date
