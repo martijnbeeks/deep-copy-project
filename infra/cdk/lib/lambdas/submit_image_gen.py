@@ -2,6 +2,7 @@ import json
 import os
 import uuid
 from datetime import datetime, timezone
+from urllib.parse import parse_qs, unquote
 
 import boto3
 from botocore.exceptions import ClientError
@@ -31,9 +32,79 @@ def _response(status_code: int, body: dict | str):
     return {"statusCode": status_code, "headers": headers, "body": body}
 
 
+def _parse_form_data(body_str: str) -> dict:
+    """Parse url-encoded form data into a dict."""
+    result = {}
+    if not body_str:
+        return result
+    
+    # Parse query string format (key=value&key2=value2)
+    parsed = parse_qs(body_str, keep_blank_values=True)
+    
+    # Convert lists to single values or arrays as appropriate
+    for key, values in parsed.items():
+        if len(values) == 1:
+            # Single value - could be a string or JSON
+            value = unquote(values[0])
+            # Try to parse as JSON (for arrays sent as JSON strings)
+            try:
+                parsed_json = json.loads(value)
+                result[key] = parsed_json
+            except (json.JSONDecodeError, ValueError):
+                # Not JSON, use as string
+                result[key] = value
+        else:
+            # Multiple values - keep as array
+            result[key] = [unquote(v) for v in values]
+    
+    return result
+
+
+def _normalize_uploaded_urls(value) -> list:
+    """Normalize uploadedReferenceImageUrls to a list."""
+    if not value:
+        return []
+    
+    if isinstance(value, list):
+        return value
+    
+    if isinstance(value, str):
+        # Try parsing as JSON array first
+        try:
+            parsed = json.loads(value)
+            if isinstance(parsed, list):
+                return parsed
+        except (json.JSONDecodeError, ValueError):
+            pass
+        
+        # Check if comma-separated
+        if ',' in value:
+            return [url.strip() for url in value.split(',') if url.strip()]
+        
+        # Single URL string
+        return [value] if value.strip() else []
+    
+    return []
+
+
 def handler(event, _context):
+    # Check content type to determine parsing method
+    headers = event.get("headers", {}) or {}
+    content_type = headers.get("Content-Type", "") or headers.get("content-type", "")
+    
     body = event.get("body")
-    if isinstance(body, str):
+    
+    # Handle form-data or url-encoded
+    if content_type and ("application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type):
+        if isinstance(body, str):
+            body = _parse_form_data(body)
+        elif isinstance(body, dict):
+            # Already parsed by API Gateway
+            pass
+        else:
+            body = {}
+    # Handle JSON
+    elif isinstance(body, str):
         try:
             body = json.loads(body) if body else {}
         except json.JSONDecodeError:
@@ -43,7 +114,28 @@ def handler(event, _context):
 
     selected_avatar = body.get("selectedAvatar")
     selected_angles = body.get("selectedAngles")
-    uploaded_reference_image_urls = body.get("uploadedReferenceImageUrls", [])  # NEW FIELD
+    
+    # Normalize uploadedReferenceImageUrls - handle all formats
+    uploaded_reference_image_urls_raw = (
+        body.get("uploadedReferenceImageUrls") or 
+        body.get("uploadedReferenceImageUrl") or  # Singular (backward compat)
+        body.get("customReferenceImageUrls") or   # Old field name (backward compat)
+        []
+    )
+    
+    # Normalize to list
+    uploaded_reference_image_urls = _normalize_uploaded_urls(uploaded_reference_image_urls_raw)
+    
+    # Also handle selectedAngles if it comes as a string (form-data)
+    if isinstance(selected_angles, str):
+        try:
+            selected_angles = json.loads(selected_angles)
+        except (json.JSONDecodeError, ValueError):
+            # Try comma-separated
+            if ',' in selected_angles:
+                selected_angles = [angle.strip() for angle in selected_angles.split(',') if angle.strip()]
+            else:
+                selected_angles = [selected_angles]
     
     if not selected_avatar or not isinstance(selected_avatar, str):
         return _response(400, {"error": "selectedAvatar is required and must be a string"})
@@ -56,6 +148,9 @@ def handler(event, _context):
             return _response(400, {"error": "uploadedReferenceImageUrls must be a list"})
         if not all(isinstance(url, str) and url.startswith(('http://', 'https://')) for url in uploaded_reference_image_urls):
             return _response(400, {"error": "uploadedReferenceImageUrls must be a list of valid HTTP/HTTPS URLs"})
+    
+    # Normalize the field name in the payload for downstream processing
+    body["uploadedReferenceImageUrls"] = uploaded_reference_image_urls
 
     job_id = str(uuid.uuid4())
     result_prefix = f"results/{job_id}"
