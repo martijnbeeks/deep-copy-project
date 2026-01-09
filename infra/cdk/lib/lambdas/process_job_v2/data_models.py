@@ -191,7 +191,10 @@ class AvatarMarketingAngles(BaseModel):
     top_3_angles: Top3Angles = Field(..., description="Selection of top 3 angles")
 
 
-# Offer brief data models
+# =============================================================================
+# Offer Brief Data Models (Updated with all screenshot fields)
+# =============================================================================
+
 class ConsciousnessLevel(str, Enum):
     """How self-aware and change-ready the prospect is."""
     LOW = "low"
@@ -199,7 +202,7 @@ class ConsciousnessLevel(str, Enum):
 
 
 class AwarenessLevel(str, Enum):
-    """Prospect’s awareness per Schwartz’s stages."""
+    """Prospect's awareness per Schwartz's stages."""
     UNAWARE = "unaware"
     PROBLEM_AWARE = "problem_aware"
     SOLUTION_AWARE = "solution_aware"
@@ -212,12 +215,21 @@ class SophisticationLevel(str, Enum):
     LEVEL_1 = "level_1"   # Birth of market; simple core claim works.
     LEVEL_2 = "level_2"   # Outshine competition; bigger/more dramatic promise.
     LEVEL_3 = "level_3"   # Introduce mechanism; explain "how it works" to earn belief.
-    LEVEL_4 = "level_4"   # Upgrade/improve mechanism; v2.0 of the “secret sauce”.
+    LEVEL_4 = "level_4"   # Upgrade/improve mechanism; v2.0 of the "secret sauce".
     LEVEL_5 = "level_5"   # Maximum skepticism; use advanced strategies to break through.
 
 
+class MarketTemperature(str, Enum):
+    """Market temperature indicating buyer readiness and trust level."""
+    COLD = "cold"           # Not interested, unaware of need
+    WARM = "warm"           # Interested but needs trust signals before buying
+    HOT = "hot"             # Ready to buy, actively searching
+    SKEPTICAL = "skeptical" # Burned before, needs heavy proof
+    SATURATED = "saturated" # Seen everything, extremely hard to reach
+
+
 class StageOfSophistication(BaseModel):
-    """Choose the market’s sophistication level and capture reasoning/context."""
+    """Choose the market's sophistication level and capture reasoning/context."""
     level: SophisticationLevel = Field(
         ...,
         description=(
@@ -241,12 +253,33 @@ class HeadlineIdea(BaseModel):
     )
 
 
+# Updated BeliefChain to match screenshot structure (FROM → TO → PROOF)
+class BeliefStep(BaseModel):
+    """A single belief shift in the belief chain."""
+    belief_name: str = Field(..., description="Name of the belief (e.g., 'Problem Belief', 'Solution Belief')")
+    from_belief: str = Field(..., description="The starting belief the prospect holds")
+    to_belief: str = Field(..., description="The target belief we want them to adopt")
+    proof: str = Field(..., description="Evidence or mechanism that enables this belief shift")
+
+
 class BeliefChain(BaseModel):
     """A chain of beliefs the prospect must adopt to buy."""
     outcome: str = Field(..., description="What the buyer must feel confident about (e.g., 'This can work for me').")
     steps: List[str] = Field(
         ...,
-        description="Ordered micro-beliefs (e.g., problem is real → solution type works → this product’s mechanism works → I can use it)."
+        description="Ordered micro-beliefs (e.g., problem is real → solution type works → this product's mechanism works → I can use it)."
+    )
+
+
+class BeliefArchitecture(BaseModel):
+    """Complete belief architecture with detailed belief chain and summary argument."""
+    belief_chain: List[BeliefStep] = Field(
+        default_factory=list,
+        description="Ordered list of belief shifts (Problem → Solution → Mechanism → Product → Timing → Risk)"
+    )
+    complete_argument: Optional[str] = Field(
+        None,
+        description="The complete persuasive argument that incorporates all belief shifts into a cohesive narrative."
     )
 
 
@@ -257,30 +290,285 @@ class SwipeExample(BaseModel):
     notes: Optional[str] = Field(None, description="What to model: headline structure, proof style, funnel flow, etc.")
 
 
+# Updated ProductInfo with all screenshot fields
 class ProductInfo(BaseModel):
     """Basic info about the product you will market."""
     name: Optional[str] = Field(None, description="Working name of the product/offer.")
-    description: Optional[str] = Field(None, description="What it is, who it’s for, core outcomes/benefits.")
+    description: Optional[str] = Field(None, description="What it is, who it's for, core outcomes/benefits.")
     details: Optional[str] = Field(
         None,
         description="Format, modules, deliverables, bonuses, guarantees, price points, terms."
+    )
+    # New fields from Section 3: Product Details
+    format: Optional[str] = Field(None, description="Product format (e.g., 'Softgel supplement (60 count)', 'Digital course', 'Physical book')")
+    price: Optional[str] = Field(None, description="One-time price (e.g., '$49/bottle')")
+    subscription_price: Optional[str] = Field(None, description="Subscription/recurring price if applicable (e.g., '$39 subscribe')")
+    guarantee: Optional[str] = Field(None, description="Guarantee offered (e.g., '90-day money-back')")
+    shipping: Optional[str] = Field(None, description="Shipping details (e.g., 'Free (US)')")
+    key_differentiator: Optional[str] = Field(
+        None, 
+        description="The primary thing that sets this product apart from competitors"
+    )
+    compliance_notes: List[str] = Field(
+        default_factory=list,
+        description="Legal/compliance requirements (e.g., 'FDA supplement disclaimer required', 'No disease claims')"
+    )
+
+
+# New models for Section 4: Pain & Desire Clusters
+class PainCluster(BaseModel):
+    """Clustered pain points by dimension."""
+    surface: List[str] = Field(default_factory=list, description="Surface-level, practical pain points")
+    emotional: List[str] = Field(default_factory=list, description="Emotional pain points (fear, frustration, shame)")
+    identity: List[str] = Field(default_factory=list, description="Identity-level pain (conflicts with self-image)")
+    secret: List[str] = Field(default_factory=list, description="Hidden pain they won't admit publicly")
+
+
+class DesireCluster(BaseModel):
+    """Clustered desires by dimension."""
+    surface: List[str] = Field(default_factory=list, description="Surface-level, practical desires")
+    emotional: List[str] = Field(default_factory=list, description="Emotional desires (how they want to feel)")
+    identity: List[str] = Field(default_factory=list, description="Identity desires (who they want to become)")
+    secret: List[str] = Field(default_factory=list, description="Hidden desires they won't admit publicly")
+
+
+class PainDesireSection(BaseModel):
+    """Section 4: Pain & Desire mapping for the offer."""
+    pain_clusters: Optional[PainCluster] = Field(None, description="Pain points organized by dimension")
+    desire_clusters: Optional[DesireCluster] = Field(None, description="Desires organized by dimension")
+    dominant_emotion: Optional[str] = Field(
+        None, 
+        description="The ONE dominant emotion driving behavior (e.g., 'Fear — specifically fear of loss and dependence')"
+    )
+
+
+# New models for Section 5: Failed Solutions
+class FailedSolutionItem(BaseModel):
+    """A single failed solution with analysis."""
+    solution: str = Field(..., description="What they tried (e.g., 'Store-brand AREDS2', 'Cheap Amazon lutein')")
+    why_it_failed: str = Field(..., description="Why it didn't work for them")
+    our_opportunity: str = Field(..., description="How our product addresses this failure")
+
+
+class FailedSolutionsSection(BaseModel):
+    """Section 5: Failed Solutions analysis."""
+    solutions: List[FailedSolutionItem] = Field(
+        default_factory=list,
+        description="Table of failed solutions with failure reasons and opportunities"
+    )
+    money_already_spent: Optional[str] = Field(None, description="Approximate total spent on failed solutions (e.g., '$100 - $400')")
+    belief_about_failure: Optional[str] = Field(
+        None, 
+        description="What conclusion they've drawn about why nothing works (e.g., 'Most supplements are underdosed scams hiding behind legal loopholes')"
+    )
+    current_coping: Optional[str] = Field(
+        None,
+        description="What they're currently doing to manage the problem (e.g., 'Basic multivitamin, screen adjustments, hoping for the best')"
+    )
+
+
+# New models for Section 6: Competitor Landscape
+class CompetitorEntry(BaseModel):
+    """A single competitor in the landscape."""
+    name: str = Field(..., description="Competitor name/brand")
+    price: str = Field(..., description="Price or price range")
+    key_claim: str = Field(..., description="Their primary marketing claim")
+    weakness: str = Field(..., description="Their main weakness or vulnerability")
+    complaints: str = Field(..., description="Common customer complaints about them")
+
+
+class CompetitorLandscape(BaseModel):
+    """Section 6: Competitor analysis and positioning."""
+    competitors: List[CompetitorEntry] = Field(
+        default_factory=list,
+        description="Table of main competitors with their claims, weaknesses, and complaints"
+    )
+    competitor_gaps: List[str] = Field(
+        default_factory=list,
+        description="What competitors are NOT doing that creates opportunity (e.g., 'No one leads with transparency')"
+    )
+    our_advantages: List[str] = Field(
+        default_factory=list,
+        description="Our specific advantages vs. competitors (e.g., 'Full dose transparency', 'Third-party lab COA')"
+    )
+    positioning_statement: Optional[str] = Field(
+        None,
+        description="Clear positioning statement vs. competitors (e.g., 'Unlike [X] who hide doses behind proprietary blends, we show you exactly what's inside')"
+    )
+
+
+# New models for Section 8: Objections
+class ObjectionSeverity(str, Enum):
+    """Severity level of an objection."""
+    HIGH = "high"       # Red - critical objection that kills sales
+    MEDIUM = "medium"   # Yellow - significant concern that needs addressing
+    LOW = "low"         # Green - minor concern, easily overcome
+
+
+class ObjectionItem(BaseModel):
+    """A single objection with severity and response strategy."""
+    objection: str = Field(..., description="The objection as the prospect would phrase it")
+    severity: ObjectionSeverity = Field(..., description="How critical this objection is (high/medium/low)")
+    response: str = Field(..., description="How to counter this objection")
+
+
+class ObjectionsSection(BaseModel):
+    """Section 8: Objections handling."""
+    objections: List[ObjectionItem] = Field(
+        default_factory=list,
+        description="List of objections with severity ratings and responses"
+    )
+    hidden_objection: Optional[str] = Field(
+        None,
+        description="The objection they won't say out loud (e.g., 'What if I waste money AGAIN on something that doesn't work?')"
+    )
+    hidden_objection_counter: Optional[str] = Field(
+        None,
+        description="How to counter the hidden objection (e.g., '90-day money-back guarantee + verifiable proof BEFORE buying')"
+    )
+
+
+# New models for Section 9: Research & Inspiration
+class RawQuoteWithSource(BaseModel):
+    """A raw quote from research with its source."""
+    quote: str = Field(..., description="The exact quote from research")
+    source: str = Field(..., description="Where this quote came from (e.g., 'Reddit r/Supplements', 'Amazon Review', 'Facebook Group')")
+
+
+class RawQuotesSection(BaseModel):
+    """Raw quotes organized by type."""
+    pain_quotes: List[RawQuoteWithSource] = Field(default_factory=list, description="Quotes expressing pain")
+    desire_quotes: List[RawQuoteWithSource] = Field(default_factory=list, description="Quotes expressing desire")
+    objection_quotes: List[RawQuoteWithSource] = Field(default_factory=list, description="Quotes expressing skepticism/objections")
+
+
+class ResearchInspiration(BaseModel):
+    """Section 9: Research sources and creative inspiration."""
+    raw_quotes: Optional[RawQuotesSection] = Field(None, description="Raw quotes from research organized by type")
+    research_sources: List[str] = Field(
+        default_factory=list,
+        description="Sources used for research (e.g., 'Reddit', 'Amazon Reviews', 'Facebook Groups', 'YouTube', 'Google PAA')"
+    )
+    inspiration_swipes: List[SwipeExample] = Field(
+        default_factory=list,
+        description="Brands/campaigns to model (e.g., 'Athletic Greens — transparency positioning')"
+    )
+
+
+# Market Snapshot for Section 1
+class MarketSnapshot(BaseModel):
+    """Section 1: Market Snapshot - always visible summary."""
+    sophistication: Optional[StageOfSophistication] = Field(None, description="Market sophistication level with rationale")
+    awareness: Optional[AwarenessLevel] = Field(None, description="Prospect's awareness level")
+    awareness_description: Optional[str] = Field(None, description="Brief description of awareness state (e.g., 'Know solutions exist, seeking')")
+    consciousness: Optional[ConsciousnessLevel] = Field(None, description="Prospect's consciousness/readiness level")
+    consciousness_description: Optional[str] = Field(None, description="Brief description of consciousness state (e.g., 'Actively searching')")
+    market_temperature: Optional[MarketTemperature] = Field(None, description="Market temperature (cold/warm/hot/skeptical/saturated)")
+    market_temperature_description: Optional[str] = Field(
+        None, 
+        description="Explanation of market temperature (e.g., 'Warm — Interested but needs trust signals before buying')"
+    )
+
+
+# Big Idea Section for Section 2
+class BigIdeaSection(BaseModel):
+    """Section 2: The Big Idea and mechanisms."""
+    big_idea: Optional[str] = Field(
+        None,
+        description="Single, transformative central idea that unifies the campaign"
+    )
+    problem_mechanism_ump: Optional[str] = Field(
+        None,
+        description="Unique Mechanism of the Problem: Why nothing has worked (counterintuitive reason the problem persists)"
+    )
+    solution_mechanism_ums: Optional[str] = Field(
+        None,
+        description="Unique Mechanism of the Solution: Why THIS works (how this solution uniquely solves the problem)"
+    )
+    metaphors: List[str] = Field(
+        default_factory=list,
+        description="Images/analogies to make the big idea and mechanism vivid"
+    )
+    guru: Optional[str] = Field(
+        None,
+        description="Authority or spokesperson (real or archetype) associated with the offer"
+    )
+    discovery_story: Optional[str] = Field(
+        None,
+        description="Origin narrative: aha moment, failed attempts, breakthrough mechanism"
     )
 
 
 class OfferBrief(BaseModel):
     """
     Structured brief to guide AI when generating copy, concepts, and funnel assets.
+    Updated to include all fields from the UI screenshots.
     Fill as many fields as possible; lists can contain multiple options to explore.
     """
+    # Section 1: Market Snapshot
+    market_snapshot: Optional[MarketSnapshot] = Field(
+        None, 
+        description="Section 1: Market Snapshot - sophistication, awareness, consciousness, temperature"
+    )
+    
+    # Section 2: The Big Idea
+    big_idea_section: Optional[BigIdeaSection] = Field(
+        None,
+        description="Section 2: The Big Idea - central idea, mechanisms, metaphors, guru, discovery story"
+    )
+    
+    # Section 3: Product Details
+    product: Optional[ProductInfo] = Field(
+        None, 
+        description="Section 3: Product Details - name, format, price, guarantee, differentiator, compliance"
+    )
+    
+    # Section 4: Pain & Desire
+    pain_desire: Optional[PainDesireSection] = Field(
+        None,
+        description="Section 4: Pain & Desire clusters and dominant emotion"
+    )
+    
+    # Section 5: Failed Solutions
+    failed_solutions: Optional[FailedSolutionsSection] = Field(
+        None,
+        description="Section 5: Failed Solutions analysis"
+    )
+    
+    # Section 6: Competitor Landscape
+    competitor_landscape: Optional[CompetitorLandscape] = Field(
+        None,
+        description="Section 6: Competitor analysis and positioning"
+    )
+    
+    # Section 7: Belief Architecture
+    belief_architecture: Optional[BeliefArchitecture] = Field(
+        None,
+        description="Section 7: Belief chain and complete argument"
+    )
+    
+    # Section 8: Objections
+    objections_section: Optional[ObjectionsSection] = Field(
+        None,
+        description="Section 8: Objections with severity, responses, and hidden objection"
+    )
+    
+    # Section 9: Research & Inspiration
+    research_inspiration: Optional[ResearchInspiration] = Field(
+        None,
+        description="Section 9: Raw quotes, research sources, and inspiration swipes"
+    )
+    
+    # Legacy fields (kept for backward compatibility)
     potential_product_names: List[str] = Field(
         default_factory=list,
         description="Brainstormed product/offer name options."
     )
     level_of_consciousness: Optional[ConsciousnessLevel] = Field(
-        None, description="Prospect’s general self-awareness/readiness to change. Explain in 2-3 sentences."
+        None, description="Prospect's general self-awareness/readiness to change. Explain in 2-3 sentences."
     )
     level_of_awareness: Optional[AwarenessLevel] = Field(
-        None, description="Prospect’s current awareness of problem/solution/product. Explain in 2-3 sentences."
+        None, description="Prospect's current awareness of problem/solution/product. Explain in 2-3 sentences."
     )
     stage_of_sophistication: Optional[StageOfSophistication] = Field(
         None, description="Market sophistication selection with reasoning."
@@ -311,10 +599,6 @@ class OfferBrief(BaseModel):
     discovery_story: Optional[str] = Field(
         None,
         description="Origin narrative: aha moment, failed attempts, breakthrough mechanism."
-    )
-
-    product: Optional[ProductInfo] = Field(
-        None, description="Core product details to anchor claims and copy."
     )
 
     headline_ideas: List[HeadlineIdea] = Field(
