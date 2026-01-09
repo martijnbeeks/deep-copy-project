@@ -103,6 +103,11 @@ class AvatarStrategicSummary(BaseModel):
     message_match_difficulty: str = Field(..., description="Message Match Difficulty: Easy to reach with messaging / Requires nuanced approach")
     one_line_hook: str = Field(..., description="One-Line Hook That Would Stop Them: A headline or opening that would grab THIS avatar specifically")
 
+class AvatarRanking(BaseModel):
+    """Section L: Ranking"""
+    ranking: int = Field(..., description="High, medium, low based on market size x buying readiness")
+    reason: str = Field(..., description="Reason for the ranking")
+
 class Avatar(BaseModel):
     """
     Marketing Avatar sheet for product–market fit & messaging research.
@@ -126,6 +131,8 @@ class Avatar(BaseModel):
     info_comm: AvatarInformationComm = Field(..., description="Section I: Information & Communication")
     raw_language: AvatarRawLanguage = Field(..., description="Section J: Raw Language Map")
     strategic_summary: AvatarStrategicSummary = Field(..., description="Section K: Strategic Summary")
+    ranking: AvatarRanking = Field(..., description="Section L: Ranking")
+
 
 
 class IdentifiedAvatar(BaseModel):
@@ -137,10 +144,6 @@ class IdentifiedAvatarList(BaseModel):
     """List of identified avatars."""
     avatars: List[IdentifiedAvatar] = Field(..., description="List of potential customer avatars.")
 
-
-class AvatarList(BaseModel):
-    """List of marketing avatars."""
-    avatars: List[Avatar] = Field(..., description="List of identified customer avatars.")
 
 
 # Marketing Angles Data Models
