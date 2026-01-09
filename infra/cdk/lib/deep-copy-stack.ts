@@ -640,6 +640,15 @@ export class DeepCopyStack extends Stack {
     new CfnOutput(this, 'PravahaClientId', { value: pravahaClient.userPoolClientId });
     new CfnOutput(this, 'CognitoTokenEndpoint', { value: tokenEndpoint });
     new CfnOutput(this, 'CognitoIssuer', { value: issuerUrl });
+
+    // Developer Read-Only User
+    const developerUser = new iam.User(this, 'DeveloperUser', {
+      userName: 'deep-copy-developer',
+    });
+
+    developerUser.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('ReadOnlyAccess'));
+
+    new CfnOutput(this, 'DeveloperUserName', { value: developerUser.userName });
   }
 }
 

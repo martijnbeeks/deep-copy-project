@@ -1886,6 +1886,17 @@ components:
         one_line_hook:
           type: string
           description: "One-Line Hook That Would Stop Them: A headline or opening that would grab THIS avatar specifically"
+    AvatarRanking:
+      type: object
+      description: "Section L: Ranking"
+      required: [ranking, reason]
+      properties:
+        ranking:
+          type: integer
+          description: "High, medium, low based on market size x buying readiness"
+        reason:
+          type: string
+          description: "Reason for the ranking"
     MarketingAngle:
       type: object
       description: "A generated marketing angle"
@@ -2047,7 +2058,7 @@ components:
     Avatar:
       type: object
       description: "Marketing Avatar sheet for product–market fit & messaging research"
-      required: [name, demographics, problem_experience, pain_dimensions, desire_dimensions, awareness, failed_solutions, objections, buying_psychology, info_comm, raw_language, strategic_summary]
+      required: [name, demographics, problem_experience, pain_dimensions, desire_dimensions, awareness, failed_solutions, objections, buying_psychology, info_comm, raw_language, strategic_summary, ranking]
       properties:
         name:
           type: string
@@ -2074,6 +2085,8 @@ components:
           $ref: '#/components/schemas/AvatarRawLanguage'
         strategic_summary:
           $ref: '#/components/schemas/AvatarStrategicSummary'
+        ranking:
+          $ref: '#/components/schemas/AvatarRanking'
     CustomerAvatar:
       type: object
       required: [persona_name, characteristics, description, age_range, gender, key_buying_motivation, pain_point, emotion, desire, objections, failed_alternatives]
