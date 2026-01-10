@@ -1769,7 +1769,7 @@ def run_pipeline(event, context):
             try:
                 # Mock source
                 # mock_key = "projects/test/20251121_114946/comprehensive_results.json" #new aura
-                mock_key = "results/4d46fe25-2ca1-4923-bd62-07da6ae3346b/comprehensive_results.json" #hypowered
+                mock_key = "results/eb6fd6b0-4927-45f5-a393-3c60c95901e0/comprehensive_results.json" #hypowered
                 
                 logger.info(f"Loading mock results from S3: {mock_key}")
                 s3_response = generator.s3_client.get_object(Bucket=s3_bucket, Key=mock_key)
