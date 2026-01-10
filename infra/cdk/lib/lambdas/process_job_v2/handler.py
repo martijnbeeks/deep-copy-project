@@ -28,7 +28,7 @@ from pydantic import BaseModel, Field, ConfigDict, create_model
 from playwright.sync_api import sync_playwright
 
 
-from data_models import Avatar, IdentifiedAvatarList, AvatarMarketingAngles
+from data_models import Avatar, IdentifiedAvatarList, AvatarMarketingAngles, OfferBrief
 
 from llm_usage import UsageContext, emit_llm_usage_event, normalize_openai_usage, normalize_perplexity_usage
 
@@ -1218,7 +1218,7 @@ CRITICAL RULES
     def generate_marketing_angles(self, avatar, deep_research_output):
         """Generate marketing angles for a specific avatar"""
         try:
-            avatar_name = avatar.name
+            avatar_name = avatar.overview.name
             
             prompt = f"""
             ANGLE GENERATION PROMPT
@@ -1496,10 +1496,116 @@ CRITICAL RULES
             return response.output_parsed
             
         except Exception as e:
-            logger.error(f"Error generating marketing angles for {avatar.name}: {e}")
+            logger.error(f"Error generating marketing angles for {avatar.overview.name}: {e}")
             raise
 
     
+    
+    def create_offer_brief(self, marketing_avatars_list, deep_research_output):
+        """Generate a strategic Offer Brief based on avatars and research"""
+        try:
+            # Prepare inputs string
+            avatars_summary = json.dumps(marketing_avatars_list, ensure_ascii=False, indent=2)
+            
+            prompt = f"""
+            STRATEGIC OFFER BRIEF GENERATION
+            ═══════════════════════════════════════════════════════════════════════════════
+            
+            You are a world-class direct response strategist. Your goal is to synthesize 
+            all the research and avatar work into a cohesive OFFER BRIEF.
+            
+            This brief will serve as the "bible" for the copywriter, defining the product 
+            strategy, hook, mechanism, and funnel architecture.
+            
+            ═══════════════════════════════════════════════════════════════════════════════
+            INPUTS PROVIDED
+            ═══════════════════════════════════════════════════════════════════════════════
+            
+            1. DEEP RESEARCH (The raw market reality):
+            {deep_research_output}
+            
+            2. MARKETING AVATARS & ANGLES (The specific targets):
+            {avatars_summary}
+            
+            ═══════════════════════════════════════════════════════════════════════════════
+            TASK
+            ═══════════════════════════════════════════════════════════════════════════════
+            
+            Create a comprehensive Offer Brief that unifies the strongest elements from 
+            the research.
+            
+            KEY STRATEGIC DECISIONS TO MAKE:
+            
+            1. MARKET SOPHISTICATION (Crucial):
+               Determine if this market is skeptical/crowded (Level 3-5) or open (Level 1-2).
+               This dictates whether we lead with a "Mechanism" or a "Promise".
+               
+            2. THE "BIG IDEA":
+               Find the one transformative concept that makes this offer feels new, 
+               different, and inevitable.
+               
+            3. UNIQUE MECHANISM:
+               Define the "Unique Mechanism of the Problem" (why they failed before) 
+               and "Unique Mechanism of the Solution" (why this works).
+               
+            4. BELIEF CHAIN:
+               Map the sequence of beliefs required to close the sale.
+               
+            5. FUNNEL ARCHITECTURE:
+               Recommend the best funnel flow (e.g., VSL vs. Long-form Sales Page vs. 
+               Quiz vs. E-comm PDP) based on the avatar's sophistication and buying style.
+            
+            ═══════════════════════════════════════════════════════════════════════════════
+            OUTPUT REQUIREMENTS
+            ═══════════════════════════════════════════════════════════════════════════════
+            
+            Fill every field in the OfferBrief schema with high-strategic value content.
+            
+            - Product Names: Creative, benefit-driven, or mechanism-driven names.
+            - Headlines: Punchy, high-CTR, appropriate for the awareness level.
+            - Metaphors: Vivid analogies to explain the problem/solution.
+            - Story: A compelling origin or discovery narrative.
+            
+            Be specific. Be bold. Do not be generic.
+            """
+
+            logger.info("Calling GPT-5 API to create strategic Offer Brief")
+            t0 = time.time()
+            try:
+                response = self.client.responses.parse(
+                    model=self.openai_model,
+                    input=[{
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": prompt}]
+                    }],
+                    text_format=OfferBrief,
+                )
+                self._emit_openai(
+                    operation="responses.parse",
+                    subtask="process_job_v2.create_offer_brief",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=True,
+                    response=response,
+                )
+            except Exception as e:
+                self._emit_openai(
+                    operation="responses.parse",
+                    subtask="process_job_v2.create_offer_brief",
+                    model=self.openai_model,
+                    t0=t0,
+                    success=False,
+                    error=e,
+                )
+                raise
+            logger.info("GPT-5 API call completed for Offer Brief")
+            
+            return response.output_parsed
+            
+        except Exception as e:
+            logger.error(f"Error creating Offer Brief: {e}")
+            raise
+
     def create_summary(self, marketing_avatars_str, deep_research_output):
         """Create a summary of all outputs"""
         try:
@@ -1754,8 +1860,8 @@ def run_pipeline(event, context):
             necessary_beliefs = result_entry["necessary_beliefs"]
             angles = generator.generate_marketing_angles(avatar, deep_research_output)
             return {
-                "avatar": avatar.model_dump(),
-                "angles": angles.model_dump(),
+                "avatar": avatar.dict(),
+                "angles": angles.dict(),
                 "necessary_beliefs": necessary_beliefs
             }
             
@@ -1770,27 +1876,32 @@ def run_pipeline(event, context):
                 try:
                     result = future.result()
                     marketing_avatars_list.append(result)
-                    logger.info(f"Completed marketing angles for: {result_entry['avatar_details'].name}")
+                    logger.info(f"Completed marketing angles for: {result_entry['avatar_details'].overview.name}")
                 except Exception as e:
-                    logger.error(f"Failed to generate angles for {result_entry['avatar_details'].name}: {e}")
+                    logger.error(f"Failed to generate angles for {result_entry['avatar_details'].overview.name}: {e}")
                     raise
+        
+        # Step 5b: Generate Offer Brief (New Step)
+        logger.info("Step 5b: Generating Offer Brief")
+        offer_brief = generator.create_offer_brief(marketing_avatars_list, deep_research_output)
         
         # Stringify marketing_avatars_list
         marketing_avatars_str = json.dumps(marketing_avatars_list, ensure_ascii=False, indent=2)
         
         # Step 6: Create summary
-        logger.info("Step 6: Creating summary")
-        summary = generator.create_summary(
-            marketing_avatars_str, deep_research_output
-        )
+        # logger.info("Step 6: Creating summary")
+        # summary = generator.create_summary(
+        #     marketing_avatars_str, deep_research_output
+        # )
         
         logger.info("Step 7: Saving results")
         all_results = {
             "research_page_analysis": research_page_analysis,
             "deep_research_prompt": deep_research_prompt,
             "deep_research_output": deep_research_output,
+            "offer_brief": offer_brief.model_dump(),
             "marketing_avatars": marketing_avatars_list,
-            "summary": summary,
+            # "summary": summary,
         }
         
         generator.save_results_to_s3(all_results, s3_bucket, project_name, job_id)

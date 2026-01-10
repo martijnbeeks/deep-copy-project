@@ -2222,6 +2222,277 @@ components:
           type: string
           nullable: true
           description: "What to model: headline structure, proof style, funnel flow, etc."
+    MarketTemperature:
+      type: string
+      enum: [cold, warm, hot, skeptical, saturated]
+      description: Market temperature indicating buyer readiness and trust level
+    ObjectionSeverity:
+      type: string
+      enum: [high, medium, low]
+      description: Severity level of an objection
+    MarketSnapshot:
+      type: object
+      description: "Section 1: Market Snapshot - always visible summary"
+      properties:
+        sophistication:
+          $ref: '#/components/schemas/StageOfSophistication'
+        awareness:
+          $ref: '#/components/schemas/AwarenessLevel'
+        awareness_description:
+          type: string
+          nullable: true
+          description: Brief description of awareness state
+        consciousness:
+          $ref: '#/components/schemas/ConsciousnessLevel'
+        consciousness_description:
+          type: string
+          nullable: true
+          description: Brief description of consciousness state
+        market_temperature:
+          $ref: '#/components/schemas/MarketTemperature'
+        market_temperature_description:
+          type: string
+          nullable: true
+          description: Explanation of market temperature
+    BigIdeaSection:
+      type: object
+      description: "Section 2: The Big Idea and mechanisms"
+      properties:
+        big_idea:
+          type: string
+          nullable: true
+          description: Single, transformative central idea that unifies the campaign
+        problem_mechanism_ump:
+          type: string
+          nullable: true
+          description: "Unique Mechanism of the Problem: Why nothing has worked"
+        solution_mechanism_ums:
+          type: string
+          nullable: true
+          description: "Unique Mechanism of the Solution: Why THIS works"
+        metaphors:
+          type: array
+          description: Images/analogies to make the big idea and mechanism vivid
+          items:
+            type: string
+        guru:
+          type: string
+          nullable: true
+          description: Authority or spokesperson (real or archetype) associated with the offer
+        discovery_story:
+          type: string
+          nullable: true
+          description: "Origin narrative: aha moment, failed attempts, breakthrough mechanism"
+    PainCluster:
+      type: object
+      description: Clustered pain points by dimension
+      properties:
+        surface:
+          type: array
+          items:
+            type: string
+        emotional:
+          type: array
+          items:
+            type: string
+        identity:
+          type: array
+          items:
+            type: string
+        secret:
+          type: array
+          items:
+            type: string
+    DesireCluster:
+      type: object
+      description: Clustered desires by dimension
+      properties:
+        surface:
+          type: array
+          items:
+            type: string
+        emotional:
+          type: array
+          items:
+            type: string
+        identity:
+          type: array
+          items:
+            type: string
+        secret:
+          type: array
+          items:
+            type: string
+    PainDesireSection:
+      type: object
+      description: "Section 4: Pain & Desire mapping for the offer"
+      properties:
+        pain_clusters:
+          $ref: '#/components/schemas/PainCluster'
+        desire_clusters:
+          $ref: '#/components/schemas/DesireCluster'
+        dominant_emotion:
+          type: string
+          nullable: true
+          description: The ONE dominant emotion driving behavior
+    OfferFailedSolutionItem:
+      type: object
+      description: A single failed solution with analysis for the Offer Brief
+      required: [solution, why_it_failed, our_opportunity]
+      properties:
+        solution:
+          type: string
+          description: What they tried
+        why_it_failed:
+          type: string
+          description: Why it didn't work for them
+        our_opportunity:
+          type: string
+          description: How our product addresses this failure
+    FailedSolutionsSection:
+      type: object
+      description: "Section 5: Failed Solutions analysis"
+      properties:
+        solutions:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfferFailedSolutionItem'
+        money_already_spent:
+          type: string
+          nullable: true
+          description: Approximate total spent on failed solutions
+        belief_about_failure:
+          type: string
+          nullable: true
+          description: What conclusion they've drawn about why nothing works
+        current_coping:
+          type: string
+          nullable: true
+          description: What they're currently doing to manage the problem
+    CompetitorEntry:
+      type: object
+      description: A single competitor in the landscape
+      required: [name, price, key_claim, weakness, complaints]
+      properties:
+        name:
+          type: string
+        price:
+          type: string
+        key_claim:
+          type: string
+        weakness:
+          type: string
+        complaints:
+          type: string
+    CompetitorLandscape:
+      type: object
+      description: "Section 6: Competitor analysis and positioning"
+      properties:
+        competitors:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompetitorEntry'
+        competitor_gaps:
+          type: array
+          items:
+            type: string
+        our_advantages:
+          type: array
+          items:
+            type: string
+        positioning_statement:
+          type: string
+          nullable: true
+          description: Clear positioning statement vs. competitors
+    BeliefStep:
+      type: object
+      description: A single belief shift in the belief chain
+      required: [belief_name, from_belief, to_belief, proof]
+      properties:
+        belief_name:
+          type: string
+        from_belief:
+          type: string
+        to_belief:
+          type: string
+        proof:
+          type: string
+    BeliefArchitecture:
+      type: object
+      description: Complete belief architecture with detailed belief chain and summary argument
+      properties:
+        belief_chain:
+          type: array
+          items:
+            $ref: '#/components/schemas/BeliefStep'
+        complete_argument:
+          type: string
+          nullable: true
+          description: The complete persuasive argument
+    ObjectionItem:
+      type: object
+      description: A single objection with severity and response strategy
+      required: [objection, severity, response]
+      properties:
+        objection:
+          type: string
+        severity:
+          $ref: '#/components/schemas/ObjectionSeverity'
+        response:
+          type: string
+    ObjectionsSection:
+      type: object
+      description: "Section 8: Objections handling"
+      properties:
+        objections:
+          type: array
+          items:
+            $ref: '#/components/schemas/ObjectionItem'
+        hidden_objection:
+          type: string
+          nullable: true
+        hidden_objection_counter:
+          type: string
+          nullable: true
+    RawQuoteWithSource:
+      type: object
+      description: A raw quote from research with its source
+      required: [quote, source]
+      properties:
+        quote:
+          type: string
+        source:
+          type: string
+    RawQuotesSection:
+      type: object
+      description: Raw quotes organized by type
+      properties:
+        pain_quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RawQuoteWithSource'
+        desire_quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RawQuoteWithSource'
+        objection_quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RawQuoteWithSource'
+    ResearchInspiration:
+      type: object
+      description: "Section 9: Research sources and creative inspiration"
+      properties:
+        raw_quotes:
+          $ref: '#/components/schemas/RawQuotesSection'
+        research_sources:
+          type: array
+          items:
+            type: string
+        inspiration_swipes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SwipeExample'
     ProductInfo:
       type: object
       properties:
@@ -2237,101 +2508,110 @@ components:
           type: string
           nullable: true
           description: Format, modules, deliverables, bonuses, guarantees, price points, terms
+        format:
+          type: string
+          nullable: true
+          description: Product format
+        price:
+          type: string
+          nullable: true
+          description: One-time price
+        subscription_price:
+          type: string
+          nullable: true
+          description: Subscription/recurring price if applicable
+        guarantee:
+          type: string
+          nullable: true
+          description: Guarantee offered
+        shipping:
+          type: string
+          nullable: true
+          description: Shipping details
+        key_differentiator:
+          type: string
+          nullable: true
+          description: The primary thing that sets this product apart from competitors
+        compliance_notes:
+          type: array
+          description: Legal/compliance requirements
+          items:
+            type: string
     OfferBrief:
       type: object
       description: Structured brief to guide AI when generating copy, concepts, and funnel assets
       properties:
+        market_snapshot:
+          $ref: '#/components/schemas/MarketSnapshot'
+        big_idea_section:
+          $ref: '#/components/schemas/BigIdeaSection'
+        product:
+          $ref: '#/components/schemas/ProductInfo'
+        pain_desire:
+          $ref: '#/components/schemas/PainDesireSection'
+        failed_solutions:
+          $ref: '#/components/schemas/FailedSolutionsSection'
+        competitor_landscape:
+          $ref: '#/components/schemas/CompetitorLandscape'
+        belief_architecture:
+          $ref: '#/components/schemas/BeliefArchitecture'
+        objections_section:
+          $ref: '#/components/schemas/ObjectionsSection'
+        research_inspiration:
+          $ref: '#/components/schemas/ResearchInspiration'
+        # Legacy fields
         potential_product_names:
           type: array
-          description: Brainstormed product/offer name options
           items:
             type: string
         level_of_consciousness:
           $ref: '#/components/schemas/ConsciousnessLevel'
-          description: Prospect's general self-awareness/readiness to change
         level_of_awareness:
           $ref: '#/components/schemas/AwarenessLevel'
-          description: Prospect's current awareness of problem/solution/product
         stage_of_sophistication:
           $ref: '#/components/schemas/StageOfSophistication'
-          description: Market sophistication selection with reasoning
         big_idea:
           type: string
           nullable: true
-          description: Single, transformative central idea that unifies the campaign
         metaphors:
           type: array
-          description: Images/analogies to make the big idea and mechanism vivid
           items:
             type: string
         potential_ump:
           type: array
-          description: "Unique Mechanism of the Problem: counterintuitive reason the problem persists"
           items:
             type: string
         potential_ums:
           type: array
-          description: "Unique Mechanism of the Solution: how THIS solution uniquely works"
           items:
             type: string
         guru:
           type: string
           nullable: true
-          description: Authority or spokesperson (real or archetype) associated with the offer
         discovery_story:
           type: string
           nullable: true
-          description: "Origin narrative: aha moment, failed attempts, breakthrough mechanism"
-        product:
-          $ref: '#/components/schemas/ProductInfo'
-          description: Core product details to anchor claims and copy
         headline_ideas:
           type: array
-          description: Potential headline/subheadline pairs for ads, LPs, emails
           items:
             $ref: '#/components/schemas/HeadlineIdea'
         objections:
           type: array
-          description: All likely objections (price, time, credibility, fit, complexity, risk)
           items:
             type: string
         belief_chains:
           type: array
-          description: Required belief paths the buyer must traverse to purchase
           items:
             $ref: '#/components/schemas/BeliefChain'
         funnel_architecture:
           type: array
-          description: High-level funnel steps in order (e.g., 'Ad → Lead Magnet → Nurture → VSL → Checkout → Upsell')
           items:
             type: string
         potential_domains:
           type: array
-          description: Available or desired domains/URLs for the offer
           items:
             type: string
         examples_swipes:
           type: array
-          description: Reference campaigns, pages, or ads to emulate
           items:
             $ref: '#/components/schemas/SwipeExample'
-        other_notes:
-          type: string
-          nullable: true
-          description: "Anything else helpful: compliance constraints, must-include proof, JTBD, ICP nuances"
-  headers:
-    AccessControlAllowOrigin:
-      schema:
-        type: string
-        example: "*"
-      description: CORS allow origin
-    AccessControlAllowHeaders:
-      schema:
-        type: string
-        example: "*"
-      description: CORS allow headers
-    AccessControlAllowMethods:
-      schema:
-        type: string
-        example: "*"
-      description: CORS allow methods
