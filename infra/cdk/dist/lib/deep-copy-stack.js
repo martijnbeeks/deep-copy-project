@@ -580,6 +580,15 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
         new aws_cdk_lib_1.CfnOutput(this, 'PravahaClientId', { value: pravahaClient.userPoolClientId });
         new aws_cdk_lib_1.CfnOutput(this, 'CognitoTokenEndpoint', { value: tokenEndpoint });
         new aws_cdk_lib_1.CfnOutput(this, 'CognitoIssuer', { value: issuerUrl });
+        // Developer Read-Only User with Console Access
+        const developerUser = new aws_cdk_lib_1.aws_iam.User(this, 'DeveloperUser', {
+            userName: 'deep-copy-developer',
+            password: aws_cdk_lib_1.SecretValue.unsafePlainText('DeepCopy2026!Temp'),
+            passwordResetRequired: true,
+        });
+        developerUser.addManagedPolicy(aws_cdk_lib_1.aws_iam.ManagedPolicy.fromAwsManagedPolicyName('ReadOnlyAccess'));
+        developerUser.addManagedPolicy(aws_cdk_lib_1.aws_iam.ManagedPolicy.fromAwsManagedPolicyName('IAMUserChangePassword'));
+        new aws_cdk_lib_1.CfnOutput(this, 'DeveloperUserName', { value: developerUser.userName });
     }
 }
 exports.DeepCopyStack = DeepCopyStack;
