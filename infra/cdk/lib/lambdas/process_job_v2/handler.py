@@ -1889,19 +1889,19 @@ def run_pipeline(event, context):
         marketing_avatars_str = json.dumps(marketing_avatars_list, ensure_ascii=False, indent=2)
         
         # Step 6: Create summary
-        logger.info("Step 6: Creating summary")
-        summary = generator.create_summary(
-            marketing_avatars_str, deep_research_output
-        )
+        # logger.info("Step 6: Creating summary")
+        # summary = generator.create_summary(
+        #     marketing_avatars_str, deep_research_output
+        # )
         
         logger.info("Step 7: Saving results")
         all_results = {
             "research_page_analysis": research_page_analysis,
             "deep_research_prompt": deep_research_prompt,
             "deep_research_output": deep_research_output,
-            "offer_brief": offer_brief.dict(),
+            "offer_brief": offer_brief.model_dump(),
             "marketing_avatars": marketing_avatars_list,
-            "summary": summary,
+            # "summary": summary,
         }
         
         generator.save_results_to_s3(all_results, s3_bucket, project_name, job_id)
