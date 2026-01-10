@@ -3,6 +3,7 @@ import {
   StackProps,
   Duration,
   RemovalPolicy,
+  SecretValue,
   aws_iam as iam,
   aws_s3 as s3,
   aws_dynamodb as dynamodb,
@@ -641,12 +642,15 @@ export class DeepCopyStack extends Stack {
     new CfnOutput(this, 'CognitoTokenEndpoint', { value: tokenEndpoint });
     new CfnOutput(this, 'CognitoIssuer', { value: issuerUrl });
 
-    // Developer Read-Only User
+    // Developer Read-Only User with Console Access
     const developerUser = new iam.User(this, 'DeveloperUser', {
       userName: 'deep-copy-developer',
+      password: SecretValue.unsafePlainText('DeepCopy2026!Temp'),
+      passwordResetRequired: true,
     });
 
     developerUser.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('ReadOnlyAccess'));
+    developerUser.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('IAMUserChangePassword'));
 
     new CfnOutput(this, 'DeveloperUserName', { value: developerUser.userName });
   }

@@ -1218,7 +1218,7 @@ CRITICAL RULES
     def generate_marketing_angles(self, avatar, deep_research_output):
         """Generate marketing angles for a specific avatar"""
         try:
-            avatar_name = avatar.name
+            avatar_name = avatar.overview.name
             
             prompt = f"""
             ANGLE GENERATION PROMPT
@@ -1496,7 +1496,7 @@ CRITICAL RULES
             return response.output_parsed
             
         except Exception as e:
-            logger.error(f"Error generating marketing angles for {avatar.name}: {e}")
+            logger.error(f"Error generating marketing angles for {avatar.overview.name}: {e}")
             raise
 
     
@@ -1860,8 +1860,8 @@ def run_pipeline(event, context):
             necessary_beliefs = result_entry["necessary_beliefs"]
             angles = generator.generate_marketing_angles(avatar, deep_research_output)
             return {
-                "avatar": avatar.model_dump(),
-                "angles": angles.model_dump(),
+                "avatar": avatar.dict(),
+                "angles": angles.dict(),
                 "necessary_beliefs": necessary_beliefs
             }
             
@@ -1876,9 +1876,9 @@ def run_pipeline(event, context):
                 try:
                     result = future.result()
                     marketing_avatars_list.append(result)
-                    logger.info(f"Completed marketing angles for: {result_entry['avatar_details'].name}")
+                    logger.info(f"Completed marketing angles for: {result_entry['avatar_details'].overview.name}")
                 except Exception as e:
-                    logger.error(f"Failed to generate angles for {result_entry['avatar_details'].name}: {e}")
+                    logger.error(f"Failed to generate angles for {result_entry['avatar_details'].overview.name}: {e}")
                     raise
         
         # Step 5b: Generate Offer Brief (New Step)
@@ -1899,7 +1899,7 @@ def run_pipeline(event, context):
             "research_page_analysis": research_page_analysis,
             "deep_research_prompt": deep_research_prompt,
             "deep_research_output": deep_research_output,
-            "offer_brief": offer_brief,
+            "offer_brief": offer_brief.dict(),
             "marketing_avatars": marketing_avatars_list,
             "summary": summary,
         }

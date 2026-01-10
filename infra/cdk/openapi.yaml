@@ -2335,9 +2335,9 @@ components:
           type: string
           nullable: true
           description: The ONE dominant emotion driving behavior
-    FailedSolutionItem:
+    OfferFailedSolutionItem:
       type: object
-      description: A single failed solution with analysis
+      description: A single failed solution with analysis for the Offer Brief
       required: [solution, why_it_failed, our_opportunity]
       properties:
         solution:
@@ -2356,7 +2356,7 @@ components:
         solutions:
           type: array
           items:
-            $ref: '#/components/schemas/FailedSolutionItem'
+            $ref: '#/components/schemas/OfferFailedSolutionItem'
         money_already_spent:
           type: string
           nullable: true

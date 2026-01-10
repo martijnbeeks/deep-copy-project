@@ -1,194 +1,550 @@
+## Avatar Sheet Data Models
 from enum import Enum
 from typing import List, Optional
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+from pydantic import BaseModel, ConfigDict, Field
 
-## Avatar Sheet Data Models
+
+# =============================================================================
+# AVATAR DATA MODELS (Matching UI screenshots)
+# =============================================================================
+
+class MarketSize(str, Enum):
+    """Market size indicator for the avatar segment."""
+    SMALL = "small"
+    MEDIUM = "medium"
+    LARGE = "large"
+
+
+class BuyingReadiness(str, Enum):
+    """How ready this avatar is to purchase."""
+    COLD = "cold"    # Not actively looking
+    WARM = "warm"    # Interested but needs convincing
+    HOT = "hot"      # Ready to buy now
+
+
+class CompetitionLevel(str, Enum):
+    """How heavily competitors target this avatar."""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class AwarenessLevel(str, Enum):
+    """Schwartz awareness level of the avatar."""
+    UNAWARE = "unaware"
+    PROBLEM_AWARE = "problem_aware"
+    SOLUTION_AWARE = "solution_aware"
+    PRODUCT_AWARE = "product_aware"
+    MOST_AWARE = "most_aware"
+
+
+class AvatarOverview(BaseModel):
+    """
+    Section 1: Avatar Overview (Always visible)
+    High-level summary card that appears at the top of the avatar sheet.
+    """
+    name: str = Field(
+        ..., 
+        description="Descriptive name for this avatar (e.g., 'THE WORRIED SELF-MANAGER', 'THE BUSY MOM')"
+    )
+    description: str = Field(
+        ..., 
+        description="One-sentence description of who they are, their situation, and what makes them unique. Example: 'A 55-75 year old who noticed early vision changes and wants to act before it gets worse — but needs proof before they'll trust any product.'"
+    )
+    market_size: MarketSize = Field(
+        ..., 
+        description="Estimated size of this avatar segment: small (niche), medium (solid segment), or large (mass market)"
+    )
+    buying_readiness: BuyingReadiness = Field(
+        ..., 
+        description="How ready this avatar is to purchase: cold (not looking), warm (interested but skeptical), hot (ready to buy)"
+    )
+    awareness_level: AwarenessLevel = Field(
+        ..., 
+        description="Schwartz awareness stage: unaware, problem_aware, solution_aware, product_aware, or most_aware"
+    )
+    competition_level: CompetitionLevel = Field(
+        ..., 
+        description="How heavily competitors are already targeting this avatar: low (untapped), medium (some competition), high (saturated)"
+    )
+    one_line_hook: str = Field(
+        ..., 
+        description="A headline or opening line that would immediately grab THIS avatar's attention. Example: 'The eye supplement that shows you exactly what's inside — because you're tired of proprietary blend labels.'"
+    )
+
 
 class AvatarDemographics(BaseModel):
-    """Section A: Demographic Profile"""
-    age_range: str = Field(..., description="Age Range")
-    gender: str = Field(..., description="Gender")
-    occupation: str = Field(..., description="Occupation / Life Stage")
-    income_level: str = Field(..., description="Income Level")
-    location_type: str = Field(..., description="Location Type: (urban / suburban / rural)")
-    family_situation: str = Field(..., description="Family Situation: (single / married / divorced / kids at home / empty nest)")
-    education_level: str = Field(..., description="Education Level")
-    one_sentence_description: str = Field(..., description="Who they are and what makes their situation unique")
+    """
+    Section 2: Demographics & Identity
+    Who they are demographically and how they see themselves.
+    """
+    age_range: str = Field(
+        ..., 
+        description="Age range of the avatar (e.g., '55-75', '30-45', '25-40')"
+    )
+    gender: str = Field(
+        ..., 
+        description="Gender(s) this avatar includes (e.g., 'Female', 'Male', 'Female, Male', 'All')"
+    )
+    locations: List[str] = Field(
+        default_factory=list,
+        description="Geographic locations where this avatar is found. List each as a tag. Examples: ['United States', 'Canada', 'United Kingdom', 'Australia']"
+    )
+    professional_background: List[str] = Field(
+        default_factory=list,
+        description="Professional backgrounds or life stages. List each as a tag. Examples: ['Retiree', 'Healthcare professional', 'Corporate professional', 'Stay-at-home parent']"
+    )
+    identities: List[str] = Field(
+        default_factory=list,
+        description="Psychographic identities — how they see themselves. List each as a tag. Examples: ['Science-first buyer', 'Value-conscious shopper', 'Proactive health seeker', 'Independent decision-maker', 'Skeptic of marketing hype']"
+    )
+
 
 class AvatarProblemExperience(BaseModel):
-    """Section B: Problem Experience"""
-    duration: str = Field(..., description="Problem Duration: How long have they been dealing with this?")
-    severity: str = Field(..., description="Problem Severity: Early stage / Moderate / Severe / Crisis")
-    frequency: str = Field(..., description="Problem Frequency: How often do they think about it? Daily obsession vs. occasional annoyance?")
-    trigger_event: str = Field(..., description="Trigger Event: What specific moment made them start actively searching for a solution?")
-    daily_life_impact: str = Field(..., description="Daily Life Impact: How does this problem affect their everyday activities?")
-    social_impact: str = Field(..., description="Social Impact: How does this affect relationships, work, public situations?")
-    who_else_knows: str = Field(..., description="Who Else Knows: Is this a private struggle or do others know? Who have they told?")
+    """
+    Section 3: Problem Experience
+    How they experience the problem in their daily life.
+    """
+    duration: str = Field(
+        ..., 
+        description="How long they've been dealing with this problem. Example: '6 months - 5 years', '2+ years', 'Recently diagnosed'"
+    )
+    severity: str = Field(
+        ..., 
+        description="Current severity of their problem: 'Early stage', 'Early to Moderate', 'Moderate', 'Severe', 'Crisis'"
+    )
+    trigger_event: str = Field(
+        ..., 
+        description="The specific moment that made them start actively searching for a solution. Write as a quote or specific event. Example: 'Doctor mentioned early signs of AMD at last eye exam.'"
+    )
+    daily_life_impact: List[str] = Field(
+        default_factory=list,
+        description="Specific ways this problem affects their everyday activities. List each impact as a bullet point. Examples: ['Struggles with screen time — eyes tire faster', 'Avoids night driving when possible', 'Holds phone and books further away', 'Difficulty reading menus in dim restaurants']"
+    )
 
-class AvatarPainDimensions(BaseModel):
-    """Section C: Pain Dimensions"""
-    surface_pain: str = Field(..., description="Surface Pain (Physical/Practical): The problem as they describe it in literal terms")
-    emotional_pain: str = Field(..., description="Emotional Pain: The feelings this problem creates — shame, frustration, fear, anger")
-    social_pain: str = Field(..., description="Social Pain: How this affects how others see them or how they show up in the world")
-    identity_pain: str = Field(..., description="Identity Pain: How this conflicts with who they believe they are or want to be")
-    secret_pain: str = Field(..., description="Secret Pain: What they won't say out loud but feel deeply")
-    dominant_negative_emotion: str = Field(..., description="Dominant Negative Emotion: The ONE emotion that dominates — shame / fear / frustration / hopelessness / anger")
 
-class AvatarDesireDimensions(BaseModel):
-    """Section D: Desire Dimensions"""
-    surface_desire: str = Field(..., description="Surface Desire: What they say they want — the obvious fix")
-    emotional_desire: str = Field(..., description="Emotional Desire: How they want to FEEL")
-    social_desire: str = Field(..., description="Social Desire: How they want to be SEEN by others")
-    identity_desire: str = Field(..., description="Identity Desire: Who they want to BECOME")
-    secret_desire: str = Field(..., description="Secret Desire: The deeper want they might not admit")
-    dream_outcome: str = Field(..., description="Dream Outcome: If this problem was completely solved, what does their life look like?")
+class PainDimension(BaseModel):
+    """
+    Pain points organized by psychological dimension.
+    Each dimension captures a different layer of the pain experience.
+    """
+    surface: List[str] = Field(
+        default_factory=list,
+        description="Surface-level, physical, or practical pain points — the problem as they describe it in literal terms. Examples: ['Blurry vision when reading', 'Eye strain after screen time', 'Trouble in dim lighting']"
+    )
+    emotional: List[str] = Field(
+        default_factory=list,
+        description="Emotional pain — the feelings this problem creates (fear, frustration, shame, anger). Examples: ['Anxiety about AMD/cataracts', 'Fear of losing independence', 'Frustration at not knowing what actually works']"
+    )
+    identity: List[str] = Field(
+        default_factory=list,
+        description="Identity pain — how this conflicts with who they believe they are. Write as quotes or self-statements. Examples: ['\"I\\'ve always been sharp and independent\"', '\"I\\'m not ready to be old\"']"
+    )
+    secret: List[str] = Field(
+        default_factory=list,
+        description="Secret pain — what they won't say out loud but feel deeply. The fears they keep private. Examples: ['Terrified of going blind', 'Scared of being a burden']"
+    )
 
-class AvatarAwareness(BaseModel):
-    """Section E: Awareness & Sophistication"""
-    problem_awareness: str = Field(..., description="Problem Awareness: Do they know exactly what's causing this, or are they confused?")
-    solution_awareness: str = Field(..., description="Solution Awareness: Do they know solutions exist? Have they researched options?")
-    product_awareness: str = Field(..., description="Product Awareness: Do they know about products like ours specifically?")
-    market_sophistication: str = Field(..., description="Market Sophistication: How much have they seen? First-time buyer vs. seen-it-all skeptic?")
-    schwartz_awareness_level: str = Field(..., description="Schwartz Awareness Level: Unaware / Problem-Aware / Solution-Aware / Product-Aware / Most Aware")
+
+class DesireDimension(BaseModel):
+    """
+    Desires organized by psychological dimension.
+    Each dimension captures a different layer of what they want.
+    """
+    emotional: str = Field(
+        ..., 
+        description="How they want to FEEL. The emotional state they're seeking. Example: 'Feel confident and at peace about my eye health'"
+    )
+    social: str = Field(
+        ..., 
+        description="How they want to be SEEN by others. Their desired social perception. Example: 'Be seen as sharp and capable — not \"getting old\" or declining'"
+    )
+    identity: str = Field(
+        ..., 
+        description="Who they want to BECOME. The identity they aspire to. Write as a self-statement. Example: '\"I\\'m proactive about health, not reactive\"'"
+    )
+    secret: str = Field(
+        ..., 
+        description="The deeper want they might not admit publicly. Example: 'Just want to keep reading to my grandchildren'"
+    )
+    dream_outcome: str = Field(
+        ..., 
+        description="If this problem was completely solved, what does their life look like? Paint the picture. Example: 'Clear, comfortable vision for decades — without constant worry'"
+    )
+
+
+class AvatarPainDesire(BaseModel):
+    """
+    Section 4: Pain & Desire
+    Deep dive into their pain points and desires across psychological dimensions.
+    """
+    pain: PainDimension = Field(
+        ..., 
+        description="Pain points organized by dimension: surface, emotional, identity, secret"
+    )
+    desire: DesireDimension = Field(
+        ..., 
+        description="Desires organized by dimension: emotional, social, identity, secret, dream_outcome"
+    )
+    dominant_emotion: str = Field(
+        ..., 
+        description="The ONE dominant emotion driving their behavior. Examples: 'Fear / Anxiety', 'Frustration', 'Shame', 'Hopelessness', 'Anger'"
+    )
+
+
+class FailedSolutionItem(BaseModel):
+    """A single failed solution with analysis of why it failed and our opportunity."""
+    solution_tried: str = Field(
+        ..., 
+        description="What they tried. Be specific about the product/approach. Examples: 'Store-brand AREDS2', 'Basic lutein from Amazon', 'Blue light glasses'"
+    )
+    why_it_failed: str = Field(
+        ..., 
+        description="Why it didn't work FOR THEM — in their words or from their perspective. Examples: '\"Proprietary blend\" — can\\'t verify doses', 'No results after 3 months', 'Only addresses screens, not root'"
+    )
+    our_opportunity: str = Field(
+        ..., 
+        description="How our product/solution addresses this specific failure. Examples: 'Full ingredient transparency', 'Clinical doses + multi-action formula', 'Inside-out nutrition approach'"
+    )
+
 
 class AvatarFailedSolutions(BaseModel):
-    """Section F: Failed Solution History"""
-    solutions_tried: str = Field(..., description="Solutions Already Tried: List everything they've attempted")
-    money_spent: str = Field(..., description="Money Already Spent: Approximate total spent on this problem")
-    why_failed: str = Field(..., description="Why Past Solutions Failed: In their words — what went wrong?")
-    beliefs_about_failure: str = Field(..., description="Belief About Why Nothing Works: What conclusion have they drawn about why they can't solve this?")
-    current_coping: str = Field(..., description="Current Coping Mechanism: What are they doing now to manage the problem?")
+    """
+    Section 5: Failed Solutions
+    What they've already tried and why it didn't work.
+    """
+    solutions: List[FailedSolutionItem] = Field(
+        default_factory=list,
+        description="List of solutions they've tried, why each failed, and how we address it. Include 3-5 common failed solutions."
+    )
+    money_already_spent: str = Field(
+        ..., 
+        description="Approximate total they've already spent trying to solve this problem. Example: '$150 - $400', '$500+', 'Under $100'"
+    )
+    current_coping: str = Field(
+        ..., 
+        description="What they're currently doing to manage the problem (their workaround). Example: 'Basic multivitamin, adjusting screens, worrying'"
+    )
 
-class AvatarObjections(BaseModel):
-    """Section G: Objections & Skepticism"""
-    primary_objection: str = Field(..., description="Primary Objection: The #1 reason they would NOT buy")
-    secondary_objections: str = Field(..., description="Secondary Objections: Other concerns")
-    hidden_objection: str = Field(..., description="Hidden Objection: What they're really worried about but won't say")
-    skepticism_source: str = Field(..., description="Source of Skepticism: Why don't they trust solutions? Past experience? General cynicism?")
-    proof_needed: str = Field(..., description="What Proof Would They Need: What evidence would overcome their skepticism?")
-    trusted_sources: str = Field(..., description="Whose Opinion Do They Trust: Doctors? Friends? Online reviews? Celebrities? People like them?")
 
-class AvatarBuyingPsychology(BaseModel):
-    """Section H: Buying Psychology"""
-    decision_making_style: str = Field(..., description="Decision-Making Style: Impulse buyer / Careful researcher / Needs permission / Analysis paralysis")
-    budget_range: str = Field(..., description="Budget Range: What would they realistically pay for a solution?")
-    price_sensitivity: str = Field(..., description="Price Sensitivity: Very sensitive / Moderate / Will pay premium for results")
-    risk_tolerance: str = Field(..., description="Risk Tolerance: Will they try something new easily, or need heavy reassurance?")
-    decision_influencers: str = Field(..., description="Who Influences Their Decision: Spouse? Doctor? Friends? No one — solo decider?")
-    buying_urgency: str = Field(..., description="Buying Urgency: Need it now / Can wait / Just browsing")
-    buy_today_trigger: str = Field(..., description="What Would Make Them Buy TODAY: The specific trigger or offer that converts them immediately")
-    dealbreaker: str = Field(..., description="What Would Make Them Walk Away: The dealbreaker that kills the sale")
+class AvatarObjectionsBuying(BaseModel):
+    """
+    Section 6: Objections & Buying
+    Their objections, buying psychology, and decision triggers.
+    """
+    primary_objection: str = Field(
+        ..., 
+        description="The #1 reason they would NOT buy — their biggest concern. Write as a quote. Example: '\"Is this actually clinically proven or just marketing hype?\"'"
+    )
+    hidden_objection: str = Field(
+        ..., 
+        description="What they're REALLY worried about but won't say out loud. Write as a quote. Example: '\"What if I waste money AGAIN on something that doesn\\'t work?\"'"
+    )
+    decision_style: str = Field(
+        ..., 
+        description="How they make purchase decisions: 'Impulse buyer', 'Careful Researcher', 'Needs permission', 'Analysis paralysis'"
+    )
+    price_range: str = Field(
+        ..., 
+        description="What they'd realistically pay for a solution (monthly or one-time). Example: '$30 - $60/month', '$50-100 one-time'"
+    )
+    what_makes_them_buy: List[str] = Field(
+        default_factory=list,
+        description="Specific triggers or proof points that would make them buy. Examples: ['Third-party lab verification', 'Clear clinical study cites', '60-90 day money-back', 'Doctor endorsement']"
+    )
+    what_makes_them_walk: List[str] = Field(
+        default_factory=list,
+        description="Dealbreakers that would make them immediately leave. Examples: ['\"Proprietary blend\" labels', 'Overhyped language (\"miracle\")', 'No clear refund policy', 'No independent reviews']"
+    )
 
-class AvatarInformationComm(BaseModel):
-    """Section I: Information & Communication"""
-    info_sources: str = Field(..., description="Where They Seek Information: Google / YouTube / Reddit / Facebook Groups / Doctor / Friends")
-    content_format: str = Field(..., description="Preferred Content Format: Video / Text / Images / Testimonials / Data")
-    language_style: str = Field(..., description="Language Style: Clinical and technical / Casual and emotional / Direct and simple")
-    problem_vocab: str = Field(..., description="Words They Use to Describe Problem: Their exact vocabulary")
-    avoided_words: str = Field(..., description="Words They Avoid: Terms that feel too clinical, embarrassing, or off-putting")
-    resonating_tone: str = Field(..., description="Tone That Resonates: Empathetic / Authoritative / Peer-to-peer / Clinical / Urgent")
+
+class QuoteWithSource(BaseModel):
+    """A direct quote from research with its source."""
+    quote: str = Field(
+        ..., 
+        description="The exact quote from research. Include quotation marks. Example: '\"I'm scared I won't be able to read to my grandchildren.\"'"
+    )
+    source: str = Field(
+        ..., 
+        description="Where this quote came from. Be specific. Examples: 'Reddit r/eyecare', 'Facebook Group', 'Amazon Review', 'YouTube Comment'"
+    )
+
 
 class AvatarRawLanguage(BaseModel):
-    """Section J: Raw Language Map"""
-    pain_language: List[str] = Field(..., description="Pain Language (3+ quotes): Direct quotes expressing pain")
-    desire_language: List[str] = Field(..., description="Desire Language (3+ quotes): Direct quotes expressing desire")
-    objection_language: List[str] = Field(..., description="Objection Language (2+ quotes): Direct quotes expressing skepticism/objection")
-    failed_solution_language: List[str] = Field(..., description="Failed Solution Language (2+ quotes): Direct quotes about what they've tried")
+    """
+    Section 7: Raw Language
+    Direct quotes from research and vocabulary patterns.
+    """
+    pain_quotes: List[QuoteWithSource] = Field(
+        default_factory=list,
+        description="Direct quotes expressing their pain (2-4 quotes). These are real words from real people found in research."
+    )
+    desire_quotes: List[QuoteWithSource] = Field(
+        default_factory=list,
+        description="Direct quotes expressing what they want (2-4 quotes). These reveal their language around solutions."
+    )
+    objection_quotes: List[QuoteWithSource] = Field(
+        default_factory=list,
+        description="Direct quotes expressing skepticism or objections (2-4 quotes). These show how they push back."
+    )
+    words_they_use: List[str] = Field(
+        default_factory=list,
+        description="Words and phrases THEY use to describe the problem/solution. Use their vocabulary in copy. Examples: ['eye health', 'vision support', 'macular health']"
+    )
+    words_they_avoid: List[str] = Field(
+        default_factory=list,
+        description="Words that turn them off or feel wrong. AVOID these in copy. Examples: ['miracle', 'cure', 'guaranteed results']"
+    )
 
-class AvatarStrategicSummary(BaseModel):
-    """Section K: Strategic Summary"""
-    market_size: str = Field(..., description="Market Size Estimate: Small / Medium / Large — based on frequency in research")
-    buying_readiness: str = Field(..., description="Buying Readiness: Cold / Warm / Hot")
-    competitive_saturation: str = Field(..., description="Competitive Saturation: Are competitors already targeting this avatar heavily?")
-    message_match_difficulty: str = Field(..., description="Message Match Difficulty: Easy to reach with messaging / Requires nuanced approach")
-    one_line_hook: str = Field(..., description="One-Line Hook That Would Stop Them: A headline or opening that would grab THIS avatar specifically")
-
-class AvatarRanking(BaseModel):
-    """Section L: Ranking"""
-    ranking: int = Field(..., description="High, medium, low based on market size x buying readiness")
-    reason: str = Field(..., description="Reason for the ranking")
 
 class Avatar(BaseModel):
     """
-    Marketing Avatar sheet for product–market fit & messaging research.
+    Complete Marketing Avatar sheet for product–market fit & messaging research.
+    
     Use this to standardize ICP/persona data for campaigns, ads, and positioning.
+    The avatar captures who they are, what they struggle with, what they want,
+    what they've tried, why they're skeptical, and how they talk about it.
     """
     model_config = ConfigDict(
         title="Marketing Avatar",
-        description="Structured avatar sheet capturing demographics, pains, goals, psychology, quotes, journey, and angles.",
+        description="Structured avatar sheet capturing demographics, pains, desires, failed solutions, objections, and raw language.",
         extra="forbid",
     )
 
-    name: str = Field(..., description="Descriptive Name of the Avatar")
-    demographics: AvatarDemographics = Field(..., description="Section A: Demographic Profile")
-    problem_experience: AvatarProblemExperience = Field(..., description="Section B: Problem Experience")
-    pain_dimensions: AvatarPainDimensions = Field(..., description="Section C: Pain Dimensions")
-    desire_dimensions: AvatarDesireDimensions = Field(..., description="Section D: Desire Dimensions")
-    awareness: AvatarAwareness = Field(..., description="Section E: Awareness & Sophistication")
-    failed_solutions: AvatarFailedSolutions = Field(..., description="Section F: Failed Solution History")
-    objections: AvatarObjections = Field(..., description="Section G: Objections & Skepticism")
-    buying_psychology: AvatarBuyingPsychology = Field(..., description="Section H: Buying Psychology")
-    info_comm: AvatarInformationComm = Field(..., description="Section I: Information & Communication")
-    raw_language: AvatarRawLanguage = Field(..., description="Section J: Raw Language Map")
-    strategic_summary: AvatarStrategicSummary = Field(..., description="Section K: Strategic Summary")
-    ranking: AvatarRanking = Field(..., description="Section L: Ranking")
+    # Section 1: Avatar Overview (Always visible)
+    overview: AvatarOverview = Field(
+        ..., 
+        description="Section 1: Avatar Overview — high-level summary with name, description, market indicators, and hook"
+    )
+    
+    # Section 2: Demographics & Identity
+    demographics: AvatarDemographics = Field(
+        ..., 
+        description="Section 2: Demographics & Identity — who they are and how they see themselves"
+    )
+    
+    # Section 3: Problem Experience
+    problem_experience: AvatarProblemExperience = Field(
+        ..., 
+        description="Section 3: Problem Experience — duration, severity, trigger, and daily impact"
+    )
+    
+    # Section 4: Pain & Desire
+    pain_desire: AvatarPainDesire = Field(
+        ..., 
+        description="Section 4: Pain & Desire — psychological dimensions of pain and desire with dominant emotion"
+    )
+    
+    # Section 5: Failed Solutions
+    failed_solutions: AvatarFailedSolutions = Field(
+        ..., 
+        description="Section 5: Failed Solutions — what they've tried, why it failed, and current coping"
+    )
+    
+    # Section 6: Objections & Buying
+    objections_buying: AvatarObjectionsBuying = Field(
+        ..., 
+        description="Section 6: Objections & Buying — objections, decision style, price range, buy/walk triggers"
+    )
+    
+    # Section 7: Raw Language
+    raw_language: AvatarRawLanguage = Field(
+        ..., 
+        description="Section 7: Raw Language — direct quotes with sources and vocabulary patterns"
+    )
 
 
+# =============================================================================
+# IDENTIFIED AVATARS
+# =============================================================================
 
 class IdentifiedAvatar(BaseModel):
     """A potential customer avatar identified from research."""
     name: str = Field(..., description="Name of the avatar (e.g., 'Busy Mom').")
     description: str = Field(..., description="Brief description of who they are and why they are a good fit.")
 
+
 class IdentifiedAvatarList(BaseModel):
     """List of identified avatars."""
     avatars: List[IdentifiedAvatar] = Field(..., description="List of potential customer avatars.")
 
 
+# =============================================================================
+# MARKETING ANGLES DATA MODELS
+# =============================================================================
 
-# Marketing Angles Data Models
+class AngleType(str, Enum):
+    """Category of argument the angle makes."""
+    MECHANISM = "mechanism"          # Leads with HOW it works
+    PAIN_LEAD = "pain_lead"          # Leads with the problem/pain
+    DESIRE_LEAD = "desire_lead"      # Leads with the outcome/benefit
+    SOCIAL_PROOF = "social_proof"    # Leads with testimonials/authority
+    FEAR_BASED = "fear_based"        # Leads with consequences of inaction
+    CURIOSITY = "curiosity"          # Leads with intrigue/mystery
+    CONTRARIAN = "contrarian"        # Challenges conventional wisdom
+    STORY = "story"                  # Leads with narrative
+
+
+class EmotionalDriver(str, Enum):
+    """Primary emotion the angle triggers."""
+    FEAR = "fear"
+    HOPE = "hope"
+    ANGER = "anger"
+    SHAME = "shame"
+    DESIRE = "desire"
+    CURIOSITY = "curiosity"
+    TRUST = "trust"
+
+
+class RiskLevel(str, Enum):
+    """Compliance or proof risk for running this angle."""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
 
 class MarketingAngle(BaseModel):
-    """A generated marketing angle."""
-    angle_title: str = Field(..., description="A name for this specific pitch")
-    angle_subtitle: str = Field(..., description="A short tagline that captures the angle's promise")
-    angle_type: str = Field(..., description="The category of argument being made (e.g., Pain-Lead, Desire-Lead, etc.)")
-    emotional_driver: str = Field(..., description="The primary emotion this angle triggers (Fear / Hope / Anger / Shame / Desire)")
-    risk_level: str = Field(..., description="Compliance or proof risk for running this angle (Low / Medium / High)")
-    core_argument: str = Field(..., description="The single-sentence logical argument this angle makes")
-    target_age_range: str = Field(..., description="The age bracket this angle speaks to")
-    target_audience: str = Field(..., description="A refined description of who this specific angle is for")
-    pain_points: List[str] = Field(..., description="The most relevant frustrations for this particular angle")
-    desires: List[str] = Field(..., description="The most relevant goals and wants for this particular angle")
-    common_objections: List[str] = Field(..., description="Why this person might say 'no' to this specific pitch")
-    failed_alternatives: List[str] = Field(..., description="What they've tried before that didn't work — and why this angle addresses it")
+    """
+    A generated marketing angle for an avatar.
+    Each angle represents a distinct way to pitch the product to this audience.
+    """
+    angle_title: str = Field(
+        ..., 
+        description="The name/headline for this specific pitch. Example: 'Formulated with AREDS2-Studied Ingredients'"
+    )
+    angle_subtitle: str = Field(
+        ..., 
+        description="A short tagline that captures the angle's promise. Example: 'Clinically-Studied Ingredients — Trust Without Overclaiming'"
+    )
+    angle_type: AngleType = Field(
+        ..., 
+        description="The category of argument being made: mechanism, pain_lead, desire_lead, social_proof, fear_based, curiosity, contrarian, story"
+    )
+    emotional_driver: EmotionalDriver = Field(
+        ..., 
+        description="The primary emotion this angle triggers: fear, hope, anger, shame, desire, curiosity, trust"
+    )
+    risk_level: RiskLevel = Field(
+        ..., 
+        description="Compliance or proof risk for running this angle: low, medium, high"
+    )
     
-    # Raw Language
-    pain_quotes: List[str] = Field(..., description="Direct quotes from research expressing the pain this angle targets")
-    desire_quotes: List[str] = Field(..., description="Direct quotes from research expressing the desire this angle promises")
-    objection_quotes: List[str] = Field(..., description="Direct quotes from research expressing skepticism this angle must overcome")
+    # Core content
+    core_argument: str = Field(
+        ..., 
+        description="The single-sentence logical argument this angle makes. Example: 'Trust comes from transparency and clinical backing, not marketing hype— this formula uses the exact ingredients studied in AREDS2.'"
+    )
+    target_age_range: str = Field(
+        ..., 
+        description="The age bracket this angle speaks to. Example: '55-80', '30-45'"
+    )
+    target_audience: str = Field(
+        ..., 
+        description="A refined description of who this specific angle is for. Example: 'Older adults concerned about age-related vision decline'"
+    )
+    
+    # Pain, Desire, Objections, Failed Alternatives
+    pain_points: List[str] = Field(
+        default_factory=list,
+        description="The most relevant pain points for this particular angle. Examples: ['Skepticism about vague clinical claims', 'Fear of vision decline and loss of independence', 'Need for clinician-level trust']"
+    )
+    desires: List[str] = Field(
+        default_factory=list,
+        description="The most relevant desires for this particular angle. Examples: ['Maintain independence and daily activities (reading, driving)', 'Use a product that eye doctors would recommend', 'Clear, evidence-based product information']"
+    )
+    common_objections: List[str] = Field(
+        default_factory=list,
+        description="Why this person might say 'no' to this specific pitch. Examples: ['Is this clinically proven or just marketing?', 'Will this interact with my medications?', 'Will I actually notice a difference?']"
+    )
+    failed_alternatives: List[str] = Field(
+        default_factory=list,
+        description="What they've tried before that didn't work. Examples: ['Generic Amazon lutein supplements with no COA', 'Expensive brand claims lacking ingredient transparency', 'Prescriptions (not applicable) or unverified miracle supplements']"
+    )
+    
+    # Raw Language (quotes with sources)
+    pain_quotes: List[QuoteWithSource] = Field(
+        default_factory=list,
+        description="Direct quotes from research expressing the pain this angle targets, with sources. Example: {'quote': 'I'm so tired of proprietary blend labels that hide underdosed ingredients.', 'source': 'Reddit'}"
+    )
+    desire_quotes: List[QuoteWithSource] = Field(
+        default_factory=list,
+        description="Direct quotes from research expressing the desire this angle promises, with sources. Example: {'quote': 'I just want something that actually works and isn't full of BS marketing.', 'source': 'Reddit'}"
+    )
+    objection_quotes: List[QuoteWithSource] = Field(
+        default_factory=list,
+        description="Direct quotes from research expressing skepticism this angle must overcome, with sources. Example: {'quote': 'Clinically proven by who? Their own company?', 'source': 'YouTube Comment'}"
+    )
+
 
 class TopAngle(BaseModel):
-    """Top selected angle."""
-    name: str = Field(..., description="Name of the angle")
-    angle_type: str = Field(..., description="Type of angle")
-    core_argument: str = Field(..., description="Core argument")
-    why_selected: str = Field(..., description="Reason for selection")
-    primary_hook: str = Field(..., description="Primary hook")
-    emotional_driver: str = Field(..., description="Emotional driver")
-    risk_level: str = Field(..., description="Risk level (Low/Medium/High)")
+    """A selected top angle with reasoning for selection."""
+    name: str = Field(
+        ..., 
+        description="Name/title of the angle"
+    )
+    angle_type: AngleType = Field(
+        ..., 
+        description="Type of angle: mechanism, pain_lead, desire_lead, etc."
+    )
+    core_argument: str = Field(
+        ..., 
+        description="The single-sentence logical argument this angle makes"
+    )
+    why_selected: str = Field(
+        ..., 
+        description="Reason for selecting this angle as a top pick. Example: 'Highest trust-building potential for skeptical audience'"
+    )
+    primary_hook: str = Field(
+        ..., 
+        description="The headline or opening hook for this angle. Example: 'The eye supplement that shows you exactly what's inside'"
+    )
+    emotional_driver: EmotionalDriver = Field(
+        ..., 
+        description="Primary emotion: fear, hope, anger, shame, desire, curiosity, trust"
+    )
+    risk_level: RiskLevel = Field(
+        ..., 
+        description="Compliance risk level: low, medium, high"
+    )
+
 
 class Top3Angles(BaseModel):
-    """Top 3 angles for an avatar."""
-    primary_angle: TopAngle = Field(..., description="#1 Primary Angle")
-    secondary_angle: TopAngle = Field(..., description="#2 Secondary Angle")
-    test_angle: TopAngle = Field(..., description="#3 Test Angle")
+    """Top 3 recommended angles for an avatar, prioritized by expected performance."""
+    primary_angle: TopAngle = Field(
+        ..., 
+        description="#1 Primary Angle — the safest, most likely to convert"
+    )
+    secondary_angle: TopAngle = Field(
+        ..., 
+        description="#2 Secondary Angle — strong alternative or different emotional approach"
+    )
+    test_angle: TopAngle = Field(
+        ..., 
+        description="#3 Test Angle — higher risk/reward or contrarian approach worth testing"
+    )
+
 
 class AvatarMarketingAngles(BaseModel):
-    """Marketing angles generated for a specific avatar."""
-    avatar_name: str = Field(..., description="Name of the avatar")
-    generated_angles: List[MarketingAngle] = Field(..., description="List of 5-7 distinct marketing angles")
-    top_3_angles: Top3Angles = Field(..., description="Selection of top 3 angles")
+    """Complete set of marketing angles generated for a specific avatar."""
+    avatar_name: str = Field(
+        ..., 
+        description="Name of the avatar these angles are for"
+    )
+    generated_angles: List[MarketingAngle] = Field(
+        default_factory=list,
+        description="List of 5-7 distinct marketing angles, each with full detail"
+    )
+    ranking: List[int] = Field(
+        default_factory=list,
+        description="Indices into generated_angles in ranked order (best first). E.g., [2, 0, 4, 1, 3] means the angle at index 2 is #1, index 0 is #2, etc. Length should match generated_angles."
+    )
+    top_3_angles: Optional[Top3Angles] = Field(
+        None,
+        description="Selection of top 3 recommended angles with reasoning"
+    )
+
+
+
 
 
 # =============================================================================
@@ -200,14 +556,6 @@ class ConsciousnessLevel(str, Enum):
     LOW = "low"
     HIGH = "high"
 
-
-class AwarenessLevel(str, Enum):
-    """Prospect's awareness per Schwartz's stages."""
-    UNAWARE = "unaware"
-    PROBLEM_AWARE = "problem_aware"
-    SOLUTION_AWARE = "solution_aware"
-    PRODUCT_AWARE = "product_aware"
-    MOST_AWARE = "most_aware"
 
 
 class SophisticationLevel(str, Enum):
@@ -343,8 +691,8 @@ class PainDesireSection(BaseModel):
 
 
 # New models for Section 5: Failed Solutions
-class FailedSolutionItem(BaseModel):
-    """A single failed solution with analysis."""
+class OfferFailedSolutionItem(BaseModel):
+    """A single failed solution with analysis for the Offer Brief."""
     solution: str = Field(..., description="What they tried (e.g., 'Store-brand AREDS2', 'Cheap Amazon lutein')")
     why_it_failed: str = Field(..., description="Why it didn't work for them")
     our_opportunity: str = Field(..., description="How our product addresses this failure")
@@ -352,7 +700,7 @@ class FailedSolutionItem(BaseModel):
 
 class FailedSolutionsSection(BaseModel):
     """Section 5: Failed Solutions analysis."""
-    solutions: List[FailedSolutionItem] = Field(
+    solutions: List[OfferFailedSolutionItem] = Field(
         default_factory=list,
         description="Table of failed solutions with failure reasons and opportunities"
     )
