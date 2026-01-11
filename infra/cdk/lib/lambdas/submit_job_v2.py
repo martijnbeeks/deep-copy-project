@@ -99,10 +99,11 @@ def handler(event, _context):
     job_id = str(uuid.uuid4())
     result_prefix = f"results/{job_id}"
 
-    # Detect dev mode from path
+    # Detect dev mode from path OR body parameter
     path = event.get("path", "")
-    dev_mode = "/dev/" in path or path.startswith("/dev")
-    dev_mode = True
+    path_is_dev = "/dev/" in path or path.startswith("/dev")
+    body_dev_mode = str(body.get("dev_mode", "")).lower() == "true"
+    dev_mode = "true" if (path_is_dev or body_dev_mode) else "false"
 
     # Persist initial job record with api_version
     try:
