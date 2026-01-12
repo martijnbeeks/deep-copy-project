@@ -347,6 +347,7 @@ export class DeepCopyStack extends Stack {
     resultsBucket.grantPut(processImageGenLambda);
     resultsBucket.grantPutAcl(processImageGenLambda);
     resultsBucket.grantRead(processImageGenLambda, 'image_library/*');
+    resultsBucket.grantRead(processImageGenLambda, 'user-uploads/*');
 
     // Image generation - Submit Lambda (Python)
     const submitImageGenLambda = new lambda.Function(this, 'SubmitImageGenLambda', {
