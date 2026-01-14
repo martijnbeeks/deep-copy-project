@@ -16,8 +16,12 @@ RUN uv export --no-dev --frozen > requirements.txt && \
 RUN echo "Build timestamp: $(date)" > /tmp/build_timestamp
 
 # Copy function code
-COPY handler.py ${LAMBDA_TASK_ROOT}/
+COPY utils/ ${LAMBDA_TASK_ROOT}/utils/
+COPY services/ ${LAMBDA_TASK_ROOT}/services/
+COPY pipeline/ ${LAMBDA_TASK_ROOT}/pipeline/
+COPY prompts.py ${LAMBDA_TASK_ROOT}/
 COPY llm_usage.py ${LAMBDA_TASK_ROOT}/
+COPY handler.py ${LAMBDA_TASK_ROOT}/
 
 # Set the CMD to your handler
 CMD [ "handler.lambda_handler" ]
