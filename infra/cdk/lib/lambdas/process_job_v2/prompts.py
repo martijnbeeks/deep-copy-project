@@ -388,6 +388,14 @@ def get_complete_avatar_details_prompt(
     return f"""
 Amazing work! Now I want you to please complete the detailed Avatar sheet template for the following specific avatar, using the deep research output.
 
+Please take into account the following when writing:
+    - Do not use scientific and academic jargon
+    - Write content in simple, sales-oriented language
+    - Make explanations benefit-driven instead of descriptive
+    - Limit paragraphs to one or two short lines
+    - Optimize content for fast scanning, not deep reading
+
+
 Target Avatar:
 Name: {avatar_name}
 Description: {avatar_description}
@@ -720,142 +728,12 @@ Generate 5-7 angles using this format:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 AVATAR: {avatar_name}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-─────────────────────────────────────────────────────────────────────────────
-ANGLE: [ANGLE TITLE]
-─────────────────────────────────────────────────────────────────────────────
-
-Angle Subtitle:
-[A short tagline that captures the angle's promise]
-
-Angle Type:
-[Pain-Lead / Desire-Lead / Enemy / Secret / Mechanism / Identity / etc.]
-
-Emotional Driver:
-[Fear / Hope / Anger / Shame / Desire]
-
-Risk Level:
-[Low / Medium / High]
-
-Core Argument:
-[The single-sentence logical argument this angle makes]
-
-Target Age Range:
-[The age bracket this angle speaks to]
-
-Target Audience:
-[A refined description of who this specific angle is for]
-
-Pain Points (List 2-3):
-- [Frustration 1]
-- [Frustration 2]
-
-Desires (List 2-3):
-- [Goal 1]
-- [Goal 2]
-
-Common Objections (List 2-3):
-- [Reason to say no 1]
-- [Reason to say no 2]
-
-Failed Alternatives (List 2-3):
-- [Previous attempt 1]
-- [Previous attempt 2]
-
-Raw Language - Pain Quotes (List 2+):
-- "[Quote 1]"
-- "[Quote 2]"
-
-Raw Language - Desire Quotes (List 2+):
-- "[Quote 1]"
-- "[Quote 2]"
-
-Raw Language - Objection Quotes (List 2+):
-- "[Quote 1]"
-- "[Quote 2]"
-
-─────────────────────────────────────────────────────────────────────────────
-
-═══════════════════════════════════════════════════════════════════════════════
-STEP 2: ANGLE DIFFERENTIATION CHECK
-═══════════════════════════════════════════════════════════════════════════════
-
-Verify angles are MEANINGFULLY DIFFERENT using the 
-Andromeda Difference Threshold. Each angle must change at least 3 of 5:
-
-| Dimension                        | Angle 1 | Angle 2 | Angle 3 | Angle 4 | Angle 5 |
-|----------------------------------|---------|---------|---------|---------|---------|\n| Opening Moment / Hook            |         |         |         |         |         |
-| Primary Emotion                  |         |         |         |         |         |
-| Core Argument                    |         |         |         |         |         |
-| Proof / Evidence Type            |         |         |         |         |         |
-| Entry Point (Pain/Desire/Enemy)  |         |         |         |         |         |
-
-If two angles are too similar, merge or replace one.
-
-═══════════════════════════════════════════════════════════════════════════════
-STEP 3: TOP 3 ANGLES PER AVATAR
-═══════════════════════════════════════════════════════════════════════════════
-
-Select the top 3 angles for this avatar based on:
-
-SELECTION CRITERIA:
-- Pain/Desire Intensity: Does this hit their hottest button?
-- Differentiation: Is this angle ownable and different from competitors?
-- Proof Availability: Do we have evidence to back this angle?
-- Scalability: Can this angle sustain multiple ad variations?
-- Compliance: Can this run without platform rejection?
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-AVATAR: {avatar_name} — TOP 3 ANGLES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-#1 PRIMARY ANGLE: [Name]
-- Type: [Angle type]
-- Core Argument: [One sentence]
-- Why Selected: [Reason this is the strongest]
-- Primary Hook: "[Hook]"
-- Emotional Driver: [Emotion]
-- Risk Level: [Low / Medium / High — compliance or proof risk]
-
-#2 SECONDARY ANGLE: [Name]
-- Type: [Angle type]
-- Core Argument: [One sentence]
-- Why Selected: [Reason]
-- Primary Hook: "[Hook]"
-- Emotional Driver: [Emotion]
-- Risk Level: [Low / Medium / High]
-
-#3 TEST ANGLE: [Name]
-- Type: [Angle type]
-- Core Argument: [One sentence]
-- Why Selected: [Reason — often a contrarian or unexpected approach]
-- Primary Hook: "[Hook]"
-- Emotional Driver: [Emotion]
-- Risk Level: [Low / Medium / High]
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-═══════════════════════════════════════════════════════════════════════════════
-CRITICAL RULES
-═══════════════════════════════════════════════════════════════════════════════
-
-1. ARGUMENTS, NOT WORDS — Each angle is a different argument, not a 
-different way to say the same thing.
-
-2. AVATAR-GROUNDED — Every angle must connect to a specific dimension 
-from the avatar profile. No generic angles.
-
-3. RESEARCH-BACKED — Angles should be validated by raw language from 
-the research. If no one in the research expressed this pain/desire, 
-flag as [SPECULATIVE].
-
-4. MEANINGFULLY DIFFERENT — Use the Andromeda threshold. If angles are 
-too similar, they're not worth testing separately.
-
-5. EXECUTABLE — Every angle must be specific enough to hand to a 
-copywriter or creative team and produce an ad.
-
-6. COMPLIANT — Flag any angle with potential platform compliance issues.
+Please take into account the following when writing:
+    - Do not use scientific and academic jargon
+    - Write content in simple, sales-oriented language
+    - Make explanations benefit-driven instead of descriptive
+    - Limit paragraphs to one or two short lines
+    - Optimize content for fast scanning, not deep reading
 
 ═══════════════════════════════════════════════════════════════════════════════
 NOW GENERATE ANGLES FOR THIS AVATAR
@@ -937,6 +815,13 @@ Fill every field in the OfferBrief schema with high-strategic value content.
 - Story: A compelling origin or discovery narrative.
 
 Be specific. Be bold. Do not be generic.
+
+Please take into account the following when writing:
+    - Do not use scientific and academic jargon
+    - Write content in simple, sales-oriented language
+    - Make explanations benefit-driven instead of descriptive
+    - Limit paragraphs to one or two short lines
+    - Optimize content for fast scanning, not deep reading
 """
 
 

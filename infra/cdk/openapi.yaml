@@ -1958,17 +1958,17 @@ components:
           type: array
           description: "Direct quotes from research expressing the pain this angle targets"
           items:
-            type: string
+            $ref: '#/components/schemas/QuoteWithSource'
         desire_quotes:
           type: array
           description: "Direct quotes from research expressing the desire this angle promises"
           items:
-            type: string
+            $ref: '#/components/schemas/QuoteWithSource'
         objection_quotes:
           type: array
           description: "Direct quotes from research expressing skepticism this angle must overcome"
           items:
-            type: string
+            $ref: '#/components/schemas/QuoteWithSource'
     TopAngle:
       type: object
       description: "Top selected angle"
@@ -2009,7 +2009,7 @@ components:
     AvatarMarketingAngles:
       type: object
       description: "Marketing angles generated for a specific avatar"
-      required: [avatar_name, generated_angles, top_3_angles]
+      required: [avatar_name, generated_angles]
       properties:
         avatar_name:
           type: string
@@ -2019,6 +2019,11 @@ components:
           items:
             $ref: '#/components/schemas/MarketingAngle'
           description: "List of 5-7 distinct marketing angles"
+        ranking:
+          type: array
+          items:
+            type: integer
+          description: "Indices into generated_angles in ranked order (best first)"
         top_3_angles:
           $ref: '#/components/schemas/Top3Angles'
           description: "Selection of top 3 angles"
@@ -2063,38 +2068,278 @@ components:
           description: "The copy approaches for the marketing angle"
           items:
             type: string
-    Avatar:
+    # ===== New Avatar Enums =====
+    MarketSize:
+      type: string
+      enum: [small, medium, large]
+      description: Market size indicator for the avatar segment
+    BuyingReadiness:
+      type: string
+      enum: [cold, warm, hot]
+      description: How ready this avatar is to purchase
+    CompetitionLevel:
+      type: string
+      enum: [low, medium, high]
+      description: How heavily competitors target this avatar
+    QuoteWithSource:
       type: object
-      description: "Marketing Avatar sheet for product–market fit & messaging research"
-      required: [name, demographics, problem_experience, pain_dimensions, desire_dimensions, awareness, failed_solutions, objections, buying_psychology, info_comm, raw_language, strategic_summary, ranking]
+      description: A direct quote from research with its source
+      required: [quote, source]
+      properties:
+        quote:
+          type: string
+          description: The exact quote from research
+        source:
+          type: string
+          description: Where this quote came from (e.g., 'Reddit r/eyecare', 'Amazon Review')
+    # ===== New Avatar Section Schemas =====
+    AvatarOverviewSection:
+      type: object
+      description: "Section 1: Avatar Overview - high-level summary card"
+      required: [name, description, market_size, buying_readiness, awareness_level, competition_level, one_line_hook]
       properties:
         name:
           type: string
-          description: "Descriptive Name of the Avatar"
+          description: "Descriptive name for this avatar (e.g., 'THE WORRIED SELF-MANAGER')"
+        description:
+          type: string
+          description: "One-sentence description of who they are"
+        market_size:
+          $ref: '#/components/schemas/MarketSize'
+        buying_readiness:
+          $ref: '#/components/schemas/BuyingReadiness'
+        awareness_level:
+          $ref: '#/components/schemas/AwarenessLevel'
+        competition_level:
+          $ref: '#/components/schemas/CompetitionLevel'
+        one_line_hook:
+          type: string
+          description: "A headline that would immediately grab this avatar's attention"
+    AvatarDemographicsSection:
+      type: object
+      description: "Section 2: Demographics & Identity"
+      required: [age_range, gender]
+      properties:
+        age_range:
+          type: string
+          description: "Age range of the avatar (e.g., '55-75')"
+        gender:
+          type: string
+          description: "Gender(s) this avatar includes"
+        locations:
+          type: array
+          items:
+            type: string
+          description: "Geographic locations where this avatar is found"
+        professional_background:
+          type: array
+          items:
+            type: string
+          description: "Professional backgrounds or life stages"
+        identities:
+          type: array
+          items:
+            type: string
+          description: "Psychographic identities — how they see themselves"
+    AvatarProblemExperienceSection:
+      type: object
+      description: "Section 3: Problem Experience"
+      required: [duration, severity, trigger_event]
+      properties:
+        duration:
+          type: string
+          description: "How long they've been dealing with this problem"
+        severity:
+          type: string
+          description: "Current severity of their problem"
+        trigger_event:
+          type: string
+          description: "The specific moment that made them start actively searching"
+        daily_life_impact:
+          type: array
+          items:
+            type: string
+          description: "Specific ways this problem affects their everyday activities"
+    PainDimensionV2:
+      type: object
+      description: "Pain points organized by psychological dimension"
+      properties:
+        surface:
+          type: array
+          items:
+            type: string
+          description: "Surface-level, physical, or practical pain points"
+        emotional:
+          type: array
+          items:
+            type: string
+          description: "Emotional pain — the feelings this problem creates"
+        identity:
+          type: array
+          items:
+            type: string
+          description: "Identity pain — how this conflicts with who they believe they are"
+        secret:
+          type: array
+          items:
+            type: string
+          description: "Secret pain — what they won't say out loud but feel deeply"
+    DesireDimensionV2:
+      type: object
+      description: "Desires organized by psychological dimension"
+      required: [emotional, social, identity, secret, dream_outcome]
+      properties:
+        emotional:
+          type: string
+          description: "How they want to FEEL"
+        social:
+          type: string
+          description: "How they want to be SEEN by others"
+        identity:
+          type: string
+          description: "Who they want to BECOME"
+        secret:
+          type: string
+          description: "The deeper want they might not admit publicly"
+        dream_outcome:
+          type: string
+          description: "If this problem was completely solved, what does their life look like"
+    AvatarPainDesireSection:
+      type: object
+      description: "Section 4: Pain & Desire"
+      required: [pain, desire, dominant_emotion]
+      properties:
+        pain:
+          $ref: '#/components/schemas/PainDimensionV2'
+        desire:
+          $ref: '#/components/schemas/DesireDimensionV2'
+        dominant_emotion:
+          type: string
+          description: "The ONE dominant emotion driving their behavior"
+    FailedSolutionItemV2:
+      type: object
+      description: "A single failed solution with analysis"
+      required: [solution_tried, why_it_failed, our_opportunity]
+      properties:
+        solution_tried:
+          type: string
+          description: "What they tried"
+        why_it_failed:
+          type: string
+          description: "Why it didn't work FOR THEM"
+        our_opportunity:
+          type: string
+          description: "How our product/solution addresses this specific failure"
+    AvatarFailedSolutionsSection:
+      type: object
+      description: "Section 5: Failed Solutions"
+      required: [money_already_spent, current_coping]
+      properties:
+        solutions:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailedSolutionItemV2'
+          description: "List of solutions they've tried"
+        money_already_spent:
+          type: string
+          description: "Approximate total they've already spent"
+        current_coping:
+          type: string
+          description: "What they're currently doing to manage the problem"
+    AvatarObjectionsBuyingSection:
+      type: object
+      description: "Section 6: Objections & Buying"
+      required: [primary_objection, hidden_objection, decision_style, price_range]
+      properties:
+        primary_objection:
+          type: string
+          description: "The #1 reason they would NOT buy"
+        hidden_objection:
+          type: string
+          description: "What they're REALLY worried about but won't say"
+        decision_style:
+          type: string
+          description: "How they make purchase decisions"
+        price_range:
+          type: string
+          description: "What they'd realistically pay for a solution"
+        what_makes_them_buy:
+          type: array
+          items:
+            type: string
+          description: "Specific triggers or proof points that would make them buy"
+        what_makes_them_walk:
+          type: array
+          items:
+            type: string
+          description: "Dealbreakers that would make them immediately leave"
+    AvatarRawLanguageSection:
+      type: object
+      description: "Section 7: Raw Language"
+      properties:
+        pain_quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteWithSource'
+          description: "Direct quotes expressing their pain"
+        desire_quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteWithSource'
+          description: "Direct quotes expressing what they want"
+        objection_quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteWithSource'
+          description: "Direct quotes expressing skepticism or objections"
+        words_they_use:
+          type: array
+          items:
+            type: string
+          description: "Words and phrases THEY use to describe the problem/solution"
+        words_they_avoid:
+          type: array
+          items:
+            type: string
+          description: "Words that turn them off or feel wrong"
+    Avatar:
+      type: object
+      description: "Complete Marketing Avatar sheet for product–market fit & messaging research"
+      required: [short_description, age, gender, overview, demographics, problem_experience, pain_desire, failed_solutions, objections_buying, raw_language]
+      properties:
+        short_description:
+          type: string
+          description: "Short description of the avatar"
+          maxLength: 40
+        age:
+          type: string
+          description: "Age range of the avatar"
+          maxLength: 20
+        gender:
+          type: string
+          description: "Gender of the avatar"
+          maxLength: 20
+        overview:
+          $ref: '#/components/schemas/AvatarOverviewSection'
+          description: "Section 1: Avatar Overview"
         demographics:
-          $ref: '#/components/schemas/AvatarDemographics'
+          $ref: '#/components/schemas/AvatarDemographicsSection'
+          description: "Section 2: Demographics & Identity"
         problem_experience:
-          $ref: '#/components/schemas/AvatarProblemExperience'
-        pain_dimensions:
-          $ref: '#/components/schemas/AvatarPainDimensions'
-        desire_dimensions:
-          $ref: '#/components/schemas/AvatarDesireDimensions'
-        awareness:
-          $ref: '#/components/schemas/AvatarAwareness'
+          $ref: '#/components/schemas/AvatarProblemExperienceSection'
+          description: "Section 3: Problem Experience"
+        pain_desire:
+          $ref: '#/components/schemas/AvatarPainDesireSection'
+          description: "Section 4: Pain & Desire"
         failed_solutions:
-          $ref: '#/components/schemas/AvatarFailedSolutions'
-        objections:
-          $ref: '#/components/schemas/AvatarObjections'
-        buying_psychology:
-          $ref: '#/components/schemas/AvatarBuyingPsychology'
-        info_comm:
-          $ref: '#/components/schemas/AvatarInformationComm'
+          $ref: '#/components/schemas/AvatarFailedSolutionsSection'
+          description: "Section 5: Failed Solutions"
+        objections_buying:
+          $ref: '#/components/schemas/AvatarObjectionsBuyingSection'
+          description: "Section 6: Objections & Buying"
         raw_language:
-          $ref: '#/components/schemas/AvatarRawLanguage'
-        strategic_summary:
-          $ref: '#/components/schemas/AvatarStrategicSummary'
-        ranking:
-          $ref: '#/components/schemas/AvatarRanking'
+          $ref: '#/components/schemas/AvatarRawLanguageSection'
+          description: "Section 7: Raw Language"
     CustomerAvatar:
       type: object
       required: [persona_name, characteristics, description, age_range, gender, key_buying_motivation, pain_point, emotion, desire, objections, failed_alternatives]
@@ -2175,7 +2420,7 @@ components:
       description: How self-aware and change-ready the prospect is
     AwarenessLevel:
       type: string
-      enum: [unaware, problem_aware, solution_aware, product_aware, most_aware]
+      enum: [unaware, problem aware, solution aware, product aware, most aware]
       description: Prospect's awareness per Schwartz's stages
     SophisticationLevel:
       type: string
@@ -2623,3 +2868,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SwipeExample'
+  headers:
+    AccessControlAllowOrigin:
+      schema:
+        type: string
+      example: '*'
+    AccessControlAllowHeaders:
+      schema:
+        type: string
+      example: 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+    AccessControlAllowMethods:
+      schema:
+        type: string
+      example: 'GET,POST,OPTIONS'

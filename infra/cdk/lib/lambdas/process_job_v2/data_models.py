@@ -31,7 +31,7 @@ class CompetitionLevel(str, Enum):
 
 class AwarenessLevel(str, Enum):
     """Schwartz awareness level of the avatar."""
-    UNAWARE = "unaware"
+    UNAWARE = "Unaware"
     PROBLEM_AWARE = "problem aware"
     SOLUTION_AWARE = "solution aware"
     PRODUCT_AWARE = "product aware"
@@ -61,7 +61,7 @@ class AvatarOverview(BaseModel):
     )
     awareness_level: AwarenessLevel = Field(
         ..., 
-        description="Schwartz awareness stage: unaware, problem_aware, solution_aware, product_aware, or most_aware"
+        description="Schwartz awareness stage: unaware, problem aware, solution aware, product aware, or most aware"
     )
     competition_level: CompetitionLevel = Field(
         ..., 
@@ -309,6 +309,21 @@ class Avatar(BaseModel):
         title="Marketing Avatar",
         description="Structured avatar sheet capturing demographics, pains, desires, failed solutions, objections, and raw language.",
         extra="forbid",
+    )
+
+    short_description: str = Field(
+        ..., 
+        description="Short description of the avatar", max_length=40
+    )
+
+    age: str = Field(
+        ...,
+        description="Age range of the avatar", max_length=20
+    )
+
+    gender: str = Field(
+        ...,
+        description="Gender of the avatar", max_length=20
     )
 
     # Section 1: Avatar Overview (Always visible)
@@ -597,8 +612,8 @@ class StageOfSophistication(BaseModel):
     )
     rationale: Optional[str] = Field(
         None,
-        description="Why this level fits (signals from ads, competitors, buyer skepticism)."
-        max_length=20
+        description="Why this level fits (signals from ads, competitors, buyer skepticism).",
+        max_length=75
     )
 
 
@@ -656,7 +671,7 @@ class ProductInfo(BaseModel):
     details: Optional[str] = Field(
         None,
         description="Format, modules, deliverables, bonuses, guarantees, price points, terms. Please do not use too technical terms.",
-        max_length=30
+        max_length=75
     )
     # New fields from Section 3: Product Details
     format: Optional[str] = Field(None, description="Product format (e.g., 'Softgel supplement (60 count)', 'Digital course', 'Physical book')")
@@ -826,7 +841,7 @@ class MarketSnapshot(BaseModel):
     market_temperature_description: Optional[str] = Field(
         None, 
         description="Explanation of market temperature (e.g., 'Warm — Interested but needs trust signals before buying')",
-        max_length=20
+        max_length=75
     )
 
 
