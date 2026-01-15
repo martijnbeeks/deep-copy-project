@@ -59,6 +59,10 @@ class AvatarOverview(BaseModel):
         ..., 
         description="How ready this avatar is to purchase: cold (not looking), warm (interested but skeptical), hot (ready to buy)"
     )
+    intensity: int = Field(
+        ..., 
+        description="How intense this avatar's problem is: 1, 2, 3, 4, 5, Please build this based on market_size and buying_readiness"
+    )
     awareness_level: AwarenessLevel = Field(
         ..., 
         description="Schwartz awareness stage: unaware, problem aware, solution aware, product aware, or most aware"

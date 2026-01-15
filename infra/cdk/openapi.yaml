@@ -2096,7 +2096,7 @@ components:
     AvatarOverviewSection:
       type: object
       description: "Section 1: Avatar Overview - high-level summary card"
-      required: [name, description, market_size, buying_readiness, awareness_level, competition_level, one_line_hook]
+      required: [name, description, market_size, buying_readiness, intensity, awareness_level, competition_level, one_line_hook]
       properties:
         name:
           type: string
@@ -2108,6 +2108,11 @@ components:
           $ref: '#/components/schemas/MarketSize'
         buying_readiness:
           $ref: '#/components/schemas/BuyingReadiness'
+        intensity:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "How intense this avatar's problem is (1-5), based on market_size and buying_readiness"
         awareness_level:
           $ref: '#/components/schemas/AwarenessLevel'
         competition_level:
