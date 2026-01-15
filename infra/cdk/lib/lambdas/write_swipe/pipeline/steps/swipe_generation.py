@@ -68,7 +68,7 @@ def rewrite_swipe_file(
         logger.info("Turn 1: Generate a style guide")
         
         style_prompt = get_style_guide_analysis_prompt(raw_text)
-        model = os.environ.get("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022")
+        model = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
         max_tokens = 8192
         
         style_guide, usage = anthropic_service.make_streaming_request(
