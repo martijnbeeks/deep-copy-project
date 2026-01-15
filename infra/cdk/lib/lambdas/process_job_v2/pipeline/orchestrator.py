@@ -17,6 +17,7 @@ from llm_usage import UsageContext
 from services.aws import AWSServices
 from services.openai_service import OpenAIService
 from services.perplexity_service import PerplexityService
+from services.cache import ResearchCacheService
 from pipeline.steps.analyze_page import AnalyzePageStep
 from pipeline.steps.deep_research import DeepResearchStep
 from pipeline.steps.avatars import AvatarStep
@@ -77,6 +78,12 @@ class PipelineOrchestrator:
         self.perplexity_service = PerplexityService(
             api_key=self.aws_services.secrets["PERPLEXITY_API_KEY"],
             aws_request_id=aws_request_id
+        )
+        
+        # Initialize cache service
+        self.cache_service = ResearchCacheService(
+            s3_client=self.aws_services.s3_client,
+            s3_bucket=self.aws_services.s3_bucket
         )
         
         # Initialize pipeline steps
@@ -234,23 +241,44 @@ class PipelineOrchestrator:
             if config.dev_mode:
                 return self._handle_dev_mode(config)
             
-            # Step 1: Analyze research page
-            logger.info("Step 1: Analyzing research page")
-            research_page_analysis = self.analyze_page_step.execute(config.sales_page_url)
+            # Check cache for deep research results
+            cached_research = self.cache_service.get_cached_research(config.sales_page_url)
             
-            # Step 2: Create deep research prompt
-            logger.info("Step 2: Creating deep research prompt")
-            deep_research_prompt = self.deep_research_step.create_prompt(
-                sales_page_url=config.sales_page_url,
-                research_page_analysis=research_page_analysis,
-                gender=config.gender,
-                location=config.location,
-                research_requirements=config.research_requirements
-            )
-            
-            # Step 3: Execute deep research
-            logger.info("Step 3: Executing deep research")
-            deep_research_output = self.deep_research_step.execute(deep_research_prompt)
+            if cached_research:
+                # Cache HIT - use cached data and skip Steps 1-3
+                logger.info("Using cached research data - skipping Steps 1-3")
+                research_page_analysis = cached_research.research_page_analysis
+                deep_research_prompt = cached_research.deep_research_prompt
+                deep_research_output = cached_research.deep_research_output
+            else:
+                # Cache MISS - execute Steps 1-3 and cache results
+                
+                # Step 1: Analyze research page
+                logger.info("Step 1: Analyzing research page")
+                research_page_analysis = self.analyze_page_step.execute(config.sales_page_url)
+                
+                # Step 2: Create deep research prompt
+                logger.info("Step 2: Creating deep research prompt")
+                deep_research_prompt = self.deep_research_step.create_prompt(
+                    sales_page_url=config.sales_page_url,
+                    research_page_analysis=research_page_analysis,
+                    gender=config.gender,
+                    location=config.location,
+                    research_requirements=config.research_requirements
+                )
+                
+                # Step 3: Execute deep research
+                logger.info("Step 3: Executing deep research")
+                deep_research_output = self.deep_research_step.execute(deep_research_prompt)
+                
+                # Save to cache for future runs
+                logger.info("Saving research results to cache")
+                self.cache_service.save_research_cache(
+                    sales_page_url=config.sales_page_url,
+                    research_page_analysis=research_page_analysis,
+                    deep_research_prompt=deep_research_prompt,
+                    deep_research_output=deep_research_output
+                )
             
             # Step 4: Identify and complete avatars
             logger.info("Step 4a: Identifying avatars")

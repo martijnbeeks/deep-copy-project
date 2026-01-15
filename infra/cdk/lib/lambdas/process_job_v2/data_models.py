@@ -32,10 +32,10 @@ class CompetitionLevel(str, Enum):
 class AwarenessLevel(str, Enum):
     """Schwartz awareness level of the avatar."""
     UNAWARE = "unaware"
-    PROBLEM_AWARE = "problem_aware"
-    SOLUTION_AWARE = "solution_aware"
-    PRODUCT_AWARE = "product_aware"
-    MOST_AWARE = "most_aware"
+    PROBLEM_AWARE = "problem aware"
+    SOLUTION_AWARE = "solution aware"
+    PRODUCT_AWARE = "product aware"
+    MOST_AWARE = "most aware"
 
 
 class AvatarOverview(BaseModel):
@@ -428,6 +428,15 @@ class MarketingAngle(BaseModel):
         ..., 
         description="Compliance or proof risk for running this angle: low, medium, high"
     )
+
+    market_size: MarketSize = Field(
+        ..., 
+        description="Estimated size of this avatar segment: small (niche), medium (solid segment), or large (mass market)"
+    )
+    buying_readiness: BuyingReadiness = Field(
+        ..., 
+        description="How ready this avatar is to purchase: cold (not looking), warm (interested but skeptical), hot (ready to buy)"
+    )
     
     # Core content
     core_argument: str = Field(
@@ -589,6 +598,7 @@ class StageOfSophistication(BaseModel):
     rationale: Optional[str] = Field(
         None,
         description="Why this level fits (signals from ads, competitors, buyer skepticism)."
+        max_length=20
     )
 
 
@@ -642,10 +652,11 @@ class SwipeExample(BaseModel):
 class ProductInfo(BaseModel):
     """Basic info about the product you will market."""
     name: Optional[str] = Field(None, description="Working name of the product/offer.")
-    description: Optional[str] = Field(None, description="What it is, who it's for, core outcomes/benefits.")
+    description: Optional[str] = Field(None, description="What it is, who it's for, core outcomes/benefits. Please do not use too technical terms.", max_length=30)
     details: Optional[str] = Field(
         None,
-        description="Format, modules, deliverables, bonuses, guarantees, price points, terms."
+        description="Format, modules, deliverables, bonuses, guarantees, price points, terms. Please do not use too technical terms.",
+        max_length=30
     )
     # New fields from Section 3: Product Details
     format: Optional[str] = Field(None, description="Product format (e.g., 'Softgel supplement (60 count)', 'Digital course', 'Physical book')")
@@ -808,13 +819,14 @@ class MarketSnapshot(BaseModel):
     """Section 1: Market Snapshot - always visible summary."""
     sophistication: Optional[StageOfSophistication] = Field(None, description="Market sophistication level with rationale")
     awareness: Optional[AwarenessLevel] = Field(None, description="Prospect's awareness level")
-    awareness_description: Optional[str] = Field(None, description="Brief description of awareness state (e.g., 'Know solutions exist, seeking')")
+    awareness_description: Optional[str] = Field(None, description="Brief description of awareness state (e.g., 'Know solutions exist, seeking')", max_length=20)
     consciousness: Optional[ConsciousnessLevel] = Field(None, description="Prospect's consciousness/readiness level")
-    consciousness_description: Optional[str] = Field(None, description="Brief description of consciousness state (e.g., 'Actively searching')")
+    consciousness_description: Optional[str] = Field(None, description="Brief description of consciousness state (e.g., 'Actively searching')", max_length=20)
     market_temperature: Optional[MarketTemperature] = Field(None, description="Market temperature (cold/warm/hot/skeptical/saturated)")
     market_temperature_description: Optional[str] = Field(
         None, 
-        description="Explanation of market temperature (e.g., 'Warm — Interested but needs trust signals before buying')"
+        description="Explanation of market temperature (e.g., 'Warm — Interested but needs trust signals before buying')",
+        max_length=20
     )
 
 
@@ -980,4 +992,41 @@ class OfferBrief(BaseModel):
     examples_swipes: List[SwipeExample] = Field(
         default_factory=list,
         description="Reference campaigns, pages, or ads to emulate."
+    )
+
+
+# =============================================================================
+# CACHE DATA MODELS
+# =============================================================================
+
+class CachedResearchData(BaseModel):
+    """
+    Cached output from Steps 1-3 (page analysis through deep research).
+    
+    Used to skip expensive Perplexity API calls when the same sales page URL
+    has been processed before 
+    """
+    sales_page_url: str = Field(
+        ..., 
+        description="The original sales page URL that was analyzed"
+    )
+    research_page_analysis: str = Field(
+        ..., 
+        description="Output from Step 1: GPT-5 Vision analysis of the sales page"
+    )
+    deep_research_prompt: str = Field(
+        ..., 
+        description="Output from Step 2: The prompt generated for deep research"
+    )
+    deep_research_output: str = Field(
+        ..., 
+        description="Output from Step 3: The comprehensive research from Perplexity"
+    )
+    cached_at: str = Field(
+        ..., 
+        description="ISO timestamp when this cache entry was created"
+    )
+    cache_version: str = Field(
+        default="1.0", 
+        description="Version identifier for cache schema, used for invalidation"
     )
