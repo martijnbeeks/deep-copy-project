@@ -1900,7 +1900,7 @@ components:
     MarketingAngle:
       type: object
       description: "A generated marketing angle"
-      required: [angle_title, angle_subtitle, angle_type, emotional_driver, risk_level, core_argument, target_age_range, target_audience, pain_points, desires, common_objections, failed_alternatives, pain_quotes, desire_quotes, objection_quotes]
+      required: [angle_title, angle_subtitle, angle_type, emotional_driver, risk_level, market_size, buying_readiness, core_argument, target_age_range, target_audience, pain_points, desires, common_objections, failed_alternatives, pain_quotes, desire_quotes, objection_quotes]
       properties:
         angle_title:
           type: string
@@ -1917,6 +1917,14 @@ components:
         risk_level:
           type: string
           description: "Compliance or proof risk for running this angle (Low / Medium / High)"
+        market_size:
+          type: string
+          enum: [small, medium, large]
+          description: "Estimated size of this avatar segment: small (niche), medium (solid segment), or large (mass market)"
+        buying_readiness:
+          type: string
+          enum: [cold, warm, hot]
+          description: "How ready this avatar is to purchase: cold (not looking), warm (interested but skeptical), hot (ready to buy)"
         core_argument:
           type: string
           description: "The single-sentence logical argument this angle makes"
