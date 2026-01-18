@@ -182,13 +182,12 @@ class PipelineOrchestrator:
         avatar_details = self.avatar_step.complete_avatar_details(
             identified_avatar, deep_research_output
         )
-        necessary_beliefs = self.avatar_step.complete_necessary_beliefs(
-            identified_avatar, deep_research_output
-        )
+        # necessary_beliefs = self.avatar_step.complete_necessary_beliefs(
+        #     identified_avatar, deep_research_output
+        # )
         return {
             "identified_avatar": identified_avatar,
             "avatar_details": avatar_details,
-            "necessary_beliefs": necessary_beliefs
         }
     
     def _generate_angles_for_avatar(
