@@ -822,6 +822,7 @@ Please take into account the following when writing:
     - Make explanations benefit-driven instead of descriptive
     - Limit paragraphs to one or two short lines
     - Optimize content for fast scanning, not deep reading
+    - Write in the language of the research document
 """
 
 

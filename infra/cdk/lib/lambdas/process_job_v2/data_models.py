@@ -317,7 +317,7 @@ class Avatar(BaseModel):
 
     short_description: str = Field(
         ..., 
-        description="Short description of the avatar", max_length=40
+        description="Short description of the avatar"
     )
 
     age: str = Field(
@@ -617,7 +617,6 @@ class StageOfSophistication(BaseModel):
     rationale: Optional[str] = Field(
         None,
         description="Why this level fits (signals from ads, competitors, buyer skepticism).",
-        max_length=75
     )
 
 
@@ -671,11 +670,10 @@ class SwipeExample(BaseModel):
 class ProductInfo(BaseModel):
     """Basic info about the product you will market."""
     name: Optional[str] = Field(None, description="Working name of the product/offer.")
-    description: Optional[str] = Field(None, description="What it is, who it's for, core outcomes/benefits. Please do not use too technical terms.", max_length=30)
+    description: Optional[str] = Field(None, description="What it is, who it's for, core outcomes/benefits. Please do not use too technical terms.")
     details: Optional[str] = Field(
         None,
         description="Format, modules, deliverables, bonuses, guarantees, price points, terms. Please do not use too technical terms.",
-        max_length=75
     )
     # New fields from Section 3: Product Details
     format: Optional[str] = Field(None, description="Product format (e.g., 'Softgel supplement (60 count)', 'Digital course', 'Physical book')")
@@ -836,16 +834,15 @@ class ResearchInspiration(BaseModel):
 # Market Snapshot for Section 1
 class MarketSnapshot(BaseModel):
     """Section 1: Market Snapshot - always visible summary."""
-    sophistication: Optional[StageOfSophistication] = Field(None, description="Market sophistication level with rationale")
-    awareness: Optional[AwarenessLevel] = Field(None, description="Prospect's awareness level")
-    awareness_description: Optional[str] = Field(None, description="Brief description of awareness state (e.g., 'Know solutions exist, seeking')", max_length=20)
-    consciousness: Optional[ConsciousnessLevel] = Field(None, description="Prospect's consciousness/readiness level")
-    consciousness_description: Optional[str] = Field(None, description="Brief description of consciousness state (e.g., 'Actively searching')", max_length=20)
-    market_temperature: Optional[MarketTemperature] = Field(None, description="Market temperature (cold/warm/hot/skeptical/saturated)")
-    market_temperature_description: Optional[str] = Field(
-        None, 
+    sophistication: StageOfSophistication = Field(..., description="Market sophistication level with rationale")
+    awareness: AwarenessLevel = Field(..., description="Prospect's awareness level")
+    awareness_description: str = Field(..., description="Brief description of awareness state (e.g., 'Know solutions exist, seeking')")
+    consciousness: ConsciousnessLevel = Field(..., description="Prospect's consciousness/readiness level")
+    consciousness_description: str = Field(..., description="Brief description of consciousness state (e.g., 'Actively searching')")
+    market_temperature: MarketTemperature = Field(..., description="Market temperature (cold/warm/hot/skeptical/saturated)")
+    market_temperature_description: str = Field(
+        ..., 
         description="Explanation of market temperature (e.g., 'Warm — Interested but needs trust signals before buying')",
-        max_length=75
     )
 
 
