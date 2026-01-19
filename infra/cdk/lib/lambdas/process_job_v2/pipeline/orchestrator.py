@@ -206,12 +206,10 @@ class PipelineOrchestrator:
             Dictionary with avatar, angles, and beliefs.
         """
         avatar = result_entry["avatar_details"]
-        necessary_beliefs = result_entry["necessary_beliefs"]
         angles = self.marketing_step.generate_marketing_angles(avatar, deep_research_output)
         return {
             "avatar": avatar.dict(),
             "angles": angles.dict(),
-            "necessary_beliefs": necessary_beliefs
         }
     
     def run(self, config: PipelineConfig) -> PipelineResult:
