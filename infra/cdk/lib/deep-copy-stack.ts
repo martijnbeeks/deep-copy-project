@@ -131,6 +131,7 @@ export class DeepCopyStack extends Stack {
     resultsBucket.grantRead(processJobLambdaV2, 'content_library/*');
     resultsBucket.grantRead(processJobLambdaV2, 'projects/*');
     resultsBucket.grantRead(processJobLambdaV2, 'results/*');
+    resultsBucket.grantRead(processJobLambdaV2, 'cache/*');
 
     // Shared asset for Python "thin" lambdas (submit/get-result). Exclude caches to keep asset staging reliable.
     const pythonLambdasAsset = lambda.Code.fromAsset(path.join(__dirname, 'lambdas'), {
