@@ -6,6 +6,7 @@ from .logging_config import setup_logging, get_logger
 from .html import extract_clean_text_from_html
 from .image import save_fullpage_png, compress_image_if_needed
 from .schema import json_type_to_python, create_model_from_schema, load_schema_as_model
+from .retry import retry_with_exponential_backoff
 
 __all__ = [
     "setup_logging",
@@ -16,4 +17,5 @@ __all__ = [
     "json_type_to_python",
     "create_model_from_schema",
     "load_schema_as_model",
+    "retry_with_exponential_backoff",
 ]
