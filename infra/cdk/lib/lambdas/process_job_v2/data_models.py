@@ -330,6 +330,77 @@ class Avatar(BaseModel):
         description="Gender of the avatar", max_length=20
     )
 
+    # Section 0: Score of avatar
+    problem_urgency: int = Field(
+        ...,
+        ge=1,
+        le=5,
+        description=(
+            "How desperately this avatar needs a solution (1-5). "
+            "5=Critical: Daily frustration, heavy emotional weight, actively searching. "
+            "4=High: Significant life impact, strong motivation to solve. "
+            "3=Moderate: Noticeable problem, willing to act but not desperate. "
+            "2=Low: Aware of issue, low emotional charge. "
+            "1=Minimal: Problem barely registers, no urgency."
+        )
+    )
+    
+    purchasing_power: int = Field(
+        ...,
+        ge=1,
+        le=5,
+        description=(
+            "Can this avatar afford the solution (1-5). "
+            "5=Premium: High disposable income, price is no obstacle. "
+            "4=Comfortable: Employed or stable retirement, can afford without strain. "
+            "3=Moderate: Can afford but needs value justification. "
+            "2=Stretched: Budget-conscious, needs discounts or payment plans. "
+            "1=Limited: Significant financial barrier."
+        )
+    )
+    
+    saturation_level: int = Field(
+        ...,
+        ge=1,
+        le=5,
+        description=(
+            "How crowded is the market for this avatar (1-5). "
+            "5=Blue Ocean: Almost no competitors targeting this avatar. "
+            "4=Low: Few competitors, plenty of room. "
+            "3=Moderate: Some competition, unique angles still available. "
+            "2=High: Crowded space, hard to differentiate. "
+            "1=Saturated: Extremely competitive, severe ad fatigue."
+        )
+    )
+    
+    audience_size: int = Field(
+        ...,
+        ge=1,
+        le=5,
+        description=(
+            "How large is this avatar segment (1-5). "
+            "5=Massive: 40%+ of total market. "
+            "4=Large: 25-40% of total market. "
+            "3=Medium: 15-25% of total market. "
+            "2=Small: 5-15% of total market. "
+            "1=Tiny: <5% of total market."
+        )
+    )
+
+    overall_score: int = Field(
+        ...,
+        ge=1,
+        le=5,
+        description=(
+            "Overall score of the avatar (1-5) based on problem urgency, purchasing power, saturation level, audience size. "
+            "5=Excellent: Very active on platforms, high engagement, clear targeting. "
+            "4=Good: Present on platforms, targetable with standard options. "
+            "3=Moderate: Requires creative targeting, mixed presence. "
+            "2=Difficult: Limited online presence, hard to isolate. "
+            "1=Very Hard: Offline-heavy, no clear targeting path."
+        )
+    )
+
     # Section 1: Avatar Overview (Always visible)
     overview: AvatarOverview = Field(
         ..., 
@@ -370,6 +441,12 @@ class Avatar(BaseModel):
     raw_language: AvatarRawLanguage = Field(
         ..., 
         description="Section 7: Raw Language — direct quotes with sources and vocabulary patterns"
+    )
+
+    # Section 8: Platforms
+    advertising_platforms: str = Field(
+        ...,
+        description="List the advertising platforms this avatar primarily uses"
     )
 
 
@@ -456,6 +533,106 @@ class MarketingAngle(BaseModel):
         ..., 
         description="How ready this avatar is to purchase: cold (not looking), warm (interested but skeptical), hot (ready to buy)"
     )
+
+    # big idea
+    big_idea: Optional[str] = Field(
+        None,
+        description="Single, transformative central idea that unifies the campaign"
+    )
+    problem_mechanism_ump: Optional[str] = Field(
+        None,
+        description="Unique Mechanism of the Problem: Why nothing has worked (counterintuitive reason the problem persists)"
+    )
+    solution_mechanism_ums: Optional[str] = Field(
+        None,
+        description="Unique Mechanism of the Solution: Why THIS works (how this solution uniquely solves the problem)"
+    )
+
+    # Angle scoring
+    angle_problem_urgency: int = Field(
+        ...,
+        ge=1,
+        le=5,
+        description=(
+            "How desperately does the audience need this problem solved (1-5). "
+            "5=Critical: Life-altering, keeps them up at night, desperate. "
+            "4=High: Daily frustration, significantly impacts quality of life. "
+            "3=Moderate: Noticeable annoyance, motivated but can wait. "
+            "2=Low: Aware of problem, not actively bothered. "
+            "1=Minimal: Nice-to-fix, rarely thinks about it."
+        )
+    )
+    
+    novelty: int = Field(
+        ...,
+        ge=1,
+        le=5,
+        description=(
+            "How fresh is this angle compared to competitors (1-5). "
+            "5=Breakthrough: Never seen before, completely ownable. "
+            "4=Fresh: Rarely used, feels new to audience. "
+            "3=Moderate: Some competitors use similar messaging. "
+            "2=Common: Frequently used, audience has seen it. "
+            "1=Exhausted: Everyone says this, audience is numb."
+        )
+    )
+    
+    proof_strength: int = Field(
+        ...,
+        ge=1,
+        le=5,
+        description=(
+            "Do we have credible evidence to back this angle (1-5). "
+            "5=Iron-clad: Clinical studies, third-party verification, expert endorsements. "
+            "4=Strong: Solid testimonials, data points, mechanism explanation. "
+            "3=Moderate: Logical argument, general research support. "
+            "2=Weak: Anecdotal only, requires trust leap. "
+            "1=None: Pure claim, no backing available."
+        )
+    )
+    
+    avatar_fit: int = Field(
+        ...,
+        ge=1,
+        le=5,
+        description=(
+            "How precisely does this angle match the target avatar (1-5). "
+            "5=Perfect: Mirrors their exact language, beliefs, situation. "
+            "4=Strong: Resonates with core pain/desire, minor adaptation needed. "
+            "3=Moderate: Relevant but not their primary concern. "
+            "2=Loose: Tangential connection, may feel generic. "
+            "1=Mismatch: Doesn't align with how they see themselves."
+        )
+    )
+    
+    ltv_potential: int = Field(
+        ...,
+        ge=1,
+        le=5,
+        description=(
+            "Will this angle attract customers who stick around (1-5). "
+            "5=Excellent: Attracts committed buyers, high repeat + referral. "
+            "4=Good: Likely repeat customers, some referral behavior. "
+            "3=Moderate: May repurchase, limited advocacy. "
+            "2=Low: One-time buyers, price-sensitive. "
+            "1=Poor: Bargain hunters, high refund risk."
+        )
+    )
+
+    overall_score: int = Field(
+        ...,
+        ge=1,
+        le=5,
+        description=(
+            "Overall score for this angle (1-5) regarding fields angle_problem_urgency, novelty, proof_strength, avatar_fit, ltv_potential. "
+            "5=Excellent: Strong angle with high potential. "
+            "4=Good: Solid angle with moderate potential. "
+            "3=Moderate: Average angle with limited potential. "
+            "2=Low: Weak angle with minimal potential. "
+            "1=Poor: Poor angle with no potential."
+        )
+    )
+    
     
     # Core content
     core_argument: str = Field(
@@ -846,35 +1023,6 @@ class MarketSnapshot(BaseModel):
     )
 
 
-# Big Idea Section for Section 2
-class BigIdeaSection(BaseModel):
-    """Section 2: The Big Idea and mechanisms."""
-    big_idea: Optional[str] = Field(
-        None,
-        description="Single, transformative central idea that unifies the campaign"
-    )
-    problem_mechanism_ump: Optional[str] = Field(
-        None,
-        description="Unique Mechanism of the Problem: Why nothing has worked (counterintuitive reason the problem persists)"
-    )
-    solution_mechanism_ums: Optional[str] = Field(
-        None,
-        description="Unique Mechanism of the Solution: Why THIS works (how this solution uniquely solves the problem)"
-    )
-    metaphors: List[str] = Field(
-        default_factory=list,
-        description="Images/analogies to make the big idea and mechanism vivid"
-    )
-    guru: Optional[str] = Field(
-        None,
-        description="Authority or spokesperson (real or archetype) associated with the offer"
-    )
-    discovery_story: Optional[str] = Field(
-        None,
-        description="Origin narrative: aha moment, failed attempts, breakthrough mechanism"
-    )
-
-
 class OfferBrief(BaseModel):
     """
     Structured brief to guide AI when generating copy, concepts, and funnel assets.
@@ -885,12 +1033,6 @@ class OfferBrief(BaseModel):
     market_snapshot: Optional[MarketSnapshot] = Field(
         None, 
         description="Section 1: Market Snapshot - sophistication, awareness, consciousness, temperature"
-    )
-    
-    # Section 2: The Big Idea
-    big_idea_section: Optional[BigIdeaSection] = Field(
-        None,
-        description="Section 2: The Big Idea - central idea, mechanisms, metaphors, guru, discovery story"
     )
     
     # Section 3: Product Details

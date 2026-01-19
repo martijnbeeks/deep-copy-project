@@ -125,7 +125,7 @@ class PipelineOrchestrator:
         
         try:
             # Load mock results from S3
-            mock_key = "results/39ac329a-2abd-47d2-8f9f-950f4c397dcb/comprehensive_results.json"
+            mock_key = "results/53e2ea2a-4015-42a7-9c1c-19f9962d90ab/comprehensive_results.json"
             logger.info(f"Loading mock results from S3: {mock_key}")
             
             comprehensive_data = self.aws_services.get_object_from_s3(

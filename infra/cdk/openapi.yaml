@@ -1900,7 +1900,7 @@ components:
     MarketingAngle:
       type: object
       description: "A generated marketing angle"
-      required: [angle_title, angle_subtitle, angle_type, emotional_driver, risk_level, market_size, buying_readiness, core_argument, target_age_range, target_audience, pain_points, desires, common_objections, failed_alternatives, pain_quotes, desire_quotes, objection_quotes]
+      required: [angle_title, angle_subtitle, angle_type, emotional_driver, risk_level, market_size, buying_readiness, angle_problem_urgency, novelty, proof_strength, avatar_fit, ltv_potential, overall_score, core_argument, target_age_range, target_audience, pain_points, desires, common_objections, failed_alternatives, pain_quotes, desire_quotes, objection_quotes]
       properties:
         angle_title:
           type: string
@@ -1925,6 +1925,47 @@ components:
           type: string
           enum: [cold, warm, hot]
           description: "How ready this avatar is to purchase: cold (not looking), warm (interested but skeptical), hot (ready to buy)"
+        # Big Idea Section
+        big_idea:
+          type: string
+          description: "Single, transformative central idea that unifies the campaign"
+        problem_mechanism_ump:
+          type: string
+          description: "Unique Mechanism of the Problem: Why nothing has worked (counterintuitive reason the problem persists)"
+        solution_mechanism_ums:
+          type: string
+          description: "Unique Mechanism of the Solution: Why THIS works (how this solution uniquely solves the problem)"
+        # Angle Scoring Dimensions (1-5 scores)
+        angle_problem_urgency:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "How desperately does the audience need this problem solved (1-5). 5=Critical, 4=High, 3=Moderate, 2=Low, 1=Minimal"
+        novelty:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "How fresh is this angle compared to competitors (1-5). 5=Breakthrough, 4=Fresh, 3=Moderate, 2=Common, 1=Exhausted"
+        proof_strength:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "Do we have credible evidence to back this angle (1-5). 5=Iron-clad, 4=Strong, 3=Moderate, 2=Weak, 1=None"
+        avatar_fit:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "How precisely does this angle match the target avatar (1-5). 5=Perfect, 4=Strong, 3=Moderate, 2=Loose, 1=Mismatch"
+        ltv_potential:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "Will this angle attract customers who stick around (1-5). 5=Excellent, 4=Good, 3=Moderate, 2=Low, 1=Poor"
+        overall_score:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "Overall score for this angle (1-5) based on angle_problem_urgency, novelty, proof_strength, avatar_fit, ltv_potential"
         core_argument:
           type: string
           description: "The single-sentence logical argument this angle makes"
@@ -2310,7 +2351,7 @@ components:
     Avatar:
       type: object
       description: "Complete Marketing Avatar sheet for product–market fit & messaging research"
-      required: [short_description, age, gender, overview, demographics, problem_experience, pain_desire, failed_solutions, objections_buying, raw_language]
+      required: [short_description, age, gender, problem_urgency, purchasing_power, saturation_level, audience_size, overall_score, overview, demographics, problem_experience, pain_desire, failed_solutions, objections_buying, raw_language, advertising_platforms]
       properties:
         short_description:
           type: string
@@ -2324,6 +2365,32 @@ components:
           type: string
           description: "Gender of the avatar"
           maxLength: 20
+        # Section 0: Avatar Evaluation Dimensions (1-5 scores)
+        problem_urgency:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "How desperately this avatar needs a solution (1-5). 5=Critical, 4=High, 3=Moderate, 2=Low, 1=Minimal"
+        purchasing_power:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "Can this avatar afford the solution (1-5). 5=Premium, 4=Comfortable, 3=Moderate, 2=Stretched, 1=Limited"
+        saturation_level:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "How crowded is the market for this avatar (1-5). 5=Blue Ocean, 4=Low, 3=Moderate, 2=High, 1=Saturated"
+        audience_size:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "How large is this avatar segment (1-5). 5=Massive (40%+), 4=Large (25-40%), 3=Medium (15-25%), 2=Small (5-15%), 1=Tiny (<5%)"
+        overall_score:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "Overall score of the avatar (1-5) based on problem urgency, purchasing power, saturation level, audience size"
         overview:
           $ref: '#/components/schemas/AvatarOverviewSection'
           description: "Section 1: Avatar Overview"
@@ -2345,6 +2412,9 @@ components:
         raw_language:
           $ref: '#/components/schemas/AvatarRawLanguageSection'
           description: "Section 7: Raw Language"
+        advertising_platforms:
+          type: string
+          description: "List the advertising platforms this avatar primarily uses"
     CustomerAvatar:
       type: object
       required: [persona_name, characteristics, description, age_range, gender, key_buying_motivation, pain_point, emotion, desire, objections, failed_alternatives]
