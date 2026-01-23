@@ -546,15 +546,20 @@ paths:
           application/json:
             schema:
               type: object
-              required: [original_job_id, select_angle]
+                required: [original_job_id, avatar_id, angle_id]
               properties:
                 original_job_id:
                   type: string
                   format: uuid
                   description: The job ID of the original comprehensive analysis job
-                select_angle:
+                avatar_id:
                   type: string
-                  description: The marketing angle to focus on for the swipe files
+                  format: uuid
+                  description: The ID of the avatar to target
+                angle_id:
+                  type: string
+                  format: uuid
+                  description: The ID of the marketing angle to use
                 swipe_file_ids:
                   type: array
                   description: The IDs of the swipe files to generate
@@ -563,10 +568,11 @@ paths:
                     format: uuid
             examples:
               example:
-                summary: Generate swipe files for a marketing angle
+                summary: Generate swipe files for a specific avatar and angle ID
                 value:
                   original_job_id: "03479dbf-bc4c-4472-80ff-b11b561b8777"
-                  select_angle: "Embarrassment & Professional Confidence: 'Restore the beard you earned—no flakes in meetings.'"
+                  avatar_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  angle_id: "b2c3d4e5-f6g7-8901-bcde-f23456789012"
       responses:
         '202':
           description: Swipe file generation job accepted
@@ -601,7 +607,8 @@ paths:
               -H "content-type: application/json" \
               -d '{
                 "original_job_id": "03479dbf-bc4c-4472-80ff-b11b561b8777",
-                "select_angle": "Embarrassment & Professional Confidence: '\''Restore the beard you earned—no flakes in meetings.'\''"
+                "avatar_id": "YOUR_AVATAR_ID",
+                "angle_id": "YOUR_ANGLE_ID"
               }' \
               "${API_URL}swipe-files/generate"
   /swipe-files/{id}:
@@ -913,15 +920,20 @@ paths:
           application/json:
             schema:
               type: object
-              required: [original_job_id, select_angle]
+              required: [original_job_id, avatar_id, angle_id]
               properties:
                 original_job_id:
                   type: string
                   format: uuid
                   description: The job ID of the original comprehensive analysis job
-                select_angle:
+                avatar_id:
                   type: string
-                  description: The marketing angle to focus on for the swipe files
+                  format: uuid
+                  description: The ID of the avatar to target
+                angle_id:
+                  type: string
+                  format: uuid
+                  description: The ID of the marketing angle to use
                 swipe_file_ids:
                   type: array
                   description: The IDs of the swipe files to generate

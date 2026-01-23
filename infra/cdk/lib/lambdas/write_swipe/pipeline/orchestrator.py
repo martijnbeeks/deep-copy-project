@@ -3,6 +3,7 @@ Pipeline Orchestrator for write_swipe.
 """
 import os
 import traceback
+import json
 from typing import Any, Dict, Optional
 
 from utils.logging_config import setup_logging
@@ -35,27 +36,37 @@ class SwipeGenerationOrchestrator:
         """
         original_job_id = event.get('original_job_id')
         job_id = event.get('job_id')
-        select_angle = event.get('select_angle')
+        avatar_id = event.get('avatar_id')
+        angle_id = event.get('angle_id')
         swipe_file_ids = event.get('swipe_file_ids', [])
         
         # Normalize swipe_file_ids
         if isinstance(swipe_file_ids, str):
             swipe_file_ids = [swipe_file_ids]
             
-        if not job_id or not select_angle:
-             raise ValueError(f"Missing required parameters: job_id={job_id}, select_angle={select_angle}")
+        if not job_id or not avatar_id or not angle_id:
+             raise ValueError(f"Missing required parameters: job_id={job_id}, avatar_id={avatar_id}, angle_id={angle_id}")
 
         try:
             update_job_status(job_id, "RUNNING", {"message": "Processing swipe file generation"})
             
-            # Dev Mode Check (stubbed logic, can implement full mock if needed)
+            # Dev Mode Check
             if event.get("dev_mode"):
-                 logger.info("Dev mode detected - check handler for implementation if needed or implement here")
-                 # Typically we might return mock here.
-                 # For brevity, implementing Mock return:
-                 mock_res = {"statusCode": 200, "message": "Dev Mode Mock Success"}
-                 update_job_status(job_id, "SUCCEEDED", {"resultKey": "mock/key"})
-                 return mock_res
+                 logger.info("Dev mode detected - using mock results")
+                 mock_source_job_id = "ebebbc1b-ee10-4376-be52-98b119f215a7-swipe"
+                 mock_key = f"results/swipe_files/{mock_source_job_id}/swipe_files_results.json"
+                 bucket = os.environ.get("RESULTS_BUCKET")
+                 
+                 mock_data = fetch_results_from_s3(bucket, mock_key)
+                 if not mock_data:
+                     logger.warning(f"Mock data not found at {mock_key}")
+                     mock_data = {"message": "Mock data not found", "mock_source": mock_source_job_id}
+                 
+                 target_key = f"results/swipe_files/{job_id}/swipe_files_results.json"
+                 save_results_to_s3(bucket, target_key, mock_data)
+                 
+                 update_job_status(job_id, "SUCCEEDED", {"resultKey": target_key})
+                 return {'statusCode': 200, 'message': 'Swipe file generation completed successfully (DEV MODE)'}
 
             # 1. Fetch Job Results (Inputs)
             logger.info(f"Fetching inputs from original job {original_job_id}")
@@ -65,17 +76,49 @@ class SwipeGenerationOrchestrator:
                 
             job_results = results.get("results", {})
             
-            # Extract required data
+            # Find the specific avatar and angle from the results
+            marketing_avatars = job_results.get("marketing_avatars", [])
+            selected_avatar = None
+            selected_angle = None
+            
+            for m_avatar in marketing_avatars:
+                av = m_avatar.get("avatar", {})
+                if av.get("id") == avatar_id:
+                    selected_avatar = av
+                    # Look for angle in this avatar's generated angles
+                    angles_data = m_avatar.get("angles", {})
+                    generated_angles = angles_data.get("generated_angles", [])
+                    for ang in generated_angles:
+                        if ang.get("id") == angle_id:
+                            selected_angle = ang
+                            break
+                if selected_avatar and selected_angle:
+                    break
+            
+            if not selected_avatar:
+                raise ValueError(f"Avatar with ID {avatar_id} not found in job results")
+            if not selected_angle:
+                raise ValueError(f"Marketing angle with ID {angle_id} not found for avatar {avatar_id}")
+
+            logger.info(f"Processing Swipe Generation for Avatar: {selected_avatar.get('overview', {}).get('name', 'Unknown')} (ID: {avatar_id})")
+            logger.info(f"Using Marketing Angle: {selected_angle.get('angle_title', 'Unknown')} (ID: {angle_id})")
+
+            # Prepare text representations for LLM prompts
+            select_angle_text = f"Title: {selected_angle.get('angle_title')}\nSubtitle: {selected_angle.get('angle_subtitle')}\nCore Argument: {selected_angle.get('core_argument')}\nType: {selected_angle.get('angle_type')}"
+            marketing_avatar_text = json.dumps(selected_avatar, indent=2)
+
+            # Extract other required data
             research_page_analysis = job_results.get("research_page_analysis", "")
             deep_research_output = job_results.get("deep_research_output", "")
-            avatar_sheet = job_results.get("avatar_sheet", "") # Might be object or string?
             offer_brief = job_results.get("offer_brief", "")
             marketing_philosophy = job_results.get("marketing_philosophy_analysis", "")
             summary = job_results.get("summary", "")
             
             # 2. Template Selection (if needed)
             if not swipe_file_ids:
-                swipe_file_ids = select_swipe_files_template(select_angle, research_page_analysis, summary)
+                # Use the angle title or description for template selection context
+                angle_context = f"{selected_angle.get('angle_title')}: {selected_angle.get('core_argument')}"
+                swipe_file_ids = select_swipe_files_template(angle_context, research_page_analysis, summary)
             
             # 3. Load Templates
             swipe_htmls, swipe_jsons = load_swipe_file_templates(swipe_file_ids)
@@ -90,8 +133,8 @@ class SwipeGenerationOrchestrator:
                 
             # 4. Generate Rewrites
             final_results = rewrite_swipe_file(
-                select_angle=select_angle,
-                marketing_avatar=str(avatar_sheet), # ensuring string for prompt
+                select_angle=select_angle_text,
+                marketing_avatar=marketing_avatar_text,
                 deep_research=str(deep_research_output),
                 offer_brief=str(offer_brief),
                 marketing_philosophy=str(marketing_philosophy),
@@ -103,12 +146,7 @@ class SwipeGenerationOrchestrator:
             
             # 5. Save & Finish
             s3_key_res = f'results/swipe_files/{job_id}/swipe_files_results.json'
-            save_results_to_s3(os.environ.get("RESULTS_BUCKET"), s3_key_res, final_results) # using key directly?
-            # actually save_results_to_s3 in AWS service took (bucket, key, data)
-            
-            # Update AWS service to match original handler usage or adapt?
-            # Original handler calculated key. My AWS service helper assumes I pass bucket and key.
-            # I pass bucket and key above.
+            save_results_to_s3(os.environ.get("RESULTS_BUCKET"), s3_key_res, final_results)
             
             update_job_status(job_id, "SUCCEEDED", {"resultKey": s3_key_res})
             

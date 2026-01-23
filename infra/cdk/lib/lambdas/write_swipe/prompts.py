@@ -104,7 +104,8 @@ def get_advertorial_rewrite_prompt(
     angle: str,
     deep_research_output: str,
     offer_brief: str,
-    marketing_philosophy_analysis: str
+    marketing_philosophy_analysis: str,
+    avatar_info: str = ""
 ) -> str:
     """
     Generate prompt for rewriting an advertorial based on style guide and research.
@@ -115,6 +116,7 @@ def get_advertorial_rewrite_prompt(
         deep_research_output: Foundational research data.
         offer_brief: Offer details.
         marketing_philosophy_analysis: Marketing philosophy context.
+        avatar_info: Detailed avatar profile information.
         
     Returns:
         Formatted prompt string for advertorial generation.
@@ -127,6 +129,7 @@ def get_advertorial_rewrite_prompt(
         The style specifications from the provided style guide (from Call 1)
         All relevant product information from the product data
         The specified marketing angle (focus the copy around this emotional driver)
+        The target avatar profile (speak directly to their pains/desires)
         The output schema structure
 
         CRITICAL: The marketing angle should be woven throughout the copy, not just stated once. It should drive the emotional arc, headline choices, and benefit framing.
@@ -151,9 +154,10 @@ def get_advertorial_rewrite_prompt(
         Placement pattern: Extract from "Line break pattern" in White Space section
         Philosophy: Extract from "White space philosophy" in White Space section
         Format: Use <br><br> to separate idea chunks (double break for visual space)
+        Add new lines between paragraphs as needed and to make to paragraphs easy to read.
 
         Tone & Voice
-        Formality: Extract from "Formality level" in Tone & Voice section
+        Formality: Extract from "Formality level" in Tone & Voice section.
         Contractions: Extract rate from "Contractions per 100 words" in Tone & Voice section
         Direct address: Extract rate from "Direct address per 100 words" in Tone & Voice section
         Energy: Extract from "Energy level" in Tone & Voice section
@@ -194,6 +198,10 @@ def get_advertorial_rewrite_prompt(
         PRODUCT INFORMATION:
         Marketing Angle:
         {angle}
+        
+        Target Avatar:
+        {avatar_info}
+        
         Product Data:
         Deep research output:
         {deep_research_output}
