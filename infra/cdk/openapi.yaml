@@ -546,7 +546,7 @@ paths:
           application/json:
             schema:
               type: object
-                required: [original_job_id, avatar_id, angle_id]
+              required: [original_job_id, avatar_id, angle_id]
               properties:
                 original_job_id:
                   type: string
