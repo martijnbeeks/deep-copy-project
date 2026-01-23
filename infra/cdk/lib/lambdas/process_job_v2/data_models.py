@@ -1,6 +1,7 @@
 ## Avatar Sheet Data Models
 from enum import Enum
 from typing import List, Optional
+import uuid
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -315,6 +316,11 @@ class Avatar(BaseModel):
         extra="forbid",
     )
 
+    id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()),
+        description="Unique identifier for this avatar"
+    )
+
     short_description: str = Field(
         ..., 
         description="Short description of the avatar"
@@ -504,6 +510,10 @@ class MarketingAngle(BaseModel):
     A generated marketing angle for an avatar.
     Each angle represents a distinct way to pitch the product to this audience.
     """
+    id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()),
+        description="Unique identifier for this marketing angle"
+    )
     angle_title: str = Field(
         ..., 
         description="The name/headline for this specific pitch. Example: 'Formulated with AREDS2-Studied Ingredients'"

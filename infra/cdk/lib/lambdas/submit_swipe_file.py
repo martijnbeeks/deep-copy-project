@@ -33,7 +33,8 @@ def handler(event, _context):
     
     Expected body: {
         "original_job_id": "uuid-of-original-job",
-        "select_angle": "Marketing angle description"
+        "avatar_id": "id-of-avatar",
+        "angle_id": "id-of-marketing-angle"
     }
     Returns: {"jobId": "...", "status": "SUBMITTED"}
     """
@@ -53,7 +54,8 @@ def handler(event, _context):
     # Validate required parameters
     logger.info(f"Body: {body}")
     original_job_id = body.get("original_job_id")
-    select_angle = body.get("select_angle")
+    avatar_id = body.get("avatar_id")
+    angle_id = body.get("angle_id")
     swipe_file_ids = body.get("swipe_file_ids", [])
     
     if not original_job_id:
@@ -62,17 +64,17 @@ def handler(event, _context):
             "headers": {"content-type": "application/json", "Access-Control-Allow-Origin": "*"},
             "body": json.dumps({
                 "error": "Missing required parameter: original_job_id",
-                "example": {"original_job_id": "uuid", "select_angle": "Marketing angle"}
+                "example": {"original_job_id": "uuid", "avatar_id": "uuid", "angle_id": "uuid"}
             }),
         }
     
-    if not select_angle:
+    if not avatar_id or not angle_id:
         return {
             "statusCode": 400,
             "headers": {"content-type": "application/json", "Access-Control-Allow-Origin": "*"},
             "body": json.dumps({
-                "error": "Missing required parameter: select_angle",
-                "example": {"original_job_id": "uuid", "select_angle": "Marketing angle"}
+                "error": "Missing required parameters: avatar_id and angle_id are required",
+                "example": {"original_job_id": "uuid", "avatar_id": "uuid", "angle_id": "uuid"}
             }),
         }
 
@@ -108,7 +110,8 @@ def handler(event, _context):
     payload = {
         "original_job_id": original_job_id,
         "job_id": job_id,
-        "select_angle": select_angle,
+        "avatar_id": avatar_id,
+        "angle_id": angle_id,
         "dev_mode": dev_mode,
         "swipe_file_ids": swipe_file_ids,
     }

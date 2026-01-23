@@ -27,9 +27,10 @@ if __name__ == "__main__":
     import os
     os.environ['RESULTS_BUCKET'] = 'deepcopystack-resultsbucketa95a2103-zhwjflrlpfih'
     test_evt = {
-         "original_job_id": "test-job-id",
-         "job_id": "test-swipe-job",
-         "select_angle": "Test Angle",
+         "original_job_id": "ebebbc1b-ee10-4376-be52-98b119f215a7",
+         "job_id": "ebebbc1b-ee10-4376-be52-98b119f215a7-swipe",
+         "avatar_id": "avatar-competitive-athlete-weekend-warrior",
+         "angle_id": "angle-1-mechanism-stabilx",
          "swipe_file_ids": ["L00002"]
     }
     # Might fail if secrets not accessible locally

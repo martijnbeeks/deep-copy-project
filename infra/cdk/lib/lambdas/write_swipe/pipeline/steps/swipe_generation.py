@@ -92,7 +92,8 @@ def rewrite_swipe_file(
             angle=select_angle,
             deep_research_output=deep_research,
             offer_brief=offer_brief,
-            marketing_philosophy_analysis=marketing_philosophy
+            marketing_philosophy_analysis=marketing_philosophy,
+            avatar_info=marketing_avatar
         )
         
         # Prepare Schema (Tool Use)
