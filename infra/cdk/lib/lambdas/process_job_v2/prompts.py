@@ -817,8 +817,8 @@ Fill every field in the OfferBrief schema with high-strategic value content.
 Be specific. Be bold. Do not be generic.
 
 Please take into account the following when writing:
-    - Do not use scientific and academic jargon
-    - Write content in simple, sales-oriented language
+    - Do not use scientific and academic jargon, use simple language on B2 level!
+    - Write content in simple, sales-oriented language, with short sentences
     - Make explanations benefit-driven instead of descriptive
     - Limit paragraphs to one or two short lines
     - Optimize content for fast scanning, not deep reading
