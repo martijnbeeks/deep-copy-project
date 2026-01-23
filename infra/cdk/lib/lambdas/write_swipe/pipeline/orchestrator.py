@@ -143,6 +143,10 @@ class SwipeGenerationOrchestrator:
                 anthropic_service=self.anthropic,
                 job_id=job_id
             )
+
+            # Include context IDs in the final result
+            final_results['avatar_id'] = avatar_id
+            final_results['angle_id'] = angle_id
             
             # 5. Save & Finish
             s3_key_res = f'results/swipe_files/{job_id}/swipe_files_results.json'
