@@ -1900,8 +1900,12 @@ components:
     MarketingAngle:
       type: object
       description: "A generated marketing angle"
-      required: [angle_title, angle_subtitle, angle_type, emotional_driver, risk_level, market_size, buying_readiness, angle_problem_urgency, novelty, proof_strength, avatar_fit, ltv_potential, overall_score, core_argument, target_age_range, target_audience, pain_points, desires, common_objections, failed_alternatives, pain_quotes, desire_quotes, objection_quotes]
+      required: [id, angle_title, angle_subtitle, angle_type, emotional_driver, risk_level, market_size, buying_readiness, angle_problem_urgency, novelty, proof_strength, avatar_fit, ltv_potential, overall_score, core_argument, target_age_range, target_audience, pain_points, desires, common_objections, failed_alternatives, pain_quotes, desire_quotes, objection_quotes]
       properties:
+        id:
+          type: string
+          format: uuid
+          description: "Unique identifier for this marketing angle"
         angle_title:
           type: string
           description: "A name for this specific pitch"
@@ -2351,8 +2355,12 @@ components:
     Avatar:
       type: object
       description: "Complete Marketing Avatar sheet for product–market fit & messaging research"
-      required: [short_description, age, gender, problem_urgency, purchasing_power, saturation_level, audience_size, overall_score, overview, demographics, problem_experience, pain_desire, failed_solutions, objections_buying, raw_language, advertising_platforms]
+      required: [id, short_description, age, gender, problem_urgency, purchasing_power, saturation_level, audience_size, overall_score, overview, demographics, problem_experience, pain_desire, failed_solutions, objections_buying, raw_language, advertising_platforms]
       properties:
+        id:
+          type: string
+          format: uuid
+          description: "Unique identifier for this avatar"
         short_description:
           type: string
           description: "Short description of the avatar"

@@ -27,8 +27,8 @@ if __name__ == "__main__":
     import os
     os.environ['RESULTS_BUCKET'] = 'deepcopystack-resultsbucketa95a2103-zhwjflrlpfih'
     test_evt = {
-         "original_job_id": "test-job-id",
-         "job_id": "test-swipe-job",
+         "original_job_id": "53e2ea2a-4015-42a7-9c1c-19f9962d90ab",
+         "job_id": "53e2ea2a-4015-42a7-9c1c-19f9962d90ab-swipe",
          "select_angle": "Test Angle",
          "swipe_file_ids": ["L00002"]
     }
