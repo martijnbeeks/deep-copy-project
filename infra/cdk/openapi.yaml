@@ -2026,6 +2026,9 @@ components:
           description: "Direct quotes from research expressing skepticism this angle must overcome"
           items:
             $ref: '#/components/schemas/QuoteWithSource'
+        template_predictions:
+          $ref: '#/components/schemas/TemplatePredictionResult'
+          description: "Predicted best matching template for this angle"
     TopAngle:
       type: object
       description: "Top selected angle"
@@ -2963,6 +2966,127 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SwipeExample'
+    TemplateMatch:
+      type: object
+      description: "A single template match with scoring dimensions"
+      required: [template_id, overall_fit_score, audience_fit, pain_point_fit, tone_fit, reasoning]
+      properties:
+        template_id:
+          type: string
+          description: "The template ID (e.g., 'A00001')"
+        overall_fit_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: "Overall match score from 0.0 to 1.0"
+        audience_fit:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: "How well the template's target audience matches the avatar"
+        pain_point_fit:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: "How well the template's pain points align with the avatar/angle"
+        tone_fit:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: "How well the writing tone matches the angle's emotional approach"
+        reasoning:
+          type: string
+          description: "Brief explanation of why this template matches the avatar+angle"
+    TemplatePredictionResult:
+      type: object
+      description: "Complete prediction result for an avatar+angle combination"
+      required: [avatar_id, angle_id, top_template_id, predicted_at]
+      properties:
+        avatar_id:
+          type: string
+          description: "ID of the avatar this prediction is for"
+        angle_id:
+          type: string
+          description: "ID of the marketing angle this prediction is for"
+        predictions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateMatch'
+          description: "Ranked list of matching templates (best first)"
+        top_template_id:
+          type: string
+          description: "The best matching template ID"
+        predicted_at:
+          type: string
+          format: date-time
+          description: "ISO timestamp when prediction was generated"
+    LandingPageSummary:
+      type: object
+      description: "Summary of a landing page template from the content library"
+      required: [id, s3_key, short_description, target_audience, primary_pain_point, primary_benefit, tone]
+      properties:
+        id:
+          type: string
+          description: "The landing page ID (e.g., 'A00001')"
+        s3_key:
+          type: string
+          description: "Full S3 key"
+        product_name:
+          type: string
+          nullable: true
+          description: "Detected product name"
+        product_category:
+          type: string
+          nullable: true
+          description: "Product category (e.g., 'supplement', 'course', 'software')"
+        short_description:
+          type: string
+          description: "One-sentence description of the product/service"
+        target_audience:
+          type: string
+          description: "Who this product targets"
+        primary_pain_point:
+          type: string
+          description: "Main pain point addressed"
+        primary_benefit:
+          type: string
+          description: "Main benefit/outcome promised"
+        tone:
+          type: string
+          description: "Writing tone (e.g., 'urgent', 'professional', 'friendly')"
+        keywords:
+          type: array
+          items:
+            type: string
+          description: "Key terms/phrases from the page (5-10)"
+        price_point:
+          type: string
+          nullable: true
+          description: "Price range if detectable ('low', 'mid', 'high', 'premium')"
+    ContentLibrarySummaries:
+      type: object
+      description: "Complete library of all landing page summaries"
+      required: [generated_at, total_pages]
+      properties:
+        version:
+          type: string
+          default: "1.0"
+          description: "Schema version"
+        generated_at:
+          type: string
+          format: date-time
+          description: "ISO timestamp of generation"
+        total_pages:
+          type: integer
+          description: "Number of pages in the library"
+        summaries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LandingPageSummary'
   headers:
     AccessControlAllowOrigin:
       schema:

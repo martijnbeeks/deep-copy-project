@@ -855,3 +855,72 @@ Instructions:
 - Extract the "necessary_beliefs" key from each dict to understand the belief transformation required
 - Provide a comprehensive summary that helps a copywriter understand all avatars, their marketing angles, and the necessary beliefs for each
 """
+
+
+def get_template_prediction_prompt(
+    avatar_summary: str,
+    angle_summary: str,
+    library_summaries: str
+) -> str:
+    """
+    Generate prompt for predicting which landing page templates best match an avatar+angle.
+
+    Args:
+        avatar_summary: Condensed summary of the avatar profile
+        angle_summary: Condensed summary of the marketing angle
+        library_summaries: JSON string of available template summaries
+
+    Returns:
+        Formatted prompt string for template prediction.
+    """
+    return f"""You are matching a marketing avatar and angle to pre-lander landing page templates.
+
+Your task is to score each available template on how well it matches the avatar and angle, then return the top matches.
+
+## Avatar Profile:
+{avatar_summary}
+
+## Marketing Angle:
+{angle_summary}
+
+## Available Landing Page Templates:
+{library_summaries}
+
+## Scoring Instructions:
+
+Score each template on these dimensions (0.0 to 1.0):
+
+1. **audience_fit**: How well does the template's target audience match the avatar?
+   - Consider demographics, psychographics, and identities
+   - 1.0 = Perfect match (same audience profile)
+   - 0.5 = Partial overlap
+   - 0.0 = Completely different audience
+
+2. **pain_point_fit**: How well do the template's pain points align with the avatar and angle?
+   - Consider primary pain point, emotional drivers, and problem framing
+   - 1.0 = Same core pain being addressed
+   - 0.5 = Related pain or same category
+   - 0.0 = Unrelated pain points
+
+3. **tone_fit**: How well does the template's writing tone match the angle's approach?
+   - Consider tone (urgent, professional, friendly, etc.) and emotional driver
+   - 1.0 = Identical tone and emotional approach
+   - 0.5 = Compatible but different intensity
+   - 0.0 = Conflicting tones
+
+Calculate **overall_fit_score** as:
+(audience_fit * 0.40) + (pain_point_fit * 0.40) + (tone_fit * 0.20)
+
+## Output Requirements:
+
+Return the top 5 templates ranked by overall_fit_score (highest first).
+For each template, provide:
+- template_id
+- overall_fit_score
+- audience_fit
+- pain_point_fit
+- tone_fit
+- reasoning (2-3 sentences explaining why this template matches)
+
+Use the structured output tool to return your analysis.
+"""

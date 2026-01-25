@@ -23,6 +23,8 @@ from pipeline.steps.deep_research import DeepResearchStep
 from pipeline.steps.avatars import AvatarStep
 from pipeline.steps.marketing import MarketingStep
 from pipeline.steps.offer_brief import OfferBriefStep
+from pipeline.steps.template_prediction import TemplatePredictionStep
+from services.template_prediction_service import LibrarySummariesCache
 
 
 logger = logging.getLogger(__name__)
@@ -92,6 +94,16 @@ class PipelineOrchestrator:
         self.avatar_step = AvatarStep(self.openai_service)
         self.marketing_step = MarketingStep(self.openai_service)
         self.offer_brief_step = OfferBriefStep(self.openai_service)
+
+        # Initialize template prediction step
+        self.library_cache = LibrarySummariesCache(
+            s3_client=self.aws_services.s3_client,
+            s3_bucket=self.aws_services.s3_bucket
+        )
+        self.template_prediction_step = TemplatePredictionStep(
+            openai_service=self.openai_service,
+            library_cache=self.library_cache
+        )
     
     def _set_usage_context(self, config: PipelineConfig) -> None:
         """
@@ -125,7 +137,7 @@ class PipelineOrchestrator:
         
         try:
             # Load mock results from S3
-            mock_key = "results/d08b35f3-dc22-42f3-ab06-e987c1a10a03/comprehensive_results.json"
+            mock_key = "results/4eea2eef-eb71-4676-988e-d6e72b1ad0c8/comprehensive_results.json"
             logger.info(f"Loading mock results from S3: {mock_key}")
             
             comprehensive_data = self.aws_services.get_object_from_s3(
@@ -191,25 +203,36 @@ class PipelineOrchestrator:
         }
     
     def _generate_angles_for_avatar(
-        self, 
-        result_entry: Dict[str, Any], 
+        self,
+        result_entry: Dict[str, Any],
         deep_research_output: str
     ) -> Dict[str, Any]:
         """
         Generate marketing angles for a single avatar.
-        
+
         Args:
             result_entry: Dictionary with avatar details and beliefs.
             deep_research_output: The deep research document.
-            
+
         Returns:
             Dictionary with avatar, angles, and beliefs.
         """
         avatar = result_entry["avatar_details"]
         angles = self.marketing_step.generate_marketing_angles(avatar, deep_research_output)
+
+        # Step 5c: Generate template predictions for top angles
+        angles_dict = angles.dict()
+        for i, angle_data in enumerate(angles_dict.get("generated_angles", [])):
+            # Only predict for top 3 ranked angles to save API calls
+            if i < 3 and i < len(angles.generated_angles):
+                angle = angles.generated_angles[i]
+                prediction = self.template_prediction_step.execute(avatar, angle)
+                if prediction:
+                    angles_dict["generated_angles"][i]["template_predictions"] = prediction.dict()
+
         return {
             "avatar": avatar.dict(),
-            "angles": angles.dict(),
+            "angles": angles_dict,
         }
     
     def run(self, config: PipelineConfig) -> PipelineResult:

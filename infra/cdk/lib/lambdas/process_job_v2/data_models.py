@@ -1195,6 +1195,108 @@ class CachedResearchData(BaseModel):
         description="ISO timestamp when this cache entry was created"
     )
     cache_version: str = Field(
-        default="1.0", 
+        default="1.0",
         description="Version identifier for cache schema, used for invalidation"
     )
+
+
+# =============================================================================
+# TEMPLATE PREDICTION DATA MODELS
+# =============================================================================
+
+class TemplateMatch(BaseModel):
+    """A single template match with scoring dimensions."""
+    template_id: str = Field(
+        ...,
+        description="The template ID (e.g., 'A00001')"
+    )
+    overall_fit_score: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="Overall match score from 0.0 to 1.0"
+    )
+    audience_fit: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="How well the template's target audience matches the avatar"
+    )
+    pain_point_fit: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="How well the template's pain points align with the avatar/angle"
+    )
+    tone_fit: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="How well the writing tone matches the angle's emotional approach"
+    )
+    reasoning: str = Field(
+        ...,
+        description="Brief explanation of why this template matches the avatar+angle"
+    )
+
+
+class TemplatePredictionResult(BaseModel):
+    """Complete prediction result for an avatar+angle combination."""
+    avatar_id: str = Field(
+        ...,
+        description="ID of the avatar this prediction is for"
+    )
+    angle_id: str = Field(
+        ...,
+        description="ID of the marketing angle this prediction is for"
+    )
+    predictions: List[TemplateMatch] = Field(
+        default_factory=list,
+        description="Ranked list of matching templates (best first)"
+    )
+    top_template_id: str = Field(
+        ...,
+        description="The best matching template ID"
+    )
+    predicted_at: str = Field(
+        ...,
+        description="ISO timestamp when prediction was generated"
+    )
+
+
+class LandingPageSummary(BaseModel):
+    """Summary of a landing page template from the content library."""
+    id: str = Field(..., description="The landing page ID (e.g., 'A00001')")
+    s3_key: str = Field(..., description="Full S3 key")
+    product_name: Optional[str] = Field(None, description="Detected product name")
+    product_category: Optional[str] = Field(
+        None,
+        description="Product category (e.g., 'supplement', 'course', 'software')"
+    )
+    short_description: str = Field(
+        ...,
+        description="One-sentence description of the product/service"
+    )
+    target_audience: str = Field(..., description="Who this product targets")
+    primary_pain_point: str = Field(..., description="Main pain point addressed")
+    primary_benefit: str = Field(..., description="Main benefit/outcome promised")
+    tone: str = Field(
+        ...,
+        description="Writing tone (e.g., 'urgent', 'professional', 'friendly')"
+    )
+    keywords: List[str] = Field(
+        default_factory=list,
+        description="Key terms/phrases from the page (5-10)"
+    )
+    price_point: Optional[str] = Field(
+        None,
+        description="Price range if detectable ('low', 'mid', 'high', 'premium')"
+    )
+
+
+class ContentLibrarySummaries(BaseModel):
+    """Complete library of all landing page summaries."""
+    version: str = Field(default="1.0", description="Schema version")
+    generated_at: str = Field(..., description="ISO timestamp of generation")
+    total_pages: int = Field(..., description="Number of pages in the library")
+    summaries: List[LandingPageSummary] = Field(default_factory=list)
