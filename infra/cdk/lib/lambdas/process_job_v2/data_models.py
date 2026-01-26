@@ -691,52 +691,7 @@ class MarketingAngle(BaseModel):
     )
 
 
-class TopAngle(BaseModel):
-    """A selected top angle with reasoning for selection."""
-    name: str = Field(
-        ..., 
-        description="Name/title of the angle"
-    )
-    angle_type: AngleType = Field(
-        ..., 
-        description="Type of angle: mechanism, pain_lead, desire_lead, etc."
-    )
-    core_argument: str = Field(
-        ..., 
-        description="The single-sentence logical argument this angle makes"
-    )
-    why_selected: str = Field(
-        ..., 
-        description="Reason for selecting this angle as a top pick. Example: 'Highest trust-building potential for skeptical audience'"
-    )
-    primary_hook: str = Field(
-        ..., 
-        description="The headline or opening hook for this angle. Example: 'The eye supplement that shows you exactly what's inside'"
-    )
-    emotional_driver: EmotionalDriver = Field(
-        ..., 
-        description="Primary emotion: fear, hope, anger, shame, desire, curiosity, trust"
-    )
-    risk_level: RiskLevel = Field(
-        ..., 
-        description="Compliance risk level: low, medium, high"
-    )
 
-
-class Top3Angles(BaseModel):
-    """Top 3 recommended angles for an avatar, prioritized by expected performance."""
-    primary_angle: TopAngle = Field(
-        ..., 
-        description="#1 Primary Angle — the safest, most likely to convert"
-    )
-    secondary_angle: TopAngle = Field(
-        ..., 
-        description="#2 Secondary Angle — strong alternative or different emotional approach"
-    )
-    test_angle: TopAngle = Field(
-        ..., 
-        description="#3 Test Angle — higher risk/reward or contrarian approach worth testing"
-    )
 
 
 class AvatarMarketingAngles(BaseModel):
@@ -752,10 +707,6 @@ class AvatarMarketingAngles(BaseModel):
     ranking: List[int] = Field(
         default_factory=list,
         description="Indices into generated_angles in ranked order (best first). E.g., [2, 0, 4, 1, 3] means the angle at index 2 is #1, index 0 is #2, etc. Length should match generated_angles."
-    )
-    top_3_angles: Optional[Top3Angles] = Field(
-        None,
-        description="Selection of top 3 recommended angles with reasoning"
     )
 
 

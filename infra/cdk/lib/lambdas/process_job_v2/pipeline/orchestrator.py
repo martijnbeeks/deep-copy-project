@@ -137,7 +137,7 @@ class PipelineOrchestrator:
         
         try:
             # Load mock results from S3
-            mock_key = "results/4eea2eef-eb71-4676-988e-d6e72b1ad0c8/comprehensive_results.json"
+            mock_key = "results/47fdceed-c87a-4d4c-b41d-8eadb85d5f5d/comprehensive_results.json"
             logger.info(f"Loading mock results from S3: {mock_key}")
             
             comprehensive_data = self.aws_services.get_object_from_s3(
@@ -223,8 +223,7 @@ class PipelineOrchestrator:
         # Step 5c: Generate template predictions for top angles
         angles_dict = angles.dict()
         for i, angle_data in enumerate(angles_dict.get("generated_angles", [])):
-            # Only predict for top 3 ranked angles to save API calls
-            if i < 3 and i < len(angles.generated_angles):
+            if i < len(angles.generated_angles):
                 angle = angles.generated_angles[i]
                 prediction = self.template_prediction_step.execute(avatar, angle)
                 if prediction:

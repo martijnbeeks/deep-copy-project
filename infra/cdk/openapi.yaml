@@ -2029,43 +2029,7 @@ components:
         template_predictions:
           $ref: '#/components/schemas/TemplatePredictionResult'
           description: "Predicted best matching template for this angle"
-    TopAngle:
-      type: object
-      description: "Top selected angle"
-      required: [name, angle_type, core_argument, why_selected, primary_hook, emotional_driver, risk_level]
-      properties:
-        name:
-          type: string
-          description: "Name of the angle"
-        angle_type:
-          type: string
-          description: "Type of angle"
-        core_argument:
-          type: string
-          description: "Core argument"
-        why_selected:
-          type: string
-          description: "Reason for selection"
-        primary_hook:
-          type: string
-          description: "Primary hook"
-        emotional_driver:
-          type: string
-          description: "Emotional driver"
-        risk_level:
-          type: string
-          description: "Risk level (Low/Medium/High)"
-    Top3Angles:
-      type: object
-      description: "Top 3 angles for an avatar"
-      required: [primary_angle, secondary_angle, test_angle]
-      properties:
-        primary_angle:
-          $ref: '#/components/schemas/TopAngle'
-        secondary_angle:
-          $ref: '#/components/schemas/TopAngle'
-        test_angle:
-          $ref: '#/components/schemas/TopAngle'
+
     AvatarMarketingAngles:
       type: object
       description: "Marketing angles generated for a specific avatar"
@@ -2084,9 +2048,7 @@ components:
           items:
             type: integer
           description: "Indices into generated_angles in ranked order (best first)"
-        top_3_angles:
-          $ref: '#/components/schemas/Top3Angles'
-          description: "Selection of top 3 angles"
+
     Angle:
       type: object
       required: [angle, title, target_age_range, target_audience, pain_points, desires, common_objections, failed_alternatives, copy_approach]
