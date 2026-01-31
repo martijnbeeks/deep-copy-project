@@ -378,6 +378,60 @@ export class DeepCopyStack extends Stack {
     });
     resultsBucket.grantRead(getImageGenResultLambda);
 
+    // Prelander image generation - Processing Lambda (Docker-based)
+    const processPrelanderImagesLambda = new lambda.DockerImageFunction(this, 'ProcessPrelanderImagesLambda', {
+      code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, 'lambdas', 'prelander_image_gen'), {
+        platform: Platform.LINUX_AMD64,
+      }),
+      timeout: Duration.seconds(600),
+      memorySize: 3008,
+      architecture: lambda.Architecture.X86_64,
+      environment: {
+        JOBS_TABLE_NAME: jobsTable.tableName,
+        RESULTS_BUCKET: resultsBucket.bucketName,
+        LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
+        SECRET_ID: 'deepcopy-secret-dev',
+      },
+    });
+    processPrelanderImagesLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['secretsmanager:GetSecretValue'],
+        resources: [secretArn],
+      }),
+    );
+    jobsTable.grantReadWriteData(processPrelanderImagesLambda);
+    resultsBucket.grantPut(processPrelanderImagesLambda);
+    resultsBucket.grantPutAcl(processPrelanderImagesLambda);
+    resultsBucket.grantRead(processPrelanderImagesLambda);
+
+    // Prelander image generation - Submit Lambda (Python)
+    const submitPrelanderImagesLambda = new lambda.Function(this, 'SubmitPrelanderImagesLambda', {
+      runtime: lambda.Runtime.PYTHON_3_11,
+      timeout: Duration.seconds(10),
+      memorySize: 256,
+      handler: 'submit_prelander_images.handler',
+      code: pythonLambdasAsset,
+      environment: {
+        JOBS_TABLE_NAME: jobsTable.tableName,
+        PROCESS_LAMBDA_NAME: processPrelanderImagesLambda.functionName,
+      },
+    });
+    jobsTable.grantReadWriteData(submitPrelanderImagesLambda);
+    processPrelanderImagesLambda.grantInvoke(submitPrelanderImagesLambda);
+
+    // Prelander image generation - Get Result Lambda (Python)
+    const getPrelanderImagesResultLambda = new lambda.Function(this, 'GetPrelanderImagesResultLambda', {
+      runtime: lambda.Runtime.PYTHON_3_11,
+      timeout: Duration.seconds(10),
+      memorySize: 256,
+      handler: 'get_prelander_images_result.handler',
+      code: pythonLambdasAsset,
+      environment: {
+        RESULTS_BUCKET: resultsBucket.bucketName,
+      },
+    });
+    resultsBucket.grantRead(getPrelanderImagesResultLambda);
+
     // Cognito User Pool for API auth
     const userPool = new cognito.UserPool(this, 'UserPool', {
       signInAliases: { email: true },
@@ -565,6 +619,29 @@ export class DeepCopyStack extends Stack {
       authorizationScopes: ['https://deep-copy.api/read'],
     });
 
+    // Prelander image generation endpoints
+    const prelanderImagesRes = api.root.addResource('prelander-images');
+    const prelanderImagesGenerateRes = prelanderImagesRes.addResource('generate');
+    prelanderImagesGenerateRes.addMethod('POST', new apigw.LambdaIntegration(submitPrelanderImagesLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/write'],
+    });
+
+    const prelanderImagesIdRes = prelanderImagesRes.addResource('{id}');
+    prelanderImagesIdRes.addMethod('GET', new apigw.LambdaIntegration(getJobLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/read'],
+    });
+
+    const prelanderImagesResultRes = prelanderImagesIdRes.addResource('result');
+    prelanderImagesResultRes.addMethod('GET', new apigw.LambdaIntegration(getPrelanderImagesResultLambda), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+      authorizationScopes: ['https://deep-copy.api/read'],
+    });
+
     // Dev endpoints
     const devRes = api.root.addResource('dev');
 
@@ -636,6 +713,7 @@ export class DeepCopyStack extends Stack {
     new CfnOutput(this, 'AvatarsSubmitEndpoint', { value: `${api.url}avatars/extract` });
     new CfnOutput(this, 'SwipeFilesSubmitEndpoint', { value: `${api.url}swipe-files/generate` });
     new CfnOutput(this, 'ImageGenSubmitEndpoint', { value: `${api.url}image-gen/generate` });
+    new CfnOutput(this, 'PrelanderImagesSubmitEndpoint', { value: `${api.url}prelander-images/generate` });
     new CfnOutput(this, 'ResultsBucketName', { value: resultsBucket.bucketName });
     new CfnOutput(this, 'JobsTableName', { value: jobsTable.tableName });
     new CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
