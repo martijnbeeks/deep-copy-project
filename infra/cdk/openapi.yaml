@@ -897,6 +897,194 @@ paths:
           source: |-
             API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
             curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}image-gen/YOUR_JOB_ID/result"
+  /prelander-images/generate:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    post:
+      summary: Submit a prelander image generation job
+      operationId: submitPrelanderImages
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitPrelanderImagesRequest'
+            examples:
+              minimal:
+                summary: Minimal payload
+                value:
+                  prompts:
+                    - role: hero
+                      prompt: "A professional photograph of a person experiencing joint relief..."
+              full:
+                summary: Full payload
+                value:
+                  templateId: "A00005"
+                  type: "realistic"
+                  prompts:
+                    - role: hero
+                      prompt: "A professional photograph of a person experiencing joint relief..."
+                    - role: section
+                      index: 0
+                      prompt: "An image showing morning stiffness relief..."
+                    - role: section
+                      index: 1
+                      prompt: "A visual representation of joint inflammation..."
+                    - role: product
+                      prompt: "Product bottle on white background, professional photography..."
+                  productImageUrl: "https://cdn.example.com/uploaded/product-image-xyz.jpg"
+      responses:
+        '202':
+          description: Job accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitJobResponse'
+              examples:
+                accepted:
+                  value:
+                    jobId: "c3f0e0c4-3a61-4c52-8b5a-2e0a8b8b4a5f"
+                    status: "SUBMITTED"
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-codeSamples:
+        - lang: bash
+          label: curl (submit prelander-images)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -X POST \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "content-type: application/json" \
+              -d '{
+                "templateId": "A00005",
+                "type": "realistic",
+                "prompts": [
+                  {"role": "hero", "prompt": "A professional photograph..."},
+                  {"role": "section", "index": 0, "prompt": "An image showing..."},
+                  {"role": "product", "prompt": "Product bottle on white background..."}
+                ],
+                "productImageUrl": "https://cdn.example.com/product.jpg"
+              }' \
+              "${API_URL}prelander-images/generate"
+  /prelander-images/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get prelander image generation job status
+      operationId: getPrelanderImagesJob
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatusResponse'
+        '404':
+          description: Job not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Not found"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (status)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}prelander-images/YOUR_JOB_ID"
+  /prelander-images/{id}/result:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get prelander image generation results
+      operationId: getPrelanderImagesResult
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      responses:
+        '200':
+          description: Prelander image generation result JSON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrelanderImagesResult'
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: Result not available
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Result not available"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (result)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}prelander-images/YOUR_JOB_ID/result"
   /dev/swipe-files/generate:
     options:
       summary: CORS preflight
@@ -1615,6 +1803,81 @@ components:
           items:
             type: object
             additionalProperties: true
+    SubmitPrelanderImagesRequest:
+      type: object
+      additionalProperties: false
+      required: [prompts]
+      properties:
+        templateId:
+          type: string
+          description: Template ID (e.g., "A00005", "L00004") - metadata only
+        type:
+          type: string
+          description: Image type (e.g., "realistic") - metadata only
+        prompts:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [role, prompt]
+            properties:
+              role:
+                type: string
+                description: Image role (e.g., "hero", "section", "product")
+                enum: [hero, section, product]
+              index:
+                type: integer
+                description: Section index (required for role="section")
+                minimum: 0
+              prompt:
+                type: string
+                description: Image generation prompt
+          description: Array of prompts with roles and optional indices
+        productImageUrl:
+          type: string
+          format: uri
+          description: Optional URL for product image to attach to all generated images
+    PrelanderImagesResult:
+      type: object
+      additionalProperties: false
+      properties:
+        success:
+          type: boolean
+          description: Whether the generation was successful
+        error:
+          type: string
+          description: Error message if success is false
+        images:
+          type: array
+          description: Array of generated images with roles and URLs
+          items:
+            type: object
+            required: [role, url]
+            properties:
+              role:
+                type: string
+                description: Image role (e.g., "hero", "section", "product")
+              index:
+                type: integer
+                description: Section index (present for role="section")
+                minimum: 0
+              url:
+                type: string
+                format: uri
+                description: Cloudflare CDN URL for the generated image
+      example:
+        success: true
+        images:
+          - role: hero
+            url: "https://cdn.example.com/images/hero-abc123.jpg"
+          - role: section
+            index: 0
+            url: "https://cdn.example.com/images/section-0-def456.jpg"
+          - role: section
+            index: 1
+            url: "https://cdn.example.com/images/section-1-ghi789.jpg"
+          - role: product
+            url: "https://cdn.example.com/images/product-jkl012.jpg"
     SwipeFileGenerationResponse:
       type: object
       description: Swipe file generation results containing rewritten advertorial content
