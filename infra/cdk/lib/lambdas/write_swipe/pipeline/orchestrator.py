@@ -16,6 +16,7 @@ from services.aws import (
 from services.anthropic_service import AnthropicService
 from pipeline.steps.template_selection import select_swipe_files_template, load_swipe_file_templates
 from pipeline.steps.swipe_generation import rewrite_swipe_file
+from prompts import ImageStyle
 
 logger = setup_logging(__name__)
 
@@ -39,6 +40,7 @@ class SwipeGenerationOrchestrator:
         avatar_id = event.get('avatar_id')
         angle_id = event.get('angle_id')
         swipe_file_ids = event.get('swipe_file_ids', [])
+        image_style: ImageStyle = event.get('image_style', 'realistic')
         
         # Normalize swipe_file_ids
         if isinstance(swipe_file_ids, str):
@@ -53,7 +55,7 @@ class SwipeGenerationOrchestrator:
             # Dev Mode Check
             if event.get("dev_mode"):
                  logger.info("Dev mode detected - using mock results")
-                 mock_source_job_id = "ebebbc1b-ee10-4376-be52-98b119f215a7-swipe"
+                 mock_source_job_id = "47fdceed-c87a-4d4c-b41d-8eadb85d5f5d-swipe"
                  mock_key = f"results/swipe_files/{mock_source_job_id}/swipe_files_results.json"
                  bucket = os.environ.get("RESULTS_BUCKET")
                  
@@ -105,14 +107,13 @@ class SwipeGenerationOrchestrator:
 
             # Prepare text representations for LLM prompts
             select_angle_text = f"Title: {selected_angle.get('angle_title')}\nSubtitle: {selected_angle.get('angle_subtitle')}\nCore Argument: {selected_angle.get('core_argument')}\nType: {selected_angle.get('angle_type')}"
+            angle_info = json.dumps(selected_angle, indent=2)
             marketing_avatar_text = json.dumps(selected_avatar, indent=2)
 
             # Extract other required data
             research_page_analysis = job_results.get("research_page_analysis", "")
             deep_research_output = job_results.get("deep_research_output", "")
             offer_brief = job_results.get("offer_brief", "")
-            marketing_philosophy = job_results.get("marketing_philosophy_analysis", "")
-            summary = job_results.get("summary", "")
             
             # 2. Template Selection (if needed)
             if not swipe_file_ids:
@@ -134,14 +135,14 @@ class SwipeGenerationOrchestrator:
             # 4. Generate Rewrites
             final_results = rewrite_swipe_file(
                 select_angle=select_angle_text,
+                angle_info=angle_info,
                 marketing_avatar=marketing_avatar_text,
                 deep_research=str(deep_research_output),
                 offer_brief=str(offer_brief),
-                marketing_philosophy=str(marketing_philosophy),
-                summary=str(summary),
                 swipe_file_config=swipe_config,
                 anthropic_service=self.anthropic,
-                job_id=job_id
+                job_id=job_id,
+                image_style=image_style
             )
 
             # Include context IDs in the final result

@@ -566,6 +566,11 @@ paths:
                   items:
                     type: string
                     format: uuid
+                image_style:
+                  type: string
+                  enum: [realistic, photorealistic, illustration]
+                  default: realistic
+                  description: Image prompt style to use for generated image prompts
             examples:
               example:
                 summary: Generate swipe files for a specific avatar and angle ID
@@ -573,6 +578,7 @@ paths:
                   original_job_id: "03479dbf-bc4c-4472-80ff-b11b561b8777"
                   avatar_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
                   angle_id: "b2c3d4e5-f6g7-8901-bcde-f23456789012"
+                  image_style: "realistic"
       responses:
         '202':
           description: Swipe file generation job accepted
@@ -1128,6 +1134,11 @@ paths:
                   items:
                     type: string
                     format: uuid
+                image_style:
+                  type: string
+                  enum: [realistic, photorealistic, illustration]
+                  default: realistic
+                  description: Image prompt style to use for generated image prompts
       responses:
         '202':
           description: Swipe file generation job accepted (Dev Mode)

@@ -57,6 +57,16 @@ def handler(event, _context):
     avatar_id = body.get("avatar_id")
     angle_id = body.get("angle_id")
     swipe_file_ids = body.get("swipe_file_ids", [])
+    VALID_IMAGE_STYLES = {"realistic", "photorealistic", "illustration"}
+    image_style = body.get("image_style", "realistic")
+    if image_style not in VALID_IMAGE_STYLES:
+        return {
+            "statusCode": 400,
+            "headers": {"content-type": "application/json", "Access-Control-Allow-Origin": "*"},
+            "body": json.dumps({
+                "error": f"Invalid image_style: '{image_style}'. Must be one of: {', '.join(sorted(VALID_IMAGE_STYLES))}"
+            }),
+        }
     
     if not original_job_id:
         return {
@@ -114,6 +124,7 @@ def handler(event, _context):
         "angle_id": angle_id,
         "dev_mode": dev_mode,
         "swipe_file_ids": swipe_file_ids,
+        "image_style": image_style,
     }
     
     try:

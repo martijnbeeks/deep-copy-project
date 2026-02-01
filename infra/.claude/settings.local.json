@@ -3,7 +3,12 @@
     "allow": [
       "Bash(python3:*)",
       "Bash(poetry run python:*)",
-      "Bash(pip3 install:*)"
+      "Bash(pip3 install:*)",
+      "WebSearch",
+      "Bash(grep:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(claude mcp add-json:*)",
+      "Bash(ls:*)"
     ]
   },
   "outputStyle": "default"

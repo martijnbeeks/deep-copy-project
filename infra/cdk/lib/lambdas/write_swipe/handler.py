@@ -27,11 +27,12 @@ if __name__ == "__main__":
     import os
     os.environ['RESULTS_BUCKET'] = 'deepcopystack-resultsbucketa95a2103-zhwjflrlpfih'
     test_evt = {
-         "original_job_id": "ebebbc1b-ee10-4376-be52-98b119f215a7",
-         "job_id": "ebebbc1b-ee10-4376-be52-98b119f215a7-swipe",
-         "avatar_id": "avatar-competitive-athlete-weekend-warrior",
-         "angle_id": "angle-1-mechanism-stabilx",
-         "swipe_file_ids": ["L00002"]
+         "original_job_id": "47fdceed-c87a-4d4c-b41d-8eadb85d5f5d",
+         "job_id": "47fdceed-c87a-4d4c-b41d-8eadb85d5f5d-swipe",
+         "avatar_id": "weekend-warrior-recreational-athlete",
+         "angle_id": "angle-1-return-fast-performance",
+         "swipe_file_ids": ["AD0001_POV"],
+         "image_style": "realistic"
     }
     # Might fail if secrets not accessible locally
     lambda_handler(test_evt, None)
