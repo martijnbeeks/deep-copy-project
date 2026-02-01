@@ -10,7 +10,7 @@ from services.anthropic_service import AnthropicService
 from utils.logging_config import setup_logging
 from utils.html import extract_clean_text_from_html
 from utils.pdf import load_pdf_file
-from prompts import get_style_guide_analysis_prompt, get_advertorial_rewrite_prompt, get_advertorial_rewrite_prompt_customer_pov, get_advertorial_image_generation_prompt, ImageStyle
+from prompts import get_style_guide_analysis_prompt, get_advertorial_rewrite_prompt, get_advertorial_rewrite_prompt_customer_pov, get_advertorial_rewrite_prompt_authority, get_advertorial_image_generation_prompt, get_listicle_generation_prompt, get_listicle_image_generation_prompt, ImageStyle
 from llm_usage import UsageContext, emit_llm_usage_event
 
 logger = setup_logging(__name__)
@@ -139,7 +139,7 @@ def rewrite_swipe_file(
         )
 
         skip_analysis = False
-        if swipe_file_id in ["AD0001_POV", "AD0002_AUTHORITY"]:
+        if swipe_file_id in ["AD0001_POV", "AD0001_AUTHORITY", "LD0001"]:
             skip_analysis = True
 
         
@@ -178,13 +178,25 @@ def rewrite_swipe_file(
         logger.info("Turn 3: Rewrite advertorial")
         
 
-        if swipe_file_id in ["AD0001_POV", "AD0002_AUTHORITY"]:
+        if swipe_file_id == "LD0001":
+            rewrite_prompt = get_listicle_generation_prompt(
+                avatar_info=marketing_avatar,
+                angle_info=angle_info,
+                offer_brief=offer_brief,
+            )
+        elif swipe_file_id == "AD0001_POV":
             rewrite_prompt = get_advertorial_rewrite_prompt_customer_pov(
                 avatar_info=marketing_avatar,
                 angle_info=angle_info,
                 offer_brief=offer_brief,
             )
-        else: 
+        elif swipe_file_id == "AD0001_AUTHORITY":
+            rewrite_prompt = get_advertorial_rewrite_prompt_authority(
+                avatar_info=marketing_avatar,
+                angle_info=angle_info,
+                offer_brief=offer_brief,
+            )
+        else:
             rewrite_prompt = get_advertorial_rewrite_prompt(
                 style_guide=style_guide,
                 angle=select_angle,
@@ -212,21 +224,28 @@ def rewrite_swipe_file(
             usage_subtask=f"write_swipe.turn3_generate_advertorial.template_{swipe_file_id}"
         )
 
-        if swipe_file_id in ["AD0001_POV", "AD0002_AUTHORITY"]:
+        if swipe_file_id in ["AD0001_POV", "AD0001_AUTHORITY", "LD0001"]:
             # Extract image prompt skeleton and regenerate with dedicated prompt
             skeleton, img_paths = extract_image_prompt_skeleton(full_advertorial)
             if skeleton:
                 logger.info(f"Found {len(img_paths)} image prompt fields: {img_paths}")
 
-                image_gen_prompt = get_advertorial_image_generation_prompt(
-                    advertorial_copy=json.dumps(full_advertorial),
-                    offer_brief=offer_brief,
-                    image_style=image_style,
-                )
+                if swipe_file_id == "LD0001":
+                    image_gen_prompt = get_listicle_image_generation_prompt(
+                        listicle_copy=json.dumps(full_advertorial),
+                        offer_brief=offer_brief,
+                        image_style=image_style,
+                    )
+                else:
+                    image_gen_prompt = get_advertorial_image_generation_prompt(
+                        advertorial_copy=json.dumps(full_advertorial),
+                        offer_brief=offer_brief,
+                        image_style=image_style,
+                    )
 
                 img_schema = build_image_prompt_schema(skeleton)
                 img_tool_name = "generate_image_prompts"
-                img_tool_desc = "Generate image prompts for the advertorial based on the provided schema."
+                img_tool_desc = "Generate image prompts for the listicle based on the provided schema." if swipe_file_id == "LD0001" else "Generate image prompts for the advertorial based on the provided schema."
 
                 regenerated_prompts = anthropic_service.make_structured_request(
                     messages=[{"role": "user", "content": image_gen_prompt}],

@@ -2207,6 +2207,7 @@ def get_advertorial_rewrite_prompt_customer_pov(avatar_info: str, angle_info: st
     - Using "it" or "the supplement" instead of [PRODUCT NAME] after Section 5
     - Weak, timid, or defensive language in the back half
     - Testimonials that don't counter specific objections
+    - No hyphens in the output and Do not use em dashes or en dashes
 
     ---
 
@@ -2328,7 +2329,997 @@ def get_advertorial_rewrite_prompt_customer_pov(avatar_info: str, angle_info: st
     ## END OF AI ADVERTORIAL SOP
 
     """
-    
+
+
+def get_advertorial_rewrite_prompt_authority(avatar_info: str, angle_info: str, offer_brief: str):
+    return f"""
+
+    Folder highlights
+    Advertorial content includes an HTML template and detailed SOPs for generating emotionally resonant imagery and an authority-focused narrative, centering on an expert whistleblower exposé.
+
+    # AI ADVERTORIAL SOP
+    ## By Owen Clary | Manual Revision 1/29
+
+    ---
+
+    ## CRITICAL: STRATEGIC INTELLIGENCE BRIEF REQUIREMENT
+
+    **PREREQUISITE:** You MUST be provided with a completed Strategic Intelligence Brief (created using the Synthesis & Strategy SOP). This brief contains all strategic decisions already made.
+
+    ### THE INPUT CONTAINS (DO NOT RECREATE):
+    Avatar_info:
+    - ✓ THE ONE AVATAR (already identified and scored)
+
+    Angle_info:
+    - ✓ THE ONE ANGLE (already forced/selected from research)
+
+    Offer_brief:
+    - ✓ THE DESIRE (already forced/selected from research)
+    - ✓ THE ONE (already forced/selected from research)
+    - ✓ THE ONE PROBLEM (already forced/selected from research)
+    - ✓ Sophistication Stage (3, 4 or 5 - already determined)
+    - ✓ All proof points, studies, quotes (from actual research)
+    - ✓ UMP (Unique Mechanism of Problem) - already defined
+    - ✓ UMS (Unique Mechanism of Solution) - already defined
+    - ✓ Product-mechanism connection - already mapped
+
+    This is given as input at the end of this prompt.
+
+    ### YOUR ROLE:
+    Execute the advertorial structure using the intelligence provided in the Strategic Intelligence Brief as your PRIMARY source.
+
+    **DO NOT:**
+    - ❌ Create new angles or pivot from the forced angle
+    - ❌ Deviate from the UMP/UMS definitions
+    - ❌ Ignore the sophistication stage determination
+
+    **DO:**
+    - ✅ Use quotes from the brief's quote library
+    - ✅ Follow the forced angle mechanism exactly as defined
+    - ✅ Use documented failed solutions
+    - ✅ Start with the provided proof points (you may add supporting statistics)
+    - ✅ Match the sophistication approach (Stage 3, 4 or 5)
+    - ✅ Pull from avatar's exact fears/desires in the brief
+    - ✅ Use the brief's transformation timeline
+    - ✅ Follow the brief's copy direction guidance
+
+    ### WHERE TO FIND EACH ELEMENT:
+    | Element | Location |
+    |---------|----------|
+    | Avatar details | Avatar_info |
+    | Forced angle/mechanism | Angle_info |
+    | Proof points | Offer_brief (use these + add supporting stats) |
+    | Big Ideas | Offer_brief |
+    | Stage-specific approach | Offer_brief |
+    | Transformation details | Offer_brief |
+    | Product connection | Offer_brief |
+    | Copy direction | Offer_brief |
+    | Quote library | Offer_brief |
+
+    ---
+
+    ## INTERPRETING THE STRATEGIC BRIEF
+
+    The Strategic Brief provides scored Avatar, Angle, Stage, and ranked research data. Your job is to combine these elements intelligently:
+
+    **THE FORMULA:** Avatar + Angle + Stage = What to emphasize
+
+    The Fear/Desire Ranking Tables show INTENSITY and breadth of research, not necessarily what to lead with. Filter all ranked data through the Avatar-Angle-Stage lens to determine copy direction.
+
+    **Key Principle:** Use the ranking tables as DATA to pull from, informed by what the Avatar-Angle-Stage combination tells you to emphasize. If a secondary symptom ranks #1 in fear intensity BUT the Avatar is about a different primary issue and the Angle addresses that primary issue, then the secondary symptom is a SUPPORTING detail that proves the problem is serious, not the primary hook.
+
+    ---
+
+    ## TONE
+
+    ### Framework B: Authority Whistleblower
+    - **Narrator:** Expert breaking ranks to help
+    - **Tone:** Exposé / insider revelation
+    - **Best for:** High-ticket offers, high-skepticism markets, medical credibility needed
+    - **Use:** Professional credentials + personal stake
+    - **Structure:** "After 20 years as a [profession], I can no longer stay silent about what the industry hides..."
+
+    Framework B (Authority Whistleblower): Write as a credible expert who discovers a hidden truth that contradicts conventional wisdom. Establish your credentials early. Share the moment you realized conventional wisdom was wrong. Position yourself as an insider protecting consumers from industry deception. Write at 5th-8th grade reading level but maintain professional credibility.
+
+    ---
+
+    ## STEP 1: EXTRACT FROM STRATEGIC INTELLIGENCE BRIEF (Do This First)
+
+    Before writing a single word, extract these elements from your Strategic Intelligence Brief:
+
+    ### A. THE FORCED ANGLE
+    ```
+    Angle Name: [Extract from brief]
+    UMP (Unique Mechanism of Problem): [Extract exact wording]
+    UMS (Unique Mechanism of Solution): [Extract exact wording]
+    One-Sentence Mechanism: [Copy verbatim]
+    Child-Friendly Analogy: [Copy verbatim]
+    ```
+
+    ### B. THE ONE AVATAR
+    ```
+    Top Fear: [Extract from Avatar_info]
+    Top Desire: [Extract from Avatar_info]
+    Top 5 Failed Solutions: [Extract from Avatar_info]
+    Demographics: [Extract from Avatar_info - age, gender, life stage]
+    ```
+
+    ### C. SOPHISTICATION APPROACH
+    ```
+    Stage 3, 4 or Stage 5?: [Noted in Offer_brief]
+    Lead with: [New Mechanism (State 3) or Mechanism-first (Stage 4) or Identification-first (Stage 5) per brief]
+    ```
+
+    ### D. AVATAR BELIEFS
+    ```
+    ANSWER: What are the current beliefs of the market?
+    ANSWER: What are the current beliefs around your product?
+    ANSWER: What are the most common objections?
+    ANSWER: What are the claims that sound too good to be true?
+    ```
+
+    ### E. KEY PROOF POINTS
+    ```
+    Top Study: [Extract from Offer_brief]
+    Top Expert: [Extract from Offer_brief]
+    Top Statistic: [Extract from Offer_brief]
+    Top 10 Proof Points/Supporting Statistics
+    ```
+
+    DO NOT proceed until you've confirmed you have the Strategic Intelligence Brief and can extract these elements. Save this to use when needed in the advertorial.
+
+    ---
+
+    ## STEP 2: REFERENCE BRIEF INTELLIGENCE THROUGHOUT
+
+    As you write each section, take note of this data and use it when necessary, from the Strategic Intelligence Brief:
+
+    → "Identification Markers" (from Avatar_info) for "That's Me" triggers
+    → Quotes from "Fear Quotes" (from Offer_brief)
+    → Follow sophistication approach (from Offer_brief based on stage)
+    → "UMP" definition (from Angle_info) - this is your enemy
+    → "Proof Points" (from Offer_brief) for studies
+    → "Mechanism Language Bank" (from Angle_info) for terminology
+    → Add supporting statistics to reinforce the UMP
+    → "Failed Solutions" (from Avatar_info) - these are what they tried
+    → "Failure Explanation Matrix" (from Angle_info) for why each failed
+    → Exact quotes from "Failure Quotes" (from Offer_brief)
+    → "UMS" definition (from Offer_brief) - this is your solution mechanism
+    → "How Product Addresses Mechanism" (from Offer_brief)
+    → Supporting data and statistics to validate the UMS
+    → "Product-Mechanism Connection" (from Offer_brief)
+    → "Ingredient-Mechanism Map" (from Offer_brief)
+    → "Transformation Timeline" (from Offer_brief) for benefits/timeline
+    → "Competitive Differentiation" (from Offer_brief)
+    → "Current State" (from Offer_brief) for before state
+    → "Future State" (from Offer_brief) for after state
+    → Exact quotes from quote banks (from Offer_brief)
+    → "Pre-Purchase Objections" (from Avatar_info)
+    → "Belief System" (from Avatar_info) for belief shifts needed
+    → Reference avatar's skepticism patterns (from Avatar_info)
+    → Counter specific objections listed in brief
+
+    ---
+
+    ## PSYCHOLOGY RULES
+
+    We follow the rule of one, ONE desire, ONE avatar, ONE angle, ONE outcome, ONE problem, ONE mechanism. Sticking to the rule of one creates the strongest argument.
+
+    What is the role your product offers to your prospect? We all have an image of ourselves, or a sense of who we are; this is called our self-image. We don't just buy objects, we buy roles. We identify the identity of potential customer is and leverage that in our marketing, using our product as a bridge to who they want to be.
+
+    Your customers' mental picture of the world they live in. People believe in certain ways. These beliefs form a filter through which your product must pass or be rejected. The advertorial MUST fit in with your customers version of "facts".
+
+    We leverage our CUSTOMERS logic, not our own, to prove that the product works, to prove that people with their belief system rely on your product, and prove no other product satisfies his specific needs as well.
+
+    - Channel their beliefs
+    - The dominant Desire makes up the content for our advertorial
+    - The Identity in which they define themselves will determine the picture we paint in their head
+    - The Beliefs of your customer will determine the development of the advertorial
+    - The customer must have conviction that the desires & identity you are claiming/showing will in fact come true through your product. (If your customer does not have BELIEF … they will NOT buy.)
+
+    ---
+
+    ## CRITICAL RULE: HIDE THE MECHANISM IN THE HOOK/LEAD
+
+    In the Hook and Lead sections, NEVER reveal what the mechanism/solution actually is.
+
+    Only refer to it as:
+    - "this"
+    - "it"
+    - "a simple method"
+    - "what I discovered"
+    - "a breakthrough"
+    - "the real cause"
+    - "the missing piece"
+
+    Why? This creates a curiosity gap. Readers MUST keep reading to find out what "it" is.
+
+    ---
+
+    ## ⚠️ CRITICAL RULE: PRODUCT NAME SATURATION AFTER PRODUCT REVEAL
+
+    Once the product is introduced in Section 5, use the product name whenever you're talking about the solution, the product, or the mechanism. Tie benefits directly to the product name — never orphan a benefit.
+
+    **Examples:**
+
+    **❌ WRONG (Orphaned Benefits):**
+    - "It reduces [problem] in the [body part]."
+    - "This supplement cleared my [symptom]."
+    - "The formula contains high-dose [ingredient]."
+
+    **✅ RIGHT (Product-Tied Benefits):**
+    - "[PRODUCT NAME] reduces [problem] in the [body part]."
+    - "[PRODUCT NAME] cleared my [symptom] in just 2 weeks."
+    - "[PRODUCT NAME]'s formula contains high-dose [ingredient]."
+
+    ---
+
+    ## STEP 3: ADVERTORIAL STRUCTURE
+
+    Each section has ONE job: Pull them into the next section while reinforcing the Big Idea.
+
+    ---
+
+    ### SECTION 1: THE HOOK (Most Critical Section)
+
+    **Structure:** Main Headline → Subheadline → Opening Lead
+
+    **The Hook Must Do 3 Things:**
+    1. STOP THE SCROLL – Pattern interrupt with shocking claim
+    2. CREATE CURIOSITY GAP – Tease transformation without revealing how
+    3. ESTABLISH CREDIBILITY – New research, doctor discovery, clinical study
+
+    ⚠️ IMPORTANT: Do NOT reveal the mechanism here. Only tease it.
+
+    #### OPENING HOOK
+
+    - Enter an existing desire or fear the reader already feels
+    - Speak in the reader's own internal language
+    - Begin at their current level of awareness
+    - Intensify emotion, do not explain
+    - Hint at a vital cause or answer without revealing it
+    - Create curiosity by withholding resolution
+    - Remember: the hook's sole purpose is to force the reader to read the next line
+
+    #### LEAD (After Headline)
+
+    ⚠️ REMINDER: Keep referring to the solution as "this," "it," or "what I discovered." Do NOT name the mechanism yet.
+
+    The lead section immediately follows your headline. Its job is to hook them emotionally, validate their pain, establish your credibility, and open the curiosity loop. Use short, punchy sentences mixed with complete sentences for rhythm.
+
+    **1. CALL OUT THE PAIN / YES TRAIN**
+
+    Ask a question that makes them say "Yes, that's me!" Make it specific and relatable.
+
+    Stack 2-5 more pain questions. Use exact experiences from the Avatar_info. Each question should feel increasingly specific and personal.
+
+    Example:
+    ```
+    "Are you struggling to get to the gym every day?
+    Feel like you don't have time to get a good workout in?
+    Tired of being judged or stared at in commercial gyms
+    Don't want to spend $1,000's on at-home equipment?
+    So you just give up on your fitness goals entirely?
+    Then you've experienced what millions of others have"
+    ```
+
+    **2. SYMPTOMS**
+
+    Detail the symptoms or problems that are customers' reasons for NEEDING your product. Prove that you have been there yourself, therefore your recommendations will help answer their problems - your shared problems.
+
+    Example:
+    ```
+    "Every time I would put on my sock I debated whether or not to even wear them.
+    That's if they didn't stink out the entire locker room first, of course.
+    The thin socks supposedly provide more grip
+    But all they ever do is rip.
+    And then as soon as you try thicker socks.
+    They suffocate your feet & you feel like you're wearing clown shoes on the ice."
+    ```
+
+    **3. AUTHORITY**
+
+    Come out bluntly & Acknowledge the current beliefs, but be prepared to show with strong authority the new beliefs you wish to instill onto your customer.
+
+    You are not looking for agreement, you are loosening previous beliefs to create new ones - that serve your customer better.
+
+    Share your research journey (time spent, studies read, things tested) or share your professional credentials and experience. Make them trust that you've done the work to find the answer.
+
+    Example:
+    ```
+    "Forget everything you've ever heard or read about what age "must-do" to your appearance.
+    Forget everything you have ever believed about how "old" you look at thirty, forty, fifty, or even sixty…
+    Because you are about to enter a new world of aging.
+    A world where scientific studies
+    $2,000,000 of my own money
+    and evidence that shows how aging can not only be slowed…
+    But reversed"
+    ```
+
+    **4. HINT AT THE SOLUTION**
+
+    Make them NEED to keep reading. Promise to show them the mechanism to get to their specific desire.
+
+    ---
+
+    ### SECTION 2: EDUCATION / LOGIC (1 Headline)
+
+    **Purpose:** Shift their beliefs with BULLET PROOF LOGICAL THINKING. Reveal the UMP (Unique Mechanism of PROBLEM). Validate their instincts. Make them understand WHY they have this problem.
+
+    Now you can name what the problem actually is. Educate them on science with lots of data backing it up.
+
+    **Reveal the UMP (Unique Mechanism of PROBLEM)**
+
+    Call out the specific problem. Prove WHY they have the problem works through bulletproof logical thinking. One statement leading seamlessly into another. Each statement progressively makes it more clear.
+
+    The reader has not only been told why they have the problem, they have been shown PROOF why they have it. Explain it at a 5th grade reading level.
+
+    **Include specific data/studies**
+
+    Use Tier 1 proof points from the Offer_brief. Add supporting statistics to reinforce the explanation of the problem. Include study size, results, and timeframe, statistics proving how common this problem is or how important the mechanism of the problem is to WHY they have the problem. This should be 4-5 bullet points of claims about the problem with statistical data backing them up.
+
+    **Validate Their Instincts**
+
+    After revealing the UMP, immediately add empowerment validation. Tell them their instincts were right all along. List the things they knew were wrong (it didn't feel like "just aging," the supplements weren't working, something deeper was going on). Then validate: "You were RIGHT. The problem wasn't you. The problem was everyone was looking in the wrong place."
+
+    Why this works: Builds trust and shifts from "I'm broken" to "I was right, the system failed me."
+
+    **Show the danger of ignoring it**
+
+    Make a claim why they should not ignore this problem then show data proving the risks if they don't solve it. Include specific timeframes and measurable worsening. This should be 4-5 bullet points of threats each with statistical data backing them up.
+
+    **Tease about the solution to this problem they now understand**
+
+    Tease them to read the next paragraph to learn about the unique way to solve this problem they now understand.
+
+    ---
+
+    ### SECTION 3: DISCREDIT OTHER SOLUTIONS (1 Headline)
+
+    **Purpose:** Close off escape routes. Show why everything they've tried has failed. Make them feel they must keep reading to find the right solution.
+
+    **Systematic Debunking Structure**
+
+    For EACH failed solution, use this exact 4-part pattern:
+    1. Name it
+    2. Specific flaw
+    3. Tie to UMP ("Doesn't address [UMP]")
+    4. Build frustration
+
+    Example: "[Solution]? [Specific flaw]. Doesn't address [UMP]. [Consequence]."
+
+    Pull failed solutions from the Avatar_info. Pull "why it failed" explanations from the Angle_info. Do this for 3-4 solutions rapid-fire.
+
+    After debunking each solution, show potential harm. Explain how some solutions actually made the problem worse or had negative side effects. Use quotes from the Offer_brief.
+
+    You needed something different that actually addressed the UMP. Keep connecting back to the Big Idea and the UMP.
+
+    Don't completely shut down every solution though, show some respect to them and validate where they were right, but make it clear it wasn't the best approach. Showing some respect to competition maintains trust.
+
+    Proceed to hint at the one solution you found that works where these specifically failed in the next paragraph.
+
+    ---
+
+    ### SECTION 4: INTRODUCE THE UNIQUE MECHANISM (1 Headline)
+
+    This is where you go DEEP on the unique mechanism — but NOT the product yet.
+
+    **Purpose:** Close the curiosity loop on the mechanism. Reveal the UMS (Unique Mechanism of SOLUTION). Make the reader fully buy into WHY this specific mechanism is the answer. Build logical inevitability before introducing the product.
+
+    **NO PRODUCT NAME IN THIS SECTION.** You're selling the MECHANISM first. The product comes next.
+
+    **Structure:**
+
+    **Reveal the Unique Mechanism**
+
+    NAME AND INTRODUCE THE UNIQUE MECHANISM from the Offer_brief. This must DIRECTLY solve the UMP from Section 2. Prove WHY this mechanism solves the problem works through bulletproof logical thinking. One statement leading seamlessly into another. Each statement progressively makes it more clear. Connecting perfectly back to why they have the problem.
+
+    The reader has not only been told why this mechanism solves the problem they understand they have been shown PROOF why it solves it. Explain it at a 5th grade reading level.
+
+    **Include specific data/studies**
+
+    Add supporting statistics to reinforce the explanation of the problem. Include study size, results, and timeframe, statistics proving why and how this mechanism solves this problem. This should be 4-5 bullet points of claims about the mechanism with statistical data backing them up. Pull from the Offer_brief (Tier 1 and Tier 2 proof points). Add supporting statistics to validate the mechanism. Include study size, institution, results, timeframe. Quote experts from the Offer_brief who validate this mechanism.
+
+    **Explain Why This UMS Is Different**
+
+    Pull from the Offer_brief (Competitive Differentiation). Position against generic solutions. Explain why most approaches miss this entirely and why this mechanism targets the actual root cause.
+
+    **Bullet proof benefits of this mechanism**
+
+    Make claims about how benefits this mechanism is to their life. Include specific timeframes and measurable benefits. This should be 4-5 bullet points of benefits and outcomes each with statistical data backing them up. These benefits / outcomes should relate to the core desire of your avatar or describe who they want to be (identification).
+
+    **Curiosity Bridge to the Product**
+
+    Set up the natural question: "How do you actually get this?" Most solutions don't use this mechanism or the ones that do don't contain enough to matter. Hint at the reader your about to reveal where to actually get this.
+
+    **Key Rules for Section 4:**
+    - Go DEEP on the UMS - make them fully understand and believe in it
+    - Use data, studies, and expert quotes to build credibility
+    - Make it feel like discovering the mechanism was the breakthrough
+    - Add the "Professional Secret" angle for David vs. Goliath positioning
+    - End with natural bridge to "how do I actually get this?" - setting up the product
+    - NO product name yet - this section is mechanism-focused
+
+    ---
+
+    ### SECTION 5: INTRODUCE THE PRODUCT (1 Headline)
+
+    **THIS IS WHERE PRODUCT NAME SATURATION BEGINS.**
+
+    **Purpose:** Position the product as THE best delivery system for the mechanism they now believe in. Close the loop. Show proof it works.
+
+    From this point forward, use [PRODUCT NAME] whenever discussing the solution. Tie every benefit, every mechanism, every proof point directly to [PRODUCT NAME].
+
+    **Structure:**
+
+    **1. Introduce the Product**
+
+    Introduce the product as the best delivery for the unique mechanism you found X time searching.
+
+    **2. What [PRODUCT NAME] Is + Why It's the Best Delivery of [UMS]**
+
+    Immediately connect the product to the UMS they now believe in. Show that [PRODUCT NAME] is the ONLY formula that delivers this specific solution.
+
+    **3. How [PRODUCT NAME] Works (Connect to Mechanism)**
+
+    Show the mechanism in action through the product. Reference the UMP again and explain how [PRODUCT NAME] addresses it directly.
+
+    Explain the delivery system or technology that ensures absorption/effectiveness.
+
+    Show the progression: within days, within weeks (2 weeks max), long-term. Emphasize that it fixes at the source, not just masks symptoms.
+
+    Prove your product works through bulletproof logical thinking. One statement leading seamlessly into another.
+
+    The reader has not only been told that it works, he has been shown PROOF that it works.
+
+    **4. Why [PRODUCT NAME] Is Better (Aggressive Comparison)**
+
+    Explain what makes it succeed where other products went wrong as explained in section 3. Pull from the Offer_brief (Competitive Differentiation). Be direct and confident. Compare to cheap alternatives and show the specific advantage (dosage, technology, formulation quality, what others miss).
+
+    **6. [PRODUCT NAME] Benefits List (Use Bullets Here)**
+
+    Create a bulleted list showing specific improvements with timeframes 4-6 major benefits. Each bullet should include: specific outcome in x days or weeks (2 weeks max) using X unique mechanism statistic. All tied to main desire. Make each benefit aggressive and specific.
+
+    **7. Hint At the Objections they have**
+
+    Validate their specific skepticism and questions (pull from strategy doc) and tell them you will counter their objections or answer their questions in the next paragraph.
+
+    ---
+
+    ### SECTION 6: FAQ / OBJECTION HANDLING (1 Headline)
+
+    **Purpose:** Answer doubts. Crush objections. Increase perceived value. Be confident – not defensive.
+
+    Pull objections from the Avatar_info (Pre-Purchase Objections).
+
+    **Transition Into Section:**
+    "But here's what people always ask me..."
+
+    **Address 4-7 Common Objections**
+
+    Format each as: Q: [Question including product name] followed by a confident, aggressive answer.
+
+    Pull objection types from the Avatar_info. Common objections or questions to address:
+    - Answer questions about both the problem mechanism, solution mechanism and the product.
+    - Come out bluntly & Acknowledge the current beliefs, questions or objection,
+    - For each answer, be confident and direct. Include specific data, percentages, or proof. Don't be defensive.
+
+    Answer the objection or answer through bulletproof logical thinking. One statement leading seamlessly into another.
+
+    The reader has not only been told the answers, he has been shown PROOF for the answer.
+
+    ---
+
+    ### SECTION 7: YOUR TRANSFORMATION (Identification Outcome) (1 Headline)
+
+    **Purpose:** Paint a picture of your avatar becoming who they want to become, with your product as the bridge to that identity. Make them FEEL the outcome. Write this describing their story (Framework B).
+
+    **Ask Yourself:**
+    - What is the role your product offers to your prospect?
+    - How do I associate & turn my product into an "instrument" for my customer to use in order to achieve that role?
+    - Where does my ideal customer want to be? (environment to show in the visual)
+    - What does my ideal customer want to look like? (The model)
+    - What does my ideal customer want to feel? (the story of the ad)
+    - What self image do my customers want to portray? (The expression)
+
+    **DEFINITION OF IDENTIFICATION:**
+
+    The desire of your customer to act out certain roles in their life. How your customer defines themselves to the world as a specific kind of person. It is the desire, not for satisfaction, but for recognition & expression.
+
+    Identity marketing is about showcasing WHO your product helps your customer become.
+
+    Identification marketing is how we communicate the feelings our customer desires, without words.
+
+    We all have an image of ourselves, or a sense of who we are; this is called our self-image. We don't just buy objects, we buy roles.
+
+    Your ability to identify who your potential customer is and leverage that in your marketing unspokenly will determine your success.
+
+    - A woman buys low calorie food to become thinner, but in so doing she also becomes a more attractive, youthful looking women without having to say it.
+    - A Man buys a car for power, speed, and transportation, equally as much as for the projection of prestige, success, and wealth that communicates without words.
+
+    **Structure:**
+
+    **1. Identity Prison (Who They Were Trapped Being)**
+
+    Call out the problem you had and the problem mechanism (why you had it).
+
+    State your identity at the time:
+    - Don't say: "I was tired and achy"
+    - Say: "I was invisible... the person people looked past, dismissed as 'just getting old'"
+
+    What role were they forced into? (the sick one, the fragile one, the one who can't keep up)
+    What labels defined them? (the grandma who needs help, the retiree who's declining)
+    What social identity did they lose? (the active one, the capable one, the young-spirited one)
+
+    Make it about who they stopped being, not what they couldn't do.
+
+    **2. The Instrument of Reinvention (Product as Identity Bridge)**
+
+    Position the product as the tool of identity change.
+    - Frame the product as the instrument they used to reclaim their role
+    - Describe them experience the effects of the unique mechanism
+    - Show them wielding the product to reconstruct their identity
+
+    **3. The New Identity (Who They've Become)**
+
+    - Don't say: "Now I can play with my grandkids"
+    - Say: "I'm the grandmother who gets on the floor, who races them to the park, who they call when they want adventure"
+
+    Role examples: "I'm the friend who says yes," "I'm the wife who initiates," "I'm the traveler, not the tourist"
+
+    Social recognition: How do OTHERS see them now? (What compliments do they get? What assumptions do people make?)
+
+    Self-expression: What do they DO now that broadcasts their identity? (wardrobe, activities, social presence)
+
+    Use visual identity markers:
+    - "I'm the woman in yoga pants who actually goes to yoga"
+    - "I'm the guy who doesn't need the handrail"
+
+    Credit [PRODUCT] as the instrument: "Thanks to [PRODUCT] using [THE UNIQUE MECHANISM], I'm..."
+
+    **4. Identity Rebellion – The Role You Deserve**
+
+    Reframe what identity is NORMAL for their age/stage.
+
+    - Current framing: "You shouldn't feel this way"
+    - New framing: "You shouldn't have to BE this person"
+
+    Challenge the identity resignation: "At 60, you're supposed to be [adventurous/vital/sharp/desired]"
+
+    Expose the false role assignment: "Society handed you the 'declining senior' badge – you never had to wear it"
+
+    List the identities they should still hold:
+    - "You should still be the capable one"
+    - "You should still be the attractive one"
+    - "You should still be the one others look up to"
+
+    Reframe suffering as identity theft: "Your [deficiency] didn't just take your energy – it took who you are. You spent X years being someone you're not."
+
+    Set the tone like you want the best for them and you care about them, you want them to feel this transformation too.
+
+    **5. Identity Restoration (The Labels Shed & Claimed)**
+
+    Show the identity stripping and rebuilding:
+
+    Who I'm NOT Anymore:
+    - "I'm not the woman who..."
+    - "I'm no longer the person they..."
+    - "I stopped being the one who..."
+
+    Who I've Become (Thanks to [PRODUCT]):
+    - "I'm now the woman who..."
+    - "I'm the person who gets recognized as..."
+    - "I've reclaimed my identity as..."
+
+    Connect to core identity desire from Avatar_info: "I wanted to feel like [MYSELF/A WOMAN/YOUNG/CAPABLE] again – [PRODUCT] using [MECHANISM] gave me the instrument to rebuild that person."
+
+    **6. Your Identity Waiting (Second-Person Role Visualization)**
+
+    Create role-based future pacing:
+
+    "If [PRODUCT] could turn me from [OLD IDENTITY] into [NEW IDENTITY], imagine who you could become..."
+
+    - Don't say: "Imagine having more energy"
+    - Say: "Imagine being the person who..."
+
+    Use identification language:
+    - "Imagine walking into a room and being seen as..."
+    - "Imagine introducing yourself without..."
+    - "Imagine your family seeing you as... again"
+    - "Imagine looking in the mirror and recognizing..."
+
+    End with role assignment: "The question isn't whether [PRODUCT] works – it's whether you're ready to stop being [OLD ROLE] and step back into being [TRUE IDENTITY]."
+
+    **KEY SHIFT:**
+    - FROM: Problem → Solution → Result
+    - TO: False Identity → Identity Instrument → True Identity Reclaimed
+
+    Every sentence should answer: "Who does this make me?" not "What does this give me?"
+
+    ---
+
+    ### SECTION 8: THE OFFER (1 Headline)
+
+    **Purpose:** Present the deal. Create urgency. Remove risk. Write this with the tone like you're not the one running this offer but you're talking about the brand that is. You're recommending this offer because it changed your life and you want the best for the reader.
+
+    Refer to the product/brand not as "We" but as "They" and "[Product name]"
+
+    Use the product name throughout. Make the offer feel like a no-brainer.
+
+    **Structure:**
+
+    **1. Risk Reversal (remove ALL friction)**
+
+    Present the guarantee. State they let you try it for 90 days, you can feel X mechanism, feel X outcome, and if for whatever reason if you're not satisfied they will give you a full refund no questions asked. Make it crystal clear: they either get results or get their money back. Remove all purchase friction.
+
+    **2. Offer the product only through this page**
+
+    State the product you're talking about is only direct through the consumer, it is not on Amazon and it is not in stores. Reinforce limited availability. Include the link and emphasize checking if it's still in stock.
+
+    **3. Urgency and Scarcity (aggressive – make them act NOW)**
+
+    State that this product often sells out, and it sells out fast! NO pricing language. Explain why [PRODUCT NAME] sells out (quality ingredients hard to source, limited production batches, very high demand). Create conditional urgency: if the link works, it's in stock; if not, they'll have to wait.
+
+    **4. Limited Discount (Act Now)**
+
+    Explain that right now, [PRODUCT NAME] is available with a limited-time discount reserved for the first 100 people coming from Facebook.
+
+    Explain they do this intentionally, to reward early viewers who took the time to learn why [PRODUCT NAME] works instead of impulse-buying some random product online.
+
+    This isn't a public promotion and it's not something you'll find elsewhere.
+
+    Once the first 100 Facebook viewers claim it, the discount is removed automatically. No extensions. No exceptions. If you're seeing this and the link still works, you're early and you got the discount.
+
+    ---
+
+    ### SECTION 9: TWO PATHS FORWARD (1 Headline)
+
+    **Purpose:** Final push. Show contrast between action and inaction. Make inaction feel painful.
+
+    Pull from the Offer_brief (Current State and Future State).
+
+    **Structure:**
+
+    **Path 1: Do Nothing (make it hurt) - Enhanced with Paradigm Shift Callback**
+
+    Paint the picture of closing the page and going back to their current identity they don't want. List what they'll keep experiencing (pull from Offer_brief). Show the progression getting worse. Include the paradigm shift callback: emphasize they're accepting what they DON'T have to accept. Remind them they just didn't know about the UMP and [PRODUCT NAME]. End with: "That's one option."
+
+    **Path 2: Take Action with [PRODUCT NAME] (make it inspiring)**
+
+    Create the alternative: try [PRODUCT NAME] today, risk-free. Include a social proof number (how many people have chosen this path, 17,000+). Paint the transformation they could experience (pull from Offer_brief). List specific outcomes with [PRODUCT NAME]. Connect to identity restoration. Show [PRODUCT NAME] helping them become who they know is still there. The tone of this is like you want them to experience the transformation because you care about them.
+
+    **End with aggressive action:**
+
+    Make the choice for them and tell them to just click to checkout the product. Create FOMO: don't let this moment pass.
+
+    ---
+
+    ### SECTION 10: COMMENTS
+
+    **Purpose:** Social proof. Counter objections. Build hype. Create FOMO.
+
+    Output this in a separate section in the output.
+
+    **Generate 7 Product-Specific Comments (Include [PRODUCT NAME] in each)**
+
+    These directly name and praise the product. Make them feel real and varied. Include different types:
+    - Curious/investigating comment asking if anyone has tried it
+    - Success story with timeframe and specific result
+    - Bought for family member, reporting results
+    - Skeptic who tried because of guarantee
+    - Comparison to other products that didn't work
+    - Multi-bottle purchase, emphasizing guarantee makes it no-brainer
+    - Long-term user reporting sustained results
+
+    Make each comment 1-2 sentences. Include [PRODUCT NAME] in most. Vary the tone (excited, factual, grateful, comparative). Make them feel like real people, not marketing copy.
+
+    Format: Natural comment language, no quotation marks needed
+
+    ---
+
+    ### SECTION 12: SIDEBAR REVIEWS
+
+    **Purpose:** Social proof that appears alongside the article. These are SHORT user reviews visible in the sidebar on desktop.
+
+    ⚠️ CRITICAL: These are REAL CUSTOMER reviews, not expert endorsements. Same format as bottom reviews but shorter (1-2 sentences).
+
+    **Generate 3 Sidebar Reviews. Each Must:**
+    - Be 1-2 sentences ONLY (short and punchy)
+    - Include name + age (matches target demographic)
+    - Include star rating (mostly 5 stars)
+    - Mention specific result or timeframe
+    - Feel authentic and conversational
+    - Reference [PRODUCT NAME] naturally
+
+    **Good Sidebar Review Examples:**
+    - "2 weeks with [PRODUCT] and I'm finally sleeping through the night. Wish I'd found this years ago." — Margaret T., 64
+    - "My daughter noticed the difference before I did. That says everything." — Robert K., 71
+    - "Threw away my old supplements. This actually works." — Susan M., 58
+
+    **Bad Sidebar Review Examples:**
+    - "This product is amazing and changed my life!" (too generic, no specifics)
+    - "Dr. Smith recommends this..." (wrong format — this is for users, not experts)
+
+    **Where Expert Quotes Go Instead:**
+    Embed expert endorsements in body copy within Section 4 (Mechanism) or Section 5 (Product). Use the `<div class="quote-box">` element for prominent expert quotes.
+
+    ---
+
+    ## STEP 4: WRITING RULES (Non-Negotiable)
+
+    ### Paragraph Headlines
+
+    Each major paragraph or section gets 1 headline.
+
+    **Subheadline Strategy - State Facts with Outcomes:**
+
+    Headlines should:
+    - State specific outcomes, facts, or revelations (not questions)
+    - Include numbers and results when possible
+    - Build progressive story beats
+    - Create urgency to keep reading
+    - Work as standalone story elements
+
+    Format: BIG and BOLD (under 100 characters)
+
+    Avoid generic headlines like "The Discovery That Changed Everything." Instead use specific outcomes like "[X]% [Result] in [Timeframe] - Here's What Changed" or "The Hidden [Problem] Destroying Your Results" or "[Number] Users Report [Specific Outcome] Within [Timeframe]."
+
+    ### Simplicity Rules
+
+    - 5th-8th grade reading level – Maintain professional credibility while staying accessible
+    - 50% short sentences (under 35 words)
+    - 50% normal complete sentences
+    - One idea per sentence
+    - One idea per paragraph
+    - No jargon without immediate explanation
+    - Break up text every 2-5 sentences
+    - No hyphens in the output and Do not use em dashes or en dashes
+
+    ### Formatting Rules
+
+    - Use "..." to create curiosity breaks
+    - Use line breaks liberally
+    - Bold key phrases for scanning
+    - Bullets for feature/benefit lists
+    - No walls of text (3 sentences max per block)
+    - Don't output any long dividers
+
+    ### Bolding Instructions
+
+    - Make 12-17% of the text bold.
+    - Bold only high-impact marketing points:
+      - Strong emotional triggers
+      - Key logical reasons / mechanisms
+      - Major proof or credibility claims
+    - Do not bold filler, transitions, or full paragraphs.
+    - Never exceed 20% bold usage.
+
+    ### Content Rules
+
+    - Use product name often whenever discussing the solution, product, or mechanism (from Section 5 onward)
+    - Comment and Review must not contain a trademark symbol (™) - remove it if there is any
+    - No hyphens or dashes used in the ADV copy - remove them if there are any
+    - Never orphan a benefit – always tie it to [PRODUCT NAME]
+    - Use "you" more than "we" or "I"
+    - Include specific data (percentages, study sizes, timeframes) - add supporting statistics liberally
+    - Cite sources for credibility
+    - Stay realistic – no miracle claims
+    - Guarantee is 90 days
+    - 17,000+ customers already love it (or actual number from brief)
+
+    ### Total Word Count
+
+    | Awareness Level | Word Count | Focus |
+    |-----------------|------------|-------|
+    | Unaware | 3,000–3,600 | Symptoms, problem development, mechanism |
+    | Problem Aware | 2,600–3,200 | Problem development, mechanism |
+    | Solution Aware | 2,100–2,600 | Failed solutions, mechanism, product |
+
+    **Unaware:** They don't know what the real problem is, why it's happening, or that they should care yet. Spend more time on the symptoms, problem development, and unique mechanism development.
+
+    **Problem Aware:** They already feel the pain. Spend more time on the problem development, and unique mechanism development. This is persuasion, not education — so slightly shorter than unaware.
+
+    **Solution Aware:** They already believe solutions exist. They're asking: Why this one? Why now? Why trust you? Spend more time on the failed solutions, and unique mechanism development and product development.
+
+    ### What to Avoid
+
+    - Going off-topic from the Big Idea
+    - Multiple benefit angles (stick to ONE)
+    - Multiple desires
+    - Multiple avatars
+    - Multiple unique mechanisms
+    - Multiple problem mechanisms
+    - Violate the customer beliefs
+    - Complex explanations
+    - Cheesy, infomercial language
+    - Dramatic movie-plot writing
+    - Do not add CTA buttons, ex: "[Check if [Product name] is still available here]" anywhere
+    - Vague claims without proof
+    - Revealing the mechanism before the Education section
+    - Using "it" or "the supplement" instead of [PRODUCT NAME] after Section 5
+    - Weak, timid, or defensive language in the back half
+    - Testimonials that don't counter specific objections
+
+    ---
+
+    ## OUTPUT FORMAT: DUAL VERSION DELIVERY
+
+    After completing the advertorial, output TWO versions:
+
+    ### VERSION 1: FULL ADVERTORIAL (CONFIG FORMAT)
+
+    Output the complete advertorial as a CONFIG object for the HTML template (see Step 5 below).
+
+    ### VERSION 2: CONDENSED SUMMARY
+
+    After the full advertorial, output a condensed structural summary with:
+    - Every headline in sequential order
+    - Short summary of each paragraph/section under 300 characters
+    - Maintains exact section order from full version
+
+    **Format for Condensed Summary:**
+    ```
+    CONDENSED ADVERTORIAL SUMMARY
+
+    SECTION NAME
+    [Headline 1]
+    Summary of Paragraph: [Brief summary of this section - under 300 characters]
+    (Repeat for each section)
+    ```
+
+    List out the total word count.
+
+    ---
+
+    ## STEP 5: CONFIG OUTPUT FORMAT
+
+    **Output the advertorial as a JavaScript CONFIG object that can be directly pasted into the HTML template.**
+
+    ### THEME SELECTION
+
+    | Theme | Color | Use For |
+    |-------|-------|---------|
+    | `health` | Green | Supplements, wellness, joint, heart, general health |
+    | `medical` | Blue | Devices, monitors, clinical tech |
+    | `beauty` | Rose | Skincare, anti-aging, beauty supplements |
+    | `energy` | Orange | Energy, performance, metabolism, weight |
+    | `calm` | Purple | Sleep, stress, anxiety, mental wellness |
+
+    ### SECTION MAPPING
+
+    Map the advertorial sections to the SECTIONS array:
+
+    | SOP Section | CONFIG Location | Notes |
+    |-------------|-----------------|-------|
+    | Section 1: Hook (Main Headline) | `HEADLINE` | Main headline |
+    | Section 1: Hook (Subheadline) | `SUBHEADLINE` | Curiosity teaser |
+    | Section 1: Hook (Lead) | `SECTIONS[0]` | Opening lead copy |
+    | Section 2: Education | `SECTIONS[1]` | UMP reveal |
+    | Section 3: Discredit | `SECTIONS[2]` | Use `<p class="failed-solution">` |
+    | Section 4: Mechanism | `SECTIONS[3]` | Use `<div class="quote-box">` and `<div class="mechanism-box">` |
+    | Section 5: Product | `SECTIONS[4]` | Product saturation begins, use `<p class="timeline-item">` |
+    | Section 6: FAQ | `SECTIONS[5]` | Q&A format |
+    | Section 7: Transformation | `SECTIONS[6]` | Use `<div class="validation-box">` |
+    | Section 8: Offer | `SECTIONS[7]` | Risk reversal, urgency |
+    | Section 9: Two Paths | `SECTIONS[8]` | Can merge with Section 8 |
+    | Section 10: Comments | `REVIEWS` array | 7 user comments |
+    | Section 12: Expert Recs | Body copy quotes | Embed in Section 4 or 5 |
+
+    **SIDEBAR_REVIEWS:** 3 user reviews (same format as bottom reviews, displayed in sidebar)
+
+    ### BODY HTML ELEMENTS
+
+    | Element | Usage | Code |
+    |---------|-------|------|
+    | Regular paragraph | Standard text | `<p>Text here</p>` |
+    | Short paragraph | Quick punches, fragments | `<p class="short">Text</p>` |
+    | Bold text | Key phrases, emphasis | `<strong>text</strong>` |
+    | Highlighted text | Critical revelations | `<span class="highlight">text</span>` |
+    | Quote box | Peer quotes, UMP reveal | `<div class="quote-box"><p>Quote</p></div>` |
+    | Mechanism box | UMP/UMS explanation | `<div class="mechanism-box"><p>Text</p></div>` |
+    | Validation box | "You're not broken" | `<div class="validation-box"><p>Text</p></div>` |
+    | Failed solution | Discredited alternatives | `<p class="failed-solution"><strong>X</strong> — why</p>` |
+    | Timeline item | Results progression | `<p class="timeline-item"><strong>Day 3:</strong> Result</p>` |
+
+    ### CRITICAL FORMATTING RULE
+
+    **NO LINE BREAKS inside body strings.** All content must be on one line using HTML tags.
+
+    ```javascript
+    // ❌ WRONG
+    body: "First paragraph.
+    Second paragraph."
+
+    // ✅ CORRECT
+    body: `<p>First paragraph.</p><p>Second paragraph.</p>`
+    ```
+
+    ### AUTO-GENERATED FIELDS (Do NOT include in CONFIG)
+
+    The template automatically generates:
+    - Author image (fixed placeholder)
+    - "By" prefix before author name
+    - Article date (today's date)
+    - Reading time (calculated from word count)
+    - CTA text ("Check Availability →")
+    - CTA subtext ("90-Day Money-Back Guarantee • Free Shipping")
+    - Disclaimer (standard FDA disclaimer)
+    - Footer copyright
+
+    ---
+
+    ## OUTPUT CHECKLIST
+
+    Before outputting CONFIG:
+
+    **Structure:**
+    - [ ] THEME matches product category
+    - [ ] HEADLINE under 100 characters, compelling
+    - [ ] SUBHEADLINE creates curiosity gap
+    - [ ] AUTHOR_NAME matches avatar demographics
+    - [ ] 8 SECTIONS in array (can combine 8+9)
+    - [ ] No line breaks inside body strings
+
+    **Copy Rules:**
+    - [ ] Product name 0 times in Sections 0-3
+    - [ ] Product name first appears at end of Section 3 (mechanism)
+    - [ ] Product name saturated (8-12x) in Sections 4+
+    - [ ] Quote-box used for UMP reveal
+    - [ ] Mechanism-box used for UMP/UMS explanation
+    - [ ] Validation-box used in transformation section
+    - [ ] Failed-solution class used in discredit section
+    - [ ] Timeline-item class used for results progression
+    - [ ] 12-17% of text is bold (high-impact points only)
+
+    **Product:**
+    - [ ] 5 PRODUCT_BENEFITS with timeframes
+    - [ ] PRODUCT_DESCRIPTION is one sentence
+
+    **Reviews:**
+    - [ ] 3 SIDEBAR_REVIEWS (user reviews with age)
+    - [ ] 7 REVIEWS (user comments)
+    - [ ] At least one 4-star review
+    - [ ] PRODUCT_NAME in most reviews
+    - [ ] No trademark symbols (™)
+    - [ ] No hyphens or dashes
+
+    **Sign-off:**
+    - [ ] SIGN_OFF_TEXT warm and caring
+    - [ ] SIGN_OFF_NAME matches narrator
+
+    ---
+
+    ## FINAL OUTPUT
+
+    Output the CONFIG as a single JavaScript code block:
+
+    ```javascript
+    const CONFIG = {{
+        // Complete CONFIG here
+    }};
+    ```
+
+    After CONFIG, provide summary:
+    - Total word count
+    - Awareness level applied
+    - Sophistication stage
+    - Number of proof points used
+
+    ---
+
+    Avatar info:
+    {avatar_info}
+
+    Angle info:
+    {angle_info}
+
+    Offer brief:
+    {offer_brief}
+
+    ## END OF AI ADVERTORIAL SOP
+
+    """
+
 
 def get_advertorial_image_generation_prompt(
     offer_brief: str,
@@ -3494,4 +4485,579 @@ def get_advertorial_image_generation_prompt(
     {advertorial_copy}
 
     ## END OF ADVERTORIAL IMAGE SOP
+    """
+
+
+def get_listicle_generation_prompt(avatar_info: str, angle_info: str, offer_brief: str) -> str:
+    """
+    Generate prompt for creating a listicle using LISTICLE-SOP Parts 1-3.
+
+    Args:
+        avatar_info: Detailed avatar profile information.
+        angle_info: The marketing angle to use.
+        offer_brief: Offer details including research, product info, UMP.
+
+    Returns:
+        Formatted prompt string for listicle generation.
+    """
+    return f"""
+
+    # LISTICLE SOP: Research-Driven Direct Response Native Advertising
+
+    ## OVERVIEW
+
+    Generate a native advertising listicle driven by YOUR RESEARCH. Every decision — copy, demographics, images, emotional triggers — extracted from research documents.
+
+    **Output:** CONFIG (copy) as structured JSON
+
+    **Inputs Required:** Avatar Info + Angle Info + Offer Brief (provided at the end of this prompt)
+
+    ---
+
+    # PART 1: RESEARCH EXTRACTION
+
+    **Extract and document BEFORE writing anything.**
+
+    ## 1.1 Target Market
+    ```
+    Country/Region: [UK, Netherlands, Israel, Germany, etc.]
+    Language: [British English, Dutch, Hebrew, German]
+    Primary Gender: [e.g., 70% female]
+    Age Range: [e.g., 55-75, sweet spot 60-70]
+    ```
+
+    ## 1.2 Demographics for Images
+    ```
+    Ethnicity: [Match target country — UK=British, NL=Dutch, IL=Israeli]
+    Age: [Specific from sweet spot, e.g., 64]
+    Appearance: [e.g., "natural grey hair, warm complexion"]
+    Clothing: [e.g., "practical British casual — soft jumpers"]
+    ```
+
+    ## 1.3 Cultural Context
+    ```
+    Home Settings: [British cottage kitchen, Dutch apartment, Israeli balcony]
+    Outdoor Settings: [English garden, Dutch park, Mediterranean terrace]
+    Activities: [Walking dog, tending garden, morning tea ritual]
+    ```
+
+    ## 1.4 Awareness Level -> Number of Reasons
+
+    | Awareness | Evidence | Reasons |
+    |-----------|----------|---------|
+    | Problem Unaware | Don't know they have a problem | 7-9 |
+    | Problem Aware | Know something's wrong, tried solutions | 5-7 |
+    | Solution Aware | Shopping, comparing options | 3-5 |
+
+    ## 1.5 Emotional Triggers (SPECIFIC from research)
+
+    ```
+    PRIMARY FEARS (ranked):
+    1. [e.g., "Becoming a burden to my children"]
+    2. [e.g., "Missing my grandchildren growing up"]
+    3. [e.g., "Losing independence"]
+    4. [e.g., "The worried look on my partner's face"]
+    5. [e.g., "Ending up in a care home"]
+
+    PRIMARY DESIRES (ranked):
+    1. [e.g., "Playing on the floor with grandchildren"]
+    2. [e.g., "Walking the dog every morning"]
+    3. [e.g., "Traveling with spouse while we still can"]
+
+    ENEMY/VILLAIN:
+    - [e.g., "Doctors who dismissed their pain as 'just aging'"]
+    - [e.g., "The real cause: inflammation, not 'wear and tear'"]
+    ```
+
+    ## 1.6 Product & Mechanism
+    ```
+    Product Name: [X]
+    Key Ingredients: [3-4 with specific benefits]
+    Proof Points: [Stats — need 95%+ for stat badges]
+    ```
+
+    ## 1.7 UMP (Unique Mechanism Proposition)
+    **Extract the ONE thing that makes this product different. This drives the entire listicle.**
+
+    ```
+    UMP STATEMENT: [One sentence — what makes this solution unique]
+    WHY IT WORKS: [The mechanism in simple terms]
+    WHY NOTHING ELSE WORKED: [Connects to ENEMY — why their past attempts failed]
+    THE PROOF: [Stat or study that validates the mechanism]
+    ```
+
+    **UMP must appear in:**
+    - ENEMY reasons (why other solutions failed)
+    - SOLUTION_INSIGHT (the bridge to product)
+    - PRODUCT_INTRO (how it works)
+    - Final CTA (why act now)
+
+    ---
+
+    # PART 2: EMOTIONAL ARC STRATEGY
+
+    ## Arc by Awareness Level
+
+    **Problem Unaware (9 reasons):**
+    ```
+    W1 -> W2 -> W3 -> E1 -> E2 -> S1 -> S2 -> V -> H
+    ```
+
+    **Problem Aware (5-7 reasons):**
+    ```
+    W1 -> W2 -> E -> S -> H
+    ```
+    Or expanded: W1 -> W2 -> W3 -> E -> S -> V -> H
+
+    **Solution Aware (3-5 reasons):**
+    ```
+    W -> S -> H
+    ```
+    Or expanded: W -> E -> S -> V -> H
+
+    ## Stage Definitions
+
+    | Stage | Purpose | Emotion | Content Source |
+    |-------|---------|---------|----------------|
+    | **WOUND** | Rip open the pain | Recognition, hurt | PRIMARY FEARS |
+    | **ENEMY** | Name the villain | Rage, blame shift | MECHANISM/VILLAIN |
+    | **STAKES** | Show terrifying future | Fear, urgency | FEARS + what's being lost |
+    | **VALIDATION** | Show escape is possible | Relief, hope | PROOF POINTS |
+    | **HOPE** | Paint the transformed life | Desire, action | PRIMARY DESIRES |
+
+    ---
+
+    # PART 3: COPYWRITING
+
+    ## Research-Driven Copy Rules
+
+    Every element must trace to research extractions. Use THEIR words, THEIR fears, THEIR specific scenarios.
+
+    ### Element Specs
+
+    | Element | Rules |
+    |---------|-------|
+    | HERO_HEADLINE | Up to 14 words. Based on PRIMARY FEAR or DESIRE. |
+    | SUB_HEADLINE | 1-2 sentences. Deepen the specific problem. |
+    | OPENING_HOOK | 1 sentence. Validate in THEIR words. |
+    | OPENING_BODY | Max 5 sentences. End with <span class="highlight"> |
+    | REASON headlines | 6-10 words. Target specific fear/desire. |
+    | REASON bodies | Max 4 paragraphs. <br><br> between. **10-20% of text bolded** with <strong> tags — key phrases, emotional hooks, power words. |
+    | EXPERT_QUOTE | Max 2 sentences. No quotation marks. Cultural tone. |
+    | **SOLUTION_INSIGHT** | **UMP BRIDGE.** 2-3 sentences. Connects their pain to the root cause. Sets up mechanism. |
+    | **PRODUCT_INTRO** | **UMP MECHANISM.** How it works differently. Why this solves what others couldn't. |
+    | BENEFITS 1-3 | Each tied to specific fear/desire — solved through UMP mechanism. |
+    | **BENEFIT 4 or 5** | **UMP DIFFERENTIATOR.** Specific ingredient or mechanism advantage. Near end of list. |
+    | **FINAL_CTA_HEADLINE** | **UMP URGENCY.** Why act now with THIS unique solution. |
+
+    ### UMP Differentiator Benefit (BENEFIT 4 or 5)
+
+    **One benefit must highlight the specific mechanism or ingredient advantage:**
+
+    Good examples:
+    - "Uses [Key Ingredient] to target [root cause] — not just mask symptoms"
+    - "Contains [X] with 5x more bioavailability than standard supplements"
+    - "The only formula that addresses [specific mechanism] directly"
+    - "Powered by [Patented Ingredient] — clinically shown to reduce [marker] by 63%"
+
+    Avoid:
+    - Generic claims: "High quality ingredients"
+    - Vague differentiators: "Better than the rest"
+    - No specifics: "Targets the real problem"
+
+    **Always place near end (position 4 or 5)** — after emotional benefits, before CTA.
+
+    ### Bold Text Guidance (REASON bodies)
+
+    **Bold 10-20% of body copy** — the words that carry emotional weight:
+
+    Bold these:
+    - Emotional phrases: "calculating the cost", "hiding exactly how bad it's gotten"
+    - Pain points: "every single time", "hasn't changed a single thing"
+    - Power words: "finally", "actually wrong", "never targeting"
+    - Key claims: "within days, not months"
+
+    Don't bold:
+    - Entire sentences
+    - Generic words
+    - More than 3-4 phrases per paragraph
+
+    Example:
+    "You tell everyone you're fine. You smile through breakfast. But that cabinet full of supplements that promised relief? They <strong>haven't changed a single thing</strong>.<br><br>Because they were <strong>never targeting what's actually wrong</strong>."
+
+    ### CRITICAL: No Line Breaks Inside Strings
+    All string values must be on a single line. Use <br><br> for visual line breaks within HTML content.
+
+    ---
+
+    ## CONFIG Output Format
+
+    **Output CONFIG as structured JSON matching the tool schema provided.**
+
+    The output must include:
+    - CATEGORY: From research
+    - HERO_HEADLINE: Based on primary fear/desire (up to 14 words)
+    - HERO_IMAGE: Empty string (filled later)
+    - heroImagePrompt: Placeholder prompt for image generation step (describe the ideal hero image concept)
+    - SUB_HEADLINE: Specific problem from research
+    - OPENING_HOOK: Validates in their words
+    - OPENING_BODY: Specific scenarios with HTML formatting, end with highlight span
+    - REASONS: Array of objects with headline, body (HTML with <br><br> and <strong> tags), image (empty string), imagePrompt (placeholder prompt describing the ideal reason image concept)
+    - EXPERT_QUOTE: Cultural tone appropriate
+    - SOLUTION_INSIGHT: UMP BRIDGE — connects pain to unique mechanism (HTML)
+    - PRODUCT_NAME: From research
+    - PRODUCT_INTRO: UMP MECHANISM — how it works differently (HTML)
+    - PRODUCT_IMAGE: Empty string
+    - productImagePrompt: Placeholder prompt for product image generation
+    - PRODUCT_TAGLINE: Primary desire achieved through UMP
+    - PRODUCT_BENEFIT_1 through PRODUCT_BENEFIT_5: Fears/desires solved by UMP, with BENEFIT 4 or 5 being the UMP differentiator
+    - FINAL_CTA_HEADLINE: UMP-driven urgency
+
+    ---
+
+    ## UMP Integration (Critical)
+
+    The UMP must be woven throughout — not just mentioned once:
+
+    | Element | How UMP Appears |
+    |---------|-----------------|
+    | **ENEMY reasons** | "Why nothing else worked" — because they weren't targeting [UMP mechanism] |
+    | **SOLUTION_INSIGHT** | The bridge: "But what if the problem isn't [symptom] — it's [root cause UMP targets]?" |
+    | **PRODUCT_INTRO** | How it works: "[Product] is the first to target [UMP mechanism] directly" |
+    | **PRODUCT_TAGLINE** | Desire + UMP: "Finally [desire] by addressing [root cause]" |
+    | **BENEFITS 1-3** | Each benefit tied back to UMP mechanism |
+    | **FINAL_CTA_HEADLINE** | Urgency through UMP: "Stop treating symptoms. Target the source." |
+
+    ---
+
+    ## Final Checklist
+
+    **Research:**
+    - All extractions documented
+    - Primary fears ranked
+    - Primary desires ranked
+    - Demographics match target market
+    - UMP clearly defined (statement, why it works, why nothing else worked, proof)
+
+    **Copy:**
+    - NO LINE BREAKS in strings
+    - Every element traces to research
+    - Cultural tone matches market
+    - UMP in ENEMY reasons (why other solutions failed)
+    - UMP in SOLUTION_INSIGHT (the bridge)
+    - UMP in PRODUCT_INTRO (how it works)
+    - UMP DIFFERENTIATOR in BENEFIT 4 or 5 (specific ingredient/mechanism)
+    - UMP in FINAL_CTA_HEADLINE (urgency)
+    - 10-20% of REASON body text bolded with <strong> tags
+    - <br><br> between paragraphs in REASON bodies
+    - All imagePrompt fields filled with descriptive placeholder prompts
+    - No hyphens in the output and Do not use em dashes or en dashes
+
+    ---
+
+    ## INPUT
+
+    Avatar Info:
+    {avatar_info}
+
+    Angle Info:
+    {angle_info}
+
+    Offer Brief:
+    {offer_brief}
+
+    ## END OF LISTICLE SOP
+    """
+
+
+def get_listicle_image_generation_prompt(
+    offer_brief: str,
+    listicle_copy: str,
+    image_style: ImageStyle = "realistic",
+) -> str:
+    """
+    Generate prompt for creating image prompts for a listicle using LISTICLE-SOP Parts 4-9.
+
+    Args:
+        offer_brief: Offer details including research, product info.
+        listicle_copy: The completed listicle CONFIG copy as JSON string.
+        image_style: The image style to use (realistic, photorealistic, illustration).
+
+    Returns:
+        Formatted prompt string for listicle image generation.
+    """
+    return f"""
+
+    # LISTICLE IMAGE SOP: Complete Visual Strategy
+
+    ## OVERVIEW
+
+    **GLOBAL IMAGE STYLE: {image_style}**
+    All image prompts MUST use {image_style} style unless a specific section requires a diagram or infographic.
+
+    Generate emotionally resonant image prompts for a listicle. Every image must hit like a punch to the gut. "Person looking thoughtful" is FAILURE.
+
+    **Show:**
+    - The moment they cry in the shower
+    - The thing that keeps them awake at 3am
+    - The future they can't bear to imagine
+
+    **Inputs Required:** Offer Brief + Completed Listicle Copy (provided at the end of this prompt)
+
+    **Your task:** Regenerate ALL imagePrompt fields in the listicle copy. The heroImagePrompt, each reason's imagePrompt, and the productImagePrompt must be replaced with detailed, emotionally resonant image generation prompts following the strategy below.
+
+    ---
+
+    # PART 4: IMAGE STRATEGY
+
+    ## Tool Assignment (Based on Strengths)
+
+    | Tool | Strength | Use For |
+    |------|----------|---------|
+    | **Nanobanan** | Static portraits, editorial, emotional close-ups | Recognition Heroes (portraits), WOUND images, STAKES images, VALIDATION images, Product |
+    | **Higgsfield Soul** | Motion, action, dynamic movement | Action-based Heroes, HOPE images (showing activity), any image requiring movement |
+
+    **Selection rule:** Does the image need MOTION? Use Soul. Is it a static emotional moment? Use Nanobanan.
+
+    ## Visual Standards (ALL Images)
+
+    - **NO TEXT** except Stat Badges (percentage + phrase in TARGET LANGUAGE)
+    - **Eyes:** Natural only — "soft blue," "warm brown," "grey-blue" — NEVER "bright/piercing/vivid blue"
+    - **Expressions:** Dignified struggle (WOUND/STAKES) or genuine contentment (VALIDATION/HOPE) — NEVER theatrical pain or fake smiles
+    - **Demographics:** EXACT match to research extraction — not generic rotation
+    - **Settings:** CULTURALLY APPROPRIATE to target market
+
+    ---
+
+    # PART 5: HERO IMAGES
+
+    ## Direct Response Psychology
+
+    Show the BEFORE, not the AFTER. Hit the DEEPEST FEAR — not the symptom, the emotional consequence.
+
+    **Goal:** Reader thinks "How do they know? That's EXACTLY what it's like."
+
+    ## ALWAYS OUTPUT 3 HERO VERSIONS in heroImagePrompt
+
+    For every listicle, generate **3 hero image prompt versions** concatenated in heroImagePrompt:
+
+    1. **Recognition Hero** — Hits the deepest fear (RECOMMENDED)
+    2. **Transformation Hero** — Shows mechanism/proof
+    3. **Aspiration Hero** — Shows desire achieved (for A/B testing)
+
+    ### Recognition Hero Concepts (Choose based on PRIMARY FEAR)
+
+    | Fear | Concept | The Gut-Punch |
+    |------|---------|---------------|
+    | Missing moments | **The Missed Moment** | POV from armchair — grandchildren reaching up, your hands gripping armrests, unable to get down |
+    | Being a burden | **The Look** | Your adult daughter's face — exhausted, worried, forcing a smile |
+    | Losing independence | **The Pause** | Bottom of stairs, hand on rail, looking UP — the mountain that used to be 12 steps |
+    | Being left out | **The Window** | Hands pressed against glass, watching family in garden |
+    | Fear of decline | **The Shadow** | Mobility walker in the corner, your FUTURE looking back |
+    | Family isolation | **The Empty Chair** | Family dinner, laughter, one chair pushed back |
+
+    ### Recognition Hero Prompt Template
+    ```
+    {image_style} POV image. 16:9 format. Shot from the perspective of someone TRAPPED.
+    CAMERA: First-person POV or emotional close-up.
+    DEMOGRAPHIC: [From research — exact match]
+    THE MOMENT: [Specific fear made visible]
+    LIGHTING: Warm where life is, cooler where subject is.
+    EMOTION: [Should make viewer's chest ache with recognition]
+    No text. No product.
+    ```
+
+    ### Transformation Hero Template
+    ```
+    Split image. 16:9 format.
+    LEFT SIDE — THE DAMAGE: [Problem visualization — anatomical, symbolic, or real symptom]
+    RIGHT SIDE — THE RESTORATION: [Same element, healed/restored]
+    STYLE: Medical illustration or symbolic — realistic but emotional.
+    ZERO TEXT. No product.
+    ```
+
+    ### Aspiration Hero Template
+    ```
+    Cinematic photograph. 16:9 format. MOTION visible.
+    SUBJECT: [DEMOGRAPHIC] in FLUID MOVEMENT during [PRIMARY DESIRE]
+    MOVEMENT: Effortless. Natural. The ease of a body that WORKS.
+    EXPRESSION: Genuine joy. Unguarded.
+    SETTING: [CULTURALLY APPROPRIATE]
+    No text. No product.
+    ```
+
+    ---
+
+    # PART 6: REASON IMAGES
+
+    Each reason image hits as hard as the copy. Match the emotional stage of each reason.
+
+    **Format:** 1:1
+
+    ## WOUND Images (Reasons hitting fears)
+
+    | Code | Name | Use When | The Moment |
+    |------|------|----------|------------|
+    | W1 | Three Feet Away | Missing moments, being left out | Subject in background, life in foreground — heartbreakingly CLOSE but separated |
+    | W2 | The Secret | Daily pain, morning stiffness | The 5:47am moment — sitting on bed edge, gathering courage to stand |
+    | W3 | The Grave | Lost activities, shrinking identity | Abandoned hobby visible — garden going wild, dog lead unused |
+    | W4 | The Lie | Hiding pain, pretending | Smile that doesn't reach eyes at family gathering |
+    | W5 | The Math | Trade-offs, rationing energy | Standing at stairs calculating cost |
+
+    ### WOUND Prompt Template
+    ```
+    {image_style} image. 1:1 format.
+    THE MOMENT: [Specific private moment — the one they never show anyone]
+    DEMOGRAPHIC: [From research]
+    EXPRESSION: [Raw, unguarded — exhaustion, grief, resignation. Natural eye color.]
+    SETTING: [CULTURALLY APPROPRIATE private space]
+    LIGHTING: [Harsh, real, unflattering — the light of truth]
+    This should feel like witnessing something private.
+    No text. No product.
+    ```
+
+    ## ENEMY Images (Reasons explaining mechanism/villain)
+
+    | Code | Name | Use When | The Visual |
+    |------|------|----------|------------|
+    | E1 | The Invasion | What's happening inside | Anatomical illustration as CRIME SCENE |
+    | E2 | The Theft | What's being stolen | Symbolic — hourglass bleeding out |
+    | E3 | The Betrayal | Failed solutions | Pile of empty bottles = years of lies |
+    | E4 | The Saboteur | Why nothing worked | Solutions bouncing off protected root cause |
+
+    ### ENEMY Prompt Template
+    ```
+    [Anatomical/Symbolic] illustration. 1:1 format.
+    CONCEPT: [Attack/Theft/Betrayal/Sabotage from research mechanism]
+    VISUAL LANGUAGE: [AGGRESSIVE — warfare, consumption, violation.]
+    COLOR: Attacker = violent reds, toxic yellows. Victim = pale, fading.
+    EMOTION: This should make them FURIOUS.
+    ZERO TEXT. No product.
+    ```
+
+    ## STAKES Images (Reasons showing terrifying future)
+
+    | Code | Name | Use When | The Terror |
+    |------|------|----------|------------|
+    | S1 | The Arrival | Where this leads | Care home, wheelchair, role reversal |
+    | S2 | The Last Time | Running out of time | Setting holiday table knowing it might be last |
+    | S3 | The Collateral Damage | Burden on family | Daughter's forehead on steering wheel |
+    | S4 | The Acceleration | Getting worse | Same stairs looking steeper |
+
+    ### STAKES Prompt Template
+    ```
+    {image_style} image. 1:1 format.
+    THE NIGHTMARE: [Specific feared future — made visible]
+    DEMOGRAPHIC: [From research — in the FUTURE setting]
+    EXPRESSION: [Quiet devastation, acceptance. Natural eye color.]
+    SETTING: [NOT warm home — somewhere they never wanted to end up]
+    This should be their 3am fear made visible.
+    No text. No product.
+    ```
+
+    ## VALIDATION Images (Reasons proving escape)
+
+    | Code | Name | Use When | The Relief |
+    |------|------|----------|------------|
+    | V1 | The Reversal | Have 95%+ stat | SAME scenario as WOUND but freed |
+    | V2 | The Reclamation | No strong stat | Doing the thing again |
+
+    ### VALIDATION Prompt Template
+    ```
+    {image_style} image. 1:1 format.
+    THE MIRROR: [Same setting as WOUND — but TRANSFORMED]
+    DEMOGRAPHIC: [Same person, different ENERGY — lighter, freer]
+    EXPRESSION: Not manic happiness. RELIEF. PEACE. NORMALCY. Natural eye color.
+    STAT BADGE (V1 only): Bold "[95%+]%" + "[metric]" — gold/white or green/white
+    SETTING: [Same or similar to WOUND image]
+    TEXT IN [TARGET LANGUAGE]. Small product in corner.
+    ```
+
+    ## HOPE Images (Final reason — desire achieved)
+
+    | Code | Name | Use When | The Vision |
+    |------|------|----------|------------|
+    | H1 | The Expansion | Ongoing desire | DOING the desire at a level they thought was gone |
+    | H2 | The Moment | Specific milestone | Actually THERE — at the destination, wedding, graduation |
+
+    ### HOPE Prompt Template
+    ```
+    {image_style} image. 1:1 format.
+    THE LIFE: [Specific desire — ACHIEVED and EXPANDED]
+    DEMOGRAPHIC: [From research — with light in their eyes]
+    EXPRESSION: ANTICIPATION. POSSIBILITY. Someone with FUTURE.
+    SETTING: [Expansive, open — the world of LIVING]
+    This should make the reader's chest open with possibility.
+    Small product in corner. No text.
+    ```
+
+    ---
+
+    # PART 7: WHEN TO SKIP IMAGES
+
+    ## Skip Logic
+
+    Not every reason needs an image. Skip when:
+
+    | Skip Condition | Rationale |
+    |----------------|-----------|
+    | Two consecutive WOUND reasons hit same emotional note | Avoid visual repetition |
+    | ENEMY reason is text-heavy mechanism explanation | Anatomical illustration may distract |
+    | Copy is exceptionally strong on its own | Image would dilute impact |
+    | Three or more images in a row | Reader fatigue |
+    | Research lacks clear visual for that specific fear | Forced image < no image |
+
+    ## Skip Recommendations by Arc
+
+    **9 Reasons (Problem Unaware):** 6-7 images total
+    **5 Reasons (Problem Aware):** 5 images (all)
+    **3 Reasons (Solution Aware):** 2-3 images
+
+    ## In output: Empty imagePrompt = Skip
+    For reasons where you skip the image, set imagePrompt to empty string "".
+
+    ---
+
+    # PART 8: PRODUCT IMAGE
+
+    ```
+    Product ingredients display. 1:1 format.
+    [PRODUCT NAME] bottle CENTER — realistic size (30-40% frame height).
+    BACKGROUND: Clean gradient appropriate to [TARGET MARKET].
+    INGREDIENTS: 3-4 from research with icons:
+    - [Ingredient 1]: "[Benefit — 1-6 words]"
+    - [Ingredient 2]: "[Benefit]"
+    - [Ingredient 3]: "[Benefit]"
+    - [Ingredient 4]: "[Benefit]"
+    Professional photography meets infographic. Premium aesthetic.
+    TEXT IN [TARGET LANGUAGE].
+    ```
+
+    ---
+
+    # PART 9: OUTPUT FORMAT
+
+    Output ONLY the regenerated imagePrompt fields matching the exact schema structure provided.
+    Fill in heroImagePrompt, each reason's imagePrompt (or empty string for skipped), and productImagePrompt.
+
+    Each prompt must be detailed, emotionally specific, and follow the templates above.
+
+    ## CRITICAL: COMPLETE EVERY FIELD
+
+    You MUST generate an image prompt for EVERY imagePrompt field in the output schema — no exceptions (unless skip logic applies to a specific reason, in which case use empty string).
+    The heroImagePrompt MUST contain all 3 hero versions.
+    The productImagePrompt MUST be filled.
+    Do NOT leave required imagePrompt fields empty or blank.
+
+    ---
+
+    ## INPUT
+
+    Offer Brief:
+    {offer_brief}
+
+    Listicle Copy:
+    {listicle_copy}
+
+    ## END OF LISTICLE IMAGE SOP
     """
