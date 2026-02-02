@@ -1,0 +1,370 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HikeListicleContent",
+  "description": "Template for Hike listicle. Please rewrite each attribute using the example provided below.",
+  "type": "object",
+  "required": [
+    "topbar",
+    "hero",
+    "section1",
+    "section2",
+    "section3",
+    "section4",
+    "section5",
+    "section6",
+    "section7",
+    "section8",
+    "section9",
+    "section10",
+    "section11",
+    "section12",
+    "sidebar",
+    "cta",
+    "footer"
+  ],
+  "properties": {
+    "topbar": {
+      "type": "object",
+      "required": [
+        "label"
+      ],
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Example: Countdown banner (Days:Hrs:Min:Sec format)."
+        }
+      }
+    },
+    "hero": {
+      "type": "object",
+      "required": [
+        "headline",
+        "date",
+        "author",
+        "rating"
+      ],
+      "properties": {
+        "headline": {
+          "type": "string",
+          "description": "Example: 10 Reasons Barefoot Shoes Help You Walk Pain-Free, According to a Podiatrist."
+        },
+        "date": {
+          "type": "string",
+          "description": "Example: January 2nd, 2025 | 10:35 am EST."
+        },
+        "author": {
+          "type": "object",
+          "required": [
+            "name",
+            "credentials"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Example: Dr. Marta Riniker."
+            },
+            "credentials": {
+              "type": "string",
+              "description": "Example: Podiatrist & Foot Health Expert."
+            }
+          }
+        },
+        "rating": {
+          "type": "object",
+          "required": [
+            "value",
+            "count"
+          ],
+          "properties": {
+            "value": {
+              "type": "string",
+              "description": "Example: 4.8."
+            },
+            "count": {
+              "type": "string",
+              "description": "Example: 5,467 Reviews."
+            }
+          }
+        }
+      }
+    },
+    "section1": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 1. Finally Relieve Your Foot Pain, Plantar Fasciitis, and Bunions."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: If you're suffering from foot pain—whether it's plantar fasciitis, bunions, or heel pain—you're not alone. I've worked with countless patients who have struggled with these issues for years. Traditional shoes only make the problem worse by forcing your feet into unnatural positions. Barefoot shoes with wide toe boxes, like the ones from Hike Footwear, are designed to allow your toes to spread naturally."
+        }
+      }
+    },
+    "section2": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 2. Let Your Feet Move Naturally for Lasting Pain Relief."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: One of the biggest culprits behind foot pain is the way traditional shoes restrict your natural foot movement. When your feet are confined in stiff, ill-fitting shoes, the pain often becomes a constant companion. But these barefoot shoes let your toes spread out, allowing natural alignment and strengthening the muscles in your feet and lower legs."
+        }
+      }
+    },
+    "section3": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 3. Wide Toe Box for a Comfortable, Pain-Free Fit."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Many patients with bunions, hammertoes, or wider feet struggle to find shoes that fit comfortably. Traditional shoes often make this worse. That's why I love that Hike Footwear offers a wide toe box, which allows your toes to spread and move freely. This design is incredibly important for preventing pain and misalignment."
+        }
+      }
+    },
+    "section4": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 4. Slip-Resistant Grip for Safety and Confidence."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: I've had patients who've experienced painful falls simply because their shoes didn't provide enough traction. That's why I'm so impressed by the slip-resistant grip of Hike Footwear. These shoes provide excellent stability and traction, so you can move with confidence and reduce the risk of falls."
+        }
+      }
+    },
+    "section5": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 5. Lightweight and Flexible for All-Day Comfort."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Traditional shoes can feel heavy and restrictive, especially after a long day. Hike Footwear's barefoot design is lightweight and flexible, allowing your feet to move naturally throughout the day. This reduces fatigue and makes walking more comfortable, even during extended periods."
+        }
+      }
+    },
+    "section6": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 6. Improve Your Posture and Alignment."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: When your feet are properly aligned, it positively affects your entire body. Barefoot shoes encourage better posture by allowing your feet to function as nature intended. This can help reduce pain not just in your feet, but also in your knees, hips, and lower back."
+        }
+      }
+    },
+    "section7": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 7. Perfect for Healthcare Workers and Active Lifestyles."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: Whether you're a healthcare worker on your feet all day, an athlete, or someone who simply wants more comfortable footwear, Hike Footwear's barefoot shoes are designed to support your active lifestyle. The combination of comfort, support, and natural movement makes them ideal for people who spend long hours on their feet."
+        }
+      }
+    },
+    "section8": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 8. Recommended by Experts—Real Results for Real People."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: As a podiatrist, I've seen the positive impact that barefoot shoes can have on my patients' foot health. The science behind barefoot footwear is well-established, and Hike Footwear has implemented these principles effectively. Real people are experiencing real results—reduced pain, improved mobility, and better overall foot health."
+        }
+      }
+    },
+    "section9": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 9. Easy to Clean and Maintain."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: For healthcare workers and people with active lifestyles, easy maintenance is crucial. Hike Footwear's barefoot shoes are designed to be easy to clean and maintain, making them practical for everyday use in various environments."
+        }
+      }
+    },
+    "section10": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: 10. Join Over 1,450,000+ Happy Customers."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: With over 1,450,000+ satisfied customers, Hike Footwear has already made a real difference for countless people. From everyday individuals to healthcare workers to athletes, these barefoot shoes are helping people improve their foot health, reduce pain, and enjoy better comfort. You deserve to be one of them!"
+        }
+      }
+    },
+    "section11": {
+      "type": "object",
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Dr. Marta's Personal Recommendation."
+        },
+        "body": {
+          "type": "string",
+          "description": "Example: If foot pain has been holding you back, I truly believe barefoot shoes can make a world of difference. They've helped my patients regain mobility, improve posture, and live pain-free. I highly recommend giving Hike Footwear a try. You won't regret it."
+        }
+      }
+    },
+    "section12": {
+      "type": "object",
+      "required": [
+        "title"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Try Hike Footwear Now - Experience the Difference!"
+        }
+      }
+    },
+    "sidebar": {
+      "type": "object",
+      "required": [
+        "title",
+        "subtitle",
+        "ctaButton"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Example: Finally Reduce."
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Example: Foot Health."
+        },
+        "ctaButton": {
+          "type": "string",
+          "description": "Example: CLICK TO UNLOCK OFFER."
+        }
+      }
+    },
+    "cta": {
+      "type": "object",
+      "required": [
+        "primary",
+        "secondary"
+      ],
+      "properties": {
+        "primary": {
+          "type": "string",
+          "description": "Example: CLAIM YOUR 50% DISCOUNT NOW."
+        },
+        "secondary": {
+          "type": "string",
+          "description": "Example: CLICK TO UNLOCK OFFER."
+        }
+      }
+    },
+    "footer": {
+      "type": "object",
+      "required": [
+        "copyright",
+        "disclaimer",
+        "links"
+      ],
+      "properties": {
+        "copyright": {
+          "type": "string",
+          "description": "Example: HIKE FOOTWEAR - Copyright 2025 - All Rights Reserved."
+        },
+        "disclaimer": {
+          "type": "string",
+          "description": "Example: This product is not intended to diagnose, treat, cure, or prevent any disease. Individual results may vary. Testimonials are not representative of typical results. Always consult with a qualified healthcare professional before starting any health program. The information on this page is for informational purposes only and should not be considered medical advice. These statements have not been evaluated by the Food and Drug Administration."
+        },
+        "links": {
+          "type": "object",
+          "required": [
+            "privacyPolicy",
+            "termsOfService",
+            "refundPolicy"
+          ],
+          "properties": {
+            "privacyPolicy": {
+              "type": "string",
+              "description": "Example: Privacy Policy."
+            },
+            "termsOfService": {
+              "type": "string",
+              "description": "Example: Terms Of Service."
+            },
+            "refundPolicy": {
+              "type": "string",
+              "description": "Example: Refund Policy."
+            }
+          }
+        }
+      }
+    }
+  }
+}
