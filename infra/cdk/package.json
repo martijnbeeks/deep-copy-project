@@ -1,0 +1,33 @@
+{
+  "name": "deep-copy-cdk",
+  "version": "0.1.0",
+  "private": true,
+  "bin": {
+    "deep-copy-cdk": "bin/deep-copy-cdk.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk",
+    "deploy": "cdk deploy --all",
+    "synth": "cdk synth"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.152",
+    "aws-cdk": "2.154.1",
+    "esbuild": "^0.21.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.631.0",
+    "@aws-sdk/client-ecs": "^3.631.0",
+    "aws-cdk-lib": "2.154.1",
+    "constructs": "^10.3.0",
+    "source-map-support": "^0.5.21",
+    "uuid": "^9.0.1"
+  }
+}

@@ -1,0 +1,100 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/ai_pipeline",
+        },
+
+        {
+            "name": "Debug jobs",
+            "type": "python",
+            "python": "${workspaceFolder}/cdk/lib/lambdas/process_job/.venv/bin/python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cdk/lib/lambdas/process_job/handler.py",
+            "args": ["run"],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}/cdk/lib/lambdas/process_job",
+            "env": {
+                "AWS_PROFILE": "personal-cdk-dev",
+                "JOB_EVENT_JSON": "{\"sales_page_url\": \"https://www.sciatiease.com/sciatiease.php\", \"project_name\": \"meritrelief\", \"swipe_file_id\": \"L00002\", \"advertorial_type\": \"Advertorial\", \"customer_avatars\": [{\"persona_name\": \"Active Senior\", \"description\": \"Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain\", \"age_range\": \"60-75\", \"gender\": \"both\", \"key_buying_motivation\": \"Seeking non-invasive pain relief to maintain active lifestyle\"}, {\"persona_name\": \"Desk-Bound Professional\", \"description\": \"Office worker sitting 8+ hours daily experiencing lower back pain\", \"age_range\": \"30-45\", \"gender\": \"both\", \"key_buying_motivation\": \"Quick relief from work-related pain\"}]}",
+                "dev_mode": "false",
+                "RESULTS_BUCKET": "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih",
+            }
+        },
+        {
+            "name": "Debug jobs V2",
+            "type": "python",
+            "python": "${workspaceFolder}/cdk/lib/lambdas/process_job_v2/.venv/bin/python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cdk/lib/lambdas/process_job_v2/handler.py",
+            "args": ["run"],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}/cdk/lib/lambdas/process_job_v2",
+            "env": {
+                "AWS_PROFILE": "personal-cdk-dev",
+                "JOB_EVENT_JSON": "{\"sales_page_url\": \"https://www.sciatiease.com/sciatiease.php\", \"project_name\": \"meritrelief\", \"swipe_file_id\": \"L00002\", \"advertorial_type\": \"Advertorial\"}",
+                "RESULTS_BUCKET": "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih",
+            }
+        },
+        {
+            "name": "Debug avatar",
+            "type": "python",
+            "python": "${workspaceFolder}/cdk/lib/lambdas/extract_avatars/.venv/bin/python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cdk/lib/lambdas/extract_avatars/handler.py",
+            "args": ["run"],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}/cdk/lib/lambdas/extract_avatars",
+            "env": {
+                "AWS_PROFILE": "personal-cdk-dev",
+                "job_id": "2a122590-f4a3-4770-a275-81e7cc5d8062",
+                "url": "https://trynewaura.com/products/seborrheic-dermatitis-cream",
+                "RESULTS_BUCKET": "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih",
+                "dev_mode": "false",
+            }
+        },
+        {
+            "name": "Debug swipe",
+            "type": "python",
+            "python": "${workspaceFolder}/cdk/lib/lambdas/write_swipe/.venv/bin/python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cdk/lib/lambdas/write_swipe/handler.py",
+            "args": ["run"],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}/cdk/lib/lambdas/write_swipe",
+            "env": {
+                "AWS_PROFILE": "personal-cdk-dev",
+                "dev_mode": "false",
+                "RESULTS_BUCKET": "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih",
+            }
+        },
+        {
+            "name": "Image Gen Process",
+            "type": "python",
+            "python": "${workspaceFolder}/cdk/lib/lambdas/image_gen_process/.venv/bin/python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cdk/lib/lambdas/image_gen_process/handler.py",
+            "args": ["run"],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}/cdk/lib/lambdas/image_gen_process",
+            "env": {
+                "AWS_PROFILE": "personal-cdk-dev",
+                "dev_mode": "false",
+                "RESULTS_BUCKET": "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih",
+            }
+        }
+    ]
+}

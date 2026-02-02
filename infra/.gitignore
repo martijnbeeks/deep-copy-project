@@ -1,0 +1,16 @@
+cdk/node_modules
+cdk.out
+.DS_Store
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pywz
+*.pyzw
+.env
+*.txt
+!**/lambdas/**/content/*.txt
+.venv/
+**/lambdas/**/.venv/

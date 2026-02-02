@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: deepcopy-write-swipe
+Version: 0.1.0
+Summary: Lambda function for writing swipe files
+Author-email: Prelander <dev@example.com>
+Requires-Python: >=3.12
+Requires-Dist: anthropic>=0.75.0
+Requires-Dist: beautifulsoup4>=4.12.0
+Requires-Dist: boto3>=1.34.0
+Requires-Dist: openai==1.99.3
+Requires-Dist: pydantic==2.6.1
+Requires-Dist: requests>=2.31.0
+Requires-Dist: docstring-parser>=0.16

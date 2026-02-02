@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "currency": "USD",
+  "notes": "Edit this file to match your contracted model pricing. Costs are per 1M tokens unless specified otherwise.",
+  "rates": [
+    {
+      "provider": "openai",
+      "model": "gpt-5-mini",
+      "unit": "input_token_1m",
+      "usd": 0.25
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5-mini",
+      "unit": "output_token_1m",
+      "usd": 2.0
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-4o",
+      "unit": "input_token_1m",
+      "usd": 2.5
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-4o",
+      "unit": "output_token_1m",
+      "usd": 10.0
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "unit": "input_token_1m",
+      "usd": 3.0
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "unit": "output_token_1m",
+      "usd": 15.0
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "unit": "cache_read_input_token_1m",
+      "usd": 0.3
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "unit": "cache_creation_input_token_1m",
+      "usd": 3.75
+    },
+    {
+      "provider": "google",
+      "model": "gemini-3-pro-image-preview",
+      "unit": "input_token_1m",
+      "usd": 2.0
+    },
+    {
+      "provider": "google",
+      "model": "gemini-3-pro-image-preview",
+      "unit": "output_token_1m",
+      "usd": 0.0
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-4o",
+      "unit": "image_generation",
+      "usd": 0.0
+    },
+    {
+      "provider": "google",
+      "model": "gemini-3-pro-image-preview",
+      "unit": "image_generation",
+      "usd": 0.134
+    },
+    {
+      "provider": "perplexity",
+      "model": "sonar-deep-research",
+      "unit": "input_token_1m",
+      "usd": 2.0
+    },
+    {
+      "provider": "perplexity",
+      "model": "sonar-deep-research",
+      "unit": "output_token_1m",
+      "usd": 8.0
+    },
+    {
+      "provider": "perplexity",
+      "model": "sonar-deep-research",
+      "unit": "citation_token_1m",
+      "usd": 2.0
+    },
+    {
+      "provider": "perplexity",
+      "model": "sonar-deep-research",
+      "unit": "search_query_1k",
+      "usd": 5.0
+    },
+    {
+      "provider": "perplexity",
+      "model": "sonar-deep-research",
+      "unit": "reasoning_token_1m",
+      "usd": 3.0
+    },
+    {
+      "provider": "perplexity",
+      "model": "sonar-pro",
+      "unit": "input_token_1m",
+      "usd": 3.0
+    },
+    {
+      "provider": "perplexity",
+      "model": "sonar-pro",
+      "unit": "output_token_1m",
+      "usd": 15.0
+    },
+    {
+      "provider": "perplexity",
+      "model": "sonar-reasoning-pro",
+      "unit": "input_token_1m",
+      "usd": 2.0
+    },
+    {
+      "provider": "perplexity",
+      "model": "sonar-reasoning-pro",
+      "unit": "output_token_1m",
+      "usd": 8.0
+    },
+    {
+      "provider": "perplexity",
+      "model": "sonar-reasoning",
+      "unit": "input_token_1m",
+      "usd": 1.0
+    },
+    {
+      "provider": "perplexity",
+      "model": "sonar-reasoning",
+      "unit": "output_token_1m",
+      "usd": 5.0
+    },
+    {
+      "provider": "perplexity",
+      "model": "sonar",
+      "unit": "input_token_1m",
+      "usd": 1.0
+    },
+    {
+      "provider": "perplexity",
+      "model": "sonar",
+      "unit": "output_token_1m",
+      "usd": 1.0
+    }
+  ]
+}
+
+

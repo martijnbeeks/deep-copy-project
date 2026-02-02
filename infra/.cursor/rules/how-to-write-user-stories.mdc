@@ -1,0 +1,135 @@
+---
+alwaysApply: false
+---
+# User Story Rules (Compressed)
+
+## Purpose
+
+User Stories (US) are *execution instructions, not discussion. They must tell an execution agent **what to change, where, and when it is done*.
+
+---
+
+## Mandatory Structure (in this order)
+
+### Title
+
+⁠ text
+# Story <ID> — <concise action>
+ ⁠
+
+One sentence. No fluff.
+
+### Status
+
+⁠ text
+**Status:** 🟡 DRAFT | 🟢 READY | 🟠 CODE WRITTEN (NEEDS TESTING) | ✅ COMPLETED
+ ⁠
+
+### Role
+
+⁠ text
+**Role:** <single accountable role>
+ ⁠
+
+### Context
+
+Only what is needed to understand *what is broken or risky today*.
+
+### Goal
+
+One paragraph. Testable outcome. No implementation details.
+
+### Dependency
+
+Explicit list or ⁠ None ⁠.
+
+### Current Implementation (must change)
+
+•⁠  ⁠Concrete file paths
+•⁠  ⁠Headings (⁠ ### 1) ⁠, ⁠ ### 2) ⁠ …)
+•⁠  ⁠Code snippets + line ranges
+•⁠  ⁠Explicit inconsistencies / bugs
+
+### Desired Implementation (target state)
+
+•⁠  ⁠Structural outcome
+•⁠  ⁠Ownership / centralization
+•⁠  ⁠Naming conventions
+
+### Execution Phases (required)
+
+User Stories must only cover execution (investigation is done before the US is written) and must explicitly separate phases so “code written” and “proof it works” are never skipped.
+
+•⁠  ⁠*Implementation (code written)*: the exact code changes to make (files + what to change).
+•⁠  ⁠*Testing / Verification*: how to confirm it works (commands to run and/or UI steps; expected result).
+
+### Task
+
+Numbered, checkable steps. No vague verbs. Steps must be written under the phases above (or clearly reference them).
+
+### Constraints
+
+Explicit limits (or say ⁠ None ⁠).
+
+### Acceptance Criteria
+
+Binary, verifiable, non-subjective.
+
+### Files to Edit (Expected)
+
+Concrete paths only.
+
+---
+
+## Completion Rules (Hard)
+
+When a US is finished:
+
+1.⁠ ⁠*Preserve original US text*
+1.⁠ ⁠If code is written but testing/verification is not yet done, set:
+
+⁠ text
+**Status:** 🟠 CODE WRITTEN (NEEDS TESTING)
+ ⁠
+
+1.⁠ ⁠Only after Testing / Verification passes, change status to:
+
+⁠ text
+**Status:** ✅ COMPLETED
+ ⁠
+
+1.⁠ ⁠Move file to:
+
+⁠ text
+user_stories/completed/
+ ⁠
+
+---
+
+## Implementation Summary (Required)
+
+For every completed US, add:
+
+⁠ text
+user_stories/completed/
+  ├── US_<ID>.md
+  └── US_<ID>_IMPLEMENTATION_SUMMARY.md
+ ⁠
+
+Summary must include:
+
+•⁠  ⁠What changed (per file)
+•⁠  ⁠What did NOT change (and why)
+•⁠  ⁠Deviations from US
+•⁠  ⁠New risks / tech debt
+
+---
+
+## Non‑Negotiables
+
+•⁠  ⁠Never delete or rewrite a US
+•⁠  ⁠No silent scope expansion
+•⁠  ⁠New scope = new US
+•⁠  ⁠If unclear → stop and ask
+
+Violation = invalid execution.

@@ -1,0 +1,3338 @@
+openapi: 3.0.3
+info:
+  title: DeepCopy API
+  version: 1.0.0
+  description: |
+    API for submitting AI processing jobs and retrieving their status and results.
+
+    Authentication (OAuth2 client credentials via Amazon Cognito):
+
+    ```bash
+    # Set endpoints (from CDK outputs)
+    API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+    TOKEN_ENDPOINT="https://deepcopy-613663743323-eu-west-1.auth.eu-west-1.amazoncognito.com/oauth2/token"
+
+    # Your app client credentials (retrieve secret from Cognito console)
+    CLIENT_ID="<your-client-id>"
+    CLIENT_SECRET="<your-client-secret>"
+
+    # Request access token with read+write scopes
+    ACCESS_TOKEN=$(curl -s -u "$CLIENT_ID:$CLIENT_SECRET" \
+      -d "grant_type=client_credentials&scope=https://deep-copy.api/read https://deep-copy.api/write" \
+      "$TOKEN_ENDPOINT" | jq -r .access_token)
+
+    echo "Token acquired: ${#ACCESS_TOKEN} chars"
+
+    # Submit a job
+    curl -sS -X POST \
+      -H "Authorization: Bearer $ACCESS_TOKEN" \
+      -H "content-type: application/json" \
+      -d '{
+        "sales_page_url": "https://try.meritrelief.com/",
+        "project_name": "meritrelief",
+        "advertorial_type": "Listicle",
+        "persona": "Health-conscious professionals",
+        "age_range": "30-45",
+        "gender": "female"
+      }' \
+      "${API_URL}jobs"
+
+    # Get job status (replace with real jobId)
+    curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID"
+
+    # Get job result JSON (404 until available)
+    curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID/result"
+    ```
+servers:
+  - url: https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/
+security:
+  - cognitoOAuth2: [ ]
+paths:
+  /jobs:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    post:
+      summary: Submit a new job
+      operationId: submitJob
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/write
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitJobRequest'
+            examples:
+              minimal:
+                summary: Minimal payload
+                value: {}
+              full:
+                summary: Full payload
+                value:
+                  sales_page_url: "https://try.meritrelief.com/"
+                  project_name: "meritrelief"
+                  advertorial_type: "Listicle"
+                  customer_avatars:
+                    - persona_name: "Active Senior"
+                      characteristics:
+                        - "Active lifestyle"
+                        - "Gardening enthusiast"
+                        - "Chronic pain"
+                      description: "Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain"
+                      age_range: "60-75"
+                      gender: "both"
+                      key_buying_motivation: "Seeking non-invasive pain relief to maintain active lifestyle"
+                      pain_point: "Chronic sciatic pain prevents them from enjoying favorite activities like gardening"
+                      emotion: "Frustrated and limited, feeling their independence slipping away"
+                      desire: "A natural solution that allows them to stay active without relying on prescription painkillers"
+                      objections:
+                        - "Will this actually work for chronic pain?"
+                        - "Is it safe for someone my age?"
+                        - "Can I afford another wellness product?"
+                      failed_alternatives:
+                        - "Prescription pain medication with unwanted side effects"
+                        - "Physical therapy that didn't provide lasting relief"
+                        - "Over-the-counter pain relievers that only work temporarily"
+                    - persona_name: "Desk-Bound Professional"
+                      characteristics:
+                        - "Standing all day"
+                        - "Work-related pain"
+                        - "Evening fatigue"
+                      description: "Office worker sitting 8+ hours daily experiencing lower back pain"
+                      age_range: "30-45"
+                      gender: "both"
+                      key_buying_motivation: "Quick relief from work-related pain"
+                      pain_point: "Stands all day at work (nurses, retail staff, warehouse workers). Feet ache, swell, and feel heavy every evening."
+                      emotion: "Feels drained and defeated when coming home, wants relief to enjoy family time instead of collapsing on the couch."
+                      desire: "Quick daily solution that soothes feet and restores energy without expensive spa visits."
+                      objections:
+                        - "Will this actually help after a long shift?"
+                        - "Can I afford another wellness expense?"
+                        - "Do I have time to use this daily?"
+                      failed_alternatives:
+                        - "Compression socks that don't provide enough relief"
+                        - "Soaking feet in warm water (temporary relief only)"
+                        - "Pain medication with unwanted side effects"
+      responses:
+        '202':
+          description: Job accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitJobResponse'
+              examples:
+                accepted:
+                  value:
+                    jobId: "c3f0e0c4-3a61-4c52-8b5a-2e0a8b8b4a5f"
+                    taskArn: "arn:aws:ecs:eu-west-1:123456789012:task/cluster/1234567890abcdef"
+                    status: "SUBMITTED"
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-codeSamples:
+        - lang: bash
+          label: curl (submit)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -X POST \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "content-type: application/json" \
+              -d '{
+                "sales_page_url": "https://try.meritrelief.com/",
+                "project_name": "meritrelief",
+                "advertorial_type": "Listicle",
+                "customer_avatars": [
+                  {
+                    "persona_name": "Active Senior",
+                    "characteristics": ["Active lifestyle", "Gardening enthusiast", "Chronic pain"],
+                    "description": "Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain",
+                    "age_range": "60-75",
+                    "gender": "both",
+                    "key_buying_motivation": "Seeking non-invasive pain relief to maintain active lifestyle"
+                  }
+                ]
+              }' \
+              "${API_URL}jobs"
+  /jobs/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get job status
+      operationId: getJob
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatusResponse'
+        '404':
+          description: Job not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Not found"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (status)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID"
+  /jobs/{id}/result:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get job result
+      operationId: getJobResult
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      responses:
+        '200':
+          description: Job result JSON or text
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResult'
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: Result not available
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Result not available"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (result)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID/result"
+  /dev/jobs:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    post:
+      summary: Submit a new job (DEV MODE)
+      description: Submits a job in development mode. The backend will use mock data instead of running full AI processing.
+      operationId: submitJobDev
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/write
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitJobRequest'
+      responses:
+        '202':
+          description: Job accepted (Dev Mode)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitJobResponse'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /avatars/extract:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    post:
+      summary: Submit an avatar extraction job
+      operationId: submitAvatarExtraction
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: URL of the product page to analyze
+            examples:
+              sciatica:
+                summary: Sciatica product
+                value:
+                  url: "https://www.sciatiease.com/sciatiease.php"
+      responses:
+        '202':
+          description: Avatar extraction job accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitAvatarExtractionResponse'
+              examples:
+                accepted:
+                  value:
+                    jobId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    status: "SUBMITTED"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-codeSamples:
+        - lang: bash
+          label: curl (submit extraction)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -X POST \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "content-type: application/json" \
+              -d '{"url": "https://www.sciatiease.com/sciatiease.php"}' \
+              "${API_URL}avatars/extract"
+  /avatars/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Avatar extraction job ID
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get avatar extraction job status
+      operationId: getAvatarExtractionStatus
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatusResponse'
+        '404':
+          description: Job not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Not found"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (get status)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}avatars/YOUR_JOB_ID"
+  /avatars/{id}/result:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Avatar extraction job ID
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get avatar extraction results
+      operationId: getAvatarExtractionResult
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      responses:
+        '200':
+          description: Avatar extraction results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvatarExtractionResponse'
+        '404':
+          description: Result not available
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Result not available"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (get result)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}avatars/YOUR_JOB_ID/result"
+  /dev/avatars/extract:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    post:
+      summary: Submit an avatar extraction job (DEV MODE)
+      description: Submits an avatar extraction job in development mode. Returns mock avatar results.
+      operationId: submitAvatarExtractionDev
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: URL of the product page to analyze
+      responses:
+        '202':
+          description: Avatar extraction job accepted (Dev Mode)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitAvatarExtractionResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /swipe-files/generate:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    post:
+      summary: Submit a swipe file generation job
+      operationId: submitSwipeFileGeneration
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [original_job_id, avatar_id, angle_id]
+              properties:
+                original_job_id:
+                  type: string
+                  format: uuid
+                  description: The job ID of the original comprehensive analysis job
+                avatar_id:
+                  type: string
+                  format: uuid
+                  description: The ID of the avatar to target
+                angle_id:
+                  type: string
+                  format: uuid
+                  description: The ID of the marketing angle to use
+                swipe_file_ids:
+                  type: array
+                  description: The IDs of the swipe files to generate
+                  items:
+                    type: string
+                    format: uuid
+                image_style:
+                  type: string
+                  enum: [realistic, photorealistic, illustration]
+                  default: realistic
+                  description: Image prompt style to use for generated image prompts
+            examples:
+              example:
+                summary: Generate swipe files for a specific avatar and angle ID
+                value:
+                  original_job_id: "03479dbf-bc4c-4472-80ff-b11b561b8777"
+                  avatar_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  angle_id: "b2c3d4e5-f6g7-8901-bcde-f23456789012"
+                  image_style: "realistic"
+      responses:
+        '202':
+          description: Swipe file generation job accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitSwipeFileResponse'
+              examples:
+                accepted:
+                  value:
+                    jobId: "03479dbf-bc4c-4472-80ff-b11b561b8777-swipe"
+                    status: "SUBMITTED"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-codeSamples:
+        - lang: bash
+          label: curl (submit swipe file generation)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -X POST \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "content-type: application/json" \
+              -d '{
+                "original_job_id": "03479dbf-bc4c-4472-80ff-b11b561b8777",
+                "avatar_id": "YOUR_AVATAR_ID",
+                "angle_id": "YOUR_ANGLE_ID"
+              }' \
+              "${API_URL}swipe-files/generate"
+  /swipe-files/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Swipe file generation job ID
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get swipe file generation job status
+      operationId: getSwipeFileGenerationStatus
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatusResponse'
+        '404':
+          description: Job not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Not found"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (get status)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}swipe-files/YOUR_JOB_ID"
+  /swipe-files/{id}/result:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Swipe file generation job ID
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get swipe file generation results
+      operationId: getSwipeFileGenerationResult
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      responses:
+        '200':
+          description: Swipe file generation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SwipeFileGenerationResponse'
+        '404':
+          description: Result not available
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Result not available"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (get result)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}swipe-files/YOUR_JOB_ID/result"
+  /image-gen/generate:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    post:
+      summary: Submit an image generation job
+      operationId: submitImageGen
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitImageGenRequest'
+            examples:
+              minimal:
+                summary: Minimal payload
+                value:
+                  selectedAvatar: "Men 50-65, skeptical, wants fast relief"
+                  selectedAngles:
+                    - "Pain relief without pills"
+                    - "Get back to walking comfortably"
+              full:
+                summary: Full payload
+                value:
+                  selectedAvatar: "Men 50-65, skeptical, wants fast relief"
+                  selectedAngles:
+                    - "Pain relief without pills"
+                    - "Get back to walking comfortably"
+                  foundationalDocText: "Long research/context text..."
+                  forcedReferenceImageIds:
+                    - "12.png"
+                    - "23.webp"
+                  uploadedReferenceImageUrls:
+                    - "https://imagedelivery.net/abc123/ref-image-1.png"
+                    - "https://imagedelivery.net/abc123/ref-image-2.webp"
+                  productImageUrls:
+                    - "https://example-bucket.s3.eu-west-1.amazonaws.com/presigned-url"
+                  language: "english"
+                  productName: "meritrelief"
+                  imageGenerationProvider: "openai"
+      responses:
+        '202':
+          description: Job accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitJobResponse'
+              examples:
+                accepted:
+                  value:
+                    jobId: "c3f0e0c4-3a61-4c52-8b5a-2e0a8b8b4a5f"
+                    status: "SUBMITTED"
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-codeSamples:
+        - lang: bash
+          label: curl (submit image-gen)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -X POST \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "content-type: application/json" \
+              -d '{
+                "selectedAvatar": "Men 50-65, skeptical, wants fast relief",
+                "selectedAngles": ["Pain relief without pills", "Get back to walking comfortably"],
+                "productImageUrls": ["https://example-bucket.s3.eu-west-1.amazonaws.com/presigned-url"],
+                "productName": "meritrelief",
+                "language": "english"
+              }' \
+              "${API_URL}image-gen/generate"
+  /image-gen/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get image generation job status
+      operationId: getImageGenJob
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatusResponse'
+        '404':
+          description: Job not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Not found"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (status)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}image-gen/YOUR_JOB_ID"
+  /image-gen/{id}/result:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get image generation results
+      operationId: getImageGenResult
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      responses:
+        '200':
+          description: Image generation result JSON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageGenResult'
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: Result not available
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Result not available"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (result)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}image-gen/YOUR_JOB_ID/result"
+  /prelander-images/generate:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    post:
+      summary: Submit a prelander image generation job
+      operationId: submitPrelanderImages
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitPrelanderImagesRequest'
+            examples:
+              minimal:
+                summary: Minimal payload
+                value:
+                  prompts:
+                    - role: hero
+                      prompt: "A professional photograph of a person experiencing joint relief..."
+              full:
+                summary: Full payload
+                value:
+                  templateId: "A00005"
+                  type: "realistic"
+                  prompts:
+                    - role: hero
+                      prompt: "A professional photograph of a person experiencing joint relief..."
+                    - role: section
+                      index: 0
+                      prompt: "An image showing morning stiffness relief..."
+                    - role: section
+                      index: 1
+                      prompt: "A visual representation of joint inflammation..."
+                    - role: product
+                      prompt: "Product bottle on white background, professional photography..."
+                  productImageUrl: "https://cdn.example.com/uploaded/product-image-xyz.jpg"
+      responses:
+        '202':
+          description: Job accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitJobResponse'
+              examples:
+                accepted:
+                  value:
+                    jobId: "c3f0e0c4-3a61-4c52-8b5a-2e0a8b8b4a5f"
+                    status: "SUBMITTED"
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-codeSamples:
+        - lang: bash
+          label: curl (submit prelander-images)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -X POST \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "content-type: application/json" \
+              -d '{
+                "templateId": "A00005",
+                "type": "realistic",
+                "prompts": [
+                  {"role": "hero", "prompt": "A professional photograph..."},
+                  {"role": "section", "index": 0, "prompt": "An image showing..."},
+                  {"role": "product", "prompt": "Product bottle on white background..."}
+                ],
+                "productImageUrl": "https://cdn.example.com/product.jpg"
+              }' \
+              "${API_URL}prelander-images/generate"
+  /prelander-images/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get prelander image generation job status
+      operationId: getPrelanderImagesJob
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatusResponse'
+        '404':
+          description: Job not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Not found"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (status)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}prelander-images/YOUR_JOB_ID"
+  /prelander-images/{id}/result:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get prelander image generation results
+      operationId: getPrelanderImagesResult
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      responses:
+        '200':
+          description: Prelander image generation result JSON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrelanderImagesResult'
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: Result not available
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Result not available"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (result)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}prelander-images/YOUR_JOB_ID/result"
+  /dev/swipe-files/generate:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    post:
+      summary: Submit a swipe file generation job (DEV MODE)
+      description: Submits a swipe file generation job in development mode. Returns mock swipe files.
+      operationId: submitSwipeFileGenerationDev
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [original_job_id, avatar_id, angle_id]
+              properties:
+                original_job_id:
+                  type: string
+                  format: uuid
+                  description: The job ID of the original comprehensive analysis job
+                avatar_id:
+                  type: string
+                  format: uuid
+                  description: The ID of the avatar to target
+                angle_id:
+                  type: string
+                  format: uuid
+                  description: The ID of the marketing angle to use
+                swipe_file_ids:
+                  type: array
+                  description: The IDs of the swipe files to generate
+                  items:
+                    type: string
+                    format: uuid
+                image_style:
+                  type: string
+                  enum: [realistic, photorealistic, illustration]
+                  default: realistic
+                  description: Image prompt style to use for generated image prompts
+      responses:
+        '202':
+          description: Swipe file generation job accepted (Dev Mode)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitSwipeFileResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  # ===== V2 API Endpoints =====
+  /v2/jobs:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    post:
+      summary: Submit a new job (V2 - General Research Flow)
+      description: |
+        V2 endpoint for submitting jobs using the new general research flow.
+        This endpoint performs deep research to automatically identify multiple customer avatars
+        and generates marketing angles for each.
+        
+        **Breaking changes from v1:**
+        - `sales_page_url` and `project_name` are now required
+        - `customer_avatars`, `persona`, and `age_range` fields are rejected (400 error)
+        - Response includes `identified_avatars`, multiple `avatar_sheet` entries, and `necessary_beliefs`
+      operationId: submitJobV2
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitJobV2Request'
+            examples:
+              minimal:
+                summary: Minimal required payload
+                value:
+                  sales_page_url: "https://try.meritrelief.com/"
+                  project_name: "meritrelief"
+              full:
+                summary: Full payload with optional fields
+                value:
+                  sales_page_url: "https://try.meritrelief.com/"
+                  project_name: "meritrelief"
+                  advertorial_type: "Listicle"
+                  research_requirements: "Focus on natural ingredients and FDA approval status"
+                  gender: "Female"
+                  location: "USA"
+      responses:
+        '202':
+          description: Job accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitJobResponse'
+              examples:
+                accepted:
+                  value:
+                    jobId: "c3f0e0c4-3a61-4c52-8b5a-2e0a8b8b4a5f"
+                    status: "SUBMITTED"
+        '400':
+          description: Invalid request body (missing required fields or deprecated fields used)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                deprecated_fields:
+                  summary: Deprecated fields used
+                  value:
+                    error: "Deprecated fields not allowed in v2 API: customer_avatars"
+                missing_required:
+                  summary: Missing required fields
+                  value:
+                    error: "Missing required fields: project_name, sales_page_url"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-codeSamples:
+        - lang: bash
+          label: curl (submit v2)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -X POST \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "content-type: application/json" \
+              -d '{
+                "sales_page_url": "https://try.meritrelief.com/",
+                "project_name": "meritrelief",
+                "research_requirements": "Focus on natural ingredients",
+                "gender": "Female",
+                "location": "USA"
+              }' \
+              "${API_URL}v2/jobs"
+  /v2/jobs/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get job status (V2)
+      operationId: getJobV2
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatusResponse'
+        '404':
+          description: Job not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Not found"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (status v2)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}v2/jobs/YOUR_JOB_ID"
+  /v2/jobs/{id}/result:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    get:
+      summary: Get job result (V2)
+      description: |
+        Returns the comprehensive job result including:
+        - `avatars`: Full avatar details with marketing angles for each
+        - `necessary_beliefs_per_avatar`: 6 necessary beliefs extracted per avatar
+        - `summary`: Copywriter-friendly summary of all outputs
+      operationId: getJobResultV2
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/read
+      responses:
+        '200':
+          description: Job result JSON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResultV2'
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: Result not available
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Result not available"
+        '500':
+          description: Server error
+          content:
+            text/plain:
+              schema:
+                type: string
+      x-codeSamples:
+        - lang: bash
+          label: curl (result v2)
+          source: |-
+            API_URL="https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/"
+            curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}v2/jobs/YOUR_JOB_ID/result"
+  /dev/v2/jobs:
+    options:
+      summary: CORS preflight
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Access-Control-Allow-Origin: { $ref: '#/components/headers/AccessControlAllowOrigin' }
+            Access-Control-Allow-Headers: { $ref: '#/components/headers/AccessControlAllowHeaders' }
+            Access-Control-Allow-Methods: { $ref: '#/components/headers/AccessControlAllowMethods' }
+    post:
+      summary: Submit a new job (V2 - DEV MODE)
+      description: |
+        V2 endpoint in development mode. Uses pre-computed mock data instead of running full AI processing.
+        Same validation rules as production V2 endpoint.
+      operationId: submitJobV2Dev
+      security:
+        - cognitoOAuth2:
+            - https://deep-copy.api/write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitJobV2Request'
+      responses:
+        '202':
+          description: Job accepted (Dev Mode)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitJobResponse'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    cognitoOAuth2:
+      type: oauth2
+      description: |
+        OAuth2 client credentials against Amazon Cognito User Pool domain.
+        Use the token endpoint output by the stack to obtain an access token.
+      flows:
+        clientCredentials:
+          tokenUrl: https://deepcopy-613663743323-eu-west-1.auth.eu-west-1.amazoncognito.com/oauth2/token
+          scopes:
+            https://deep-copy.api/read: Read jobs and results
+            https://deep-copy.api/write: Submit jobs
+  schemas:
+    SubmitJobV2Request:
+      type: object
+      description: Request body for V2 jobs endpoint (general research flow)
+      required: [sales_page_url, project_name]
+      additionalProperties: false
+      properties:
+        sales_page_url:
+          type: string
+          format: uri
+          description: URL to the sales page to analyze (required)
+        project_name:
+          type: string
+          description: Name of the project (required)
+        advertorial_type:
+          type: string
+          description: Type of advertorial to generate (e.g., 'Listicle', 'Advertorial')
+        research_requirements:
+          type: string
+          description: Optional specific requirements or focus areas for the research
+        gender:
+          type: string
+          description: Optional gender target (e.g., 'Male', 'Female', 'N/A')
+        location:
+          type: string
+          description: Optional location target
+      example:
+        sales_page_url: "https://try.meritrelief.com/"
+        project_name: "meritrelief"
+        advertorial_type: "Listicle"
+        research_requirements: "Focus on natural ingredients"
+        gender: "Female"
+        location: "USA"
+    JobResultV2:
+      type: object
+      description: Structured JSON produced by the V2 pipeline with multiple avatars and necessary beliefs.
+      additionalProperties: false
+      properties:
+        project_name:
+          type: string
+        timestamp_iso:
+          type: string
+          format: date-time
+        job_id:
+          type: string
+        api_version:
+          type: string
+          description: API version used to submit the job (v2)
+        results:
+          type: object
+          additionalProperties: false
+          properties:
+            research_page_analysis:
+              type: string
+              description: Analysis of the sales page
+            deep_research_prompt:
+              type: string
+              description: The prompt used for deep research
+            deep_research_output:
+              type: string
+              description: Raw output from deep research
+            marketing_avatars:
+              type: array
+              description: List of marketing avatars with their generated angles and necessary beliefs
+              items:
+                type: object
+                properties:
+                  avatar:
+                    $ref: '#/components/schemas/Avatar'
+                  angles:
+                    $ref: '#/components/schemas/AvatarMarketingAngles'
+                  necessary_beliefs:
+                    type: string
+                    description: 6 necessary beliefs extracted for this avatar
+            summary:
+              type: string
+              description: Copywriter-friendly summary of all outputs
+      required: [project_name, timestamp_iso, results, job_id]
+    SubmitJobRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        sales_page_url:
+          type: string
+          format: uri
+          description: URL to the sales page to analyze
+        project_name:
+          type: string
+        advertorial_type:
+          type: string
+        research_requirements:
+          type: string
+          description: Optional specific requirements or focus areas for the research
+        gender:
+          type: string
+          description: Optional gender target (e.g. 'Male', 'Female', 'N/A')
+        location:
+          type: string
+          description: Optional location target
+        customer_avatars:
+          type: array
+          description: (Deprecated) List of customer avatars/personas to target. Ignored in new flow.
+          items:
+            $ref: '#/components/schemas/CustomerAvatar'
+        persona:
+          type: string
+          deprecated: true
+          description: (Deprecated) Use customer_avatars instead
+        age_range:
+          type: string
+          deprecated: true
+          description: (Deprecated) Use customer_avatars instead
+        gender_deprecated:
+          type: string
+          deprecated: true
+          description: (Deprecated) Use 'gender' field instead
+      example:
+        sales_page_url: "https://try.meritrelief.com/"
+        project_name: "meritrelief"
+        advertorial_type: "Listicle"
+        research_requirements: "Focus on natural ingredients"
+        gender: "Female"
+        location: "USA"
+    SubmitJobResponse:
+      type: object
+      required: [jobId, status]
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        taskArn:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [SUBMITTED]
+    JobStatusResponse:
+      type: object
+      required: [jobId, status]
+      properties:
+        jobId:
+          type: string
+        status:
+          type: string
+          description: Current job status, e.g. SUBMITTED, RUNNING, SUCCEEDED, FAILED
+        api_version:
+          type: string
+          description: API version used to submit the job (e.g., 'v2')
+    JobResult:
+      type: object
+      description: Structured JSON produced by the pipeline including rewritten advertorial content.
+      additionalProperties: false
+      properties:
+        project_name:
+          type: string
+        timestamp_iso:
+          type: string
+          format: date-time
+        job_id:
+          type: string
+        api_version:
+          type: string
+          description: API version (v1)
+        results:
+          type: object
+          additionalProperties: false
+          properties:
+            research_page_analysis:
+              type: string
+            doc1_analysis:
+              type: string
+            doc2_analysis:
+              type: string
+            deep_research_prompt:
+              type: string
+            deep_research_output:
+              type: string
+            avatar_sheet:
+              $ref: '#/components/schemas/AvatarList'
+            identified_avatars:
+              $ref: '#/components/schemas/IdentifiedAvatarList'
+            offer_brief:
+              $ref: '#/components/schemas/OfferBrief'
+            marketing_philosophy_analysis:
+              type: string
+            necessary_beliefs:
+              type: string
+            summary:
+              type: string
+            swipe_results:
+              type: array
+              items:
+                $ref: '#/components/schemas/SwipeResult'
+            marketing_angles:
+              type: array
+              items:
+                $ref: '#/components/schemas/Angle'
+            customer_avatars:
+              type: array
+              description: Simplified list of identified avatars
+              items:
+                $ref: '#/components/schemas/IdentifiedAvatar'
+      required: [project_name, timestamp_iso, results, job_id]
+    SwipeResult:
+      type: object
+      description: Result item for a specific marketing angle containing structured advertorial content.
+      required: [angle, content]
+      properties:
+        angle:
+          type: string
+          description: Marketing angle used to generate the content.
+        content:
+          description: Structured content; either a Listicle or an Avertorial.
+          oneOf:
+            - $ref: '#/components/schemas/Listicle'
+            - $ref: '#/components/schemas/Advertorial'
+    ListicleItem:
+      type: object
+      required: [number, title, description]
+      properties:
+        number:
+          type: integer
+          description: Number of the listicle item.
+        title:
+          type: string
+          description: Title of the listicle item.
+        description:
+          type: string
+          description: Description of the listicle item.
+    Listicle:
+      type: object
+      description: Structured Listicle content returned by the pipeline.
+      required: [title, author, summary, listicles, cta, conclusion]
+      properties:
+        title:
+          type: string
+          description: Title of the listicle.
+        author:
+          type: string
+          description: Author and date of the listicle.
+        summary:
+          type: string
+          description: Intro/summary paragraph of the listicle.
+        listicles:
+          type: array
+          description: List of listicle items.
+          items:
+            $ref: '#/components/schemas/ListicleItem'
+        cta:
+          type: string
+          description: Call-to-action of the listicle.
+        conclusion:
+          type: string
+          description: Conclusion of the listicle.
+    Advertorial:
+      type: object
+      description: Structured Advertorial content returned by the pipeline.
+      required: [title, subtitle, body, cta, captions]
+      properties:
+        title:
+          type: string
+          description: Title of the advertorial.
+        subtitle:
+          type: string
+          description: Subtitle of the advertorial.
+        body:
+          type: string
+          description: Body/content of the advertorial.
+        cta:
+          type: string
+          description: Call-to-action of the advertorial.
+        captions:
+          type: string
+          description: Captions of the advertorial.
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+    SubmitAvatarExtractionResponse:
+      type: object
+      required: [jobId, status]
+      properties:
+        jobId:
+          type: string
+          format: uuid
+          description: Avatar extraction job ID
+        status:
+          type: string
+          enum: [SUBMITTED]
+          description: Job status
+    AvatarExtractionResponse:
+      type: object
+      required: [success, url, job_id, timestamp_iso, avatars, company_type, product_description, product_image]
+      properties:
+        success:
+          type: boolean
+          description: Whether the extraction was successful
+        url:
+          type: string
+          format: uri
+          description: The URL that was analyzed
+        job_id:
+          type: string
+          description: The job ID for this extraction
+        timestamp_iso:
+          type: string
+          format: date-time
+          description: When the extraction was completed
+        avatars:
+          type: array
+          description: List of extracted customer avatars
+          items:
+            $ref: '#/components/schemas/CustomerAvatar'
+        company_type:
+          type: string
+          description: The type of company the product is for
+        product_description:
+          type: string
+          description: A description of the product
+        product_image:
+          type: string
+          description: Base64 encoded string of the product image
+
+    SubmitSwipeFileResponse:
+      type: object
+      required: [jobId, status]
+      properties:
+        jobId:
+          type: string
+          format: uuid
+          description: Swipe file generation job ID
+        status:
+          type: string
+          enum: [SUBMITTED]
+          description: Job status
+    SubmitImageGenRequest:
+      type: object
+      additionalProperties: false
+      required: [selectedAvatar, selectedAngles]
+      properties:
+        foundationalDocText:
+          type: string
+          description: Optional research/context text blob
+        selectedAvatar:
+          type: string
+          description: Selected avatar/persona description
+        selectedAngles:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          description: List of marketing angles to generate images for
+        forcedReferenceImageIds:
+          type: array
+          items:
+            type: string
+          description: Optional reference creative IDs to force into assignments (e.g. 12.png, 23.webp)
+        uploadedReferenceImageUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Optional URLs for user-uploaded reference images (from Cloudflare). System will check if each contains a product image using AI vision and use product image from productImageUrls if detected.
+        productImageUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Optional presigned URLs for product images (processor downloads)
+        language:
+          type: string
+          default: english
+        productName:
+          type: string
+        imageGenerationProvider:
+          type: string
+          enum: [openai, nano_banana]
+          description: Optional override for the image generation provider
+    ImageGenResult:
+      type: object
+      additionalProperties: true
+      properties:
+        job_id:
+          type: string
+        timestamp_iso:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+        analysisResults:
+          type: object
+          additionalProperties: true
+        generatedImages:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    SubmitPrelanderImagesRequest:
+      type: object
+      additionalProperties: false
+      required: [prompts]
+      properties:
+        templateId:
+          type: string
+          description: Template ID (e.g., "A00005", "L00004") - metadata only
+        type:
+          type: string
+          description: Image type (e.g., "realistic") - metadata only
+        prompts:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [role, prompt]
+            properties:
+              role:
+                type: string
+                description: Image role (e.g., "hero", "section", "product")
+                enum: [hero, section, product]
+              index:
+                type: integer
+                description: Section index (required for role="section")
+                minimum: 0
+              prompt:
+                type: string
+                description: Image generation prompt
+          description: Array of prompts with roles and optional indices
+        productImageUrl:
+          type: string
+          format: uri
+          description: Optional URL for product image to attach to all generated images
+    PrelanderImagesResult:
+      type: object
+      additionalProperties: false
+      properties:
+        success:
+          type: boolean
+          description: Whether the generation was successful
+        error:
+          type: string
+          description: Error message if success is false
+        images:
+          type: array
+          description: Array of generated images with roles and URLs
+          items:
+            type: object
+            required: [role, url]
+            properties:
+              role:
+                type: string
+                description: Image role (e.g., "hero", "section", "product")
+              index:
+                type: integer
+                description: Section index (present for role="section")
+                minimum: 0
+              url:
+                type: string
+                format: uri
+                description: Cloudflare CDN URL for the generated image
+      example:
+        success: true
+        images:
+          - role: hero
+            url: "https://cdn.example.com/images/hero-abc123.jpg"
+          - role: section
+            index: 0
+            url: "https://cdn.example.com/images/section-0-def456.jpg"
+          - role: section
+            index: 1
+            url: "https://cdn.example.com/images/section-1-ghi789.jpg"
+          - role: product
+            url: "https://cdn.example.com/images/product-jkl012.jpg"
+    SwipeFileGenerationResponse:
+      type: object
+      description: Swipe file generation results containing rewritten advertorial content
+      additionalProperties: true
+      properties:
+        L00001:
+          type: object
+          description: Generated swipe file for template L00001
+          additionalProperties: true
+        A00003:
+          type: object
+          description: Generated swipe file for template A00003
+          additionalProperties: true
+      example:
+        L00001:
+          full_advertorial:
+            title: "Example Title"
+            subtitle: "Example Subtitle"
+        A00003:
+          full_advertorial:
+            title: "Example Title"
+            subtitle: "Example Subtitle"
+    AvatarDemographics:
+      type: object
+      description: "Section A: Demographic Profile"
+      required: [age_range, gender, occupation, income_level, location_type, family_situation, education_level, one_sentence_description]
+      properties:
+        age_range:
+          type: string
+          description: "Age Range"
+        gender:
+          type: string
+          description: "Gender"
+        occupation:
+          type: string
+          description: "Occupation / Life Stage"
+        income_level:
+          type: string
+          description: "Income Level"
+        location_type:
+          type: string
+          description: "Location Type: (urban / suburban / rural)"
+        family_situation:
+          type: string
+          description: "Family Situation: (single / married / divorced / kids at home / empty nest)"
+        education_level:
+          type: string
+          description: "Education Level"
+        one_sentence_description:
+          type: string
+          description: "Who they are and what makes their situation unique"
+    AvatarProblemExperience:
+      type: object
+      description: "Section B: Problem Experience"
+      required: [duration, severity, frequency, trigger_event, daily_life_impact, social_impact, who_else_knows]
+      properties:
+        duration:
+          type: string
+          description: "Problem Duration: How long have they been dealing with this?"
+        severity:
+          type: string
+          description: "Problem Severity: Early stage / Moderate / Severe / Crisis"
+        frequency:
+          type: string
+          description: "Problem Frequency: How often do they think about it? Daily obsession vs. occasional annoyance?"
+        trigger_event:
+          type: string
+          description: "Trigger Event: What specific moment made them start actively searching for a solution?"
+        daily_life_impact:
+          type: string
+          description: "Daily Life Impact: How does this problem affect their everyday activities?"
+        social_impact:
+          type: string
+          description: "Social Impact: How does this affect relationships, work, public situations?"
+        who_else_knows:
+          type: string
+          description: "Who Else Knows: Is this a private struggle or do others know? Who have they told?"
+    AvatarPainDimensions:
+      type: object
+      description: "Section C: Pain Dimensions"
+      required: [surface_pain, emotional_pain, social_pain, identity_pain, secret_pain, dominant_negative_emotion]
+      properties:
+        surface_pain:
+          type: string
+          description: "Surface Pain (Physical/Practical): The problem as they describe it in literal terms"
+        emotional_pain:
+          type: string
+          description: "Emotional Pain: The feelings this problem creates — shame, frustration, fear, anger"
+        social_pain:
+          type: string
+          description: "Social Pain: How this affects how others see them or how they show up in the world"
+        identity_pain:
+          type: string
+          description: "Identity Pain: How this conflicts with who they believe they are or want to be"
+        secret_pain:
+          type: string
+          description: "Secret Pain: What they won't say out loud but feel deeply"
+        dominant_negative_emotion:
+          type: string
+          description: "Dominant Negative Emotion: The ONE emotion that dominates — shame / fear / frustration / hopelessness / anger"
+    AvatarDesireDimensions:
+      type: object
+      description: "Section D: Desire Dimensions"
+      required: [surface_desire, emotional_desire, social_desire, identity_desire, secret_desire, dream_outcome]
+      properties:
+        surface_desire:
+          type: string
+          description: "Surface Desire: What they say they want — the obvious fix"
+        emotional_desire:
+          type: string
+          description: "Emotional Desire: How they want to FEEL"
+        social_desire:
+          type: string
+          description: "Social Desire: How they want to be SEEN by others"
+        identity_desire:
+          type: string
+          description: "Identity Desire: Who they want to BECOME"
+        secret_desire:
+          type: string
+          description: "Secret Desire: The deeper want they might not admit"
+        dream_outcome:
+          type: string
+          description: "Dream Outcome: If this problem was completely solved, what does their life look like?"
+    AvatarAwareness:
+      type: object
+      description: "Section E: Awareness & Sophistication"
+      required: [problem_awareness, solution_awareness, product_awareness, market_sophistication, schwartz_awareness_level]
+      properties:
+        problem_awareness:
+          type: string
+          description: "Problem Awareness: Do they know exactly what's causing this, or are they confused?"
+        solution_awareness:
+          type: string
+          description: "Solution Awareness: Do they know solutions exist? Have they researched options?"
+        product_awareness:
+          type: string
+          description: "Product Awareness: Do they know about products like ours specifically?"
+        market_sophistication:
+          type: string
+          description: "Market Sophistication: How much have they seen? First-time buyer vs. seen-it-all skeptic?"
+        schwartz_awareness_level:
+          type: string
+          description: "Schwartz Awareness Level: Unaware / Problem-Aware / Solution-Aware / Product-Aware / Most Aware"
+    AvatarFailedSolutions:
+      type: object
+      description: "Section F: Failed Solution History"
+      required: [solutions_tried, money_spent, why_failed, beliefs_about_failure, current_coping]
+      properties:
+        solutions_tried:
+          type: string
+          description: "Solutions Already Tried: List everything they've attempted"
+        money_spent:
+          type: string
+          description: "Money Already Spent: Approximate total spent on this problem"
+        why_failed:
+          type: string
+          description: "Why Past Solutions Failed: In their words — what went wrong?"
+        beliefs_about_failure:
+          type: string
+          description: "Belief About Why Nothing Works: What conclusion have they drawn about why they can't solve this?"
+        current_coping:
+          type: string
+          description: "Current Coping Mechanism: What are they doing now to manage the problem?"
+    AvatarObjections:
+      type: object
+      description: "Section G: Objections & Skepticism"
+      required: [primary_objection, secondary_objections, hidden_objection, skepticism_source, proof_needed, trusted_sources]
+      properties:
+        primary_objection:
+          type: string
+          description: "Primary Objection: The #1 reason they would NOT buy"
+        secondary_objections:
+          type: string
+          description: "Secondary Objections: Other concerns"
+        hidden_objection:
+          type: string
+          description: "Hidden Objection: What they're really worried about but won't say"
+        skepticism_source:
+          type: string
+          description: "Source of Skepticism: Why don't they trust solutions? Past experience? General cynicism?"
+        proof_needed:
+          type: string
+          description: "What Proof Would They Need: What evidence would overcome their skepticism?"
+        trusted_sources:
+          type: string
+          description: "Whose Opinion Do They Trust: Doctors? Friends? Online reviews? Celebrities? People like them?"
+    AvatarBuyingPsychology:
+      type: object
+      description: "Section H: Buying Psychology"
+      required: [decision_making_style, budget_range, price_sensitivity, risk_tolerance, decision_influencers, buying_urgency, buy_today_trigger, dealbreaker]
+      properties:
+        decision_making_style:
+          type: string
+          description: "Decision-Making Style: Impulse buyer / Careful researcher / Needs permission / Analysis paralysis"
+        budget_range:
+          type: string
+          description: "Budget Range: What would they realistically pay for a solution?"
+        price_sensitivity:
+          type: string
+          description: "Price Sensitivity: Very sensitive / Moderate / Will pay premium for results"
+        risk_tolerance:
+          type: string
+          description: "Risk Tolerance: Will they try something new easily, or need heavy reassurance?"
+        decision_influencers:
+          type: string
+          description: "Who Influences Their Decision: Spouse? Doctor? Friends? No one — solo decider?"
+        buying_urgency:
+          type: string
+          description: "Buying Urgency: Need it now / Can wait / Just browsing"
+        buy_today_trigger:
+          type: string
+          description: "What Would Make Them Buy TODAY: The specific trigger or offer that converts them immediately"
+        dealbreaker:
+          type: string
+          description: "What Would Make Them Walk Away: The dealbreaker that kills the sale"
+    AvatarInformationComm:
+      type: object
+      description: "Section I: Information & Communication"
+      required: [info_sources, content_format, language_style, problem_vocab, avoided_words, resonating_tone]
+      properties:
+        info_sources:
+          type: string
+          description: "Where They Seek Information: Google / YouTube / Reddit / Facebook Groups / Doctor / Friends"
+        content_format:
+          type: string
+          description: "Preferred Content Format: Video / Text / Images / Testimonials / Data"
+        language_style:
+          type: string
+          description: "Language Style: Clinical and technical / Casual and emotional / Direct and simple"
+        problem_vocab:
+          type: string
+          description: "Words They Use to Describe Problem: Their exact vocabulary"
+        avoided_words:
+          type: string
+          description: "Words They Avoid: Terms that feel too clinical, embarrassing, or off-putting"
+        resonating_tone:
+          type: string
+          description: "Tone That Resonates: Empathetic / Authoritative / Peer-to-peer / Clinical / Urgent"
+    AvatarRawLanguage:
+      type: object
+      description: "Section J: Raw Language Map"
+      required: [pain_language, desire_language, objection_language, failed_solution_language]
+      properties:
+        pain_language:
+          type: array
+          description: "Pain Language (3+ quotes): Direct quotes expressing pain"
+          items:
+            type: string
+        desire_language:
+          type: array
+          description: "Desire Language (3+ quotes): Direct quotes expressing desire"
+          items:
+            type: string
+        objection_language:
+          type: array
+          description: "Objection Language (2+ quotes): Direct quotes expressing skepticism/objection"
+          items:
+            type: string
+        failed_solution_language:
+          type: array
+          description: "Failed Solution Language (2+ quotes): Direct quotes about what they've tried"
+          items:
+            type: string
+    AvatarStrategicSummary:
+      type: object
+      description: "Section K: Strategic Summary"
+      required: [market_size, buying_readiness, competitive_saturation, message_match_difficulty, one_line_hook]
+      properties:
+        market_size:
+          type: string
+          description: "Market Size Estimate: Small / Medium / Large — based on frequency in research"
+        buying_readiness:
+          type: string
+          description: "Buying Readiness: Cold / Warm / Hot"
+        competitive_saturation:
+          type: string
+          description: "Competitive Saturation: Are competitors already targeting this avatar heavily?"
+        message_match_difficulty:
+          type: string
+          description: "Message Match Difficulty: Easy to reach with messaging / Requires nuanced approach"
+        one_line_hook:
+          type: string
+          description: "One-Line Hook That Would Stop Them: A headline or opening that would grab THIS avatar specifically"
+    AvatarRanking:
+      type: object
+      description: "Section L: Ranking"
+      required: [ranking, reason]
+      properties:
+        ranking:
+          type: integer
+          description: "High, medium, low based on market size x buying readiness"
+        reason:
+          type: string
+          description: "Reason for the ranking"
+    MarketingAngle:
+      type: object
+      description: "A generated marketing angle"
+      required: [id, angle_title, angle_subtitle, angle_type, emotional_driver, risk_level, market_size, buying_readiness, angle_problem_urgency, novelty, proof_strength, avatar_fit, ltv_potential, overall_score, core_argument, target_age_range, target_audience, pain_points, desires, common_objections, failed_alternatives, pain_quotes, desire_quotes, objection_quotes]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "Unique identifier for this marketing angle"
+        angle_title:
+          type: string
+          description: "A name for this specific pitch"
+        angle_subtitle:
+          type: string
+          description: "A short tagline that captures the angle's promise"
+        angle_type:
+          type: string
+          description: "The category of argument being made (e.g., Pain-Lead, Desire-Lead, etc.)"
+        emotional_driver:
+          type: string
+          description: "The primary emotion this angle triggers (Fear / Hope / Anger / Shame / Desire)"
+        risk_level:
+          type: string
+          description: "Compliance or proof risk for running this angle (Low / Medium / High)"
+        market_size:
+          type: string
+          enum: [small, medium, large]
+          description: "Estimated size of this avatar segment: small (niche), medium (solid segment), or large (mass market)"
+        buying_readiness:
+          type: string
+          enum: [cold, warm, hot]
+          description: "How ready this avatar is to purchase: cold (not looking), warm (interested but skeptical), hot (ready to buy)"
+        # Big Idea Section
+        big_idea:
+          type: string
+          description: "Single, transformative central idea that unifies the campaign"
+        problem_mechanism_ump:
+          type: string
+          description: "Unique Mechanism of the Problem: Why nothing has worked (counterintuitive reason the problem persists)"
+        solution_mechanism_ums:
+          type: string
+          description: "Unique Mechanism of the Solution: Why THIS works (how this solution uniquely solves the problem)"
+        # Angle Scoring Dimensions (1-5 scores)
+        angle_problem_urgency:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "How desperately does the audience need this problem solved (1-5). 5=Critical, 4=High, 3=Moderate, 2=Low, 1=Minimal"
+        novelty:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "How fresh is this angle compared to competitors (1-5). 5=Breakthrough, 4=Fresh, 3=Moderate, 2=Common, 1=Exhausted"
+        proof_strength:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "Do we have credible evidence to back this angle (1-5). 5=Iron-clad, 4=Strong, 3=Moderate, 2=Weak, 1=None"
+        avatar_fit:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "How precisely does this angle match the target avatar (1-5). 5=Perfect, 4=Strong, 3=Moderate, 2=Loose, 1=Mismatch"
+        ltv_potential:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "Will this angle attract customers who stick around (1-5). 5=Excellent, 4=Good, 3=Moderate, 2=Low, 1=Poor"
+        overall_score:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "Overall score for this angle (1-5) based on angle_problem_urgency, novelty, proof_strength, avatar_fit, ltv_potential"
+        core_argument:
+          type: string
+          description: "The single-sentence logical argument this angle makes"
+        target_age_range:
+          type: string
+          description: "The age bracket this angle speaks to"
+        target_audience:
+          type: string
+          description: "A refined description of who this specific angle is for"
+        pain_points:
+          type: array
+          description: "The most relevant frustrations for this particular angle"
+          items:
+            type: string
+        desires:
+          type: array
+          description: "The most relevant goals and wants for this particular angle"
+          items:
+            type: string
+        common_objections:
+          type: array
+          description: "Why this person might say 'no' to this specific pitch"
+          items:
+            type: string
+        failed_alternatives:
+          type: array
+          description: "What they've tried before that didn't work — and why this angle addresses it"
+          items:
+            type: string
+        pain_quotes:
+          type: array
+          description: "Direct quotes from research expressing the pain this angle targets"
+          items:
+            $ref: '#/components/schemas/QuoteWithSource'
+        desire_quotes:
+          type: array
+          description: "Direct quotes from research expressing the desire this angle promises"
+          items:
+            $ref: '#/components/schemas/QuoteWithSource'
+        objection_quotes:
+          type: array
+          description: "Direct quotes from research expressing skepticism this angle must overcome"
+          items:
+            $ref: '#/components/schemas/QuoteWithSource'
+        template_predictions:
+          $ref: '#/components/schemas/TemplatePredictionResult'
+          description: "Predicted best matching template for this angle"
+
+    AvatarMarketingAngles:
+      type: object
+      description: "Marketing angles generated for a specific avatar"
+      required: [avatar_name, generated_angles]
+      properties:
+        avatar_name:
+          type: string
+          description: "Name of the avatar"
+        generated_angles:
+          type: array
+          items:
+            $ref: '#/components/schemas/MarketingAngle'
+          description: "List of 5-7 distinct marketing angles"
+        ranking:
+          type: array
+          items:
+            type: integer
+          description: "Indices into generated_angles in ranked order (best first)"
+
+    Angle:
+      type: object
+      required: [angle, title, target_age_range, target_audience, pain_points, desires, common_objections, failed_alternatives, copy_approach]
+      properties:
+        angle:
+          type: string
+          description: "The marketing angle for the product"
+        title:
+          type: string
+          description: "The title of the marketing angle"
+        target_age_range:
+          type: string
+          description: "The target age range for the marketing angle. Note it like: 45-55, 60-70, etc."
+        target_audience:
+          type: string
+          description: "The target audience for the marketing angle. Note it like: Competitive athletes seeking reliability, Skilled professionals seeking productivity, etc."
+        pain_points:
+          type: array
+          description: "The pain points for the marketing angle"
+          items:
+            type: string
+        desires:
+          type: array
+          description: "The desires for the marketing angle"
+          items:
+            type: string
+        common_objections:
+          type: array
+          description: "The common objections for the marketing angle"
+          items:
+            type: string
+        failed_alternatives:
+          type: array
+          description: "The failed alternatives for the marketing angle"
+          items:
+            type: string
+        copy_approach:
+          type: array
+          description: "The copy approaches for the marketing angle"
+          items:
+            type: string
+    # ===== New Avatar Enums =====
+    MarketSize:
+      type: string
+      enum: [small, medium, large]
+      description: Market size indicator for the avatar segment
+    BuyingReadiness:
+      type: string
+      enum: [cold, warm, hot]
+      description: How ready this avatar is to purchase
+    CompetitionLevel:
+      type: string
+      enum: [low, medium, high]
+      description: How heavily competitors target this avatar
+    QuoteWithSource:
+      type: object
+      description: A direct quote from research with its source
+      required: [quote, source]
+      properties:
+        quote:
+          type: string
+          description: The exact quote from research
+        source:
+          type: string
+          description: Where this quote came from (e.g., 'Reddit r/eyecare', 'Amazon Review')
+    # ===== New Avatar Section Schemas =====
+    AvatarOverviewSection:
+      type: object
+      description: "Section 1: Avatar Overview - high-level summary card"
+      required: [name, description, market_size, buying_readiness, intensity, awareness_level, competition_level, one_line_hook]
+      properties:
+        name:
+          type: string
+          description: "Descriptive name for this avatar (e.g., 'THE WORRIED SELF-MANAGER')"
+        description:
+          type: string
+          description: "One-sentence description of who they are"
+        market_size:
+          $ref: '#/components/schemas/MarketSize'
+        buying_readiness:
+          $ref: '#/components/schemas/BuyingReadiness'
+        intensity:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "How intense this avatar's problem is (1-5), based on market_size and buying_readiness"
+        awareness_level:
+          $ref: '#/components/schemas/AwarenessLevel'
+        competition_level:
+          $ref: '#/components/schemas/CompetitionLevel'
+        one_line_hook:
+          type: string
+          description: "A headline that would immediately grab this avatar's attention"
+    AvatarDemographicsSection:
+      type: object
+      description: "Section 2: Demographics & Identity"
+      required: [age_range, gender]
+      properties:
+        age_range:
+          type: string
+          description: "Age range of the avatar (e.g., '55-75')"
+        gender:
+          type: string
+          description: "Gender(s) this avatar includes"
+        locations:
+          type: array
+          items:
+            type: string
+          description: "Geographic locations where this avatar is found"
+        professional_background:
+          type: array
+          items:
+            type: string
+          description: "Professional backgrounds or life stages"
+        identities:
+          type: array
+          items:
+            type: string
+          description: "Psychographic identities — how they see themselves"
+    AvatarProblemExperienceSection:
+      type: object
+      description: "Section 3: Problem Experience"
+      required: [duration, severity, trigger_event]
+      properties:
+        duration:
+          type: string
+          description: "How long they've been dealing with this problem"
+        severity:
+          type: string
+          description: "Current severity of their problem"
+        trigger_event:
+          type: string
+          description: "The specific moment that made them start actively searching"
+        daily_life_impact:
+          type: array
+          items:
+            type: string
+          description: "Specific ways this problem affects their everyday activities"
+    PainDimensionV2:
+      type: object
+      description: "Pain points organized by psychological dimension"
+      properties:
+        surface:
+          type: array
+          items:
+            type: string
+          description: "Surface-level, physical, or practical pain points"
+        emotional:
+          type: array
+          items:
+            type: string
+          description: "Emotional pain — the feelings this problem creates"
+        identity:
+          type: array
+          items:
+            type: string
+          description: "Identity pain — how this conflicts with who they believe they are"
+        secret:
+          type: array
+          items:
+            type: string
+          description: "Secret pain — what they won't say out loud but feel deeply"
+    DesireDimensionV2:
+      type: object
+      description: "Desires organized by psychological dimension"
+      required: [emotional, social, identity, secret, dream_outcome]
+      properties:
+        emotional:
+          type: string
+          description: "How they want to FEEL"
+        social:
+          type: string
+          description: "How they want to be SEEN by others"
+        identity:
+          type: string
+          description: "Who they want to BECOME"
+        secret:
+          type: string
+          description: "The deeper want they might not admit publicly"
+        dream_outcome:
+          type: string
+          description: "If this problem was completely solved, what does their life look like"
+    AvatarPainDesireSection:
+      type: object
+      description: "Section 4: Pain & Desire"
+      required: [pain, desire, dominant_emotion]
+      properties:
+        pain:
+          $ref: '#/components/schemas/PainDimensionV2'
+        desire:
+          $ref: '#/components/schemas/DesireDimensionV2'
+        dominant_emotion:
+          type: string
+          description: "The ONE dominant emotion driving their behavior"
+    FailedSolutionItemV2:
+      type: object
+      description: "A single failed solution with analysis"
+      required: [solution_tried, why_it_failed, our_opportunity]
+      properties:
+        solution_tried:
+          type: string
+          description: "What they tried"
+        why_it_failed:
+          type: string
+          description: "Why it didn't work FOR THEM"
+        our_opportunity:
+          type: string
+          description: "How our product/solution addresses this specific failure"
+    AvatarFailedSolutionsSection:
+      type: object
+      description: "Section 5: Failed Solutions"
+      required: [money_already_spent, current_coping]
+      properties:
+        solutions:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailedSolutionItemV2'
+          description: "List of solutions they've tried"
+        money_already_spent:
+          type: string
+          description: "Approximate total they've already spent"
+        current_coping:
+          type: string
+          description: "What they're currently doing to manage the problem"
+    AvatarObjectionsBuyingSection:
+      type: object
+      description: "Section 6: Objections & Buying"
+      required: [primary_objection, hidden_objection, decision_style, price_range]
+      properties:
+        primary_objection:
+          type: string
+          description: "The #1 reason they would NOT buy"
+        hidden_objection:
+          type: string
+          description: "What they're REALLY worried about but won't say"
+        decision_style:
+          type: string
+          description: "How they make purchase decisions"
+        price_range:
+          type: string
+          description: "What they'd realistically pay for a solution"
+        what_makes_them_buy:
+          type: array
+          items:
+            type: string
+          description: "Specific triggers or proof points that would make them buy"
+        what_makes_them_walk:
+          type: array
+          items:
+            type: string
+          description: "Dealbreakers that would make them immediately leave"
+    AvatarRawLanguageSection:
+      type: object
+      description: "Section 7: Raw Language"
+      properties:
+        pain_quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteWithSource'
+          description: "Direct quotes expressing their pain"
+        desire_quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteWithSource'
+          description: "Direct quotes expressing what they want"
+        objection_quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteWithSource'
+          description: "Direct quotes expressing skepticism or objections"
+        words_they_use:
+          type: array
+          items:
+            type: string
+          description: "Words and phrases THEY use to describe the problem/solution"
+        words_they_avoid:
+          type: array
+          items:
+            type: string
+          description: "Words that turn them off or feel wrong"
+    Avatar:
+      type: object
+      description: "Complete Marketing Avatar sheet for product–market fit & messaging research"
+      required: [id, short_description, age, gender, problem_urgency, purchasing_power, saturation_level, audience_size, overall_score, overview, demographics, problem_experience, pain_desire, failed_solutions, objections_buying, raw_language, advertising_platforms]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "Unique identifier for this avatar"
+        short_description:
+          type: string
+          description: "Short description of the avatar"
+          maxLength: 40
+        age:
+          type: string
+          description: "Age range of the avatar"
+          maxLength: 20
+        gender:
+          type: string
+          description: "Gender of the avatar"
+          maxLength: 20
+        # Section 0: Avatar Evaluation Dimensions (1-5 scores)
+        problem_urgency:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "How desperately this avatar needs a solution (1-5). 5=Critical, 4=High, 3=Moderate, 2=Low, 1=Minimal"
+        purchasing_power:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "Can this avatar afford the solution (1-5). 5=Premium, 4=Comfortable, 3=Moderate, 2=Stretched, 1=Limited"
+        saturation_level:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "How crowded is the market for this avatar (1-5). 5=Blue Ocean, 4=Low, 3=Moderate, 2=High, 1=Saturated"
+        audience_size:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "How large is this avatar segment (1-5). 5=Massive (40%+), 4=Large (25-40%), 3=Medium (15-25%), 2=Small (5-15%), 1=Tiny (<5%)"
+        overall_score:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "Overall score of the avatar (1-5) based on problem urgency, purchasing power, saturation level, audience size"
+        overview:
+          $ref: '#/components/schemas/AvatarOverviewSection'
+          description: "Section 1: Avatar Overview"
+        demographics:
+          $ref: '#/components/schemas/AvatarDemographicsSection'
+          description: "Section 2: Demographics & Identity"
+        problem_experience:
+          $ref: '#/components/schemas/AvatarProblemExperienceSection'
+          description: "Section 3: Problem Experience"
+        pain_desire:
+          $ref: '#/components/schemas/AvatarPainDesireSection'
+          description: "Section 4: Pain & Desire"
+        failed_solutions:
+          $ref: '#/components/schemas/AvatarFailedSolutionsSection'
+          description: "Section 5: Failed Solutions"
+        objections_buying:
+          $ref: '#/components/schemas/AvatarObjectionsBuyingSection'
+          description: "Section 6: Objections & Buying"
+        raw_language:
+          $ref: '#/components/schemas/AvatarRawLanguageSection'
+          description: "Section 7: Raw Language"
+        advertising_platforms:
+          type: string
+          description: "List the advertising platforms this avatar primarily uses"
+    CustomerAvatar:
+      type: object
+      required: [persona_name, characteristics, description, age_range, gender, key_buying_motivation, pain_point, emotion, desire, objections, failed_alternatives]
+      properties:
+        persona_name:
+          type: string
+          description: A short, descriptive name that captures the essence of the customer
+        characteristics:
+          type: array
+          description: Characteristics of the customer, e.g. Stands all day, Active lifestyle, etc. Provide at least 3 characteristics and max three words each.
+          items:
+            type: string
+        description:
+          type: string
+          description: 1 sentence summarizing their lifestyle, motivations, and key challenges
+        age_range:
+          type: string
+          description: Approximate age bracket (e.g., 25-34)
+        gender:
+          type: string
+          description: male, female, or both
+        key_buying_motivation:
+          type: string
+          description: What drives them to purchase this product
+        pain_point:
+          type: string
+          description: Specific problem or challenge the customer faces
+        emotion:
+          type: string
+          description: Emotion they feel related to the pain point
+        desire:
+          type: string
+          description: What they desire as a solution to their pain point
+        objections:
+          type: array
+          description: List of objections or concerns they might have
+          items:
+            type: string
+        failed_alternatives:
+          type: array
+          description: List of alternatives they've tried that didn't work
+          items:
+            type: string
+        is_broad_avatar:
+          type: boolean
+          description: Whether this avatar represents the overall customer base
+    IdentifiedAvatar:
+      type: object
+      required: [name, description]
+      properties:
+        name:
+          type: string
+          description: Name of the avatar (e.g., 'Busy Mom')
+        description:
+          type: string
+          description: Brief description of who they are and why they are a good fit
+    IdentifiedAvatarList:
+      type: object
+      required: [avatars]
+      properties:
+        avatars:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdentifiedAvatar'
+          description: List of potential customer avatars
+    AvatarList:
+      type: object
+      required: [avatars]
+      properties:
+        avatars:
+          type: array
+          items:
+            $ref: '#/components/schemas/Avatar'
+          description: List of identified customer avatars
+    ConsciousnessLevel:
+      type: string
+      enum: [low, high]
+      description: How self-aware and change-ready the prospect is
+    AwarenessLevel:
+      type: string
+      enum: [unaware, problem aware, solution aware, product aware, most aware]
+      description: Prospect's awareness per Schwartz's stages
+    SophisticationLevel:
+      type: string
+      enum: [level_1, level_2, level_3, level_4, level_5]
+      description: Market sophistication level (make claims → mechanisms → advanced strategies)
+    StageOfSophistication:
+      type: object
+      required: [level]
+      properties:
+        level:
+          $ref: '#/components/schemas/SophisticationLevel'
+        rationale:
+          type: string
+          nullable: true
+          description: Why this level fits (signals from ads, competitors, buyer skepticism)
+    HeadlineIdea:
+      type: object
+      required: [headline]
+      properties:
+        headline:
+          type: string
+          description: Punchy primary promise or hook
+        subheadline:
+          type: string
+          nullable: true
+          description: Clarifies/grounds the headline with specifics, mechanism, or outcome
+    BeliefChain:
+      type: object
+      required: [outcome, steps]
+      properties:
+        outcome:
+          type: string
+          description: What the buyer must feel confident about (e.g., 'This can work for me')
+        steps:
+          type: array
+          description: Ordered micro-beliefs (e.g., problem is real → solution type works → this product's mechanism works → I can use it)
+          items:
+            type: string
+    SwipeExample:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          description: Short label for the swipe (publisher, creator, or concept)
+        url:
+          type: string
+          format: uri
+          nullable: true
+          description: Link to the asset if available
+        notes:
+          type: string
+          nullable: true
+          description: "What to model: headline structure, proof style, funnel flow, etc."
+    MarketTemperature:
+      type: string
+      enum: [cold, warm, hot, skeptical, saturated]
+      description: Market temperature indicating buyer readiness and trust level
+    ObjectionSeverity:
+      type: string
+      enum: [high, medium, low]
+      description: Severity level of an objection
+    MarketSnapshot:
+      type: object
+      description: "Section 1: Market Snapshot - always visible summary"
+      properties:
+        sophistication:
+          $ref: '#/components/schemas/StageOfSophistication'
+        awareness:
+          $ref: '#/components/schemas/AwarenessLevel'
+        awareness_description:
+          type: string
+          nullable: true
+          description: Brief description of awareness state
+        consciousness:
+          $ref: '#/components/schemas/ConsciousnessLevel'
+        consciousness_description:
+          type: string
+          nullable: true
+          description: Brief description of consciousness state
+        market_temperature:
+          $ref: '#/components/schemas/MarketTemperature'
+        market_temperature_description:
+          type: string
+          nullable: true
+          description: Explanation of market temperature
+    BigIdeaSection:
+      type: object
+      description: "Section 2: The Big Idea and mechanisms"
+      properties:
+        big_idea:
+          type: string
+          nullable: true
+          description: Single, transformative central idea that unifies the campaign
+        problem_mechanism_ump:
+          type: string
+          nullable: true
+          description: "Unique Mechanism of the Problem: Why nothing has worked"
+        solution_mechanism_ums:
+          type: string
+          nullable: true
+          description: "Unique Mechanism of the Solution: Why THIS works"
+        metaphors:
+          type: array
+          description: Images/analogies to make the big idea and mechanism vivid
+          items:
+            type: string
+        guru:
+          type: string
+          nullable: true
+          description: Authority or spokesperson (real or archetype) associated with the offer
+        discovery_story:
+          type: string
+          nullable: true
+          description: "Origin narrative: aha moment, failed attempts, breakthrough mechanism"
+    PainCluster:
+      type: object
+      description: Clustered pain points by dimension
+      properties:
+        surface:
+          type: array
+          items:
+            type: string
+        emotional:
+          type: array
+          items:
+            type: string
+        identity:
+          type: array
+          items:
+            type: string
+        secret:
+          type: array
+          items:
+            type: string
+    DesireCluster:
+      type: object
+      description: Clustered desires by dimension
+      properties:
+        surface:
+          type: array
+          items:
+            type: string
+        emotional:
+          type: array
+          items:
+            type: string
+        identity:
+          type: array
+          items:
+            type: string
+        secret:
+          type: array
+          items:
+            type: string
+    PainDesireSection:
+      type: object
+      description: "Section 4: Pain & Desire mapping for the offer"
+      properties:
+        pain_clusters:
+          $ref: '#/components/schemas/PainCluster'
+        desire_clusters:
+          $ref: '#/components/schemas/DesireCluster'
+        dominant_emotion:
+          type: string
+          nullable: true
+          description: The ONE dominant emotion driving behavior
+    OfferFailedSolutionItem:
+      type: object
+      description: A single failed solution with analysis for the Offer Brief
+      required: [solution, why_it_failed, our_opportunity]
+      properties:
+        solution:
+          type: string
+          description: What they tried
+        why_it_failed:
+          type: string
+          description: Why it didn't work for them
+        our_opportunity:
+          type: string
+          description: How our product addresses this failure
+    FailedSolutionsSection:
+      type: object
+      description: "Section 5: Failed Solutions analysis"
+      properties:
+        solutions:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfferFailedSolutionItem'
+        money_already_spent:
+          type: string
+          nullable: true
+          description: Approximate total spent on failed solutions
+        belief_about_failure:
+          type: string
+          nullable: true
+          description: What conclusion they've drawn about why nothing works
+        current_coping:
+          type: string
+          nullable: true
+          description: What they're currently doing to manage the problem
+    CompetitorEntry:
+      type: object
+      description: A single competitor in the landscape
+      required: [name, price, key_claim, weakness, complaints]
+      properties:
+        name:
+          type: string
+        price:
+          type: string
+        key_claim:
+          type: string
+        weakness:
+          type: string
+        complaints:
+          type: string
+    CompetitorLandscape:
+      type: object
+      description: "Section 6: Competitor analysis and positioning"
+      properties:
+        competitors:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompetitorEntry'
+        competitor_gaps:
+          type: array
+          items:
+            type: string
+        our_advantages:
+          type: array
+          items:
+            type: string
+        positioning_statement:
+          type: string
+          nullable: true
+          description: Clear positioning statement vs. competitors
+    BeliefStep:
+      type: object
+      description: A single belief shift in the belief chain
+      required: [belief_name, from_belief, to_belief, proof]
+      properties:
+        belief_name:
+          type: string
+        from_belief:
+          type: string
+        to_belief:
+          type: string
+        proof:
+          type: string
+    BeliefArchitecture:
+      type: object
+      description: Complete belief architecture with detailed belief chain and summary argument
+      properties:
+        belief_chain:
+          type: array
+          items:
+            $ref: '#/components/schemas/BeliefStep'
+        complete_argument:
+          type: string
+          nullable: true
+          description: The complete persuasive argument
+    ObjectionItem:
+      type: object
+      description: A single objection with severity and response strategy
+      required: [objection, severity, response]
+      properties:
+        objection:
+          type: string
+        severity:
+          $ref: '#/components/schemas/ObjectionSeverity'
+        response:
+          type: string
+    ObjectionsSection:
+      type: object
+      description: "Section 8: Objections handling"
+      properties:
+        objections:
+          type: array
+          items:
+            $ref: '#/components/schemas/ObjectionItem'
+        hidden_objection:
+          type: string
+          nullable: true
+        hidden_objection_counter:
+          type: string
+          nullable: true
+    RawQuoteWithSource:
+      type: object
+      description: A raw quote from research with its source
+      required: [quote, source]
+      properties:
+        quote:
+          type: string
+        source:
+          type: string
+    RawQuotesSection:
+      type: object
+      description: Raw quotes organized by type
+      properties:
+        pain_quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RawQuoteWithSource'
+        desire_quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RawQuoteWithSource'
+        objection_quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RawQuoteWithSource'
+    ResearchInspiration:
+      type: object
+      description: "Section 9: Research sources and creative inspiration"
+      properties:
+        raw_quotes:
+          $ref: '#/components/schemas/RawQuotesSection'
+        research_sources:
+          type: array
+          items:
+            type: string
+        inspiration_swipes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SwipeExample'
+    ProductInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          description: Working name of the product/offer
+        description:
+          type: string
+          nullable: true
+          description: What it is, who it's for, core outcomes/benefits
+        details:
+          type: string
+          nullable: true
+          description: Format, modules, deliverables, bonuses, guarantees, price points, terms
+        format:
+          type: string
+          nullable: true
+          description: Product format
+        price:
+          type: string
+          nullable: true
+          description: One-time price
+        subscription_price:
+          type: string
+          nullable: true
+          description: Subscription/recurring price if applicable
+        guarantee:
+          type: string
+          nullable: true
+          description: Guarantee offered
+        shipping:
+          type: string
+          nullable: true
+          description: Shipping details
+        key_differentiator:
+          type: string
+          nullable: true
+          description: The primary thing that sets this product apart from competitors
+        compliance_notes:
+          type: array
+          description: Legal/compliance requirements
+          items:
+            type: string
+    OfferBrief:
+      type: object
+      description: Structured brief to guide AI when generating copy, concepts, and funnel assets
+      properties:
+        market_snapshot:
+          $ref: '#/components/schemas/MarketSnapshot'
+        big_idea_section:
+          $ref: '#/components/schemas/BigIdeaSection'
+        product:
+          $ref: '#/components/schemas/ProductInfo'
+        pain_desire:
+          $ref: '#/components/schemas/PainDesireSection'
+        failed_solutions:
+          $ref: '#/components/schemas/FailedSolutionsSection'
+        competitor_landscape:
+          $ref: '#/components/schemas/CompetitorLandscape'
+        belief_architecture:
+          $ref: '#/components/schemas/BeliefArchitecture'
+        objections_section:
+          $ref: '#/components/schemas/ObjectionsSection'
+        research_inspiration:
+          $ref: '#/components/schemas/ResearchInspiration'
+        # Legacy fields
+        potential_product_names:
+          type: array
+          items:
+            type: string
+        level_of_consciousness:
+          $ref: '#/components/schemas/ConsciousnessLevel'
+        level_of_awareness:
+          $ref: '#/components/schemas/AwarenessLevel'
+        stage_of_sophistication:
+          $ref: '#/components/schemas/StageOfSophistication'
+        big_idea:
+          type: string
+          nullable: true
+        metaphors:
+          type: array
+          items:
+            type: string
+        potential_ump:
+          type: array
+          items:
+            type: string
+        potential_ums:
+          type: array
+          items:
+            type: string
+        guru:
+          type: string
+          nullable: true
+        discovery_story:
+          type: string
+          nullable: true
+        headline_ideas:
+          type: array
+          items:
+            $ref: '#/components/schemas/HeadlineIdea'
+        objections:
+          type: array
+          items:
+            type: string
+        belief_chains:
+          type: array
+          items:
+            $ref: '#/components/schemas/BeliefChain'
+        funnel_architecture:
+          type: array
+          items:
+            type: string
+        potential_domains:
+          type: array
+          items:
+            type: string
+        examples_swipes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SwipeExample'
+    TemplateMatch:
+      type: object
+      description: "A single template match with scoring dimensions"
+      required: [template_id, overall_fit_score, audience_fit, pain_point_fit, tone_fit, reasoning]
+      properties:
+        template_id:
+          type: string
+          description: "The template ID (e.g., 'A00001')"
+        overall_fit_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: "Overall match score from 0.0 to 1.0"
+        audience_fit:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: "How well the template's target audience matches the avatar"
+        pain_point_fit:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: "How well the template's pain points align with the avatar/angle"
+        tone_fit:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: "How well the writing tone matches the angle's emotional approach"
+        reasoning:
+          type: string
+          description: "Brief explanation of why this template matches the avatar+angle"
+    TemplatePredictionResult:
+      type: object
+      description: "Complete prediction result for an avatar+angle combination"
+      required: [avatar_id, angle_id, top_template_id, predicted_at]
+      properties:
+        avatar_id:
+          type: string
+          description: "ID of the avatar this prediction is for"
+        angle_id:
+          type: string
+          description: "ID of the marketing angle this prediction is for"
+        predictions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateMatch'
+          description: "Ranked list of matching templates (best first)"
+        top_template_id:
+          type: string
+          description: "The best matching template ID"
+        predicted_at:
+          type: string
+          format: date-time
+          description: "ISO timestamp when prediction was generated"
+    LandingPageSummary:
+      type: object
+      description: "Summary of a landing page template from the content library"
+      required: [id, s3_key, short_description, target_audience, primary_pain_point, primary_benefit, tone]
+      properties:
+        id:
+          type: string
+          description: "The landing page ID (e.g., 'A00001')"
+        s3_key:
+          type: string
+          description: "Full S3 key"
+        product_name:
+          type: string
+          nullable: true
+          description: "Detected product name"
+        product_category:
+          type: string
+          nullable: true
+          description: "Product category (e.g., 'supplement', 'course', 'software')"
+        short_description:
+          type: string
+          description: "One-sentence description of the product/service"
+        target_audience:
+          type: string
+          description: "Who this product targets"
+        primary_pain_point:
+          type: string
+          description: "Main pain point addressed"
+        primary_benefit:
+          type: string
+          description: "Main benefit/outcome promised"
+        tone:
+          type: string
+          description: "Writing tone (e.g., 'urgent', 'professional', 'friendly')"
+        keywords:
+          type: array
+          items:
+            type: string
+          description: "Key terms/phrases from the page (5-10)"
+        price_point:
+          type: string
+          nullable: true
+          description: "Price range if detectable ('low', 'mid', 'high', 'premium')"
+    ContentLibrarySummaries:
+      type: object
+      description: "Complete library of all landing page summaries"
+      required: [generated_at, total_pages]
+      properties:
+        version:
+          type: string
+          default: "1.0"
+          description: "Schema version"
+        generated_at:
+          type: string
+          format: date-time
+          description: "ISO timestamp of generation"
+        total_pages:
+          type: integer
+          description: "Number of pages in the library"
+        summaries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LandingPageSummary'
+  headers:
+    AccessControlAllowOrigin:
+      schema:
+        type: string
+      example: '*'
+    AccessControlAllowHeaders:
+      schema:
+        type: string
+      example: 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+    AccessControlAllowMethods:
+      schema:
+        type: string
+      example: 'GET,POST,OPTIONS'

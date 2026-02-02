@@ -1,0 +1,213 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AdvertorialImagePrompts",
+  "description": "Structured output schema for the Advertorial Image SOP. Captures research summary, hero image variants, and section-level image prompts with type codes.",
+  "type": "object",
+  "required": [
+    "theme",
+    "site",
+    "article",
+    "product",
+    "signOff",
+    "reviews"
+  ],
+  "properties": {
+    "theme": {
+      "type": "string",
+      "description": "Color theme for the page. Options: \"health\" (green), \"medical\" (blue), \"beauty\" (dusty rose), \"energy\" (orange), \"calm\" (soft lavender). Example: \"health\"",
+      "enum": [
+        "health",
+        "medical",
+        "beauty",
+        "energy",
+        "calm"
+      ]
+    },
+    "site": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string",
+          "description": "e.g. \"Personal Experience\""
+        }
+      }
+    },
+    "article": {
+      "type": "object",
+      "properties": {
+        "headline": {
+          "type": "string",
+          "description": "e.g. \"Stretch at 6am. Stiff by Noon. Couch by 4pm.\""
+        },
+        "subheadline": {
+          "type": "string",
+          "description": "e.g. \"I spent 12 years thinking my joints were just 'wearing out.' Then a woman in a Facebook group showed me why glucosamine never worked—and what finally did.\""
+        },
+        "authorName": {
+          "type": "string",
+          "description": "e.g. \"Margaret T.\""
+        },
+        "heroImage": {
+          "type": "string",
+          "format": "url",
+          "description": "e.g. \"https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=500&fit=crop\""
+        },
+        "heroImagePrompt": {
+          "type": "string",
+          "description": "Image generation prompt for the hero image"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "headline": {
+                "type": "string",
+                "description": "e.g. \"I was sitting on the edge of my bed. Again.\""
+              },
+              "image": {
+                "type": "string",
+                "format": "url",
+                "description": "Can be empty string. Example: \"https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=800&h=500&fit=crop\""
+              },
+              "imagePrompt": {
+                "type": "string",
+                "description": "Image generation prompt for the section image. Can be empty string"
+              },
+              "body": {
+                "type": "string",
+                "format": "html",
+                "description": "e.g. `<p class=\"short\">5:47am. The alarm hadn't gone off yet.</p><p class=\"short\">But I was already awake. <strong>Already dreading the first step.</strong></p><p>My knees felt like they were filled with gravel. The same way they felt yesterday. And the day before. And every morning for the past decade.</p><p><strong>I sat there, taking inventory. Testing. Wondering how bad today would be.</strong></p><p class=\"short\">Deep breath. Smile ready.</p><p><strong>Time to pretend everything was fine. Again.</strong></p>`"
+              }
+            }
+          }
+        }
+      }
+    },
+    "product": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "e.g. \"JointEase\""
+        },
+        "image": {
+          "type": "string",
+          "format": "url",
+          "description": "e.g. \"https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop\""
+        },
+        "imagePrompt": {
+          "type": "string",
+          "description": "Image generation prompt for the product image"
+        },
+        "description": {
+          "type": "string",
+          "description": "e.g. \"The first joint supplement that targets inflammation directly—not cartilage that can't feel pain.\""
+        },
+        "benefits": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "e.g. \"Targets inflammation — the real cause of joint pain\""
+          }
+        },
+        "orderUrl": {
+          "type": "string",
+          "format": "url",
+          "description": "e.g. \"#order\""
+        }
+      }
+    },
+    "signOff": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "e.g. \"Take care of yourself. You deserve to move without pain again.\""
+        },
+        "name": {
+          "type": "string",
+          "description": "e.g. \"—Margaret, Age 64\""
+        }
+      }
+    },
+    "reviews": {
+      "type": "object",
+      "properties": {
+        "score": {
+          "type": "string",
+          "description": "e.g. \"4.9\""
+        },
+        "count": {
+          "type": "string",
+          "description": "e.g. \"18,472\""
+        },
+        "sidebar": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "stars": {
+                "type": "string",
+                "description": "e.g. \"★★★★★\""
+              },
+              "text": {
+                "type": "string",
+                "description": "e.g. I couldn't get down on the floor with my grandkids. Now I can. That's worth everything to me. <span class=\"highlight\">My daughter cried when she saw me playing with them.</span>"
+              },
+              "name": {
+                "type": "string",
+                "description": "e.g. \"Barbara K.\""
+              },
+              "age": {
+                "type": "string",
+                "description": "e.g. \"66\""
+              },
+              "initial": {
+                "type": "string",
+                "description": "e.g. \"B\""
+              }
+            }
+          }
+        },
+        "main": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "e.g. \"Robert H.\""
+              },
+              "age": {
+                "type": "string",
+                "description": "e.g. \"67\""
+              },
+              "initial": {
+                "type": "string",
+                "description": "e.g. \"R\""
+              },
+              "stars": {
+                "type": "string",
+                "description": "e.g. \"★★★★★\""
+              },
+              "title": {
+                "type": "string",
+                "description": "e.g. \"Finally Understand What Was Wrong\""
+              },
+              "text": {
+                "type": "string",
+                "format": "html",
+                "description": "e.g. \"Spent thousands on glucosamine... <span class=\\\"highlight\\\">This targets what actually hurts.</span>\""
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
