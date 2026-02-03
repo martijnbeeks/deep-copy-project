@@ -51,7 +51,7 @@ export class DeepCopyStack extends Stack {
       assumedBy: new iam.WebIdentityPrincipal(githubProvider.openIdConnectProviderArn, {
         StringEquals: {
           'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
-          'token.actions.githubusercontent.com:sub': 'repo:martijnbeeks/deep-copy-infra:ref:refs/heads/main',
+          'token.actions.githubusercontent.com:sub': 'repo:martijnbeeks/deep-copy-project:ref:refs/heads/main',
         },
       }),
       description: 'Role assumed by GitHub Actions to deploy the stack',

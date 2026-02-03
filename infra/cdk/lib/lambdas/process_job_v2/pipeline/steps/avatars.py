@@ -8,12 +8,8 @@ import logging
 from typing import Any
 
 from services.openai_service import OpenAIService
+from services.prompt_service import PromptService
 from data_models import Avatar, IdentifiedAvatarList
-from prompts import (
-    get_identify_avatars_prompt,
-    get_complete_avatar_details_prompt,
-    get_necessary_beliefs_prompt
-)
 
 
 logger = logging.getLogger(__name__)
@@ -22,19 +18,21 @@ logger = logging.getLogger(__name__)
 class AvatarStep:
     """
     Pipeline step for avatar identification and completion.
-    
+
     Identifies distinct customer avatars from research output,
     then completes detailed profiles and necessary beliefs for each.
     """
-    
-    def __init__(self, openai_service: OpenAIService):
+
+    def __init__(self, openai_service: OpenAIService, prompt_service: PromptService):
         """
         Initialize the avatar step.
-        
+
         Args:
             openai_service: OpenAI service for LLM operations.
+            prompt_service: PromptService for DB-stored prompts.
         """
         self.openai_service = openai_service
+        self.prompt_service = prompt_service
     
     def identify_avatars(self, deep_research_output: str) -> IdentifiedAvatarList:
         """
@@ -50,7 +48,10 @@ class AvatarStep:
             Exception: If avatar identification fails.
         """
         try:
-            prompt = get_identify_avatars_prompt(deep_research_output)
+            prompt = self.prompt_service.get_prompt(
+                "get_identify_avatars_prompt",
+                deep_research_output=deep_research_output,
+            )
             
             logger.info("Calling GPT-5 API to identify avatars")
             result = self.openai_service.parse_structured(
@@ -85,11 +86,12 @@ class AvatarStep:
             Exception: If avatar completion fails.
         """
         try:
-            prompt = get_complete_avatar_details_prompt(
+            kwargs = dict(
                 avatar_name=identified_avatar.name,
                 avatar_description=identified_avatar.description,
-                deep_research_output=deep_research_output
+                deep_research_output=deep_research_output,
             )
+            prompt = self.prompt_service.get_prompt("get_complete_avatar_details_prompt", **kwargs)
             
             logger.info(f"Calling GPT-5 API to complete avatar details for {identified_avatar.name}")
             result = self.openai_service.parse_structured(
@@ -130,11 +132,12 @@ class AvatarStep:
             avatar_name = identified_avatar.name
             avatar_description = identified_avatar.description
             
-            prompt = get_necessary_beliefs_prompt(
+            kwargs = dict(
                 avatar_name=avatar_name,
                 avatar_description=avatar_description,
-                deep_research_output=deep_research_output
+                deep_research_output=deep_research_output,
             )
+            prompt = self.prompt_service.get_prompt("get_necessary_beliefs_prompt", **kwargs)
             
             logger.info(f"Calling GPT-5 API to complete necessary beliefs for {avatar_name}")
             result = self.openai_service.create_response(

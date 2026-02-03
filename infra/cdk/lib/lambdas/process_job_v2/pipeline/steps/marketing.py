@@ -7,8 +7,8 @@ Generates marketing angles for customer avatars.
 import logging
 
 from services.openai_service import OpenAIService
+from services.prompt_service import PromptService
 from data_models import Avatar, AvatarMarketingAngles
-from prompts import get_marketing_angles_prompt
 
 
 logger = logging.getLogger(__name__)
@@ -17,19 +17,21 @@ logger = logging.getLogger(__name__)
 class MarketingStep:
     """
     Pipeline step for generating marketing angles.
-    
+
     Creates targeted marketing angles for each customer avatar
     based on their profile and the research findings.
     """
-    
-    def __init__(self, openai_service: OpenAIService):
+
+    def __init__(self, openai_service: OpenAIService, prompt_service: PromptService):
         """
         Initialize the marketing step.
-        
+
         Args:
             openai_service: OpenAI service for LLM operations.
+            prompt_service: PromptService for DB-stored prompts.
         """
         self.openai_service = openai_service
+        self.prompt_service = prompt_service
     
     def generate_marketing_angles(
         self, 
@@ -55,11 +57,12 @@ class MarketingStep:
         try:
             avatar_name = avatar.overview.name
             
-            prompt = get_marketing_angles_prompt(
+            kwargs = dict(
                 avatar_name=avatar_name,
                 avatar_json=avatar.model_dump_json(indent=2),
-                deep_research_output=deep_research_output
+                deep_research_output=deep_research_output,
             )
+            prompt = self.prompt_service.get_prompt("get_marketing_angles_prompt", **kwargs)
             
             logger.info(f"Calling GPT-5 API to generate marketing angles for {avatar_name}")
             result = self.openai_service.parse_structured(

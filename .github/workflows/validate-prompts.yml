@@ -1,0 +1,46 @@
+name: Validate Prompts
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'infra/scripts/prompts_*.sql'
+      - 'infra/scripts/migrate_prompts_to_db.py'
+      - 'infra/cdk/lib/lambdas/**/prompts.py'
+      - 'infra/cdk/lib/lambdas/**/prompt_service.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-prompts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        working-directory: ./infra/scripts
+        run: |
+          pip install -r requirements-test.txt
+
+      - name: Validate prompts in database
+        working-directory: ./infra/scripts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python test_prompts_live.py --quick
+
+      - name: Run full test suite
+        working-directory: ./infra/scripts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          pytest test_prompts_live.py -v --tb=short

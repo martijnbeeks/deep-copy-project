@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx neonctl@latest init)",
+      "Bash(python3:*)",
+      "Bash(npm install:*)",
+      "Bash(npm i:*)",
+      "Bash(curl:*)",
+      "Bash(npm run dev:*)",
+      "Bash(grep:*)",
+      "Bash(git log:*)",
+      "Bash(cat:*)",
+      "Bash(uv lock:*)",
+      "WebSearch",
+      "Bash(du:*)",
+      "Bash(ls:*)"
+    ]
+  }
+}

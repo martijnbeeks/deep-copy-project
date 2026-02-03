@@ -1,4 +1,10 @@
-README.md
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
@@ -10,4 +16,36 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+.mypy_cache/
+.ruff_cache/
 
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+build/
+dist/
+*.whl
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Tests
+tests/
+test_*.py
+*_test.py
+conftest.py
+
+# Git
+.git/
+.gitignore
+
+# UV/pip
+.uv/
+pip-log.txt
+pip-delete-this-directory.txt

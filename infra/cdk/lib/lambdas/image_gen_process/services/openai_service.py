@@ -14,7 +14,6 @@ from openai import OpenAI
 from pydantic import BaseModel
 
 from utils.logging_config import setup_logging
-from prompts import get_detect_product_prompt
 from llm_usage import (
     UsageContext,
     emit_llm_usage_event,
@@ -46,13 +45,14 @@ class OpenAIService:
         self.client = OpenAI(api_key=self.api_key)
     
     def detect_product_in_image(
-        self, 
-        image_bytes: bytes, 
-        job_id: Optional[str]
+        self,
+        image_bytes: bytes,
+        job_id: Optional[str],
+        prompt_service,
     ) -> bool:
         """
         Use OpenAI vision to detect if reference image contains a product image.
-        
+
         Args:
             image_bytes: Raw image bytes to analyze.
             job_id: Job ID for usage tracking.
@@ -70,8 +70,8 @@ class OpenAIService:
         img.save(buf, format="PNG")
         img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
         
-        prompt = get_detect_product_prompt()
-        
+        prompt = prompt_service.get_prompt("get_detect_product_prompt")
+
         model = os.environ.get("OPENAI_TEXT_MODEL", "gpt-5-mini")
         t0 = time.time()
         
@@ -135,14 +135,15 @@ class OpenAIService:
             return True
     
     def summarize_docs(
-        self, 
-        foundational_text: str, 
-        language: str, 
-        job_id: Optional[str]
+        self,
+        foundational_text: str,
+        language: str,
+        job_id: Optional[str],
+        prompt_service,
     ) -> Optional[str]:
         """
         Summarize foundational documents for image generation context.
-        
+
         Args:
             foundational_text: Text to summarize.
             language: Target language for output.
@@ -151,8 +152,6 @@ class OpenAIService:
         Returns:
             Summary text or None if input is too short.
         """
-        from prompts import get_summarize_docs_prompt
-        
         if not foundational_text or len(foundational_text.strip()) < 50:
             return None
         
@@ -161,7 +160,7 @@ class OpenAIService:
         if len(text) > 12000:
             text = text[:12000] + "\n\n[TRUNCATED]"
         
-        prompt = get_summarize_docs_prompt(language, text)
+        prompt = prompt_service.get_prompt("get_summarize_docs_prompt", language=language, text=text)
         model = os.environ.get("OPENAI_TEXT_MODEL", "gpt-5-mini")
         t0 = time.time()
         

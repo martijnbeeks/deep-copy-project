@@ -9,8 +9,8 @@ import logging
 from typing import List, Dict, Any
 
 from services.openai_service import OpenAIService
+from services.prompt_service import PromptService
 from data_models import OfferBrief
-from prompts import get_offer_brief_prompt
 
 
 logger = logging.getLogger(__name__)
@@ -19,19 +19,21 @@ logger = logging.getLogger(__name__)
 class OfferBriefStep:
     """
     Pipeline step for generating offer briefs.
-    
+
     Creates a strategic offer brief that synthesizes insights from
     all avatars and research into actionable marketing strategy.
     """
-    
-    def __init__(self, openai_service: OpenAIService):
+
+    def __init__(self, openai_service: OpenAIService, prompt_service: PromptService):
         """
         Initialize the offer brief step.
-        
+
         Args:
             openai_service: OpenAI service for LLM operations.
+            prompt_service: PromptService for DB-stored prompts.
         """
         self.openai_service = openai_service
+        self.prompt_service = prompt_service
     
     def create_offer_brief(
         self, 
@@ -59,10 +61,11 @@ class OfferBriefStep:
             # Prepare inputs string
             avatars_summary = json.dumps(marketing_avatars_list, ensure_ascii=False, indent=2)
             
-            prompt = get_offer_brief_prompt(
+            kwargs = dict(
                 avatars_summary=avatars_summary,
-                deep_research_output=deep_research_output
+                deep_research_output=deep_research_output,
             )
+            prompt = self.prompt_service.get_prompt("get_offer_brief_prompt", **kwargs)
             
             logger.info("Calling GPT-5 API to create strategic Offer Brief")
             result = self.openai_service.parse_structured(

@@ -25,6 +25,7 @@ from pipeline.steps.marketing import MarketingStep
 from pipeline.steps.offer_brief import OfferBriefStep
 from pipeline.steps.template_prediction import TemplatePredictionStep
 from services.template_prediction_service import LibrarySummariesCache
+from services.prompt_service import PromptService
 
 
 logger = logging.getLogger(__name__)
@@ -88,12 +89,18 @@ class PipelineOrchestrator:
             s3_bucket=self.aws_services.s3_bucket
         )
         
+        # Initialize prompt service (DATABASE_URL is required)
+        db_url = self.aws_services.secrets.get("DATABASE_URL")
+        if not db_url:
+            raise RuntimeError("DATABASE_URL not found in secrets. Cannot load prompts from DB.")
+        self.prompt_service = PromptService(db_url, "process_job_v2")
+
         # Initialize pipeline steps
-        self.analyze_page_step = AnalyzePageStep(self.openai_service)
-        self.deep_research_step = DeepResearchStep(self.perplexity_service)
-        self.avatar_step = AvatarStep(self.openai_service)
-        self.marketing_step = MarketingStep(self.openai_service)
-        self.offer_brief_step = OfferBriefStep(self.openai_service)
+        self.analyze_page_step = AnalyzePageStep(self.openai_service, prompt_service=self.prompt_service)
+        self.deep_research_step = DeepResearchStep(self.perplexity_service, prompt_service=self.prompt_service)
+        self.avatar_step = AvatarStep(self.openai_service, prompt_service=self.prompt_service)
+        self.marketing_step = MarketingStep(self.openai_service, prompt_service=self.prompt_service)
+        self.offer_brief_step = OfferBriefStep(self.openai_service, prompt_service=self.prompt_service)
 
         # Initialize template prediction step
         self.library_cache = LibrarySummariesCache(
@@ -102,7 +109,8 @@ class PipelineOrchestrator:
         )
         self.template_prediction_step = TemplatePredictionStep(
             openai_service=self.openai_service,
-            library_cache=self.library_cache
+            library_cache=self.library_cache,
+            prompt_service=self.prompt_service
         )
     
     def _set_usage_context(self, config: PipelineConfig) -> None:

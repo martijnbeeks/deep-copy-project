@@ -11,18 +11,20 @@ def summarize_docs_if_needed(
     openai_service: OpenAIService,
     foundational_text: str,
     language: str,
-    job_id: Optional[str]
+    job_id: Optional[str],
+    prompt_service,
 ) -> Optional[str]:
     """
     Summarize foundational documents if provided.
-    
+
     Args:
         openai_service: Initialized OpenAIService.
         foundational_text: The full text to summarize.
         language: The target language.
         job_id: Job identifier.
-        
+        prompt_service: PromptService for DB-stored prompts.
+
     Returns:
         Optional[str]: The summary, or None if text is too short.
     """
-    return openai_service.summarize_docs(foundational_text, language, job_id)
+    return openai_service.summarize_docs(foundational_text, language, job_id, prompt_service=prompt_service)

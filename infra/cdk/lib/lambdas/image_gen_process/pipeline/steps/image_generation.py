@@ -8,7 +8,6 @@ from services.gemini_service import GeminiService
 from utils.logging_config import setup_logging
 from prompts import (
     get_image_gen_base_prompt,
-    get_image_gen_with_product_prompt,
     get_image_gen_without_product_prompt
 )
 
@@ -26,6 +25,7 @@ def generate_image_openai(
     product_image_data: Optional[Dict[str, str]], # base64, mimeType
     supports_product: bool,
     job_id: Optional[str],
+    prompt_service,
 ) -> str:
     """
     Generate image using OpenAI (DALL-E 3 / GPT-4o).
@@ -47,20 +47,16 @@ def generate_image_openai(
     
     # Add product support instructions
     if supports_product and product_image_data:
-        prompt_parts.append(get_image_gen_with_product_prompt())
+        prompt_parts.append(prompt_service.get_prompt("get_image_gen_with_product_prompt"))
     else:
-        # If product provided but not supported, we must ensure prompt says NO product
+        # This prompt stays in code (contains conditional logic)
         prompt_parts.append(get_image_gen_without_product_prompt(supports_product))
-        
+
     final_prompt = "\n\n".join(prompt_parts)
-    
+
     # 2. Call Service
-    # Note: If supports_product is False, we should NOT pass product_image_data to the service
-    # so that the model doesn't see it (if the service supports multi-modal input).
-    # OpenAIService.generate_image takes product_image_data.
-    
     eff_product_data = product_image_data if supports_product else None
-    
+
     return openai_service.generate_image(
         prompt=final_prompt,
         reference_image_data=reference_image_data,
@@ -81,6 +77,7 @@ def generate_image_nano_banana(
     product_image_bytes: Optional[bytes],
     supports_product: bool,
     job_id: Optional[str],
+    prompt_service,
 ) -> str:
     """
     Generate image using Gemini (Nano Banana / Gemini 3 Pro).
@@ -100,12 +97,13 @@ def generate_image_nano_banana(
     prompt_parts.append(f"Visual variation: {variation.get('description', '')}")
     
     if supports_product and product_image_bytes:
-        prompt_parts.append(get_image_gen_with_product_prompt())
+        prompt_parts.append(prompt_service.get_prompt("get_image_gen_with_product_prompt"))
     else:
+        # This prompt stays in code (contains conditional logic)
         prompt_parts.append(get_image_gen_without_product_prompt(supports_product))
-        
+
     final_prompt = "\n\n".join(prompt_parts)
-    
+
     # 2. Call Service
     eff_product_bytes = product_image_bytes if supports_product else None
     

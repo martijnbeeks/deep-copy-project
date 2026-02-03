@@ -17,6 +17,7 @@ from services.anthropic_service import AnthropicService
 from pipeline.steps.template_selection import select_swipe_files_template, load_swipe_file_templates
 from pipeline.steps.swipe_generation import rewrite_swipe_file
 from prompts import ImageStyle
+from services.prompt_service import PromptService
 
 logger = setup_logging(__name__)
 
@@ -24,12 +25,18 @@ class SwipeGenerationOrchestrator:
     def __init__(self):
         # Initialize secrets
         self.secrets = get_secrets()
-        
+
         # Setup Env from secrets if needed, but services usually check env or we pass explicitly
         if self.secrets.get("ANTHROPIC_API_KEY"):
             os.environ["ANTHROPIC_API_KEY"] = self.secrets.get("ANTHROPIC_API_KEY")
-            
+
         self.anthropic = AnthropicService()
+
+        # Initialize prompt service (DATABASE_URL is required)
+        db_url = self.secrets.get("DATABASE_URL")
+        if not db_url:
+            raise RuntimeError("DATABASE_URL not found in secrets. Cannot load prompts from DB.")
+        self.prompt_service = PromptService(db_url, "write_swipe")
         
     def run(self, event: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -142,7 +149,8 @@ class SwipeGenerationOrchestrator:
                 swipe_file_config=swipe_config,
                 anthropic_service=self.anthropic,
                 job_id=job_id,
-                image_style=image_style
+                image_style=image_style,
+                prompt_service=self.prompt_service
             )
 
             # Include context IDs in the final result
