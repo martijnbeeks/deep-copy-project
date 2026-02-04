@@ -461,7 +461,8 @@ class TestPromptsByCategory:
             "get_match_angles_user_prompt",
             "get_image_gen_base_prompt",
             "get_image_gen_with_product_prompt",
-            "get_image_gen_without_product_prompt",
+            "get_image_gen_without_product_prompt_no_support",
+            "get_image_gen_without_product_prompt_with_support",
         }
 
         category_prompts = prompts_by_category.get("image_gen_process", [])

@@ -213,24 +213,24 @@ export function PromptEditor({ prompt, onSave, onCancel }: PromptEditorProps) {
 
       {/* Metadata */}
       <div className="rounded-lg border bg-muted/30 p-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-          <div>
+        <div className="grid grid-cols-2 gap-4 text-xs">
+          <div className="min-w-0">
             <p className="text-muted-foreground mb-1">Name</p>
-            <p className="font-medium">{prompt.name}</p>
+            <p className="font-medium truncate">{prompt.name}</p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-muted-foreground mb-1">Category</p>
             <Badge variant="secondary" className="text-xs font-normal">
               {prompt.category}
             </Badge>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-muted-foreground mb-1">Function</p>
-            <code className="font-mono text-xs bg-background border px-1.5 py-0.5 rounded">
+            <code className="font-mono text-xs bg-background border px-1.5 py-0.5 rounded block truncate">
               {prompt.function_name}
             </code>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-muted-foreground mb-1">Required Parameters</p>
             <div className="flex flex-wrap gap-1">
               {requiredParams.length > 0 ? (
