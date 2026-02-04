@@ -131,6 +131,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
         resultsBucket.grantRead(processJobLambdaV2, 'content_library/*');
         resultsBucket.grantRead(processJobLambdaV2, 'projects/*');
         resultsBucket.grantRead(processJobLambdaV2, 'results/*');
+        resultsBucket.grantRead(processJobLambdaV2, 'cache/*');
         // Shared asset for Python "thin" lambdas (submit/get-result). Exclude caches to keep asset staging reliable.
         const pythonLambdasAsset = aws_cdk_lib_1.aws_lambda.Code.fromAsset(path.join(__dirname, 'lambdas'), {
             exclude: [
@@ -197,55 +198,6 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
             },
         });
         resultsBucket.grantRead(getJobResultLambda);
-        // Avatar extraction - Processing Lambda (Docker-based)
-        const processAvatarExtractionLambda = new aws_cdk_lib_1.aws_lambda.DockerImageFunction(this, 'ProcessAvatarExtractionLambda', {
-            code: aws_cdk_lib_1.aws_lambda.DockerImageCode.fromImageAsset(path.join(__dirname, 'lambdas', 'extract_avatars'), {
-                platform: aws_ecr_assets_1.Platform.LINUX_AMD64,
-            }),
-            timeout: aws_cdk_lib_1.Duration.seconds(600),
-            memorySize: 3008, // 3GB for Playwright + OpenAI
-            architecture: aws_cdk_lib_1.aws_lambda.Architecture.X86_64,
-            environment: {
-                PLAYWRIGHT_BROWSERS_PATH: '/var/task/.playwright',
-                JOBS_TABLE_NAME: jobsTable.tableName,
-                RESULTS_BUCKET: resultsBucket.bucketName,
-                LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
-            },
-        });
-        // Grant access to the same secret as the ECS pipeline
-        processAvatarExtractionLambda.addToRolePolicy(new aws_cdk_lib_1.aws_iam.PolicyStatement({
-            actions: ['secretsmanager:GetSecretValue'],
-            resources: [secretArn],
-        }));
-        jobsTable.grantReadWriteData(processAvatarExtractionLambda);
-        resultsBucket.grantPut(processAvatarExtractionLambda);
-        resultsBucket.grantRead(processAvatarExtractionLambda, 'results/*');
-        // Avatar extraction - Submit Lambda (Python)
-        const submitAvatarExtractionLambda = new aws_cdk_lib_1.aws_lambda.Function(this, 'SubmitAvatarExtractionLambda', {
-            runtime: aws_cdk_lib_1.aws_lambda.Runtime.PYTHON_3_11,
-            timeout: aws_cdk_lib_1.Duration.seconds(10),
-            memorySize: 256,
-            handler: 'submit_avatar_extraction.handler',
-            code: pythonLambdasAsset,
-            environment: {
-                JOBS_TABLE_NAME: jobsTable.tableName,
-                PROCESS_LAMBDA_NAME: processAvatarExtractionLambda.functionName,
-            },
-        });
-        jobsTable.grantReadWriteData(submitAvatarExtractionLambda);
-        processAvatarExtractionLambda.grantInvoke(submitAvatarExtractionLambda);
-        // Avatar extraction - Get Result Lambda (Python)
-        const getAvatarResultLambda = new aws_cdk_lib_1.aws_lambda.Function(this, 'GetAvatarResultLambda', {
-            runtime: aws_cdk_lib_1.aws_lambda.Runtime.PYTHON_3_11,
-            timeout: aws_cdk_lib_1.Duration.seconds(10),
-            memorySize: 256,
-            handler: 'get_avatar_result.handler',
-            code: pythonLambdasAsset,
-            environment: {
-                RESULTS_BUCKET: resultsBucket.bucketName,
-            },
-        });
-        resultsBucket.grantRead(getAvatarResultLambda);
         // Swipe file generation - Processing Lambda (Docker-based)
         const processSwipeFileLambda = new aws_cdk_lib_1.aws_lambda.DockerImageFunction(this, 'ProcessSwipeFileLambda', {
             code: aws_cdk_lib_1.aws_lambda.DockerImageCode.fromImageAsset(path.join(__dirname, 'lambdas', 'write_swipe'), {
@@ -320,6 +272,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
         resultsBucket.grantPut(processImageGenLambda);
         resultsBucket.grantPutAcl(processImageGenLambda);
         resultsBucket.grantRead(processImageGenLambda, 'image_library/*');
+        resultsBucket.grantRead(processImageGenLambda, 'user-uploads/*');
         // Image generation - Submit Lambda (Python)
         const submitImageGenLambda = new aws_cdk_lib_1.aws_lambda.Function(this, 'SubmitImageGenLambda', {
             runtime: aws_cdk_lib_1.aws_lambda.Runtime.PYTHON_3_11,
@@ -346,6 +299,55 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
             },
         });
         resultsBucket.grantRead(getImageGenResultLambda);
+        // Prelander image generation - Processing Lambda (Docker-based)
+        const processPrelanderImagesLambda = new aws_cdk_lib_1.aws_lambda.DockerImageFunction(this, 'ProcessPrelanderImagesLambda', {
+            code: aws_cdk_lib_1.aws_lambda.DockerImageCode.fromImageAsset(path.join(__dirname, 'lambdas', 'prelander_image_gen'), {
+                platform: aws_ecr_assets_1.Platform.LINUX_AMD64,
+            }),
+            timeout: aws_cdk_lib_1.Duration.seconds(600),
+            memorySize: 3008,
+            architecture: aws_cdk_lib_1.aws_lambda.Architecture.X86_64,
+            environment: {
+                JOBS_TABLE_NAME: jobsTable.tableName,
+                RESULTS_BUCKET: resultsBucket.bucketName,
+                LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
+                SECRET_ID: 'deepcopy-secret-dev',
+            },
+        });
+        processPrelanderImagesLambda.addToRolePolicy(new aws_cdk_lib_1.aws_iam.PolicyStatement({
+            actions: ['secretsmanager:GetSecretValue'],
+            resources: [secretArn],
+        }));
+        jobsTable.grantReadWriteData(processPrelanderImagesLambda);
+        resultsBucket.grantPut(processPrelanderImagesLambda);
+        resultsBucket.grantPutAcl(processPrelanderImagesLambda);
+        resultsBucket.grantRead(processPrelanderImagesLambda);
+        // Prelander image generation - Submit Lambda (Python)
+        const submitPrelanderImagesLambda = new aws_cdk_lib_1.aws_lambda.Function(this, 'SubmitPrelanderImagesLambda', {
+            runtime: aws_cdk_lib_1.aws_lambda.Runtime.PYTHON_3_11,
+            timeout: aws_cdk_lib_1.Duration.seconds(10),
+            memorySize: 256,
+            handler: 'submit_prelander_images.handler',
+            code: pythonLambdasAsset,
+            environment: {
+                JOBS_TABLE_NAME: jobsTable.tableName,
+                PROCESS_LAMBDA_NAME: processPrelanderImagesLambda.functionName,
+            },
+        });
+        jobsTable.grantReadWriteData(submitPrelanderImagesLambda);
+        processPrelanderImagesLambda.grantInvoke(submitPrelanderImagesLambda);
+        // Prelander image generation - Get Result Lambda (Python)
+        const getPrelanderImagesResultLambda = new aws_cdk_lib_1.aws_lambda.Function(this, 'GetPrelanderImagesResultLambda', {
+            runtime: aws_cdk_lib_1.aws_lambda.Runtime.PYTHON_3_11,
+            timeout: aws_cdk_lib_1.Duration.seconds(10),
+            memorySize: 256,
+            handler: 'get_prelander_images_result.handler',
+            code: pythonLambdasAsset,
+            environment: {
+                RESULTS_BUCKET: resultsBucket.bucketName,
+            },
+        });
+        resultsBucket.grantRead(getPrelanderImagesResultLambda);
         // Cognito User Pool for API auth
         const userPool = new aws_cdk_lib_1.aws_cognito.UserPool(this, 'UserPool', {
             signInAliases: { email: true },
@@ -452,26 +454,6 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
             authorizationType: aws_cdk_lib_1.aws_apigateway.AuthorizationType.COGNITO,
             authorizationScopes: ['https://deep-copy.api/read'],
         });
-        // Avatar extraction endpoints
-        const avatarsRes = api.root.addResource('avatars');
-        const extractRes = avatarsRes.addResource('extract');
-        extractRes.addMethod('POST', new aws_cdk_lib_1.aws_apigateway.LambdaIntegration(submitAvatarExtractionLambda), {
-            authorizer: cognitoAuthorizer,
-            authorizationType: aws_cdk_lib_1.aws_apigateway.AuthorizationType.COGNITO,
-            authorizationScopes: ['https://deep-copy.api/write'],
-        });
-        const avatarIdRes = avatarsRes.addResource('{id}');
-        avatarIdRes.addMethod('GET', new aws_cdk_lib_1.aws_apigateway.LambdaIntegration(getJobLambda), {
-            authorizer: cognitoAuthorizer,
-            authorizationType: aws_cdk_lib_1.aws_apigateway.AuthorizationType.COGNITO,
-            authorizationScopes: ['https://deep-copy.api/read'],
-        });
-        const avatarResultRes = avatarIdRes.addResource('result');
-        avatarResultRes.addMethod('GET', new aws_cdk_lib_1.aws_apigateway.LambdaIntegration(getAvatarResultLambda), {
-            authorizer: cognitoAuthorizer,
-            authorizationType: aws_cdk_lib_1.aws_apigateway.AuthorizationType.COGNITO,
-            authorizationScopes: ['https://deep-copy.api/read'],
-        });
         // Swipe file generation endpoints
         const swipeFilesRes = api.root.addResource('swipe-files');
         const generateRes = swipeFilesRes.addResource('generate');
@@ -512,19 +494,31 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
             authorizationType: aws_cdk_lib_1.aws_apigateway.AuthorizationType.COGNITO,
             authorizationScopes: ['https://deep-copy.api/read'],
         });
+        // Prelander image generation endpoints
+        const prelanderImagesRes = api.root.addResource('prelander-images');
+        const prelanderImagesGenerateRes = prelanderImagesRes.addResource('generate');
+        prelanderImagesGenerateRes.addMethod('POST', new aws_cdk_lib_1.aws_apigateway.LambdaIntegration(submitPrelanderImagesLambda), {
+            authorizer: cognitoAuthorizer,
+            authorizationType: aws_cdk_lib_1.aws_apigateway.AuthorizationType.COGNITO,
+            authorizationScopes: ['https://deep-copy.api/write'],
+        });
+        const prelanderImagesIdRes = prelanderImagesRes.addResource('{id}');
+        prelanderImagesIdRes.addMethod('GET', new aws_cdk_lib_1.aws_apigateway.LambdaIntegration(getJobLambda), {
+            authorizer: cognitoAuthorizer,
+            authorizationType: aws_cdk_lib_1.aws_apigateway.AuthorizationType.COGNITO,
+            authorizationScopes: ['https://deep-copy.api/read'],
+        });
+        const prelanderImagesResultRes = prelanderImagesIdRes.addResource('result');
+        prelanderImagesResultRes.addMethod('GET', new aws_cdk_lib_1.aws_apigateway.LambdaIntegration(getPrelanderImagesResultLambda), {
+            authorizer: cognitoAuthorizer,
+            authorizationType: aws_cdk_lib_1.aws_apigateway.AuthorizationType.COGNITO,
+            authorizationScopes: ['https://deep-copy.api/read'],
+        });
         // Dev endpoints
         const devRes = api.root.addResource('dev');
         // Dev jobs
         const devJobsRes = devRes.addResource('jobs');
         devJobsRes.addMethod('POST', new aws_cdk_lib_1.aws_apigateway.LambdaIntegration(submitLambda), {
-            authorizer: cognitoAuthorizer,
-            authorizationType: aws_cdk_lib_1.aws_apigateway.AuthorizationType.COGNITO,
-            authorizationScopes: ['https://deep-copy.api/write'],
-        });
-        // Dev avatars
-        const devAvatarsRes = devRes.addResource('avatars');
-        const devAvatarsExtractRes = devAvatarsRes.addResource('extract');
-        devAvatarsExtractRes.addMethod('POST', new aws_cdk_lib_1.aws_apigateway.LambdaIntegration(submitAvatarExtractionLambda), {
             authorizer: cognitoAuthorizer,
             authorizationType: aws_cdk_lib_1.aws_apigateway.AuthorizationType.COGNITO,
             authorizationScopes: ['https://deep-copy.api/write'],
@@ -570,9 +564,9 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
         // You can also have the container call DynamoDB directly at the end, which the Python already supports
         new aws_cdk_lib_1.CfnOutput(this, 'ApiUrl', { value: api.url });
         new aws_cdk_lib_1.CfnOutput(this, 'V2JobsEndpoint', { value: `${api.url}v2/jobs` });
-        new aws_cdk_lib_1.CfnOutput(this, 'AvatarsSubmitEndpoint', { value: `${api.url}avatars/extract` });
         new aws_cdk_lib_1.CfnOutput(this, 'SwipeFilesSubmitEndpoint', { value: `${api.url}swipe-files/generate` });
         new aws_cdk_lib_1.CfnOutput(this, 'ImageGenSubmitEndpoint', { value: `${api.url}image-gen/generate` });
+        new aws_cdk_lib_1.CfnOutput(this, 'PrelanderImagesSubmitEndpoint', { value: `${api.url}prelander-images/generate` });
         new aws_cdk_lib_1.CfnOutput(this, 'ResultsBucketName', { value: resultsBucket.bucketName });
         new aws_cdk_lib_1.CfnOutput(this, 'JobsTableName', { value: jobsTable.tableName });
         new aws_cdk_lib_1.CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });

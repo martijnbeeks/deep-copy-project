@@ -213,64 +213,6 @@ export class DeepCopyStack extends Stack {
     });
     resultsBucket.grantRead(getJobResultLambda);
 
-    // Avatar extraction - Processing Lambda (Docker-based)
-    const processAvatarExtractionLambda = new lambda.DockerImageFunction(this, 'ProcessAvatarExtractionLambda', {
-      code: lambda.DockerImageCode.fromImageAsset(
-        path.join(__dirname, 'lambdas', 'extract_avatars'),
-        {
-          platform: Platform.LINUX_AMD64,
-        }
-      ),
-      timeout: Duration.seconds(600),
-      memorySize: 3008, // 3GB for Playwright + OpenAI
-      architecture: lambda.Architecture.X86_64,
-      environment: {
-        PLAYWRIGHT_BROWSERS_PATH: '/var/task/.playwright',
-        JOBS_TABLE_NAME: jobsTable.tableName,
-        RESULTS_BUCKET: resultsBucket.bucketName,
-        LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
-      },
-    });
-
-    // Grant access to the same secret as the ECS pipeline
-    processAvatarExtractionLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['secretsmanager:GetSecretValue'],
-        resources: [secretArn],
-      }),
-    );
-    jobsTable.grantReadWriteData(processAvatarExtractionLambda);
-    resultsBucket.grantPut(processAvatarExtractionLambda);
-    resultsBucket.grantRead(processAvatarExtractionLambda, 'results/*');
-
-    // Avatar extraction - Submit Lambda (Python)
-    const submitAvatarExtractionLambda = new lambda.Function(this, 'SubmitAvatarExtractionLambda', {
-      runtime: lambda.Runtime.PYTHON_3_11,
-      timeout: Duration.seconds(10),
-      memorySize: 256,
-      handler: 'submit_avatar_extraction.handler',
-      code: pythonLambdasAsset,
-      environment: {
-        JOBS_TABLE_NAME: jobsTable.tableName,
-        PROCESS_LAMBDA_NAME: processAvatarExtractionLambda.functionName,
-      },
-    });
-    jobsTable.grantReadWriteData(submitAvatarExtractionLambda);
-    processAvatarExtractionLambda.grantInvoke(submitAvatarExtractionLambda);
-
-    // Avatar extraction - Get Result Lambda (Python)
-    const getAvatarResultLambda = new lambda.Function(this, 'GetAvatarResultLambda', {
-      runtime: lambda.Runtime.PYTHON_3_11,
-      timeout: Duration.seconds(10),
-      memorySize: 256,
-      handler: 'get_avatar_result.handler',
-      code: pythonLambdasAsset,
-      environment: {
-        RESULTS_BUCKET: resultsBucket.bucketName,
-      },
-    });
-    resultsBucket.grantRead(getAvatarResultLambda);
-
     // Swipe file generation - Processing Lambda (Docker-based)
     const processSwipeFileLambda = new lambda.DockerImageFunction(this, 'ProcessSwipeFileLambda', {
       code: lambda.DockerImageCode.fromImageAsset(
@@ -558,29 +500,6 @@ export class DeepCopyStack extends Stack {
       authorizationScopes: ['https://deep-copy.api/read'],
     });
 
-    // Avatar extraction endpoints
-    const avatarsRes = api.root.addResource('avatars');
-    const extractRes = avatarsRes.addResource('extract');
-    extractRes.addMethod('POST', new apigw.LambdaIntegration(submitAvatarExtractionLambda), {
-      authorizer: cognitoAuthorizer,
-      authorizationType: apigw.AuthorizationType.COGNITO,
-      authorizationScopes: ['https://deep-copy.api/write'],
-    });
-
-    const avatarIdRes = avatarsRes.addResource('{id}');
-    avatarIdRes.addMethod('GET', new apigw.LambdaIntegration(getJobLambda), {
-      authorizer: cognitoAuthorizer,
-      authorizationType: apigw.AuthorizationType.COGNITO,
-      authorizationScopes: ['https://deep-copy.api/read'],
-    });
-
-    const avatarResultRes = avatarIdRes.addResource('result');
-    avatarResultRes.addMethod('GET', new apigw.LambdaIntegration(getAvatarResultLambda), {
-      authorizer: cognitoAuthorizer,
-      authorizationType: apigw.AuthorizationType.COGNITO,
-      authorizationScopes: ['https://deep-copy.api/read'],
-    });
-
     // Swipe file generation endpoints
     const swipeFilesRes = api.root.addResource('swipe-files');
     const generateRes = swipeFilesRes.addResource('generate');
@@ -661,15 +580,6 @@ export class DeepCopyStack extends Stack {
       authorizationScopes: ['https://deep-copy.api/write'],
     });
 
-    // Dev avatars
-    const devAvatarsRes = devRes.addResource('avatars');
-    const devAvatarsExtractRes = devAvatarsRes.addResource('extract');
-    devAvatarsExtractRes.addMethod('POST', new apigw.LambdaIntegration(submitAvatarExtractionLambda), {
-      authorizer: cognitoAuthorizer,
-      authorizationType: apigw.AuthorizationType.COGNITO,
-      authorizationScopes: ['https://deep-copy.api/write'],
-    });
-
     // Dev swipe files
     const devSwipeFilesRes = devRes.addResource('swipe-files');
     const devSwipeFilesGenerateRes = devSwipeFilesRes.addResource('generate');
@@ -718,7 +628,6 @@ export class DeepCopyStack extends Stack {
 
     new CfnOutput(this, 'ApiUrl', { value: api.url });
     new CfnOutput(this, 'V2JobsEndpoint', { value: `${api.url}v2/jobs` });
-    new CfnOutput(this, 'AvatarsSubmitEndpoint', { value: `${api.url}avatars/extract` });
     new CfnOutput(this, 'SwipeFilesSubmitEndpoint', { value: `${api.url}swipe-files/generate` });
     new CfnOutput(this, 'ImageGenSubmitEndpoint', { value: `${api.url}image-gen/generate` });
     new CfnOutput(this, 'PrelanderImagesSubmitEndpoint', { value: `${api.url}prelander-images/generate` });

@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: deepcopy-image-gen-process
+Version: 0.1.0
+Summary: Lambda image generation processor (static ad variations)
+Requires-Python: >=3.12
+Requires-Dist: openai>=1.40.0
+Requires-Dist: requests>=2.31.0
+Requires-Dist: cloudflare>=4.0.0
+Requires-Dist: pillow>=10.0.0
+Requires-Dist: google-genai>=1.0.0
+Requires-Dist: boto3>=1.26.0
