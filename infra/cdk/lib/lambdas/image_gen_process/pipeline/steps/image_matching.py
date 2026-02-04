@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional, Set
 
 from services.openai_service import OpenAIService
 from utils.logging_config import setup_logging
-from prompts import get_match_angles_system_prompt, get_match_angles_user_prompt
 from utils.image import normalize_image_id
 
 logger = setup_logging(__name__)
@@ -17,6 +16,7 @@ def match_angles_to_images(
     marketing_avatar: Dict[str, Any],
     library_images: Dict[str, Any],
     job_id: Optional[str],
+    prompt_service,
 ) -> Dict[str, str]:
     """
     Match marketing angles to available library images using OpenAI.
@@ -65,7 +65,7 @@ def match_angles_to_images(
     # Construct prompts
     avatar_desc = marketing_avatar.get("description", "Target Audience")
     
-    system_prompt = get_match_angles_system_prompt()
+    system_prompt = prompt_service.get_prompt("get_match_angles_system_prompt")
     
     # Use a set to track used image IDs to avoid repetition
     used_ids: Set[str] = set()
@@ -74,11 +74,17 @@ def match_angles_to_images(
     # In original code, it might have looped. Here we do a single call for simplicity 
     # unless we detect need for batching. The prompt expects a list of slots.
     
-    user_prompt = get_match_angles_user_prompt(
+    # Serialize data for the prompt template
+    used_ids_json = json.dumps(sorted(list(used_ids)))
+    slots_desc_json = json.dumps(slots_desc, ensure_ascii=False)
+    images_json = json.dumps(library_images, ensure_ascii=False)
+
+    user_prompt = prompt_service.get_prompt(
+        "get_match_angles_user_prompt",
         selected_avatar=avatar_desc,
-        used_ids=list(used_ids),
-        slots_desc=slots_desc,
-        images=library_images
+        used_ids=used_ids_json,
+        slots_desc=slots_desc_json,
+        images=images_json
     )
     
     resp_text = openai_service.match_angles_to_images(system_prompt, user_prompt, job_id)

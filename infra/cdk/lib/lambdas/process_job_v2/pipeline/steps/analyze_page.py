@@ -10,7 +10,7 @@ from typing import List, Dict, Any
 
 from utils.image import save_fullpage_png, compress_image_if_needed
 from services.openai_service import OpenAIService
-from prompts import get_analyze_research_page_prompt
+from services.prompt_service import PromptService
 
 
 logger = logging.getLogger(__name__)
@@ -19,19 +19,21 @@ logger = logging.getLogger(__name__)
 class AnalyzePageStep:
     """
     Pipeline step for analyzing a sales/research page.
-    
+
     Captures a full-page screenshot and analyzes it using vision AI
     to extract product information, claims, and target customer insights.
     """
-    
-    def __init__(self, openai_service: OpenAIService):
+
+    def __init__(self, openai_service: OpenAIService, prompt_service: PromptService):
         """
         Initialize the page analysis step.
-        
+
         Args:
             openai_service: OpenAI service for vision analysis.
+            prompt_service: PromptService for DB-stored prompts.
         """
         self.openai_service = openai_service
+        self.prompt_service = prompt_service
     
     def execute(self, sales_page_url: str) -> str:
         """
@@ -67,7 +69,7 @@ class AnalyzePageStep:
                 raise
             
             # Build content payload with text and image
-            prompt = get_analyze_research_page_prompt()
+            prompt = self.prompt_service.get_prompt("get_analyze_research_page_prompt")
             content_payload: List[Dict[str, Any]] = [
                 {"type": "input_text", "text": prompt},
                 {"type": "input_image", "image_url": f"data:image/jpeg;base64,{base64_image}"}

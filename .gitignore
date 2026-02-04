@@ -1,4 +1,10 @@
+# Environment files
 .env
+.env.*
+
+# OS files
 .DS_Store
+
+# IDE
 .vscode/
 .claude/

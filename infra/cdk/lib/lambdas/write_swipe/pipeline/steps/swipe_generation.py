@@ -10,7 +10,8 @@ from services.anthropic_service import AnthropicService
 from utils.logging_config import setup_logging
 from utils.html import extract_clean_text_from_html
 from utils.pdf import load_pdf_file
-from prompts import get_style_guide_analysis_prompt, get_advertorial_rewrite_prompt, get_advertorial_rewrite_prompt_customer_pov, get_advertorial_rewrite_prompt_authority, get_advertorial_image_generation_prompt, get_listicle_generation_prompt, get_listicle_image_generation_prompt, ImageStyle
+from prompts import ImageStyle
+from services.prompt_service import PromptService
 from llm_usage import UsageContext, emit_llm_usage_event
 
 logger = setup_logging(__name__)
@@ -109,8 +110,9 @@ def rewrite_swipe_file(
     offer_brief: str,
     swipe_file_config: Dict[str, Any],
     anthropic_service: AnthropicService,
+    prompt_service: PromptService,
     job_id: str = "unknown",
-    image_style: ImageStyle = "realistic"
+    image_style: ImageStyle = "realistic",
 ) -> Dict[str, Any]:
     """
     Rewrite swipe files based on the inputs using Anthropic.
@@ -160,7 +162,10 @@ def rewrite_swipe_file(
             # 2. Style Analysis (Turn 1)
             logger.info("Turn 1: Generate a style guide")
             
-            style_prompt = get_style_guide_analysis_prompt(raw_text)
+            style_prompt = prompt_service.get_prompt(
+                "get_style_guide_analysis_prompt",
+                raw_swipe_file_text=raw_text,
+            )
             
             max_tokens = 8192
             
@@ -179,31 +184,23 @@ def rewrite_swipe_file(
         
 
         if swipe_file_id == "LD0001":
-            rewrite_prompt = get_listicle_generation_prompt(
-                avatar_info=marketing_avatar,
-                angle_info=angle_info,
-                offer_brief=offer_brief,
-            )
+            kwargs = dict(avatar_info=marketing_avatar, angle_info=angle_info, offer_brief=offer_brief)
+            rewrite_prompt = prompt_service.get_prompt("get_listicle_generation_prompt", **kwargs)
         elif swipe_file_id == "AD0001_POV":
-            rewrite_prompt = get_advertorial_rewrite_prompt_customer_pov(
-                avatar_info=marketing_avatar,
-                angle_info=angle_info,
-                offer_brief=offer_brief,
-            )
+            kwargs = dict(avatar_info=marketing_avatar, angle_info=angle_info, offer_brief=offer_brief)
+            rewrite_prompt = prompt_service.get_prompt("get_advertorial_rewrite_prompt_customer_pov", **kwargs)
         elif swipe_file_id == "AD0001_AUTHORITY":
-            rewrite_prompt = get_advertorial_rewrite_prompt_authority(
-                avatar_info=marketing_avatar,
-                angle_info=angle_info,
-                offer_brief=offer_brief,
-            )
+            kwargs = dict(avatar_info=marketing_avatar, angle_info=angle_info, offer_brief=offer_brief)
+            rewrite_prompt = prompt_service.get_prompt("get_advertorial_rewrite_prompt_authority", **kwargs)
         else:
-            rewrite_prompt = get_advertorial_rewrite_prompt(
+            kwargs = dict(
                 style_guide=style_guide,
                 angle=select_angle,
                 deep_research_output=deep_research,
                 offer_brief=offer_brief,
-                avatar_info=marketing_avatar
+                avatar_info=marketing_avatar,
             )
+            rewrite_prompt = prompt_service.get_prompt("get_advertorial_rewrite_prompt", **kwargs)
             
         # Prepare Schema (Tool Use)
         schema = swipe_file_data.get("json")
@@ -231,17 +228,19 @@ def rewrite_swipe_file(
                 logger.info(f"Found {len(img_paths)} image prompt fields: {img_paths}")
 
                 if swipe_file_id == "LD0001":
-                    image_gen_prompt = get_listicle_image_generation_prompt(
+                    kwargs = dict(
                         listicle_copy=json.dumps(full_advertorial),
                         offer_brief=offer_brief,
                         image_style=image_style,
                     )
+                    image_gen_prompt = prompt_service.get_prompt("get_listicle_image_generation_prompt", **kwargs)
                 else:
-                    image_gen_prompt = get_advertorial_image_generation_prompt(
+                    kwargs = dict(
                         advertorial_copy=json.dumps(full_advertorial),
                         offer_brief=offer_brief,
                         image_style=image_style,
                     )
+                    image_gen_prompt = prompt_service.get_prompt("get_advertorial_image_generation_prompt", **kwargs)
 
                 img_schema = build_image_prompt_schema(skeleton)
                 img_tool_name = "generate_image_prompts"

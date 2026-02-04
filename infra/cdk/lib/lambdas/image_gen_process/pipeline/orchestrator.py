@@ -42,6 +42,7 @@ from pipeline.steps.document_analysis import summarize_docs_if_needed
 from pipeline.steps.product_detection import detect_product_in_image
 from pipeline.steps.image_matching import match_angles_to_images
 from pipeline.steps.image_generation import generate_image_openai, generate_image_nano_banana
+from services.prompt_service import PromptService
 
 logger = setup_logging(__name__)
 
@@ -60,7 +61,13 @@ class ImageGenOrchestrator:
         # Safety: if key missing, it might error on init, but valid for most runs.
         
         self.cloudflare = CloudflareService()
-        
+
+        # Initialize prompt service (DATABASE_URL is required)
+        db_url = self.secrets.get("DATABASE_URL")
+        if not db_url:
+            raise RuntimeError("DATABASE_URL not found in secrets. Cannot load prompts from DB.")
+        self.prompt_service = PromptService(db_url, "image_gen_process")
+
         # Config params
         self.results_bucket = os.environ.get("RESULTS_BUCKET")
         self.jobs_table = os.environ.get("JOBS_TABLE_NAME")
@@ -138,7 +145,7 @@ class ImageGenOrchestrator:
                     # Just read as text for summary
                     raw_bytes = load_bytes_from_s3(self.results_bucket, foundational_s3_key)
                     foundational_text = raw_bytes.decode("utf-8", errors="ignore")
-                    analysis_text = summarize_docs_if_needed(self.openai, foundational_text, language, job_id)
+                    analysis_text = summarize_docs_if_needed(self.openai, foundational_text, language, job_id, prompt_service=self.prompt_service)
                 except Exception as e:
                     logger.warning("Failed to load/summarize foundational doc: %s", e)
             
@@ -152,7 +159,7 @@ class ImageGenOrchestrator:
                 if key:
                     try:
                         img_bytes = load_bytes_from_s3(self.results_bucket, key)
-                        has_product = detect_product_in_image(self.openai, img_bytes, job_id)
+                        has_product = detect_product_in_image(self.openai, img_bytes, job_id, prompt_service=self.prompt_service)
                         uploaded_images_meta[uid] = {"hasProduct": has_product}
                     except Exception as e:
                         logger.warning("Product detection failed for %s: %s", uid, e)
@@ -183,7 +190,8 @@ class ImageGenOrchestrator:
                 marketing_angles,
                 marketing_avatar,
                 match_pool,
-                job_id
+                job_id,
+                prompt_service=self.prompt_service
             )
             # assignments: "1:1" -> "12.png"
             
@@ -269,7 +277,8 @@ class ImageGenOrchestrator:
                                 ref_bytes,
                                 product_image_bytes,
                                 supports_prod,
-                                job_id
+                                job_id,
+                                prompt_service=self.prompt_service
                             )
                         else:
                             gen_b64 = generate_image_openai(
@@ -283,7 +292,8 @@ class ImageGenOrchestrator:
                                 ref_data_b64,
                                 product_image_data_b64,
                                 supports_prod,
-                                job_id
+                                job_id,
+                                prompt_service=self.prompt_service
                             )
                             
                         # Upload to Cloudflare

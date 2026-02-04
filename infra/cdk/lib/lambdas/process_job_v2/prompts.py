@@ -1,6 +1,13 @@
 """
 Central prompt repository for process_job_v2 Lambda.
 
+LEGACY/REFERENCE ONLY: Primary prompts are now stored in the Neon PostgreSQL database
+and loaded via PromptService. This file is kept as a reference for the original prompt
+content and structure. The database tables `prompts` and `prompt_versions` contain
+the authoritative versions of all prompts.
+
+See: services/prompt_service.py for the database-backed implementation.
+
 All LLM prompts are defined here for maintainability, versioning, and easy iteration.
 Each function returns a formatted prompt string ready for LLM consumption.
 """

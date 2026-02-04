@@ -29,7 +29,8 @@ class TemplatePredictionStep:
     def __init__(
         self,
         openai_service: OpenAIService,
-        library_cache: LibrarySummariesCache
+        library_cache: LibrarySummariesCache,
+        prompt_service,
     ):
         """
         Initialize the template prediction step.
@@ -37,10 +38,12 @@ class TemplatePredictionStep:
         Args:
             openai_service: OpenAI service for LLM operations.
             library_cache: Cache for content library summaries.
+            prompt_service: PromptService for DB-stored prompts.
         """
         self.prediction_service = TemplatePredictionService(
             openai_service=openai_service,
-            library_cache=library_cache
+            library_cache=library_cache,
+            prompt_service=prompt_service
         )
 
     def execute(

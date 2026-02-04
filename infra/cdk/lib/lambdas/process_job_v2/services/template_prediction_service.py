@@ -18,8 +18,8 @@ from data_models import (
     TemplateMatch,
     TemplatePredictionResult,
 )
-from prompts import get_template_prediction_prompt
 from services.openai_service import OpenAIService
+from services.prompt_service import PromptService
 
 
 logger = logging.getLogger(__name__)
@@ -120,7 +120,8 @@ class TemplatePredictionService:
     def __init__(
         self,
         openai_service: OpenAIService,
-        library_cache: LibrarySummariesCache
+        library_cache: LibrarySummariesCache,
+        prompt_service: PromptService,
     ):
         """
         Initialize the prediction service.
@@ -128,9 +129,11 @@ class TemplatePredictionService:
         Args:
             openai_service: OpenAI service for LLM calls.
             library_cache: Cache for library summaries.
+            prompt_service: PromptService for DB-stored prompts.
         """
         self.openai_service = openai_service
         self.library_cache = library_cache
+        self.prompt_service = prompt_service
 
     def _create_avatar_summary(self, avatar: Avatar) -> str:
         """
@@ -240,11 +243,12 @@ Desires: {', '.join(angle.desires[:5])}
         library_summary = self._create_library_summary(summaries)
 
         # Generate prompt
-        prompt = get_template_prediction_prompt(
+        kwargs = dict(
             avatar_summary=avatar_summary,
             angle_summary=angle_summary,
-            library_summaries=library_summary
+            library_summaries=library_summary,
         )
+        prompt = self.prompt_service.get_prompt("get_template_prediction_prompt", **kwargs)
 
         try:
             # Define response schema for structured output

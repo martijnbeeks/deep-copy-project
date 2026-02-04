@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'infra/**'
   workflow_dispatch:
 
 permissions:
@@ -15,23 +17,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: Install dependencies
-        working-directory: ./cdk
+        working-directory: ./infra/cdk
         run: npm ci
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v3
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::613663743323:role/DeepCopy-GitHubDeployRole
           aws-region: eu-west-1
 
       - name: Deploy CDK Stack
-        working-directory: ./cdk
+        working-directory: ./infra/cdk
         run: npx cdk deploy --all --require-approval never

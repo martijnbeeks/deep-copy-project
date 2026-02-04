@@ -8,7 +8,7 @@ import logging
 from typing import Optional
 
 from services.perplexity_service import PerplexityService
-from prompts import get_deep_research_prompt
+from services.prompt_service import PromptService
 
 
 logger = logging.getLogger(__name__)
@@ -17,19 +17,21 @@ logger = logging.getLogger(__name__)
 class DeepResearchStep:
     """
     Pipeline step for conducting deep market research.
-    
+
     Generates a comprehensive research prompt and executes it
     using Perplexity's deep research capabilities.
     """
-    
-    def __init__(self, perplexity_service: PerplexityService):
+
+    def __init__(self, perplexity_service: PerplexityService, prompt_service: PromptService):
         """
         Initialize the deep research step.
-        
+
         Args:
             perplexity_service: Perplexity service for research execution.
+            prompt_service: PromptService for DB-stored prompts.
         """
         self.perplexity_service = perplexity_service
+        self.prompt_service = prompt_service
     
     def create_prompt(
         self,
@@ -54,14 +56,15 @@ class DeepResearchStep:
         Returns:
             Formatted research prompt string.
         """
-        return get_deep_research_prompt(
+        kwargs = dict(
             sales_page_url=sales_page_url,
             gender=gender if gender else "Not specified",
             location=location if location else "Not specified",
             research_requirements=research_requirements if research_requirements else "None",
             language_of_output=language_of_output,
-            research_page_analysis=research_page_analysis
+            research_page_analysis=research_page_analysis,
         )
+        return self.prompt_service.get_prompt("get_deep_research_prompt", **kwargs)
     
     def execute(self, prompt: str) -> str:
         """

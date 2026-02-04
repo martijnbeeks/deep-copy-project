@@ -152,29 +152,21 @@ def get_image_gen_with_product_prompt() -> str:
     )
 
 
-def get_image_gen_without_product_prompt(supports_product: bool) -> str:
+def get_image_gen_without_product_prompt_no_support() -> str:
     """
     Generate prompt instructions for image generation when product image is NOT supported.
-    
-    Args:
-        supports_product: Whether the reference image supports product images.
-                         If False, explicit blocking instructions are added.
-    
+
+    This includes explicit blocking instructions to prevent product image inclusion.
+
     Returns:
-        Prompt string for non-product image generation.
+        Prompt string for non-product image generation when reference doesn't support products.
     """
-    parts = []
-    
-    if not supports_product:
-        parts.append(
-            "CRITICAL: This reference image does NOT support product images. "
-            "DO NOT include, merge, add, or reference any product images in the generated image. "
-            "Use ONLY the reference creative image as provided. "
-            "Ignore and do not copy any product images that may be visible in the reference image itself. "
-            "Generate the image using only the reference template without any product imagery."
-        )
-    
-    parts.append(
+    return (
+        "CRITICAL: This reference image does NOT support product images. "
+        "DO NOT include, merge, add, or reference any product images in the generated image. "
+        "Use ONLY the reference creative image as provided. "
+        "Ignore and do not copy any product images that may be visible in the reference image itself. "
+        "Generate the image using only the reference template without any product imagery.\n"
         "Use the provided reference creative image as the layout/style template. "
         "For the color theme and visual style, intelligently decide what works best: "
         "you may preserve the color theme from the reference image if it fits well, "
@@ -182,5 +174,22 @@ def get_image_gen_without_product_prompt(supports_product: bool) -> str:
         "Prioritize creating a high-converting ad that resonates with the target audience. "
         "Return only the final image."
     )
-    
-    return "\n".join(parts)
+
+
+def get_image_gen_without_product_prompt_with_support() -> str:
+    """
+    Generate prompt instructions for image generation when product image IS supported but not provided.
+
+    This is used when the reference image supports product images, but no product image was given.
+
+    Returns:
+        Prompt string for non-product image generation when reference supports products.
+    """
+    return (
+        "Use the provided reference creative image as the layout/style template. "
+        "For the color theme and visual style, intelligently decide what works best: "
+        "you may preserve the color theme from the reference image if it fits well, "
+        "or choose a color scheme that better matches the target avatar and marketing angle. "
+        "Prioritize creating a high-converting ad that resonates with the target audience. "
+        "Return only the final image."
+    )
