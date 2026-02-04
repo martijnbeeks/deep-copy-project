@@ -151,6 +151,7 @@ class SwipeGenerationOrchestrator:
             
             # 5. Save & Finish
             s3_key_res = f'results/swipe_files/{job_id}/swipe_files_results.json'
+            logger.info(f"Saving final results to s3://{os.environ.get('RESULTS_BUCKET')}/{s3_key_res}")
             save_results_to_s3(os.environ.get("RESULTS_BUCKET"), s3_key_res, final_results)
             
             update_job_status(job_id, "SUCCEEDED", {"resultKey": s3_key_res})
