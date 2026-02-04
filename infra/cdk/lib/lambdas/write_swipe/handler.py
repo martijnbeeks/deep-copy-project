@@ -31,7 +31,7 @@ if __name__ == "__main__":
          "job_id": "47fdceed-c87a-4d4c-b41d-8eadb85d5f5d-swipe",
          "avatar_id": "weekend-warrior-recreational-athlete",
          "angle_id": "angle-1-return-fast-performance",
-         "swipe_file_ids": ["LD0001"],
+         "swipe_file_ids": ["AD0001_AUTHORITY"],
          "image_style": "realistic"
     }
     # Might fail if secrets not accessible locally

@@ -133,7 +133,7 @@ export class DeepCopyStack extends Stack {
     resultsBucket.grantRead(processJobLambdaV2, 'results/*');
     resultsBucket.grantRead(processJobLambdaV2, 'cache/*');
 
-    // Shared asset for Python "thin" lambdas (submit/get-result). Exclude caches to keep asset staging reliable.
+    // Shared asset for Python "thin" lambdas (submit/get-result). Exclude caches and Docker-based lambda directories.
     const pythonLambdasAsset = lambda.Code.fromAsset(path.join(__dirname, 'lambdas'), {
       exclude: [
         '**/__pycache__/**',
@@ -142,6 +142,14 @@ export class DeepCopyStack extends Stack {
         '**/.DS_Store',
         '**/node_modules/**',
         '**/dist/**',
+        '**/.venv/**',
+        // Exclude Docker-based lambda directories (they have their own DockerImageCode assets)
+        'extract_avatars',
+        'image_gen_process',
+        'prelander_image_gen',
+        'process_job',
+        'process_job_v2',
+        'write_swipe',
       ],
     });
 
