@@ -113,8 +113,51 @@ class GeminiService:
         data_bytes = self._extract_first_image_bytes(resp)
         if not data_bytes:
             raise RuntimeError("Gemini returned no image bytes")
+        data_bytes = self._enforce_max_size(data_bytes)
         return base64.b64encode(data_bytes).decode("utf-8")
     
+    @staticmethod
+    def _enforce_max_size(data: bytes, max_bytes: int = 1_000_000) -> bytes:
+        """Compress image to fit within *max_bytes* (default 1 MB).
+
+        Strategy: re-encode as JPEG with progressively lower quality.
+        """
+        if len(data) <= max_bytes:
+            return data
+
+        import PIL.Image
+
+        img = PIL.Image.open(io.BytesIO(data))
+        if img.mode == "RGBA":
+            img = img.convert("RGB")
+
+        for quality in (90, 80, 70, 60, 50, 40, 30):
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=quality)
+            if buf.tell() <= max_bytes:
+                logger.debug("Compressed image to %d bytes (quality=%d)", buf.tell(), quality)
+                return buf.getvalue()
+
+        # Last resort: scale down until it fits
+        scale = 0.9
+        while scale > 0.1:
+            resized = img.resize(
+                (int(img.width * scale), int(img.height * scale)),
+                PIL.Image.LANCZOS,
+            )
+            buf = io.BytesIO()
+            resized.save(buf, format="JPEG", quality=30)
+            if buf.tell() <= max_bytes:
+                logger.debug(
+                    "Resized image to %dx%d (%d bytes)",
+                    resized.width, resized.height, buf.tell(),
+                )
+                return buf.getvalue()
+            scale -= 0.1
+
+        logger.warning("Could not compress image below %d bytes", max_bytes)
+        return buf.getvalue()
+
     def _extract_first_image_bytes(self, response: Any) -> Optional[bytes]:
         """
         Extract first image bytes from Gemini response.

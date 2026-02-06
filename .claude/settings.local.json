@@ -16,6 +16,7 @@
       "Bash(ls:*)",
       "Bash(AWS_PROFILE=personal-cdk-dev aws s3 ls:*)",
       "Bash(AWS_PROFILE=personal-cdk-dev aws s3 cp:*)",
+      "Task"
     ]
   }
 }
