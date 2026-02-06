@@ -63,19 +63,19 @@ if __name__ == "__main__":
 
     # Load event from file or use dummy
     test_event = {
-        "job_id": "local-test-1",
+        "job_id": "816291a5-8e63-4f09-aeb6-58efbab66ff1",
         "project_name": "Test Project",
-        "marketing_avatar": {"description": "Tech Enthusiast"},
-        "marketing_angles": [
-            {
-                "angle_number": 1,
-                "angle_name": "Productivity",
-                "visual_variations": [{"variation_number": 1, "description": "Working at desk"}]
-            }
+        "productName": "MeritRelief",
+        "selectedAvatar": "Men 50-65, skeptical, wants fast relief",
+        "selectedAngles": [
+            "Pain relief without pills",
+            "Get back to walking comfortably"
         ],
-        "library_images": {"10.png": "Desk setup"},
-        "product_name": "SuperMouse",
-        "language": "English"
+        "language": "english",
+        "productImageUrls": [
+            "https://static.vecteezy.com/system/resources/thumbnails/057/068/323/small/single-fresh-red-strawberry-on-table-green-background-food-fruit-sweet-macro-juicy-plant-image-photo.jpg"
+        ],
+        "forcedReferenceImageIds": ["12.png", "23.png"],
     }
     
     print(lambda_handler(test_event, None))

@@ -18,6 +18,8 @@ import time
 import traceback
 from typing import Any, Dict, List, Optional
 
+import requests
+
 from utils.logging_config import setup_logging
 from utils.helpers import now_iso, slug
 from utils.image import (
@@ -71,9 +73,76 @@ class ImageGenOrchestrator:
         # Config params
         self.results_bucket = os.environ.get("RESULTS_BUCKET")
         self.jobs_table = os.environ.get("JOBS_TABLE_NAME")
-        self.image_library_prefix = os.environ.get("IMAGE_LIBRARY_PREFIX", "library/")
-        self.image_provider = os.environ.get("IMAGE_GENERATION_PROVIDER", "openai").lower()
+        self.image_library_prefix = os.environ.get("IMAGE_LIBRARY_PREFIX", "image_library").rstrip("/") + "/"
+        self.image_provider = os.environ.get("IMAGE_GENERATION_PROVIDER", "google").lower()
         
+    def _normalize_input(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Detect flat (OpenAPI-spec) vs rich payloads and transform flat inputs
+        into the rich format that downstream pipeline steps expect.
+        Idempotent: already-rich payloads pass through unchanged.
+        """
+        # --- selectedAvatar: string -> {"description": string} ---
+        avatar = payload.get("selectedAvatar")
+        if isinstance(avatar, str):
+            payload["selectedAvatar"] = {"description": avatar}
+            logger.info("Normalized selectedAvatar from string to dict")
+
+        # --- selectedAngles: ["text"] -> [{angle_number, angle_name, visual_variations}] ---
+        angles = payload.get("selectedAngles")
+        if isinstance(angles, list) and angles and isinstance(angles[0], str):
+            normalized_angles = []
+            for i, angle_text in enumerate(angles, start=1):
+                normalized_angles.append({
+                    "angle_number": i,
+                    "angle_name": angle_text,
+                    "visual_variations": [
+                        {"variation_number": 1, "description": ""}
+                    ],
+                })
+            payload["selectedAngles"] = normalized_angles
+            logger.info("Normalized selectedAngles from %d strings to rich format", len(normalized_angles))
+
+        # --- productImageUrls: ["url"] -> "url" (first item) ---
+        product_urls = payload.get("productImageUrls")
+        if isinstance(product_urls, list):
+            payload["productImageUrls"] = product_urls[0] if product_urls else None
+            logger.info("Normalized productImageUrls from list to single URL")
+
+        # --- foundationalDocText: inline text when no S3 key ---
+        if payload.get("foundationalDocText") and not payload.get("foundational_research_s3_key"):
+            payload["_foundational_text_inline"] = payload["foundationalDocText"]
+            logger.info("Stored foundationalDocText as inline text")
+
+        # --- uploadedReferenceImageUrls: ["url"] -> uploaded_images dict ---
+        ref_urls = payload.get("uploadedReferenceImageUrls")
+        if isinstance(ref_urls, list) and ref_urls and "uploaded_images" not in payload:
+            uploaded = {}
+            for i, url in enumerate(ref_urls, start=1):
+                uploaded[f"uploaded_{i}"] = {"url": url}
+            payload["uploaded_images"] = uploaded
+            logger.info("Normalized uploadedReferenceImageUrls to uploaded_images (%d entries)", len(uploaded))
+
+        # --- imageGenerationProvider: map API value to internal provider ---
+        if "imageGenerationProvider" in payload:
+            provider_map = {"nano_banana": "google"}
+            raw_provider = payload["imageGenerationProvider"]
+            payload["_image_provider_override"] = provider_map.get(raw_provider, raw_provider).lower()
+            logger.info("Set image provider override to '%s' (from '%s')", payload["_image_provider_override"], raw_provider)
+
+        return payload
+
+    @staticmethod
+    def _download_image_bytes_from_url(url: str, timeout_s: int = 30) -> Optional[bytes]:
+        """Download raw bytes from a URL. Returns None on failure."""
+        try:
+            resp = requests.get(url, timeout=timeout_s)
+            resp.raise_for_status()
+            return resp.content
+        except Exception as e:
+            logger.warning("Failed to download image from URL %s: %s", url, e)
+            return None
+
     def run(self, event: Dict[str, Any]) -> Dict[str, Any]:
         job_id = event.get("job_id", f"job-{int(time.time())}")
         logger.info("Starting Image Gen Pipeline for Job: %s", job_id)
@@ -116,11 +185,17 @@ class ImageGenOrchestrator:
                 payload = load_json_from_s3(self.results_bucket, event["payload_s3_key"])
                 # merge with event
                 payload.update(event)
-                
+
+            # Normalize flat API inputs to rich format
+            payload = self._normalize_input(payload)
+
+            # Resolve image provider (override from payload or default)
+            image_provider = payload.get("_image_provider_override", self.image_provider)
+
             # Essential Data
-            marketing_avatar = payload.get("marketing_avatar", {})
-            marketing_angles = payload.get("marketing_angles", [])
-            product_info = payload.get("product_info", {})
+            marketing_avatar = payload.get("selectedAvatar", {})
+            marketing_angles = payload.get("selectedAngles", [])
+            product_info = payload.get("productInfo", {})
             foundational_s3_key = payload.get("foundational_research_s3_key")
             
             # Image Library & Uploaded Images
@@ -129,8 +204,8 @@ class ImageGenOrchestrator:
             
             # Product Image (Global/Primary)
             # Could be in product_info OR separate key
-            product_image_url = payload.get("product_image_url") or product_info.get("product_image_url")
-            product_name = payload.get("product_name") or product_info.get("name", "Product")
+            product_image_url = payload.get("productImageUrls") or product_info.get("product_image_url")
+            product_name = payload.get("productName") or product_info.get("name", "Product")
             language = payload.get("language", "English")
             
             # Validation
@@ -139,10 +214,14 @@ class ImageGenOrchestrator:
             
             # --- 2. Foundational Research Summary ---
             analysis_text = None
-            if foundational_s3_key:
+            inline_text = payload.get("_foundational_text_inline")
+            if inline_text:
                 try:
-                    # Determine mime/type of foundational doc? Usually text or json
-                    # Just read as text for summary
+                    analysis_text = summarize_docs_if_needed(self.openai, inline_text, language, job_id, prompt_service=self.prompt_service)
+                except Exception as e:
+                    logger.warning("Failed to summarize inline foundational text: %s", e)
+            elif foundational_s3_key:
+                try:
                     raw_bytes = load_bytes_from_s3(self.results_bucket, foundational_s3_key)
                     foundational_text = raw_bytes.decode("utf-8", errors="ignore")
                     analysis_text = summarize_docs_if_needed(self.openai, foundational_text, language, job_id, prompt_service=self.prompt_service)
@@ -153,12 +232,27 @@ class ImageGenOrchestrator:
             # We need to know if uploaded images have product (to avoid double product)
             # Store metadata about uploaded images
             uploaded_images_meta = {}
+            uploaded_image_bytes_cache: Dict[str, bytes] = {}
             for uid, details in uploaded_images.items():
-                # details might be string (key) or dict
-                key = details if isinstance(details, str) else details.get("key")
-                if key:
+                # details might be string (key), or dict with "key" or "url"
+                img_bytes = None
+                if isinstance(details, str):
                     try:
-                        img_bytes = load_bytes_from_s3(self.results_bucket, key)
+                        img_bytes = load_bytes_from_s3(self.results_bucket, details)
+                    except Exception as e:
+                        logger.warning("Failed to load uploaded image %s from S3 key: %s", uid, e)
+                elif isinstance(details, dict):
+                    if details.get("key"):
+                        try:
+                            img_bytes = load_bytes_from_s3(self.results_bucket, details["key"])
+                        except Exception as e:
+                            logger.warning("Failed to load uploaded image %s from S3 key: %s", uid, e)
+                    elif details.get("url"):
+                        img_bytes = self._download_image_bytes_from_url(details["url"])
+
+                if img_bytes:
+                    uploaded_image_bytes_cache[uid] = img_bytes
+                    try:
                         has_product = detect_product_in_image(self.openai, img_bytes, job_id, prompt_service=self.prompt_service)
                         uploaded_images_meta[uid] = {"hasProduct": has_product}
                     except Exception as e:
@@ -185,15 +279,29 @@ class ImageGenOrchestrator:
                 desc = details.get("description", "Uploaded image") if isinstance(details, dict) else "Uploaded image"
                 match_pool[uid] = desc
                 
-            assignments = match_angles_to_images(
-                self.openai,
-                marketing_angles,
-                marketing_avatar,
-                match_pool,
-                job_id,
-                prompt_service=self.prompt_service
-            )
-            # assignments: "1:1" -> "12.png"
+            # Handle forcedReferenceImageIds: round-robin assign forced IDs to slots
+            forced_ids = payload.get("forcedReferenceImageIds")
+            if forced_ids and isinstance(forced_ids, list):
+                assignments = {}
+                all_slots = []
+                for angle in marketing_angles:
+                    a_num = str(angle.get("angle_number"))
+                    for var in angle.get("visual_variations", []):
+                        v_num = str(var.get("variation_number"))
+                        all_slots.append(f"{a_num}:{v_num}")
+                for idx, slot in enumerate(all_slots):
+                    assignments[slot] = forced_ids[idx % len(forced_ids)]
+                logger.info("Applied %d forced reference image assignments (skipped AI matching)", len(assignments))
+            else:
+                assignments = match_angles_to_images(
+                    self.openai,
+                    marketing_angles,
+                    marketing_avatar,
+                    match_pool,
+                    job_id,
+                    prompt_service=self.prompt_service
+                )
+                # assignments: "1:1" -> "12.png"
             
             # --- 6. Generate Images ---
             results = []
@@ -220,26 +328,24 @@ class ImageGenOrchestrator:
                     # if ID is in uploaded_images keys...
                     
                     try:
-                        if assigned_id in uploaded_images:
-                            # Load from S3 key provided in uploaded_images
+                        # Check byte cache first (populated during product detection)
+                        if assigned_id in uploaded_image_bytes_cache:
+                            ref_bytes = uploaded_image_bytes_cache[assigned_id]
+                            ref_is_uploaded = True
+                        elif assigned_id in uploaded_images:
+                            # Load from uploaded_images (S3 key or URL)
                             u_det = uploaded_images[assigned_id]
-                            u_key = u_det if isinstance(u_det, str) else u_det.get("key")
-                            ref_bytes = load_bytes_from_s3(self.results_bucket, u_key)
+                            if isinstance(u_det, str):
+                                ref_bytes = load_bytes_from_s3(self.results_bucket, u_det)
+                            elif isinstance(u_det, dict) and u_det.get("key"):
+                                ref_bytes = load_bytes_from_s3(self.results_bucket, u_det["key"])
+                            elif isinstance(u_det, dict) and u_det.get("url"):
+                                ref_bytes = self._download_image_bytes_from_url(u_det["url"])
                             ref_is_uploaded = True
                         else:
                             # Load from library prefix
-                            # normalize ID
                             norm_id = normalize_image_id(assigned_id)
                             lib_key = f"{self.image_library_prefix}{norm_id}"
-                            # We need to know bucket? usually same or specific library bucket?
-                            # Original handler likely used same bucket or env var.
-                            # Assuming same bucket for simplicity or checked env
-                            
-                            # Original handler used 'get_object' with hardcoded or flexible logic
-                            # Let's try loading from RESULTS_BUCKET if library is there, 
-                            # OR maybe there is a LIBRARY_BUCKET?
-                            # Checking original handler code...
-                            # It used `s3_client.get_object(Bucket=RESULTS_BUCKET, Key=f"{IMAGE_LIBRARY_PREFIX}{image_id}")` usually.
                             ref_bytes = load_bytes_from_s3(self.results_bucket, lib_key)
 
                         if ref_bytes:
@@ -265,7 +371,7 @@ class ImageGenOrchestrator:
                     try:
                         gen_b64 = ""
                         
-                        if self.image_provider == "google":
+                        if image_provider == "google":
                             gen_b64 = generate_image_nano_banana(
                                 self.gemini,
                                 language,

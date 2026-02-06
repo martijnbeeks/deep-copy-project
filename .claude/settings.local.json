@@ -13,7 +13,9 @@
       "Bash(uv lock:*)",
       "WebSearch",
       "Bash(du:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(AWS_PROFILE=personal-cdk-dev aws s3 ls:*)",
+      "Bash(AWS_PROFILE=personal-cdk-dev aws s3 cp:*)",
     ]
   }
 }

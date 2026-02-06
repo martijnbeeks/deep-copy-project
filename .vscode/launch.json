@@ -85,7 +85,7 @@
             "type": "python",
             "python": "${workspaceFolder}/infra/cdk/lib/lambdas/image_gen_process/.venv/bin/python",
             "request": "launch",
-            "program": "${workspaceFolder}/cdk/lib/lambdas/image_gen_process/handler.py",
+            "program": "${workspaceFolder}/infra/cdk/lib/lambdas/image_gen_process/handler.py",
             "args": ["run"],
             "console": "integratedTerminal",
             "justMyCode": true,
