@@ -745,6 +745,8 @@ paths:
                   selectedAngles:
                     - "Pain relief without pills"
                     - "Get back to walking comfortably"
+                  forcedReferenceImageIds:
+                    - "12.png"
               full:
                 summary: Full payload
                 value:
@@ -755,7 +757,7 @@ paths:
                   foundationalDocText: "Long research/context text..."
                   forcedReferenceImageIds:
                     - "12.png"
-                    - "23.webp"
+                    - "23.png"
                   uploadedReferenceImageUrls:
                     - "https://imagedelivery.net/abc123/ref-image-1.png"
                     - "https://imagedelivery.net/abc123/ref-image-2.webp"
@@ -799,6 +801,7 @@ paths:
               -d '{
                 "selectedAvatar": "Men 50-65, skeptical, wants fast relief",
                 "selectedAngles": ["Pain relief without pills", "Get back to walking comfortably"],
+                "forcedReferenceImageIds": ["12.png", "23.png"],
                 "productImageUrls": ["https://example-bucket.s3.eu-west-1.amazonaws.com/presigned-url"],
                 "productName": "meritrelief",
                 "language": "english"
@@ -1754,7 +1757,7 @@ components:
     SubmitImageGenRequest:
       type: object
       additionalProperties: false
-      required: [selectedAvatar, selectedAngles]
+      required: [selectedAvatar, selectedAngles, forcedReferenceImageIds]
       properties:
         foundationalDocText:
           type: string
@@ -1770,9 +1773,10 @@ components:
           description: List of marketing angles to generate images for
         forcedReferenceImageIds:
           type: array
+          minItems: 1
           items:
             type: string
-          description: Optional reference creative IDs to force into assignments (e.g. 12.png, 23.webp)
+          description: Reference creative IDs from the image library to use for generation (e.g. 12.png, 23.png). Assigned round-robin to angle slots.
         uploadedReferenceImageUrls:
           type: array
           items:
