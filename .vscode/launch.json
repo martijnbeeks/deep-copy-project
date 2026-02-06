@@ -39,7 +39,7 @@
             "args": ["run"],
             "console": "integratedTerminal",
             "justMyCode": true,
-            "cwd": "${workspaceFolder}/cdk/lib/lambdas/process_job_v2",
+            "cwd": "${workspaceFolder}/infra/cdk/lib/lambdas/process_job_v2",
             "env": {
                 "AWS_PROFILE": "personal-cdk-dev",
                 "JOB_EVENT_JSON": "{\"sales_page_url\": \"https://www.sciatiease.com/sciatiease.php\", \"project_name\": \"meritrelief\", \"swipe_file_id\": \"L00002\", \"advertorial_type\": \"Advertorial\"}",

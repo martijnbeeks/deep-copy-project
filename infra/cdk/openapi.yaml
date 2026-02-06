@@ -1440,7 +1440,8 @@ components:
           description: Optional specific requirements or focus areas for the research
         gender:
           type: string
-          description: Optional gender target (e.g., 'Male', 'Female', 'N/A')
+          enum: [Male, Female, Both]
+          description: Optional gender target
         location:
           type: string
           description: Optional location target
@@ -1513,7 +1514,8 @@ components:
           description: Optional specific requirements or focus areas for the research
         gender:
           type: string
-          description: Optional gender target (e.g. 'Male', 'Female', 'N/A')
+          enum: [Male, Female, Both]
+          description: Optional gender target
         location:
           type: string
           description: Optional location target
@@ -1925,6 +1927,7 @@ components:
           description: "Age Range"
         gender:
           type: string
+          enum: [Male, Female, Both]
           description: "Gender"
         occupation:
           type: string
@@ -2430,6 +2433,7 @@ components:
           description: "Age range of the avatar (e.g., '55-75')"
         gender:
           type: string
+          enum: [Male, Female, Both]
           description: "Gender(s) this avatar includes"
         locations:
           type: array
@@ -2626,8 +2630,8 @@ components:
           maxLength: 20
         gender:
           type: string
+          enum: [Male, Female, Both]
           description: "Gender of the avatar"
-          maxLength: 20
         # Section 0: Avatar Evaluation Dimensions (1-5 scores)
         problem_urgency:
           type: integer
@@ -2698,6 +2702,7 @@ components:
           description: Approximate age bracket (e.g., 25-34)
         gender:
           type: string
+          enum: [Male, Female, Both]
           description: male, female, or both
         key_buying_motivation:
           type: string

@@ -30,6 +30,13 @@ class CompetitionLevel(str, Enum):
     HIGH = "high"
 
 
+class Gender(str, Enum):
+    """Gender target for the avatar."""
+    MALE = "Male"
+    FEMALE = "Female"
+    BOTH = "Both"
+
+
 class AwarenessLevel(str, Enum):
     """Schwartz awareness level of the avatar."""
     UNAWARE = "Unaware"
@@ -87,9 +94,9 @@ class AvatarDemographics(BaseModel):
         ..., 
         description="Age range of the avatar (e.g., '55-75', '30-45', '25-40')"
     )
-    gender: str = Field(
-        ..., 
-        description="Gender(s) this avatar includes (e.g., 'Female', 'Male', 'Female, Male', 'All')"
+    gender: Gender = Field(
+        ...,
+        description="Gender(s) this avatar includes: 'male', 'female', or 'both'"
     )
     locations: List[str] = Field(
         default_factory=list,
@@ -331,9 +338,9 @@ class Avatar(BaseModel):
         description="Age range of the avatar", max_length=20
     )
 
-    gender: str = Field(
+    gender: Gender = Field(
         ...,
-        description="Gender of the avatar", max_length=20
+        description="Gender of the avatar: 'male', 'female', or 'both'"
     )
 
     # Section 0: Score of avatar

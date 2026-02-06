@@ -277,13 +277,18 @@ class PipelineOrchestrator:
                 research_page_analysis = cached_research.research_page_analysis
                 deep_research_prompt = cached_research.deep_research_prompt
                 deep_research_output = cached_research.deep_research_output
+                # Still capture product image (not cached — it's large base64 data)
+                logger.info("Capturing product image for cached research")
+                product_image = self.analyze_page_step.capture_product_image_only(config.sales_page_url)
             else:
                 # Cache MISS - execute Steps 1-3 and cache results
-                
+
                 # Step 1: Analyze research page
                 logger.info("Step 1: Analyzing research page")
-                research_page_analysis = self.analyze_page_step.execute(config.sales_page_url)
-                
+                page_result = self.analyze_page_step.execute(config.sales_page_url)
+                research_page_analysis = page_result.analysis
+                product_image = page_result.product_image
+
                 # Step 2: Create deep research prompt
                 logger.info("Step 2: Creating deep research prompt")
                 deep_research_prompt = self.deep_research_step.create_prompt(
@@ -293,11 +298,11 @@ class PipelineOrchestrator:
                     location=config.location,
                     research_requirements=config.research_requirements
                 )
-                
+
                 # Step 3: Execute deep research
                 logger.info("Step 3: Executing deep research")
                 deep_research_output = self.deep_research_step.execute(deep_research_prompt)
-                
+
                 # Save to cache for future runs
                 logger.info("Saving research results to cache")
                 self.cache_service.save_research_cache(
@@ -380,6 +385,7 @@ class PipelineOrchestrator:
                 "deep_research_output": deep_research_output,
                 "offer_brief": offer_brief.model_dump(),
                 "marketing_avatars": marketing_avatars_list,
+                "product_image": product_image,
             }
             
             self.aws_services.save_results_to_s3(
