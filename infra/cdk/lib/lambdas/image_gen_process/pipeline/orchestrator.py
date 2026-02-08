@@ -35,6 +35,7 @@ from services.aws import (
     load_json_from_s3,
     load_bytes_from_s3,
     download_image_to_b64,
+    save_json_to_s3,
 )
 from services.openai_service import OpenAIService
 from services.gemini_service import GeminiService
@@ -433,15 +434,20 @@ class ImageGenOrchestrator:
                         })
 
             # --- 7. Finalize ---
+            result_payload = {
+                "job_id": job_id,
+                "results": results,
+                "count": len(results),
+            }
+
+            result_key = f"results/image-gen/{job_id}/image_gen_results.json"
+            save_json_to_s3(self.results_bucket, result_key, result_payload)
+
             update_job_status(job_id, "COMPLETED_IMAGE_GEN")
-            
+
             return {
                 "statusCode": 200,
-                "body": json.dumps({
-                    "job_id": job_id,
-                    "results": results,
-                    "count": len(results)
-                })
+                "body": json.dumps(result_payload),
             }
             
         except Exception as e:

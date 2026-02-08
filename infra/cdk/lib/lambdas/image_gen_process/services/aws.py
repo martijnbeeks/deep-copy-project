@@ -124,6 +124,24 @@ def load_bytes_from_s3(bucket: str, key: str) -> bytes:
     return obj["Body"].read()
 
 
+def save_json_to_s3(bucket: str, key: str, data: Any) -> None:
+    """
+    Save JSON data to S3.
+
+    Args:
+        bucket: S3 bucket name.
+        key: S3 object key.
+        data: Data to serialize as JSON.
+    """
+    s3_client.put_object(
+        Bucket=bucket,
+        Key=key,
+        Body=json.dumps(data, ensure_ascii=False, indent=2),
+        ContentType="application/json",
+    )
+    logger.info("Saved results to s3://%s/%s", bucket, key)
+
+
 def download_image_to_b64(url: str, timeout_s: int = 30) -> Optional[Dict[str, str]]:
     """
     Download image from URL and convert to base64.
