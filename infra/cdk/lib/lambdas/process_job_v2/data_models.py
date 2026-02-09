@@ -11,9 +11,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class MarketSize(str, Enum):
     """Market size indicator for the avatar segment."""
-    SMALL = "small"
-    MEDIUM = "medium"
-    LARGE = "large"
+    ONE = "1"  # Tiny: <5% of total market
+    TWO = "2"  # Small: 5-15% of total market
+    THREE = "3"  # Medium: 15-25% of total market
+    FOUR = "4"  # Large: 25-40% of total market
+    FIVE = "5"  # Massive: 40%+ of total market
 
 
 class BuyingReadiness(str, Enum):
@@ -21,6 +23,14 @@ class BuyingReadiness(str, Enum):
     COLD = "cold"    # Not actively looking
     WARM = "warm"    # Interested but needs convincing
     HOT = "hot"      # Ready to buy now
+
+class SaturationLevel(str, Enum):
+    """How crowded the market is for this avatar."""
+    ONE = "1"  # Blue ocean, almost no competitors
+    TWO = "2"  # Few competitors, plenty of room
+    THREE = "3"  # Some competition, unique angles still available
+    FOUR = "4"  # Crowded space, hard to differentiate
+    FIVE = "5"  # Extremely competitive, severe ad fatigue
 
 
 class CompetitionLevel(str, Enum):
@@ -45,6 +55,30 @@ class AwarenessLevel(str, Enum):
     PRODUCT_AWARE = "product aware"
     MOST_AWARE = "most aware"
 
+class SophisticationLevel(str, Enum):
+    """Market sophistication level (make claims → mechanisms → advanced strategies)."""
+    LEVEL_1 = "level_1"   # Birth of market; simple core claim works.
+    LEVEL_2 = "level_2"   # Outshine competition; bigger/more dramatic promise.
+    LEVEL_3 = "level_3"   # Introduce mechanism; explain "how it works" to earn belief.
+    LEVEL_4 = "level_4"   # Upgrade/improve mechanism; v2.0 of the "secret sauce".
+    LEVEL_5 = "level_5"   # Maximum skepticism; use advanced strategies to break through.
+
+
+class StageOfSophistication(BaseModel):
+    """Choose the market's sophistication level and capture reasoning/context."""
+    level: SophisticationLevel = Field(
+        ...,
+        description=(
+            "Overall market maturity: "
+            "L1=Birth/basic claim; L2=Bolder promise; L3=Introduce mechanism; "
+            "L4=Improved mechanism; L5=Advanced strategies to overcome cynicism."
+        )
+    )
+    rationale: Optional[str] = Field(
+        None,
+        description="Why this level fits (signals from ads, competitors, buyer skepticism).",
+    )
+
 
 class AvatarOverview(BaseModel):
     """
@@ -63,6 +97,11 @@ class AvatarOverview(BaseModel):
         ..., 
         description="Estimated size of this avatar segment: small (niche), medium (solid segment), or large (mass market)"
     )
+
+    market_sophistication: StageOfSophistication = Field(
+        ..., 
+        description="Stage of market sophistication for this avatar segment"
+    )
     buying_readiness: BuyingReadiness = Field(
         ..., 
         description="How ready this avatar is to purchase: cold (not looking), warm (interested but skeptical), hot (ready to buy)"
@@ -74,6 +113,10 @@ class AvatarOverview(BaseModel):
     awareness_level: AwarenessLevel = Field(
         ..., 
         description="Schwartz awareness stage: unaware, problem aware, solution aware, product aware, or most aware"
+    )
+    awareness_level_description: str = Field(
+        ..., 
+        description="Brief explanation of why they are at this awareness level and what they know or don't know about the problem and solutions. Max. 10 words.'"
     )
     competition_level: CompetitionLevel = Field(
         ..., 
@@ -512,6 +555,8 @@ class RiskLevel(str, Enum):
     HIGH = "high"
 
 
+
+
 class MarketingAngle(BaseModel):
     """
     A generated marketing angle for an avatar.
@@ -533,6 +578,10 @@ class MarketingAngle(BaseModel):
         ..., 
         description="The category of argument being made: mechanism, pain_lead, desire_lead, social_proof, fear_based, curiosity, contrarian, story"
     )
+    angle_mechanism: Optional[str] = Field(
+        None, 
+        description="Explain the core mechanism or logic of this angle. Example: 'This formula uses the exact ingredients studied in AREDS2, so you can trust it without needing to decode proprietary blends. Max 100 words.'"
+    )
     emotional_driver: EmotionalDriver = Field(
         ..., 
         description="The primary emotion this angle triggers: fear, hope, anger, shame, desire, curiosity, trust"
@@ -546,9 +595,9 @@ class MarketingAngle(BaseModel):
         ..., 
         description="Estimated size of this avatar segment: small (niche), medium (solid segment), or large (mass market)"
     )
-    buying_readiness: BuyingReadiness = Field(
+    saturation: SaturationLevel = Field(
         ..., 
-        description="How ready this avatar is to purchase: cold (not looking), warm (interested but skeptical), hot (ready to buy)"
+        description="How crowded the market is for this avatar: 1 (blue ocean) to 5 (extremely competitive)"
     )
 
     # big idea
@@ -636,7 +685,7 @@ class MarketingAngle(BaseModel):
         )
     )
 
-    overall_score: int = Field(
+    overall_score: float = Field(
         ...,
         ge=1,
         le=5,
@@ -647,6 +696,7 @@ class MarketingAngle(BaseModel):
             "3=Moderate: Average angle with limited potential. "
             "2=Low: Weak angle with minimal potential. "
             "1=Poor: Poor angle with no potential."
+            "Use decimal scoring."
         )
     )
     
@@ -731,13 +781,6 @@ class ConsciousnessLevel(str, Enum):
 
 
 
-class SophisticationLevel(str, Enum):
-    """Market sophistication level (make claims → mechanisms → advanced strategies)."""
-    LEVEL_1 = "level_1"   # Birth of market; simple core claim works.
-    LEVEL_2 = "level_2"   # Outshine competition; bigger/more dramatic promise.
-    LEVEL_3 = "level_3"   # Introduce mechanism; explain "how it works" to earn belief.
-    LEVEL_4 = "level_4"   # Upgrade/improve mechanism; v2.0 of the "secret sauce".
-    LEVEL_5 = "level_5"   # Maximum skepticism; use advanced strategies to break through.
 
 
 class MarketTemperature(str, Enum):

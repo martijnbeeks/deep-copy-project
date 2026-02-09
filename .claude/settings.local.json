@@ -25,7 +25,10 @@
       "Bash(/Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project/infra/cdk/lib/lambdas/write_swipe/.venv/bin/pip install -r /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project/infra/cdk/lib/lambdas/tests/requirements-test.txt)",
       "Bash(uv pip install:*)",
       "Bash(find:*)",
-      "Bash(pre-commit run:*)"
+      "Bash(pre-commit run:*)",
+      "Bash(bash tests/run_tests.sh:*)",
+      "Bash(process_job_v2/.venv/bin/python -m pytest tests/process_job_v2/test_pipeline_e2e.py -x --tb=long)",
+      "Bash(process_job_v2/.venv/bin/python -m pytest:*)"
     ]
   }
 }

@@ -179,7 +179,7 @@ class TestDevMode:
 
         # Seed mock dev data at the expected location
         s3 = boto3.client("s3", region_name=shared.AWS_REGION)
-        mock_source_job_id = "47fdceed-c87a-4d4c-b41d-8eadb85d5f5d"
+        mock_source_job_id = "82d4a4e7-2d67-4209-a82b-8c7c796b8100"
         s3.put_object(
             Bucket=shared.TEST_BUCKET,
             Key=f"results/{mock_source_job_id}/comprehensive_results.json",
@@ -199,7 +199,7 @@ class TestDevMode:
         from handler import lambda_handler
 
         s3 = boto3.client("s3", region_name=shared.AWS_REGION)
-        mock_source_job_id = "47fdceed-c87a-4d4c-b41d-8eadb85d5f5d"
+        mock_source_job_id = "82d4a4e7-2d67-4209-a82b-8c7c796b8100"
         s3.put_object(
             Bucket=shared.TEST_BUCKET,
             Key=f"results/{mock_source_job_id}/comprehensive_results.json",
@@ -221,7 +221,7 @@ class TestDevMode:
         from handler import lambda_handler
 
         s3 = boto3.client("s3", region_name=shared.AWS_REGION)
-        mock_source_job_id = "47fdceed-c87a-4d4c-b41d-8eadb85d5f5d"
+        mock_source_job_id = "82d4a4e7-2d67-4209-a82b-8c7c796b8100"
         s3.put_object(
             Bucket=shared.TEST_BUCKET,
             Key=f"results/{mock_source_job_id}/comprehensive_results.json",

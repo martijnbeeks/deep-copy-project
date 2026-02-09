@@ -1493,6 +1493,12 @@ components:
                   necessary_beliefs:
                     type: string
                     description: 6 necessary beliefs extracted for this avatar
+            product_image:
+              type: string
+              description: Base64-encoded JPEG screenshot of the sales page (top 800px)
+            product_image:
+              type: string
+              description: Base64-encoded JPEG screenshot of the sales page (top 800px)
             summary:
               type: string
               description: Copywriter-friendly summary of all outputs
@@ -2193,7 +2199,7 @@ components:
     MarketingAngle:
       type: object
       description: "A generated marketing angle"
-      required: [id, angle_title, angle_subtitle, angle_type, emotional_driver, risk_level, market_size, buying_readiness, angle_problem_urgency, novelty, proof_strength, avatar_fit, ltv_potential, overall_score, core_argument, target_age_range, target_audience, pain_points, desires, common_objections, failed_alternatives, pain_quotes, desire_quotes, objection_quotes]
+      required: [id, angle_title, angle_subtitle, angle_type, emotional_driver, risk_level, market_size, saturation, angle_problem_urgency, novelty, proof_strength, avatar_fit, ltv_potential, overall_score, core_argument, target_age_range, target_audience, pain_points, desires, common_objections, failed_alternatives, pain_quotes, desire_quotes, objection_quotes]
       properties:
         id:
           type: string
@@ -2208,6 +2214,10 @@ components:
         angle_type:
           type: string
           description: "The category of argument being made (e.g., Pain-Lead, Desire-Lead, etc.)"
+        angle_mechanism:
+          type: string
+          nullable: true
+          description: "Explain the core mechanism or logic of this angle"
         emotional_driver:
           type: string
           description: "The primary emotion this angle triggers (Fear / Hope / Anger / Shame / Desire)"
@@ -2215,13 +2225,11 @@ components:
           type: string
           description: "Compliance or proof risk for running this angle (Low / Medium / High)"
         market_size:
-          type: string
-          enum: [small, medium, large]
-          description: "Estimated size of this avatar segment: small (niche), medium (solid segment), or large (mass market)"
-        buying_readiness:
-          type: string
-          enum: [cold, warm, hot]
-          description: "How ready this avatar is to purchase: cold (not looking), warm (interested but skeptical), hot (ready to buy)"
+          $ref: '#/components/schemas/MarketSize'
+          description: "Estimated size of this avatar segment"
+        saturation:
+          $ref: '#/components/schemas/SaturationLevel'
+          description: "How crowded the market is for this avatar: 1 (blue ocean) to 5 (extremely competitive)"
         # Big Idea Section
         big_idea:
           type: string
@@ -2259,10 +2267,11 @@ components:
           maximum: 5
           description: "Will this angle attract customers who stick around (1-5). 5=Excellent, 4=Good, 3=Moderate, 2=Low, 1=Poor"
         overall_score:
-          type: integer
+          type: number
+          format: float
           minimum: 1
           maximum: 5
-          description: "Overall score for this angle (1-5) based on angle_problem_urgency, novelty, proof_strength, avatar_fit, ltv_potential"
+          description: "Overall score for this angle (1-5) based on angle_problem_urgency, novelty, proof_strength, avatar_fit, ltv_potential. Uses decimal scoring."
         core_argument:
           type: string
           description: "The single-sentence logical argument this angle makes"
@@ -2374,8 +2383,12 @@ components:
     # ===== New Avatar Enums =====
     MarketSize:
       type: string
-      enum: [small, medium, large]
-      description: Market size indicator for the avatar segment
+      enum: ["1", "2", "3", "4", "5"]
+      description: "Market size indicator for the avatar segment (1=Tiny <5%, 2=Small 5-15%, 3=Medium 15-25%, 4=Large 25-40%, 5=Massive 40%+)"
+    SaturationLevel:
+      type: string
+      enum: ["1", "2", "3", "4", "5"]
+      description: "How crowded the market is for this avatar (1=Blue ocean, 2=Few competitors, 3=Some competition, 4=Crowded, 5=Extremely competitive)"
     BuyingReadiness:
       type: string
       enum: [cold, warm, hot]
@@ -2399,7 +2412,7 @@ components:
     AvatarOverviewSection:
       type: object
       description: "Section 1: Avatar Overview - high-level summary card"
-      required: [name, description, market_size, buying_readiness, intensity, awareness_level, competition_level, one_line_hook]
+      required: [name, description, market_size, market_sophistication, buying_readiness, intensity, awareness_level, awareness_level_description, competition_level, one_line_hook]
       properties:
         name:
           type: string
@@ -2409,6 +2422,9 @@ components:
           description: "One-sentence description of who they are"
         market_size:
           $ref: '#/components/schemas/MarketSize'
+        market_sophistication:
+          $ref: '#/components/schemas/StageOfSophistication'
+          description: "Stage of market sophistication for this avatar segment"
         buying_readiness:
           $ref: '#/components/schemas/BuyingReadiness'
         intensity:
@@ -2418,6 +2434,9 @@ components:
           description: "How intense this avatar's problem is (1-5), based on market_size and buying_readiness"
         awareness_level:
           $ref: '#/components/schemas/AwarenessLevel'
+        awareness_level_description:
+          type: string
+          description: "Brief explanation of why they are at this awareness level and what they know or don't know about the problem and solutions"
         competition_level:
           $ref: '#/components/schemas/CompetitionLevel'
         one_line_hook:
