@@ -42,6 +42,20 @@ infra/                  # AWS infrastructure (CDK, TypeScript)
 | AI Services | Claude (Anthropic), OpenAI, Perplexity |
 | Deploy | GitHub Actions → AWS (eu-west-1), Vercel (frontend) |
 
+## API Testing
+
+**Base URL:** `https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod`
+
+Get an access token (required for all API calls):
+
+```bash
+ACCESS_TOKEN=$(curl -s -u "5mbatc7uv35hr23qip437s2ai5:1msm19oltu7241134t5vujtldr4uvum7hvn6cj7n1s3tg1ar02k5" \
+  -d "grant_type=client_credentials&scope=https://deep-copy.api/read https://deep-copy.api/write" \
+  "https://deepcopy-613663743323-eu-west-1.auth.eu-west-1.amazoncognito.com/oauth2/token" | jq -r .access_token)
+```
+
+Then use `--header "Authorization: Bearer $ACCESS_TOKEN"` on all requests. Each endpoint group (v2/jobs, image-gen, swipe-files, prelander-images) has submit/status/result endpoints. See `infra/CLAUDE.md` for full endpoint examples and `infra/cdk/openapi.yaml` for the complete API spec.
+
 ## Development Workflow
 
 Follow the "No Vibes" cycle in `.cursor/rules/`. Read `.cursor/rules/how-to-write-user-stories.mdc` before creating user stories.
@@ -49,5 +63,5 @@ Follow the "No Vibes" cycle in `.cursor/rules/`. Read `.cursor/rules/how-to-writ
 ## Deeper Context
 
 For task-specific details, read the relevant subdirectory:
-- `infra/CLAUDE.md` — infrastructure architecture, Lambda details
+- `infra/CLAUDE.md` — infrastructure architecture, Lambda details, full API endpoint examples
 - `.cursor/rules/` — development workflow, user story format
