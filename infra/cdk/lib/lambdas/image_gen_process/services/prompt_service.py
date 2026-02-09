@@ -35,8 +35,12 @@ class PromptLoadError(Exception):
 
 
 def _extract_placeholders(template: str) -> Set[str]:
-    """Extract all {placeholder} names from a template string."""
-    return set(re.findall(r"\{([^}]+)\}", template))
+    """Extract all {placeholder} names from a template string.
+
+    Only matches valid Python identifiers (e.g. {selected_avatar}),
+    ignoring JSON-like content (e.g. {"key": "value"}).
+    """
+    return set(re.findall(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}", template))
 
 
 def _parse_database_url(database_url: str) -> dict:
@@ -206,8 +210,25 @@ class PromptService:
             )
 
         try:
-            return template.format_map(kwargs)
-        except (KeyError, ValueError, IndexError) as e:
+            # Use regex substitution instead of format_map to avoid
+            # conflicts with JSON curly braces in prompt templates.
+            result = template
+            for key, value in kwargs.items():
+                placeholder = "{" + key + "}"
+                count = result.count(placeholder)
+                logger.debug(
+                    "Replacing '%s' (%d occurrences) in prompt '%s'",
+                    placeholder, count, function_name,
+                )
+                if count == 0:
+                    logger.warning(
+                        "Placeholder '%s' not found in template '%s'. "
+                        "Template snippet around expected location: %s",
+                        placeholder, function_name, template[:200],
+                    )
+                result = result.replace(placeholder, str(value))
+            return result
+        except Exception as e:
             raise PromptRenderError(
                 f"Failed to render prompt '{function_name}': {e}"
             ) from e

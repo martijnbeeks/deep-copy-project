@@ -133,6 +133,19 @@ class ImageGenOrchestrator:
 
         return payload
 
+    def _load_library_descriptions(self) -> Dict[str, str]:
+        """Load image library descriptions from S3 and return as {imageId: description}."""
+        key = f"{self.image_library_prefix}static-library-descriptions.json"
+        try:
+            data = load_json_from_s3(self.results_bucket, key)
+            descriptions = data.get("descriptions", [])
+            library = {item["imageId"]: item["description"] for item in descriptions if "imageId" in item}
+            logger.info("Loaded %d library image descriptions from S3", len(library))
+            return library
+        except Exception as e:
+            logger.warning("Failed to load library descriptions from S3: %s", e)
+            return {}
+
     @staticmethod
     def _download_image_bytes_from_url(url: str, timeout_s: int = 30) -> Optional[bytes]:
         """Download raw bytes from a URL. Returns None on failure."""
@@ -201,6 +214,8 @@ class ImageGenOrchestrator:
             
             # Image Library & Uploaded Images
             library_images = payload.get("library_images", {}) # id -> desc
+            if not library_images:
+                library_images = self._load_library_descriptions()
             uploaded_images = payload.get("uploaded_images", {}) # id -> s3_key or url
             
             # Product Image (Global/Primary)

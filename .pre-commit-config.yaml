@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: lambda-python-tests
+        name: Lambda Python E2E Tests
+        entry: infra/cdk/lib/lambdas/tests/run_tests.sh
+        language: script
+        files: ^infra/cdk/lib/lambdas/.*\.py$
+        pass_filenames: false

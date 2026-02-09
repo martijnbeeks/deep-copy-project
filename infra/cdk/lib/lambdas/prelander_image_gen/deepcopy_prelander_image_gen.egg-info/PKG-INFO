@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: deepcopy-prelander-image-gen
+Version: 0.1.0
+Summary: Lambda prelander image generation processor
+Requires-Python: >=3.12
+Requires-Dist: requests>=2.31.0
+Requires-Dist: cloudflare>=4.0.0
+Requires-Dist: pillow>=10.0.0
+Requires-Dist: google-genai>=1.0.0
+Requires-Dist: boto3>=1.26.0

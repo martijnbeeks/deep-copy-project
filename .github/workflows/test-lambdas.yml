@@ -1,0 +1,40 @@
+name: Test Lambda Functions
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'infra/cdk/lib/lambdas/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-lambdas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install test dependencies
+        run: pip install -r infra/cdk/lib/lambdas/tests/requirements-test.txt
+
+      - name: Install Lambda dependencies
+        working-directory: ./infra/cdk/lib/lambdas
+        run: |
+          for dir in process_job_v2 image_gen_process write_swipe prelander_image_gen; do
+            pip install "./$dir"
+          done
+
+      - name: Run Lambda E2E tests
+        working-directory: ./infra/cdk/lib/lambdas/tests
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: bash run_tests.sh

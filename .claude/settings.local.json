@@ -16,7 +16,16 @@
       "Bash(ls:*)",
       "Bash(AWS_PROFILE=personal-cdk-dev aws s3 ls:*)",
       "Bash(AWS_PROFILE=personal-cdk-dev aws s3 cp:*)",
-      "Task"
+      "Task",
+      "Bash(/Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project/infra/cdk/lib/lambdas/process_job_v2/.venv/bin/python -m pytest:*)",
+      "Bash(AWS_PROFILE=personal-cdk-dev aws secretsmanager:*)",
+      "Bash(/Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project/infra/cdk/lib/lambdas/image_gen_process/.venv/bin/python:*)",
+      "Bash(/Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project/infra/cdk/lib/lambdas/write_swipe/.venv/bin/python:*)",
+      "Bash(/Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project/infra/cdk/lib/lambdas/image_gen_process/.venv/bin/pip install -r /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project/infra/cdk/lib/lambdas/tests/requirements-test.txt)",
+      "Bash(/Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project/infra/cdk/lib/lambdas/write_swipe/.venv/bin/pip install -r /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project/infra/cdk/lib/lambdas/tests/requirements-test.txt)",
+      "Bash(uv pip install:*)",
+      "Bash(find:*)",
+      "Bash(pre-commit run:*)"
     ]
   }
 }
