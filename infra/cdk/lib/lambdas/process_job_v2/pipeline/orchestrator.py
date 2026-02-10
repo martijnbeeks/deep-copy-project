@@ -26,6 +26,7 @@ from pipeline.steps.offer_brief import OfferBriefStep
 from pipeline.steps.template_prediction import TemplatePredictionStep
 from services.template_prediction_service import LibrarySummariesCache
 from services.prompt_service import PromptService
+from services.cloudflare_service import CloudflareService
 
 
 logger = logging.getLogger(__name__)
@@ -112,6 +113,18 @@ class PipelineOrchestrator:
             library_cache=self.library_cache,
             prompt_service=self.prompt_service
         )
+
+        # Initialize Cloudflare service (non-fatal if creds missing)
+        self.cloudflare_service = None
+        try:
+            cf_token = self.aws_services.secrets.get("CLOUDFLARE_API_TOKEN", "").strip()
+            cf_account = self.aws_services.secrets.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
+            if cf_token and cf_account:
+                self.cloudflare_service = CloudflareService(cf_token, cf_account)
+            else:
+                logger.warning("Cloudflare credentials missing; product_image will remain base64")
+        except Exception as e:
+            logger.warning("Failed to initialize CloudflareService: %s", e)
     
     def _set_usage_context(self, config: PipelineConfig) -> None:
         """
@@ -377,6 +390,21 @@ class PipelineOrchestrator:
                 marketing_avatars_list, deep_research_output
             )
             
+            # Upload product image to Cloudflare CDN
+            if self.cloudflare_service and product_image:
+                try:
+                    product_image = self.cloudflare_service.upload_base64_image(
+                        product_image,
+                        f"{config.job_id}_product.jpg",
+                        {
+                            "source": "process_job_v2",
+                            "job_id": config.job_id,
+                            "project_name": config.project_name,
+                        },
+                    )
+                except Exception as e:
+                    logger.warning("Cloudflare upload failed, keeping base64: %s", e)
+
             # Step 6: Save results
             logger.info("Step 6: Saving results")
             all_results = {

@@ -1495,10 +1495,7 @@ components:
                     description: 6 necessary beliefs extracted for this avatar
             product_image:
               type: string
-              description: Base64-encoded JPEG screenshot of the sales page (top 800px)
-            product_image:
-              type: string
-              description: Base64-encoded JPEG screenshot of the sales page (top 800px)
+              description: Cloudflare CDN URL of the sales page screenshot (top 800px)
             summary:
               type: string
               description: Copywriter-friendly summary of all outputs
