@@ -31,6 +31,8 @@ from services.cloudflare_service import CloudflareService
 
 logger = logging.getLogger(__name__)
 
+DEV_MODE_SOURCE_JOB_ID = "70c7ec82-0abb-4126-a32f-7f376103f00a"
+
 
 @dataclass
 class PipelineConfig:
@@ -158,7 +160,7 @@ class PipelineOrchestrator:
         
         try:
             # Load mock results from S3
-            mock_key = "results/82d4a4e7-2d67-4209-a82b-8c7c796b8100/comprehensive_results.json"
+            mock_key = f"results/{DEV_MODE_SOURCE_JOB_ID}/comprehensive_results.json"
             logger.info(f"Loading mock results from S3: {mock_key}")
             
             comprehensive_data = self.aws_services.get_object_from_s3(

@@ -176,10 +176,11 @@ class TestDevMode:
         """Dev mode should succeed even without LLM mocks."""
         import boto3
         from handler import lambda_handler
+        from pipeline.orchestrator import DEV_MODE_SOURCE_JOB_ID
 
         # Seed mock dev data at the expected location
         s3 = boto3.client("s3", region_name=shared.AWS_REGION)
-        mock_source_job_id = "82d4a4e7-2d67-4209-a82b-8c7c796b8100"
+        mock_source_job_id = DEV_MODE_SOURCE_JOB_ID
         s3.put_object(
             Bucket=shared.TEST_BUCKET,
             Key=f"results/{mock_source_job_id}/comprehensive_results.json",
@@ -197,9 +198,10 @@ class TestDevMode:
         """Dev mode should save to the target job's S3 key."""
         import boto3
         from handler import lambda_handler
+        from pipeline.orchestrator import DEV_MODE_SOURCE_JOB_ID
 
         s3 = boto3.client("s3", region_name=shared.AWS_REGION)
-        mock_source_job_id = "82d4a4e7-2d67-4209-a82b-8c7c796b8100"
+        mock_source_job_id = DEV_MODE_SOURCE_JOB_ID
         s3.put_object(
             Bucket=shared.TEST_BUCKET,
             Key=f"results/{mock_source_job_id}/comprehensive_results.json",
@@ -219,9 +221,10 @@ class TestDevMode:
         """Dev mode should mark job as SUCCEEDED."""
         import boto3
         from handler import lambda_handler
+        from pipeline.orchestrator import DEV_MODE_SOURCE_JOB_ID
 
         s3 = boto3.client("s3", region_name=shared.AWS_REGION)
-        mock_source_job_id = "82d4a4e7-2d67-4209-a82b-8c7c796b8100"
+        mock_source_job_id = DEV_MODE_SOURCE_JOB_ID
         s3.put_object(
             Bucket=shared.TEST_BUCKET,
             Key=f"results/{mock_source_job_id}/comprehensive_results.json",
