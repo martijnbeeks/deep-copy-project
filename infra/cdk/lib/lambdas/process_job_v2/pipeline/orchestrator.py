@@ -44,6 +44,7 @@ class PipelineConfig:
     gender: Optional[str] = None
     location: Optional[str] = None
     research_requirements: Optional[str] = None
+    target_product_name: Optional[str] = None
     dev_mode: bool = False
     api_version: str = "v2"
 
@@ -200,22 +201,24 @@ class PipelineOrchestrator:
             raise
     
     def _complete_avatar_with_beliefs(
-        self, 
-        identified_avatar: Any, 
-        deep_research_output: str
+        self,
+        identified_avatar: Any,
+        deep_research_output: str,
+        target_product_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Complete both avatar details and necessary beliefs for a single avatar.
-        
+
         Args:
             identified_avatar: The identified avatar object.
             deep_research_output: The deep research document.
-            
+            target_product_name: Optional product name for consistent naming.
+
         Returns:
             Dictionary with avatar details and beliefs.
         """
         avatar_details = self.avatar_step.complete_avatar_details(
-            identified_avatar, deep_research_output
+            identified_avatar, deep_research_output, target_product_name=target_product_name
         )
         # necessary_beliefs = self.avatar_step.complete_necessary_beliefs(
         #     identified_avatar, deep_research_output
@@ -228,7 +231,8 @@ class PipelineOrchestrator:
     def _generate_angles_for_avatar(
         self,
         result_entry: Dict[str, Any],
-        deep_research_output: str
+        deep_research_output: str,
+        target_product_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Generate marketing angles for a single avatar.
@@ -236,12 +240,13 @@ class PipelineOrchestrator:
         Args:
             result_entry: Dictionary with avatar details and beliefs.
             deep_research_output: The deep research document.
+            target_product_name: Optional product name for consistent naming.
 
         Returns:
             Dictionary with avatar, angles, and beliefs.
         """
         avatar = result_entry["avatar_details"]
-        angles = self.marketing_step.generate_marketing_angles(avatar, deep_research_output)
+        angles = self.marketing_step.generate_marketing_angles(avatar, deep_research_output, target_product_name=target_product_name)
 
         # Step 5c: Generate template predictions for top angles
         angles_dict = angles.dict()
@@ -284,7 +289,7 @@ class PipelineOrchestrator:
                 return self._handle_dev_mode(config)
             
             # Check cache for deep research results
-            cached_research = self.cache_service.get_cached_research(config.sales_page_url)
+            cached_research = self.cache_service.get_cached_research(config.sales_page_url, target_product_name=config.target_product_name)
             
             if cached_research:
                 # Cache HIT - use cached data and skip Steps 1-3
@@ -311,7 +316,8 @@ class PipelineOrchestrator:
                     research_page_analysis=research_page_analysis,
                     gender=config.gender,
                     location=config.location,
-                    research_requirements=config.research_requirements
+                    research_requirements=config.research_requirements,
+                    target_product_name=config.target_product_name,
                 )
 
                 # Step 3: Execute deep research
@@ -324,12 +330,13 @@ class PipelineOrchestrator:
                     sales_page_url=config.sales_page_url,
                     research_page_analysis=research_page_analysis,
                     deep_research_prompt=deep_research_prompt,
-                    deep_research_output=deep_research_output
+                    deep_research_output=deep_research_output,
+                    target_product_name=config.target_product_name,
                 )
             
             # Step 4: Identify and complete avatars
             logger.info("Step 4a: Identifying avatars")
-            identified_avatars = self.avatar_step.identify_avatars(deep_research_output)
+            identified_avatars = self.avatar_step.identify_avatars(deep_research_output, target_product_name=config.target_product_name)
             
             logger.info(
                 f"Step 4b: Completing details AND necessary beliefs for "
@@ -343,8 +350,8 @@ class PipelineOrchestrator:
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {
                     executor.submit(
-                        self._complete_avatar_with_beliefs, ia, deep_research_output
-                    ): ia 
+                        self._complete_avatar_with_beliefs, ia, deep_research_output, config.target_product_name
+                    ): ia
                     for ia in identified_avatars.avatars
                 }
                 for future in as_completed(futures):
@@ -366,7 +373,7 @@ class PipelineOrchestrator:
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {
                     executor.submit(
-                        self._generate_angles_for_avatar, result_entry, deep_research_output
+                        self._generate_angles_for_avatar, result_entry, deep_research_output, config.target_product_name
                     ): result_entry
                     for result_entry in avatar_results
                 }
@@ -389,7 +396,7 @@ class PipelineOrchestrator:
             # Step 5b: Generate Offer Brief
             logger.info("Step 5b: Generating Offer Brief")
             offer_brief = self.offer_brief_step.create_offer_brief(
-                marketing_avatars_list, deep_research_output
+                marketing_avatars_list, deep_research_output, target_product_name=config.target_product_name
             )
             
             # Upload product image to Cloudflare CDN
@@ -416,6 +423,7 @@ class PipelineOrchestrator:
                 "offer_brief": offer_brief.model_dump(),
                 "marketing_avatars": marketing_avatars_list,
                 "product_image": product_image,
+                "target_product_name": config.target_product_name,
             }
             
             self.aws_services.save_results_to_s3(
@@ -489,6 +497,7 @@ def create_config_from_event(event: Dict[str, Any], s3_bucket_default: str) -> P
         gender=event.get("gender"),
         location=event.get("location"),
         research_requirements=event.get("research_requirements"),
+        target_product_name=event.get("target_product_name"),
         dev_mode=event.get("dev_mode") == "true",
         api_version=event.get("api_version") or os.environ.get("API_VERSION") or "v2"
     )

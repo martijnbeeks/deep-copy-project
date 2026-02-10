@@ -38,7 +38,8 @@ def get_deep_research_prompt(
     location: str,
     research_requirements: str,
     language_of_output: str,
-    research_page_analysis: str
+    research_page_analysis: str,
+    target_product_name: str = "Not specified",
 ) -> str:
     """
     Generate comprehensive deep research prompt for Perplexity.
@@ -64,6 +65,7 @@ You are the Deep Research tool. Conduct comprehensive, unbiased, full-spectrum r
 INPUTS (PLACEHOLDERS — DO NOT ASK QUESTIONS)
 ===============================================================================
 - sales_page_url: {sales_page_url}
+- target_product_name: {target_product_name}               (the exact product name to use; "Not specified" means infer from sales page)
 - gender: {gender}                                         (e.g., "Female", "Male", "Mixed", "Not specified")
 - location: {location}                                     (country/region/city; "Not specified" allowed)
 - specific_research_requirements: {research_requirements}   ("None" allowed)
@@ -81,6 +83,7 @@ This is RESEARCH ONLY. Do NOT:
 - Write any marketing copy (ads, landing copy, headlines, email copy, scripts)
 
 You MUST:
+- When target_product_name is provided (not "Not specified"), always refer to the product by this exact name throughout your research output
 - Mine real customer language from actual sources
 - Document the complete emotional landscape
 - Extract exact quotes, phrases, and words people use (no paraphrasing for quotes)
@@ -332,7 +335,7 @@ Before finalizing, confirm:
 """
 
 
-def get_identify_avatars_prompt(deep_research_output: str) -> str:
+def get_identify_avatars_prompt(deep_research_output: str, target_product_name: str = "Not specified") -> str:
     """
     Generate prompt for identifying distinct avatars from research.
     
@@ -379,7 +382,8 @@ Deep research output:
 def get_complete_avatar_details_prompt(
     avatar_name: str,
     avatar_description: str,
-    deep_research_output: str
+    deep_research_output: str,
+    target_product_name: str = "Not specified",
 ) -> str:
     """
     Generate prompt for completing detailed avatar sheet.
@@ -415,7 +419,8 @@ Deep research output:
 def get_necessary_beliefs_prompt(
     avatar_name: str,
     avatar_description: str,
-    deep_research_output: str
+    deep_research_output: str,
+    target_product_name: str = "Not specified",
 ) -> str:
     """
     Generate prompt for extracting necessary beliefs for an avatar.
@@ -623,7 +628,8 @@ CRITICAL RULES
 def get_marketing_angles_prompt(
     avatar_name: str,
     avatar_json: str,
-    deep_research_output: str
+    deep_research_output: str,
+    target_product_name: str = "Not specified",
 ) -> str:
     """
     Generate prompt for creating marketing angles for an avatar.
@@ -750,7 +756,8 @@ NOW GENERATE ANGLES FOR THIS AVATAR
 
 def get_offer_brief_prompt(
     avatars_summary: str,
-    deep_research_output: str
+    deep_research_output: str,
+    target_product_name: str = "Not specified",
 ) -> str:
     """
     Generate prompt for creating strategic offer brief.

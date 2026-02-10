@@ -84,7 +84,8 @@ class SwipeGenerationOrchestrator:
                 raise RuntimeError(f"Could not fetch results for {original_job_id}")
                 
             job_results = results.get("results", {})
-            
+            target_product_name = event.get("target_product_name") or job_results.get("target_product_name") or "Not specified"
+
             # Find the specific avatar and angle from the results
             marketing_avatars = job_results.get("marketing_avatars", [])
             selected_avatar = None
@@ -150,7 +151,8 @@ class SwipeGenerationOrchestrator:
                 anthropic_service=self.anthropic,
                 job_id=job_id,
                 image_style=image_style,
-                prompt_service=self.prompt_service
+                prompt_service=self.prompt_service,
+                target_product_name=target_product_name,
             )
 
             # Include context IDs in the final result

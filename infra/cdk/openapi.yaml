@@ -571,6 +571,9 @@ paths:
                   enum: [realistic, photorealistic, illustration]
                   default: realistic
                   description: Image prompt style to use for generated image prompts
+                target_product_name:
+                  type: string
+                  description: Optional product name override. If provided, overrides the value from the original v2 job results.
             examples:
               example:
                 summary: Generate swipe files for a specific avatar and angle ID
@@ -1142,6 +1145,9 @@ paths:
                   enum: [realistic, photorealistic, illustration]
                   default: realistic
                   description: Image prompt style to use for generated image prompts
+                target_product_name:
+                  type: string
+                  description: Optional product name override. If provided, overrides the value from the original v2 job results.
       responses:
         '202':
           description: Swipe file generation job accepted (Dev Mode)
@@ -1445,6 +1451,9 @@ components:
         location:
           type: string
           description: Optional location target
+        target_product_name:
+          type: string
+          description: Optional product name to use consistently across all pipeline outputs
       example:
         sales_page_url: "https://try.meritrelief.com/"
         project_name: "meritrelief"
@@ -1493,6 +1502,9 @@ components:
                   necessary_beliefs:
                     type: string
                     description: 6 necessary beliefs extracted for this avatar
+            target_product_name:
+              type: string
+              description: Product name specified by the user (if provided)
             product_image:
               type: string
               description: Cloudflare CDN URL of the sales page screenshot (top 800px)

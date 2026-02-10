@@ -5,7 +5,7 @@ Identifies customer avatars from research and completes their profiles.
 """
 
 import logging
-from typing import Any
+from typing import Any, Optional
 
 from services.openai_service import OpenAIService
 from services.prompt_service import PromptService
@@ -34,7 +34,7 @@ class AvatarStep:
         self.openai_service = openai_service
         self.prompt_service = prompt_service
     
-    def identify_avatars(self, deep_research_output: str) -> IdentifiedAvatarList:
+    def identify_avatars(self, deep_research_output: str, target_product_name: Optional[str] = None) -> IdentifiedAvatarList:
         """
         Identify potential avatars from research output.
         
@@ -51,6 +51,7 @@ class AvatarStep:
             prompt = self.prompt_service.get_prompt(
                 "get_identify_avatars_prompt",
                 deep_research_output=deep_research_output,
+                target_product_name=target_product_name if target_product_name else "Not specified",
             )
             
             logger.info("Calling GPT-5 API to identify avatars")
@@ -68,9 +69,10 @@ class AvatarStep:
             raise
     
     def complete_avatar_details(
-        self, 
-        identified_avatar: Any, 
-        deep_research_output: str
+        self,
+        identified_avatar: Any,
+        deep_research_output: str,
+        target_product_name: Optional[str] = None,
     ) -> Avatar:
         """
         Complete the full avatar sheet for a specific identified avatar.
@@ -90,6 +92,7 @@ class AvatarStep:
                 avatar_name=identified_avatar.name,
                 avatar_description=identified_avatar.description,
                 deep_research_output=deep_research_output,
+                target_product_name=target_product_name if target_product_name else "Not specified",
             )
             prompt = self.prompt_service.get_prompt("get_complete_avatar_details_prompt", **kwargs)
             
@@ -108,9 +111,10 @@ class AvatarStep:
             raise
     
     def complete_necessary_beliefs(
-        self, 
-        identified_avatar: Any, 
-        deep_research_output: str
+        self,
+        identified_avatar: Any,
+        deep_research_output: str,
+        target_product_name: Optional[str] = None,
     ) -> str:
         """
         Extract necessary beliefs for a specific avatar.
@@ -136,6 +140,7 @@ class AvatarStep:
                 avatar_name=avatar_name,
                 avatar_description=avatar_description,
                 deep_research_output=deep_research_output,
+                target_product_name=target_product_name if target_product_name else "Not specified",
             )
             prompt = self.prompt_service.get_prompt("get_necessary_beliefs_prompt", **kwargs)
             

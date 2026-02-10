@@ -6,7 +6,7 @@ Generates strategic offer brief from avatars and research.
 
 import json
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from services.openai_service import OpenAIService
 from services.prompt_service import PromptService
@@ -36,9 +36,10 @@ class OfferBriefStep:
         self.prompt_service = prompt_service
     
     def create_offer_brief(
-        self, 
-        marketing_avatars_list: List[Dict[str, Any]], 
-        deep_research_output: str
+        self,
+        marketing_avatars_list: List[Dict[str, Any]],
+        deep_research_output: str,
+        target_product_name: Optional[str] = None,
     ) -> OfferBrief:
         """
         Generate a strategic Offer Brief based on avatars and research.
@@ -64,6 +65,7 @@ class OfferBriefStep:
             kwargs = dict(
                 avatars_summary=avatars_summary,
                 deep_research_output=deep_research_output,
+                target_product_name=target_product_name if target_product_name else "Not specified",
             )
             prompt = self.prompt_service.get_prompt("get_offer_brief_prompt", **kwargs)
             

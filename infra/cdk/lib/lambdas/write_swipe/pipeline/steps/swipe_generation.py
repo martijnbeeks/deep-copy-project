@@ -113,6 +113,7 @@ def rewrite_swipe_file(
     prompt_service: PromptService,
     job_id: str = "unknown",
     image_style: ImageStyle = "realistic",
+    target_product_name: str = "Not specified",
 ) -> Dict[str, Any]:
     """
     Rewrite swipe files based on the inputs using Anthropic.
@@ -184,13 +185,13 @@ def rewrite_swipe_file(
         
 
         if swipe_file_id == "LD0001":
-            kwargs = dict(avatar_info=marketing_avatar, angle_info=angle_info, offer_brief=offer_brief)
+            kwargs = dict(avatar_info=marketing_avatar, angle_info=angle_info, offer_brief=offer_brief, target_product_name=target_product_name)
             rewrite_prompt = prompt_service.get_prompt("get_listicle_generation_prompt", **kwargs)
         elif swipe_file_id == "AD0001_POV":
-            kwargs = dict(avatar_info=marketing_avatar, angle_info=angle_info, offer_brief=offer_brief)
+            kwargs = dict(avatar_info=marketing_avatar, angle_info=angle_info, offer_brief=offer_brief, target_product_name=target_product_name)
             rewrite_prompt = prompt_service.get_prompt("get_advertorial_rewrite_prompt_customer_pov", **kwargs)
         elif swipe_file_id == "AD0001_AUTHORITY":
-            kwargs = dict(avatar_info=marketing_avatar, angle_info=angle_info, offer_brief=offer_brief)
+            kwargs = dict(avatar_info=marketing_avatar, angle_info=angle_info, offer_brief=offer_brief, target_product_name=target_product_name)
             rewrite_prompt = prompt_service.get_prompt("get_advertorial_rewrite_prompt_authority", **kwargs)
         else:
             kwargs = dict(
@@ -199,6 +200,7 @@ def rewrite_swipe_file(
                 deep_research_output=deep_research,
                 offer_brief=offer_brief,
                 avatar_info=marketing_avatar,
+                target_product_name=target_product_name,
             )
             rewrite_prompt = prompt_service.get_prompt("get_advertorial_rewrite_prompt", **kwargs)
             

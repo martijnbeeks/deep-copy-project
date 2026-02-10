@@ -5,6 +5,7 @@ Generates marketing angles for customer avatars.
 """
 
 import logging
+from typing import Optional
 
 from services.openai_service import OpenAIService
 from services.prompt_service import PromptService
@@ -34,9 +35,10 @@ class MarketingStep:
         self.prompt_service = prompt_service
     
     def generate_marketing_angles(
-        self, 
-        avatar: Avatar, 
-        deep_research_output: str
+        self,
+        avatar: Avatar,
+        deep_research_output: str,
+        target_product_name: Optional[str] = None,
     ) -> AvatarMarketingAngles:
         """
         Generate marketing angles for a specific avatar.
@@ -61,6 +63,7 @@ class MarketingStep:
                 avatar_name=avatar_name,
                 avatar_json=avatar.model_dump_json(indent=2),
                 deep_research_output=deep_research_output,
+                target_product_name=target_product_name if target_product_name else "Not specified",
             )
             prompt = self.prompt_service.get_prompt("get_marketing_angles_prompt", **kwargs)
             

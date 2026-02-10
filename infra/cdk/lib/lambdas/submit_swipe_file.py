@@ -126,6 +126,11 @@ def handler(event, _context):
         "swipe_file_ids": swipe_file_ids,
         "image_style": image_style,
     }
+
+    # Optional override fields
+    target_product_name = body.get("target_product_name")
+    if target_product_name:
+        payload["target_product_name"] = target_product_name
     
     try:
         _lambda.invoke(

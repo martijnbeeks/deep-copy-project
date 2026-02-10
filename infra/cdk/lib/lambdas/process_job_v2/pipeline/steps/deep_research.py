@@ -40,7 +40,8 @@ class DeepResearchStep:
         gender: Optional[str] = None,
         location: Optional[str] = None,
         research_requirements: Optional[str] = None,
-        language_of_output: str = "English"
+        language_of_output: str = "English",
+        target_product_name: Optional[str] = None,
     ) -> str:
         """
         Create a comprehensive research prompt.
@@ -63,6 +64,7 @@ class DeepResearchStep:
             research_requirements=research_requirements if research_requirements else "None",
             language_of_output=language_of_output,
             research_page_analysis=research_page_analysis,
+            target_product_name=target_product_name if target_product_name else "Not specified",
         )
         return self.prompt_service.get_prompt("get_deep_research_prompt", **kwargs)
     

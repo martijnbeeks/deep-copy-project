@@ -66,20 +66,23 @@ class ResearchCacheService:
         return url
     
     @staticmethod
-    def get_cache_key(sales_page_url: str) -> str:
+    def get_cache_key(sales_page_url: str, target_product_name: Optional[str] = None) -> str:
         """
-        Generate a deterministic cache key from a sales page URL.
-        
-        Uses SHA256 hash of the normalized URL to create a consistent,
-        filesystem-safe key.
-        
+        Generate a deterministic cache key from a sales page URL and optional product name.
+
+        Uses SHA256 hash of the normalized URL (plus product name when provided)
+        to create a consistent, filesystem-safe key.
+
         Args:
             sales_page_url: The sales page URL to hash.
-            
+            target_product_name: Optional product name that changes the research prompt.
+
         Returns:
-            SHA256 hash string of the normalized URL.
+            SHA256 hash string.
         """
         normalized = ResearchCacheService.normalize_url(sales_page_url)
+        if target_product_name:
+            normalized = normalized + "|" + target_product_name
         return hashlib.sha256(normalized.encode('utf-8')).hexdigest()
     
     def _get_cache_path(self, cache_key: str) -> str:
@@ -94,17 +97,18 @@ class ResearchCacheService:
         """
         return f"cache/research/{cache_key}/research_cache.json"
     
-    def get_cached_research(self, sales_page_url: str) -> Optional[CachedResearchData]:
+    def get_cached_research(self, sales_page_url: str, target_product_name: Optional[str] = None) -> Optional[CachedResearchData]:
         """
         Retrieve cached research data for a sales page URL.
-        
+
         Args:
             sales_page_url: The sales page URL to look up.
-            
+            target_product_name: Optional product name included in cache key.
+
         Returns:
             CachedResearchData if cache hit, None if cache miss.
         """
-        cache_key = self.get_cache_key(sales_page_url)
+        cache_key = self.get_cache_key(sales_page_url, target_product_name=target_product_name)
         cache_path = self._get_cache_path(cache_key)
         
         try:
@@ -146,18 +150,20 @@ class ResearchCacheService:
         sales_page_url: str,
         research_page_analysis: str,
         deep_research_prompt: str,
-        deep_research_output: str
+        deep_research_output: str,
+        target_product_name: Optional[str] = None,
     ) -> None:
         """
         Save research data to the cache.
-        
+
         Args:
             sales_page_url: The original sales page URL.
             research_page_analysis: Output from page analysis step.
             deep_research_prompt: The generated research prompt.
             deep_research_output: Output from deep research step.
+            target_product_name: Optional product name included in cache key.
         """
-        cache_key = self.get_cache_key(sales_page_url)
+        cache_key = self.get_cache_key(sales_page_url, target_product_name=target_product_name)
         cache_path = self._get_cache_path(cache_key)
         
         try:
