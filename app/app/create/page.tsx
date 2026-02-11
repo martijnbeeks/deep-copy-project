@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, AlertCircle, Info, Zap, CheckCircle, Globe } from "lucide-react"
+import { Loader2, AlertCircle, Info, Sparkle, CheckCircle, Globe, Sparkles } from "lucide-react"
 import { SiAmazon, SiReddit } from "react-icons/si"
 import { useRequireAuth } from "@/hooks/use-require-auth"
 import { useCreateMarketingAngle, useUpdateMarketingAngle } from "@/lib/hooks/use-jobs"
@@ -595,7 +595,7 @@ export default function CreatePage() {
                         </div>
 
                         {/* Advertorial Type */}
-                        <div className="space-y-2">
+                        {/* <div className="space-y-2">
                           <Label htmlFor="advertorial_type" className="text-base font-semibold text-foreground">
                             Advertorial Type
                           </Label>
@@ -615,22 +615,7 @@ export default function CreatePage() {
                               <SelectItem value="Advertorial">Advertorial</SelectItem>
                             </SelectContent>
                           </Select>
-                        </div>
-
-                        {/* Info Box */}
-                        <div className="p-4 rounded-lg border bg-primary/5 border-primary/20">
-                          <div className="flex items-start gap-3">
-                            <Info className="h-5 w-5 text-primary mt-0.5" />
-                            <div className="flex-1">
-                              <h4 className="font-medium text-sm mb-2 text-primary">
-                                AI-Powered Avatar Discovery
-                              </h4>
-                              <p className="text-sm text-muted-foreground">
-                                Our AI will automatically analyze your sales page and discover multiple customer avatars with detailed research and marketing angles. No manual avatar selection needed - everything is generated automatically!
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        </div> */}
                       </div>
 
                       {/* Error Summary */}
@@ -643,15 +628,6 @@ export default function CreatePage() {
 
                       {/* Action Buttons */}
                       <div className="flex flex-col gap-4 pt-4">
-                        <div className="flex items-center justify-between px-1">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Zap className="h-4 w-4 text-amber-500 fill-amber-500" />
-                            <span>Estimated Research Cost</span>
-                          </div>
-                          <Badge variant="secondary" className="font-bold text-primary bg-primary/10">
-                            {JOB_CREDITS_BY_TYPE.deep_research} Credits
-                          </Badge>
-                        </div>
                         <div className="flex gap-4">
                         <Button
                           type="submit"
@@ -664,7 +640,12 @@ export default function CreatePage() {
                               Creating Content...
                             </>
                           ) : (
-                            "Generate AI Content"
+                            <div className="flex justify-center items-center">
+                            <Sparkles className="mr-2 h-4 w-4" /> 
+                            <span>
+                              Generate AI Content ({JOB_CREDITS_BY_TYPE.deep_research} Credits) 
+                            </span>
+                            </div>
                           )}
                         </Button>
                       </div>
