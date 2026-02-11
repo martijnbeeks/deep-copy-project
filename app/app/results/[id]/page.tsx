@@ -271,10 +271,10 @@ export default function ResultDetailPage({
             formData={{
               title: currentJob.title || "",
               sales_page_url: currentJob.sales_page_url || "",
-              research_requirements: currentJob?.result?.metadata?.research_requirements || undefined,
-              gender: currentJob?.result?.metadata?.gender || undefined,
-              location: currentJob?.result?.metadata?.location || undefined,
-              advertorial_type: currentJob.advertorial_type || undefined,
+              research_requirements: currentJob.research_requirements || undefined,
+              gender: currentJob.target_gender || undefined,
+              location: currentJob.target_location || undefined,
+              advertorial_type: currentJob.form_advertorial_type || undefined,
             }}
           />
         )}

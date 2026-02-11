@@ -130,7 +130,12 @@ export async function POST(request: NextRequest) {
       avatars: [], // Will be populated from V2 results
       execution_id: deepCopyJobId,
       custom_id: deepCopyJobId, // Use DeepCopy job ID as the primary key
-      screenshot: undefined // No screenshot in V2 flow
+      screenshot: undefined, // No screenshot in V2 flow
+      // Store V2 form fields
+      research_requirements: research_requirements || undefined,
+      target_gender: gender || undefined,
+      target_location: location || undefined,
+      form_advertorial_type: advertorial_type || 'Listicle'
     })
 
     // Update job status to processing

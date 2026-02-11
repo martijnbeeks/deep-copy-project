@@ -68,11 +68,16 @@ export const createJob = async (jobData: {
   avatar_persona_name?: string
   is_avatar_job?: boolean
   screenshot?: string
+  // V2 form fields
+  research_requirements?: string
+  target_gender?: string
+  target_location?: string
+  form_advertorial_type?: string
 }): Promise<Job> => {
   if (jobData.custom_id) {
     // Use custom ID (DeepCopy job ID) as the primary key
     const result = await query(
-      'INSERT INTO jobs (id, user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id, parent_job_id, avatar_persona_name, is_avatar_job, screenshot) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *',
+      'INSERT INTO jobs (id, user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id, parent_job_id, avatar_persona_name, is_avatar_job, screenshot, research_requirements, target_gender, target_location, form_advertorial_type) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *',
       [
         jobData.custom_id,
         jobData.user_id,
@@ -87,14 +92,18 @@ export const createJob = async (jobData: {
         jobData.parent_job_id || null,
         jobData.avatar_persona_name || null,
         jobData.is_avatar_job || false,
-        jobData.screenshot || null // screenshot from avatar extraction (product_image)
+        jobData.screenshot || null, // screenshot from avatar extraction (product_image)
+        jobData.research_requirements || null,
+        jobData.target_gender || null,
+        jobData.target_location || null,
+        jobData.form_advertorial_type || null
       ]
     )
     return result.rows[0]
   } else {
     // Use default UUID generation
     const result = await query(
-      'INSERT INTO jobs (user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id, parent_job_id, avatar_persona_name, is_avatar_job, screenshot) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *',
+      'INSERT INTO jobs (user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id, parent_job_id, avatar_persona_name, is_avatar_job, screenshot, research_requirements, target_gender, target_location, form_advertorial_type) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *',
       [
         jobData.user_id,
         jobData.title,
@@ -108,7 +117,11 @@ export const createJob = async (jobData: {
         jobData.parent_job_id || null,
         jobData.avatar_persona_name || null,
         jobData.is_avatar_job || false,
-        jobData.screenshot || null // screenshot from avatar extraction (product_image)
+        jobData.screenshot || null, // screenshot from avatar extraction (product_image)
+        jobData.research_requirements || null,
+        jobData.target_gender || null,
+        jobData.target_location || null,
+        jobData.form_advertorial_type || null
       ]
     )
     return result.rows[0]

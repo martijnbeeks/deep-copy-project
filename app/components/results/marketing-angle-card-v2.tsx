@@ -109,6 +109,7 @@ interface MarketingAngleCardV2Props {
     onGenerate: () => void;
     onRegenerate: () => void;
     offerBrief?: any;
+    medal?: 1 | 2 | 3 | undefined;
 }
 
 export function MarketingAngleCardV2({
@@ -119,7 +120,8 @@ export function MarketingAngleCardV2({
     isGenerating,
     onGenerate,
     onRegenerate,
-    offerBrief
+    offerBrief,
+    medal
 }: MarketingAngleCardV2Props) {
     const [isOpen, setIsOpen] = useState(false);
 

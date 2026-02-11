@@ -35,6 +35,11 @@ export interface Job {
   created_at: string
   updated_at: string
   completed_at?: string
+  // V2 form fields
+  research_requirements?: string
+  target_gender?: string
+  target_location?: string
+  form_advertorial_type?: string
   // Avatar job fields
   parent_job_id?: string
   avatar_persona_name?: string
