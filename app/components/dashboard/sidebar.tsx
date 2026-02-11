@@ -2,22 +2,16 @@
 
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import { LayoutDashboard, LogOut, PenTool, Loader2, FileText, Sun, Moon, Building2 } from "lucide-react"
+import { LayoutDashboard, LogOut, PenTool, Loader2, FileText, Sun, Moon, Building2, User as UserIcon, Coins } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import {
-  Sidebar as UISidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from "@/components/ui/sidebar"
+import { Sidebar as UISidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"
+import { useBillingStore } from "@/stores/billing-store"
+import { Zap } from "lucide-react"
+import { Progress } from "@/components/ui/progress"
 
 const baseNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -27,6 +21,7 @@ const baseNavigation = [
 
 export function Sidebar() {
   const { user, logout, isAdmin } = useAuthStore()
+  const { currentUsage, creditLimit, fetchBillingStatus, isLoading: isBillingLoading } = useBillingStore()
   const pathname = usePathname()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
@@ -37,6 +32,13 @@ export function Sidebar() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Initial fetch of billing status
+  useEffect(() => {
+    if (mounted && user?.email) {
+      fetchBillingStatus(user.email)
+    }
+  }, [mounted, user, fetchBillingStatus])
 
   // Build navigation array based on admin status (from auth store - set during login)
   const navigation = [
@@ -56,6 +58,14 @@ export function Sidebar() {
     setTimeout(() => {
       setLoadingItem(null)
     }, 200)
+  }
+
+  const usagePercentage = creditLimit > 0 ? (currentUsage / creditLimit) * 100 : 0
+  
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'k'
+    return num.toString()
   }
 
   return (
@@ -126,10 +136,45 @@ export function Sidebar() {
         </SidebarContent>
 
         <SidebarFooter>
+          <div className="px-0 group-hover:px-3 py-4 mb-2 transition-all duration-300">
+            {/* Credits Display */}
+            <div 
+              className="flex flex-col gap-1 group-hover:gap-2.5 p-1.5 group-hover:p-3 rounded-none group-hover:rounded-xl border border-transparent group-hover:border-sidebar-border bg-transparent group-hover:bg-muted/30 group/credits cursor-pointer hover:group-hover:bg-muted/50 transition-all duration-300 overflow-hidden items-center group-hover:items-stretch"
+              onClick={() => router.push("/billing")}
+            >
+              {/* Line 1: Credits Label */}
+              <div className="flex items-center min-w-0 w-full justify-center group-hover:justify-start">
+                <span className="text-[10px] group-hover:text-[10px] font-bold text-muted-foreground uppercase tracking-widest transition-all duration-300">
+                  Credits
+                </span>
+              </div>
+              
+              {/* Line 2: Usage (x / x) */}
+              <div className="flex items-center justify-center group-hover:justify-start min-w-0 w-full">
+                <p className="text-[10px] group-hover:text-xs font-bold text-foreground whitespace-nowrap leading-none transition-all duration-300">
+                  <span className="text-primary">{formatNumber(currentUsage)}</span>
+                  <span className="text-muted-foreground/60 mx-1 font-medium">/</span>
+                  <span>{formatNumber(creditLimit)}</span>
+                </p>
+              </div>
+              
+              {/* Progress Bar (Expanded only) */}
+              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden opacity-0 group-hover:opacity-100 transition-all duration-300 hidden group-hover:block mt-2">
+                <div 
+                  className="h-full bg-primary transition-all duration-500"
+                  style={{ width: `${Math.min(100, usagePercentage)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <button className="flex items-center gap-2 w-full cursor-pointer pl-0">
+                <button 
+                  onClick={() => router.push("/billing")}
+                  className="flex items-center gap-2 w-full cursor-pointer pl-0"
+                >
                   <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold flex-shrink-0">
                     {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
                   </div>

@@ -450,7 +450,13 @@ export default function DashboardPage() {
   }, [])
 
   const handleJobCardClick = useCallback((jobId: string, job?: JobWithTemplate) => {
-    // Check if this job has avatars - route to avatars page if it does
+    // V2 jobs (deep research) should always route directly to results page
+    if (job?.target_approach === 'v2') {
+      router.push(`/results/${jobId}`)
+      return
+    }
+
+    // V1 jobs: Check if this job has avatars - route to avatars page if it does
     const avatars = job?.avatars as any[] | string | undefined
     let hasAvatars = false
     if (avatars) {
@@ -472,6 +478,14 @@ export default function DashboardPage() {
   const handleJobCardKeyDown = useCallback((e: React.KeyboardEvent, jobId: string, job?: JobWithTemplate) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
+
+      // V2 jobs (deep research) should always route directly to results page
+      if (job?.target_approach === 'v2') {
+        router.push(`/results/${jobId}`)
+        return
+      }
+
+      // V1 jobs: Check if this job has avatars
       const avatars = job?.avatars as any[] | string | undefined
       let hasAvatars = false
       if (avatars) {

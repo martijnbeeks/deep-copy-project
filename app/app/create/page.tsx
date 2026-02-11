@@ -17,13 +17,16 @@ import { useCreateMarketingAngle, useUpdateMarketingAngle } from "@/lib/hooks/us
 import { useRouter } from "next/navigation"
 import { Sidebar, SidebarTrigger } from "@/components/dashboard/sidebar"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
-import { AvatarExtractionDialog } from "@/components/avatar-extraction-dialog"
+// Avatar extraction removed - V2 handles this automatically
 import { useAutoPolling } from "@/hooks/use-auto-polling"
 import { useToast } from "@/hooks/use-toast"
 import { isValidUrl } from "@/lib/utils/validation"
 import { logger } from "@/lib/utils/logger"
 import { INITIAL_SOURCE_STATUS, COMPLETED_SOURCE_STATUS, resetSourceStatus, completeSourceStatus, type SourceStatus } from "@/lib/constants/research-sources"
 import { UsageLimitDialog } from "@/components/ui/usage-limit-dialog"
+import { getAuthToken, getUserEmail } from "@/lib/utils/client-auth"
+import { JOB_CREDITS_BY_TYPE } from "@/lib/constants/job-credits"
+import { useBillingStore } from "@/stores/billing-store"
 
 interface CustomerAvatar {
   persona_name: string
@@ -43,32 +46,14 @@ interface CustomerAvatar {
 
 interface PipelineFormData {
   title: string
-  brand_info: string
   sales_page_url: string
-  target_approach?: string
-  avatars?: CustomerAvatar[]  // Single source of truth - all avatars with is_researched flag
-  product_image?: string  // Base64 screenshot from avatar extraction
+  research_requirements?: string
+  gender?: string
+  location?: string
+  advertorial_type?: string
 }
 
-// Helper to get selected avatars
-const getSelectedAvatars = (avatars?: CustomerAvatar[]): CustomerAvatar[] => {
-  return avatars?.filter(a => a.is_researched === true) || []
-}
-
-// Helper to get first selected avatar (for display)
-const getFirstSelectedAvatar = (avatars?: CustomerAvatar[]): CustomerAvatar | undefined => {
-  return getSelectedAvatars(avatars)[0]
-}
-
-// Helper to get selected avatar index (1-based) in the original array
-const getSelectedAvatarIndex = (avatars?: CustomerAvatar[]): number => {
-  const selectedAvatars = getSelectedAvatars(avatars)
-  if (selectedAvatars.length === 0) return 1
-
-  const firstSelected = selectedAvatars[0]
-  const index = avatars?.findIndex(a => a.persona_name === firstSelected.persona_name) ?? -1
-  return index >= 0 ? index + 1 : 1 // 1-based index
-}
+// V2: No avatar helpers needed - avatars come from API response
 
 export default function CreatePage() {
   const { user, isAuthenticated, isReady } = useRequireAuth()
@@ -82,20 +67,15 @@ export default function CreatePage() {
 
   const [formData, setFormData] = useState<PipelineFormData>({
     title: "",
-    brand_info: "",
     sales_page_url: "",
-    target_approach: "explore",
-    avatars: [],
+    research_requirements: "",
+    gender: "",
+    location: "",
+    advertorial_type: "Listicle",
   })
   const [errors, setErrors] = useState<Partial<Record<keyof PipelineFormData, string>>>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [avatarExtractionJobId, setAvatarExtractionJobId] = useState<string | null>(null)
-  // Use ref to avoid async state timing issues when submitting immediately after avatar extraction
-  const avatarExtractionJobIdRef = useRef<string | null>(null)
-
-  // Avatar extraction dialog state
-  const [showAvatarDialog, setShowAvatarDialog] = useState(false)
 
   // URL popup state
   const [showUrlPopup, setShowUrlPopup] = useState(false)
@@ -118,6 +98,7 @@ export default function CreatePage() {
     limit: number
   } | null>(null)
 
+
   // Early return if not authenticated to prevent skeleton loader
   if (!isReady) {
     return null
@@ -136,30 +117,6 @@ export default function CreatePage() {
       return true
     }
 
-    // Check if target_approach is set (it has a default, but check anyway)
-    if (!formData.target_approach) {
-      return true
-    }
-
-    // For "known" approach, check if customer avatar fields are complete
-    if (formData.target_approach === 'known') {
-      const avatar = getFirstSelectedAvatar(formData.avatars)
-      if (!avatar) {
-        return true
-      }
-      // All required avatar fields must be filled
-      if (!avatar.persona_name?.trim() ||
-        !avatar.description?.trim() ||
-        !avatar.age_range?.trim() ||
-        !avatar.gender?.trim() ||
-        !avatar.key_buying_motivation?.trim()) {
-        return true
-      }
-    }
-
-    // For "explore" approach, avatars are optional initially (will be generated)
-    // So we don't need to check for avatars here
-
     return false // Form is valid, button should be enabled
   }
 
@@ -171,87 +128,91 @@ export default function CreatePage() {
     if (!data.title.trim()) {
       newErrors.title = "Project title is required"
     }
-    // Brand info is optional - no validation needed
     if (!data.sales_page_url.trim()) {
       newErrors.sales_page_url = "Sales page URL is required"
     } else if (!isValidUrl(data.sales_page_url)) {
       newErrors.sales_page_url = "Please enter a valid URL"
     }
-    if (!data.target_approach) {
-      newErrors.target_approach = "Please select an approach"
-    }
-    // Note: For "explore" approach, avatars will be generated when button is clicked
-    // For "known" approach, avatars should already be provided
-    if (data.target_approach === 'known' && getSelectedAvatars(data.avatars).length === 0) {
-      newErrors.avatars = "Please provide customer avatar information"
-    }
-    // For "explore" approach, ensure avatars were generated and selected
-    if (data.target_approach === 'explore' && getSelectedAvatars(data.avatars).length === 0) {
-      newErrors.avatars = "Please generate and select avatars before proceeding"
-    }
+    // V2 fields are optional - no validation needed
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const submitForm = async (skipAvatarCheck: boolean = false, updatedFormData?: PipelineFormData) => {
-    // Use updated form data if provided, otherwise use current state
-    const dataToSubmit = updatedFormData || formData
-
-    // If user selected "explore new avatars" but hasn't selected any yet, show the extraction dialog
-    if (!skipAvatarCheck && dataToSubmit.target_approach === 'explore' && getSelectedAvatars(dataToSubmit.avatars).length === 0) {
-      setShowAvatarDialog(true)
-      return
-    }
-
-    // Validate form before submitting (using provided data or current formData state)
-    if (!validateForm(dataToSubmit)) return
+  const submitForm = async (opts?: { allowOverage?: boolean }) => {
+    // Validate form before submitting
+    if (!validateForm()) return
 
     // Prevent duplicate submissions
     if (isLoading) return
 
-    // For "known" approach, proceed with normal submission
     try {
       setIsLoading(true)
 
-      let createdMarketingAngle: any
+      // Auth header so job is created under the logged-in user (not demo@example.com)
+      const token = getAuthToken()
+      const userEmail = getUserEmail()
+      const authHeader = token ? `Bearer ${token}` : userEmail ? `Bearer ${userEmail}` : null
 
-      // If we have an avatar extraction job ID, UPDATE it instead of creating new
-      // The API will automatically detect if execution_id is missing and submit to DeepCopy
-      // Use ref to avoid async state timing issues when submitting immediately after avatar extraction
-      const jobIdToUse = avatarExtractionJobIdRef.current || avatarExtractionJobId
-      if (jobIdToUse) {
-        createdMarketingAngle = await updateMarketingAngleMutation.mutateAsync({
-          id: jobIdToUse,
-          title: dataToSubmit.title,
-          brand_info: dataToSubmit.brand_info || '',
-          sales_page_url: dataToSubmit.sales_page_url,
-          target_approach: dataToSubmit.target_approach || 'explore',
-          avatars: dataToSubmit.avatars || [],
-          product_image: dataToSubmit.product_image
-        })
-      } else {
-        // Normal create flow
-        createdMarketingAngle = await createMarketingAngleMutation.mutateAsync({
-          ...dataToSubmit,
-          brand_info: dataToSubmit.brand_info || '', // Ensure brand_info is always a string
-          advertorial_type: 'Advertorial', // Default value since it's required by the API
-          target_approach: dataToSubmit.target_approach || 'explore',
-          avatars: dataToSubmit.avatars || [],
-          product_image: dataToSubmit.product_image, // Pass product_image from avatar extraction
-        })
+      // Submit V2 job via API
+      const response = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authHeader && { Authorization: authHeader }),
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          sales_page_url: formData.sales_page_url,
+          research_requirements: formData.research_requirements || undefined,
+          gender: formData.gender || undefined,
+          location: formData.location || undefined,
+          advertorial_type: formData.advertorial_type || 'Listicle',
+          ...(opts?.allowOverage ? { allowOverage: true } : {}),
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({} as any))
+
+        if (response.status === 402 && errorData?.code === 'JOB_CREDITS_OVERAGE_CONFIRMATION_REQUIRED') {
+          // Show toast notification about overage
+          const overageCredits = errorData?.overageCredits ?? 0;
+          const overageCostTotal = errorData?.overageCostTotal ?? 0;
+          const currency = errorData?.currency ?? 'EUR';
+          
+          toast({
+            title: "Overage Charges Apply",
+            description: `This job requires ${overageCredits} extra credit${overageCredits === 1 ? '' : 's'} (${overageCostTotal.toFixed(2)} ${currency}). Overage charges will be added to your next invoice.`,
+            variant: "default",
+          });
+
+          // Automatically retry with allowOverage=true
+          setIsLoading(false);
+          await submitForm({ allowOverage: true });
+          return;
+        }
+
+        const err = new Error(errorData.error || errorData.message || 'Failed to create job') as Error & {
+          status?: number
+          currentUsage?: number
+          limit?: number
+        }
+        err.status = response.status
+        if (errorData.currentUsage !== undefined) err.currentUsage = errorData.currentUsage
+        if (errorData.limit !== undefined) err.limit = errorData.limit
+        throw err
       }
 
-      // Set marketing angle ID for polling
-      setCurrentMarketingAngleId(createdMarketingAngle.id)
-
-      // Clear avatar extraction job ID after successful update
-      if (jobIdToUse) {
-        avatarExtractionJobIdRef.current = null
-        setAvatarExtractionJobId(null)
+      const createdJob = await response.json()
+      
+      // Refresh billing status globally after successful credit consumption
+      if (userEmail) {
+        useBillingStore.getState().fetchBillingStatus(userEmail, true);
       }
+      setCurrentMarketingAngleId(createdJob.id)
 
-      // Show research generation loading dialog
+      // Show loading dialog
       setShowResearchLoading(true)
       setResearchProgress(0)
       setResearchStage(0)
@@ -260,7 +221,6 @@ export default function CreatePage() {
       setSourceStatus(resetSourceStatus())
 
       // Start slow progress animation that accommodates variable processing times (5-8+ minutes)
-      // Progress increases slowly to reach ~85% over 8 minutes, then waits for completion
       const startTime = Date.now()
       const progressInterval = setInterval(() => {
         const elapsed = (Date.now() - startTime) / 1000 // seconds
@@ -268,69 +228,64 @@ export default function CreatePage() {
         const baseProgress = Math.min(85, (elapsed / estimatedMaxTime) * 85)
 
         setResearchProgress(prev => {
-          // Only update if calculated progress is higher than current
-          // This prevents going backwards when status updates come in
           return Math.max(prev, Math.floor(baseProgress))
         })
 
-        // Update source status based on elapsed time (in seconds) - 45 second intervals
+        // Update source status based on elapsed time
         const elapsedSeconds = elapsed
         if (elapsedSeconds >= 45) setSourceStatus(prev => ({ ...prev, webSearch: true }))
         if (elapsedSeconds >= 90) setSourceStatus(prev => ({ ...prev, amazonReviews: true }))
         if (elapsedSeconds >= 135) setSourceStatus(prev => ({ ...prev, redditDiscussions: true }))
         if (elapsedSeconds >= 180) setSourceStatus(prev => ({ ...prev, industryBlogs: true }))
         if (elapsedSeconds >= 225) setSourceStatus(prev => ({ ...prev, competitorAnalysis: true }))
-        // Market Trends remains in progress until actual completion (not time-based)
-      }, 1000) // Update every second for smoother progress
+      }, 1000)
 
-      // Update stages based on elapsed time (more spread out for longer processing)
+      // Update stages based on elapsed time
       setTimeout(() => setResearchStage(1), 30000)   // Stage 1 at 30s
       setTimeout(() => setResearchStage(2), 90000)   // Stage 2 at 1.5min
       setTimeout(() => setResearchStage(3), 180000)  // Stage 3 at 3min
       setTimeout(() => setResearchStage(4), 300000)  // Stage 4 at 5min
 
-      // Poll for marketing angle status
-      const pollMarketingAngleStatus = async () => {
-        const maxAttempts = 180 // Max 15 minutes (180 * 5s) to accommodate longer processing
+      // Poll for job status
+      const pollJobStatus = async () => {
+        const maxAttempts = 180 // Max 15 minutes
         const pollInterval = 5000 // Poll every 5 seconds
 
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           try {
-            const response = await fetch(`/api/marketing-angles/${createdMarketingAngle.id}/status`, {
+            const statusAuth = getAuthToken() ? `Bearer ${getAuthToken()}` : `Bearer ${getUserEmail()}`
+            const statusResponse = await fetch(`/api/jobs/${createdJob.id}/status`, {
               method: 'GET',
               headers: {
                 'Content-Type': 'application/json',
+                Authorization: statusAuth,
               }
             })
 
-            if (!response.ok) {
-              throw new Error(`Status check failed: ${response.status}`)
+            if (!statusResponse.ok) {
+              throw new Error(`Status check failed: ${statusResponse.status}`)
             }
 
-            const data = await response.json()
-            const status = data.status?.toLowerCase()
+            const statusData = await statusResponse.json()
+            const status = statusData.status?.toLowerCase()
 
             // Update progress and stage based on status
-            if (status === 'submitted') {
+            if (status === 'submitted' || status === 'pending') {
               setResearchStage(1)
               setResearchProgress(prev => Math.max(prev, 15))
             } else if (status === 'running' || status === 'processing') {
-              // Gradually increase stage as processing continues based on elapsed time
               const elapsed = (Date.now() - startTime) / 1000
               if (elapsed > 180) {
-                setResearchStage(3) // Move to Reddit & Forums stage after 3 min
+                setResearchStage(3)
               } else if (elapsed > 90) {
-                setResearchStage(2) // Move to Competitors stage after 1.5 min
+                setResearchStage(2)
               }
-              // Progress increases gradually, capped at 85% until completion
               const progressFromTime = Math.min(85, 20 + (elapsed / 480) * 65)
               setResearchProgress(prev => Math.max(prev, Math.floor(progressFromTime)))
             } else if (status === 'completed' || status === 'succeeded') {
               clearInterval(progressInterval)
               setResearchStage(4)
               setResearchProgress(100)
-
-              // Mark all sources as complete
               setSourceStatus(completeSourceStatus())
 
               // Wait a moment then redirect to results
@@ -339,25 +294,22 @@ export default function CreatePage() {
                 setResearchProgress(0)
                 setResearchStage(0)
                 setCurrentMarketingAngleId(null)
-
-                // Reset source status
                 setSourceStatus(resetSourceStatus())
 
                 // Reset form
                 setFormData({
                   title: "",
-                  brand_info: "",
                   sales_page_url: "",
-                  target_approach: "explore",
-                  avatars: [],
+                  research_requirements: "",
+                  gender: "",
+                  location: "",
+                  advertorial_type: "Listicle",
                 })
                 setErrors({})
                 setGeneralError(null)
-                avatarExtractionJobIdRef.current = null
-                setAvatarExtractionJobId(null) // Clear avatar extraction job ID
 
                 // Redirect to results page
-                router.push(`/results/${createdMarketingAngle.id}`)
+                router.push(`/results/${createdJob.id}`)
               }, 1000)
               return
             } else if (status === 'failed' || status === 'failure') {
@@ -366,13 +318,11 @@ export default function CreatePage() {
               setResearchProgress(0)
               setResearchStage(0)
               setCurrentMarketingAngleId(null)
-
-              // Reset source status
               setSourceStatus(resetSourceStatus())
 
               toast({
                 title: "Error",
-                description: "Marketing angle processing failed. Please try again.",
+                description: "Job processing failed. Please try again.",
                 variant: "destructive",
               })
               return
@@ -390,18 +340,15 @@ export default function CreatePage() {
               setResearchProgress(0)
               setResearchStage(0)
               setCurrentMarketingAngleId(null)
-
-              // Reset source status
               setSourceStatus(resetSourceStatus())
 
               toast({
                 title: "Error",
-                description: "Failed to check marketing angle status. Please check your marketing angles page.",
+                description: "Failed to check job status. Please check your jobs page.",
                 variant: "destructive",
               })
               return
             }
-            // Continue polling on intermediate errors
             await new Promise(resolve => setTimeout(resolve, pollInterval))
           }
         }
@@ -412,8 +359,6 @@ export default function CreatePage() {
         setResearchProgress(0)
         setResearchStage(0)
         setCurrentMarketingAngleId(null)
-
-        // Reset source status
         setSourceStatus({
           webSearch: false,
           amazonReviews: false,
@@ -425,18 +370,18 @@ export default function CreatePage() {
 
         toast({
           title: "Processing Taking Longer",
-          description: "Your marketing angle is still processing. This can take 5-8 minutes or more. Please check your marketing angles page for updates.",
+          description: "Your job is still processing. This can take 5-8 minutes or more. Please check your jobs page for updates.",
           variant: "default",
         })
       }
 
       // Start polling
-      pollMarketingAngleStatus()
+      pollJobStatus()
 
       // Reset loading state (polling happens in background)
       setIsLoading(false)
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create marketing angle'
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create job'
       const errorWithStatus = error as Error & { status?: number; currentUsage?: number; limit?: number }
 
       // Check if it's a usage limit error (429)
@@ -458,10 +403,10 @@ export default function CreatePage() {
         variant: "destructive",
       })
 
-      // Check if it's a duplicate marketing angle error
-      if (errorMessage.includes('Duplicate job detected') || errorMessage.includes('Duplicate marketing angle')) {
+      // Check if it's a duplicate job error
+      if (errorMessage.includes('Duplicate job detected')) {
         setErrors({
-          title: 'A marketing angle with this title was created recently. Please wait a moment or use a different title.'
+          title: 'A job with this title was created recently. Please wait a moment or use a different title.'
         })
         setGeneralError(errorMessage)
       } else {
@@ -474,53 +419,7 @@ export default function CreatePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await submitForm(false)
-  }
-
-  const handleAvatarsSelected = async (selectedAvatars: any[], allAvatars: any[], shouldClose: boolean = true, autoSubmit: boolean = false, productImage?: string, extractionJobId?: string) => {
-    try {
-      // Store the avatar extraction job ID if provided (from initial extraction)
-      // Set both ref (immediate) and state (for UI) to avoid async timing issues
-      if (extractionJobId) {
-        avatarExtractionJobIdRef.current = extractionJobId
-        setAvatarExtractionJobId(extractionJobId)
-      }
-
-      // Mark selected avatars as researched
-      const avatarsWithResearch = allAvatars.map(avatar => ({
-        ...avatar,
-        is_researched: selectedAvatars.some(selected =>
-          selected.persona_name === avatar.persona_name
-        ) ? true : (avatar.is_researched || false)
-      }))
-
-      const updatedFormData: PipelineFormData = {
-        ...formData,
-        avatars: avatarsWithResearch,  // Single array with all avatars
-        product_image: productImage || formData.product_image  // Store product_image from avatar extraction
-      }
-
-      setFormData(updatedFormData)
-
-      // Close the dialog only if shouldClose is true
-      if (shouldClose) {
-        setShowAvatarDialog(false)
-      }
-
-      // If autoSubmit is true, trigger form submission automatically with updated data
-      if (autoSubmit) {
-        // Use setTimeout to ensure state is set, then submit with the updated data
-        setTimeout(() => {
-          submitForm(true, updatedFormData)
-        }, 50)
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update avatar selection. Please try again.",
-        variant: "destructive",
-      })
-    }
+    await submitForm()
   }
 
   if (!user || !isAuthenticated) {
@@ -623,313 +522,115 @@ export default function CreatePage() {
                         )}
                       </div>
 
-                      {/* Target Audience Section */}
+                      {/* V2 Research Options Section */}
                       <div className="space-y-6">
                         <div className="space-y-2">
-                          <h3 className="text-lg font-semibold text-foreground">Target Audience</h3>
-                          <p className="text-sm text-muted-foreground">Select which target audience you want to research</p>
+                          <h3 className="text-lg font-semibold text-foreground">Research Options</h3>
+                          <p className="text-sm text-muted-foreground">Optional fields to refine your research (AI will automatically discover avatars)</p>
                         </div>
 
-                        {/* Choose Your Approach */}
+                        {/* Research Requirements */}
                         <div className="space-y-4">
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div
-                              className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${formData.target_approach === 'explore'
-                                ? 'border-primary bg-primary/5 shadow-sm'
-                                : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                                }`}
-                              onClick={() => setFormData(prev => ({ ...prev, target_approach: 'explore', avatars: [] }))}
-                            >
-                              <div className="flex items-start gap-4">
-                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${formData.target_approach === 'explore' ? 'border-primary bg-primary' : 'border-muted-foreground'
-                                  }`}>
-                                  {formData.target_approach === 'explore' && (
-                                    <div className="w-2 h-2 bg-primary-foreground rounded-full"></div>
-                                  )}
-                                </div>
-                                <div className="flex-1">
-                                  <h4 className="font-semibold text-base text-foreground mb-2">I want to explore new avatars</h4>
-                                  <p className="text-sm text-muted-foreground mb-3">that I can do research on</p>
-                                  <div className="space-y-1 text-xs text-muted-foreground">
-                                    <p>• Discover new customer segments</p>
-                                    <p>• Research market opportunities</p>
-                                    <p>• Test different audience approaches</p>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div
-                              className={`p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${formData.target_approach === 'known'
-                                ? 'border-primary bg-primary/5 shadow-sm'
-                                : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                                }`}
-                              onClick={() => setFormData(prev => ({ ...prev, target_approach: 'known', avatars: [] }))}
-                            >
-                              <div className="flex items-start gap-4">
-                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${formData.target_approach === 'known' ? 'border-primary bg-primary' : 'border-muted-foreground'
-                                  }`}>
-                                  {formData.target_approach === 'known' && (
-                                    <div className="w-2 h-2 bg-primary-foreground rounded-full"></div>
-                                  )}
-                                </div>
-                                <div className="flex-1">
-                                  <h4 className="font-semibold text-base text-foreground mb-2">I know exactly who my customer is</h4>
-                                  <p className="text-sm text-muted-foreground mb-3">and want to target them specifically</p>
-                                  <div className="space-y-1 text-xs text-muted-foreground">
-                                    <p>• Define specific demographics</p>
-                                    <p>• Target existing customer base</p>
-                                    <p>• Optimize for known preferences</p>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="research_requirements" className="text-base font-semibold text-foreground">
+                              Research Requirements (Optional)
+                            </Label>
+                            <p className="text-sm text-muted-foreground">Specific focus areas or requirements for the research</p>
+                            <Textarea
+                              id="research_requirements"
+                              placeholder="e.g., Focus on natural ingredients and FDA approval status"
+                              value={formData.research_requirements || ''}
+                              onChange={(e) => {
+                                setFormData((prev) => ({ ...prev, research_requirements: e.target.value }))
+                              }}
+                              disabled={isLoading}
+                              rows={3}
+                              className="text-base"
+                            />
                           </div>
                         </div>
 
-                        {/* Conditional Content Based on Approach */}
-                        {formData.target_approach === 'explore' && (
-                          <div className="space-y-4">
-                            <div
-                              className="p-4 rounded-lg border"
-                              style={{
-                                backgroundColor: 'rgba(93, 113, 242, 0.1)',
-                                borderColor: 'rgba(93, 113, 242, 0.3)'
+                        {/* Target Demographics */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="gender" className="text-base font-semibold text-foreground">
+                              Target Gender (Optional)
+                            </Label>
+                            <p className="text-sm text-muted-foreground">Primary gender target</p>
+                            <Select
+                              value={formData.gender || ''}
+                              onValueChange={(value) => {
+                                setFormData((prev) => ({ ...prev, gender: value }))
                               }}
+                              disabled={isLoading}
                             >
-                              <h4
-                                className="font-medium text-sm mb-3"
-                                style={{ color: '#5d71f2' }}
-                              >
-                                AI Avatar Discovery
-                              </h4>
-                              <p
-                                className="text-sm mb-4"
-                                style={{ color: 'rgba(93, 113, 242, 0.9)' }}
-                              >
-                                Our AI will analyze your sales page to discover and extract customer personas automatically.
-                                No manual selection needed - just provide your sales page URL and we'll do the research for you.
-                              </p>
-                              <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(93, 113, 242, 0.85)' }}>
-                                <div
-                                  className="w-2 h-2 rounded-full"
-                                  style={{ backgroundColor: '#5d71f2' }}
-                                ></div>
-                                <span>Avatars will be extracted after you submit the form</span>
-                              </div>
-                            </div>
-
-                            {getSelectedAvatars(formData.avatars).length > 0 && (
-                              <div className="flex items-center justify-between p-4 border rounded-lg">
-                                <div className="text-sm text-muted-foreground">
-                                  {getSelectedAvatars(formData.avatars).length} avatar{getSelectedAvatars(formData.avatars).length > 1 ? 's' : ''} selected
-                                </div>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  onClick={() => setShowAvatarDialog(true)}
-                                  className="h-9"
-                                >
-                                  Update Avatars
-                                </Button>
-                              </div>
-                            )}
+                              <SelectTrigger className="h-12 text-base">
+                                <SelectValue placeholder="Select gender" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Male">Male</SelectItem>
+                                <SelectItem value="Female">Female</SelectItem>
+                                <SelectItem value="Mixed">Mixed</SelectItem>
+                                <SelectItem value="N/A">Not Specified</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
-                        )}
 
-                        {formData.target_approach === 'known' && (
-                          <div className="space-y-4">
-                            <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-                              <h4 className="font-medium text-sm mb-3 text-primary">
-                                Define Your Target Persona
+                          <div className="space-y-2">
+                            <Label htmlFor="location" className="text-base font-semibold text-foreground">
+                              Target Location (Optional)
+                            </Label>
+                            <p className="text-sm text-muted-foreground">Primary location or region</p>
+                            <Input
+                              id="location"
+                              placeholder="e.g., USA, United States, Europe"
+                              value={formData.location || ''}
+                              onChange={(e) => {
+                                setFormData((prev) => ({ ...prev, location: e.target.value }))
+                              }}
+                              disabled={isLoading}
+                              className="h-12 text-base"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Advertorial Type */}
+                        <div className="space-y-2">
+                          <Label htmlFor="advertorial_type" className="text-base font-semibold text-foreground">
+                            Advertorial Type
+                          </Label>
+                          <p className="text-sm text-muted-foreground">Type of content to generate</p>
+                          <Select
+                            value={formData.advertorial_type || 'Listicle'}
+                            onValueChange={(value) => {
+                              setFormData((prev) => ({ ...prev, advertorial_type: value }))
+                            }}
+                            disabled={isLoading}
+                          >
+                            <SelectTrigger className="h-12 text-base">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Listicle">Listicle</SelectItem>
+                              <SelectItem value="Advertorial">Advertorial</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Info Box */}
+                        <div className="p-4 rounded-lg border bg-primary/5 border-primary/20">
+                          <div className="flex items-start gap-3">
+                            <Info className="h-5 w-5 text-primary mt-0.5" />
+                            <div className="flex-1">
+                              <h4 className="font-medium text-sm mb-2 text-primary">
+                                AI-Powered Avatar Discovery
                               </h4>
-                              <p className="text-sm text-primary/90 mb-4">
-                                Describe your specific target customer persona with all required details:
+                              <p className="text-sm text-muted-foreground">
+                                Our AI will automatically analyze your sales page and discover multiple customer avatars with detailed research and marketing angles. No manual avatar selection needed - everything is generated automatically!
                               </p>
-
-                              <div className="space-y-4">
-                                <div className="space-y-2">
-                                  <Label className="text-sm font-medium text-foreground">
-                                    Persona Name <span className="text-destructive">*</span>
-                                  </Label>
-                                  <Input
-                                    placeholder="e.g., Health-conscious professionals, Tech-savvy millennials, Busy parents..."
-                                    value={getFirstSelectedAvatar(formData.avatars)?.persona_name || ''}
-                                    onChange={(e) => {
-                                      const currentAvatars = formData.avatars || []
-                                      const firstAvatar = getFirstSelectedAvatar(formData.avatars)
-                                      const updatedAvatars = firstAvatar
-                                        ? currentAvatars.map(a =>
-                                          a.is_researched ? { ...a, persona_name: e.target.value } : a
-                                        )
-                                        : [{
-                                          persona_name: e.target.value,
-                                          description: '',
-                                          age_range: '',
-                                          gender: '',
-                                          key_buying_motivation: '',
-                                          is_researched: true
-                                        }, ...currentAvatars]
-
-                                      setFormData((prev) => ({ ...prev, avatars: updatedAvatars }))
-                                    }}
-                                    disabled={isLoading}
-                                    className="h-11 text-sm border-primary/20 focus-visible:ring-primary"
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label className="text-sm font-medium text-foreground">
-                                    Description <span className="text-destructive">*</span>
-                                  </Label>
-                                  <Textarea
-                                    placeholder="Describe their lifestyle, motivations, and key challenges in 1-2 sentences..."
-                                    value={getFirstSelectedAvatar(formData.avatars)?.description || ''}
-                                    onChange={(e) => {
-                                      const currentAvatars = formData.avatars || []
-                                      const firstAvatar = getFirstSelectedAvatar(formData.avatars)
-                                      const updatedAvatars = firstAvatar
-                                        ? currentAvatars.map(a =>
-                                          a.is_researched ? { ...a, description: e.target.value } : a
-                                        )
-                                        : [{
-                                          persona_name: '',
-                                          description: e.target.value,
-                                          age_range: '',
-                                          gender: '',
-                                          key_buying_motivation: '',
-                                          is_researched: true
-                                        }, ...currentAvatars]
-
-                                      setFormData((prev) => ({ ...prev, avatars: updatedAvatars }))
-                                    }}
-                                    rows={3}
-                                    disabled={isLoading}
-                                    className="text-sm border-primary/20 focus-visible:ring-primary"
-                                  />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-foreground">
-                                      Age Range <span className="text-destructive">*</span>
-                                    </Label>
-                                    <Select
-                                      value={getFirstSelectedAvatar(formData.avatars)?.age_range || ''}
-                                      onValueChange={(value) => {
-                                        const currentAvatars = formData.avatars || []
-                                        const firstAvatar = getFirstSelectedAvatar(formData.avatars)
-                                        const updatedAvatars = firstAvatar
-                                          ? currentAvatars.map(a =>
-                                            a.is_researched ? { ...a, age_range: value } : a
-                                          )
-                                          : [{
-                                            persona_name: '',
-                                            description: '',
-                                            age_range: value,
-                                            gender: '',
-                                            key_buying_motivation: '',
-                                            is_researched: true
-                                          }, ...currentAvatars]
-
-                                        setFormData((prev) => ({ ...prev, avatars: updatedAvatars }))
-                                      }}
-                                      disabled={isLoading}
-                                    >
-                                      <SelectTrigger className="h-11 text-sm border-primary/20 focus-visible:ring-primary">
-                                        <SelectValue placeholder="Select age range" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="18-24" className="text-sm py-2">18-24 (Gen Z)</SelectItem>
-                                        <SelectItem value="25-34" className="text-sm py-2">25-34 (Millennials)</SelectItem>
-                                        <SelectItem value="35-44" className="text-sm py-2">35-44 (Millennials)</SelectItem>
-                                        <SelectItem value="45-54" className="text-sm py-2">45-54 (Gen X)</SelectItem>
-                                        <SelectItem value="55-64" className="text-sm py-2">55-64 (Gen X)</SelectItem>
-                                        <SelectItem value="65+" className="text-sm py-2">65+ (Boomers)</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label className="text-sm font-medium text-foreground">
-                                      Gender <span className="text-destructive">*</span>
-                                    </Label>
-                                    <Select
-                                      value={getFirstSelectedAvatar(formData.avatars)?.gender || ''}
-                                      onValueChange={(value) => {
-                                        const currentAvatars = formData.avatars || []
-                                        const firstAvatar = getFirstSelectedAvatar(formData.avatars)
-                                        const updatedAvatars = firstAvatar
-                                          ? currentAvatars.map(a =>
-                                            a.is_researched ? { ...a, gender: value } : a
-                                          )
-                                          : [{
-                                            persona_name: '',
-                                            description: '',
-                                            age_range: '',
-                                            gender: value,
-                                            key_buying_motivation: '',
-                                            is_researched: true
-                                          }, ...currentAvatars]
-
-                                        setFormData((prev) => ({ ...prev, avatars: updatedAvatars }))
-                                      }}
-                                      disabled={isLoading}
-                                    >
-                                      <SelectTrigger className="h-11 text-sm border-primary/20 focus-visible:ring-primary">
-                                        <SelectValue placeholder="Select gender" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="male" className="text-sm py-2">Male</SelectItem>
-                                        <SelectItem value="female" className="text-sm py-2">Female</SelectItem>
-                                        <SelectItem value="both" className="text-sm py-2">Both</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label className="text-sm font-medium text-foreground">
-                                    Key Buying Motivation <span className="text-destructive">*</span>
-                                  </Label>
-                                  <Textarea
-                                    placeholder="What drives them to purchase this product? What problem does it solve for them?"
-                                    value={getFirstSelectedAvatar(formData.avatars)?.key_buying_motivation || ''}
-                                    onChange={(e) => {
-                                      const currentAvatars = formData.avatars || []
-                                      const firstAvatar = getFirstSelectedAvatar(formData.avatars)
-                                      const updatedAvatars = firstAvatar
-                                        ? currentAvatars.map(a =>
-                                          a.is_researched ? { ...a, key_buying_motivation: e.target.value } : a
-                                        )
-                                        : [{
-                                          persona_name: '',
-                                          description: '',
-                                          age_range: '',
-                                          gender: '',
-                                          key_buying_motivation: e.target.value,
-                                          is_researched: true
-                                        }, ...currentAvatars]
-
-                                      setFormData((prev) => ({ ...prev, avatars: updatedAvatars }))
-                                    }}
-                                    rows={2}
-                                    disabled={isLoading}
-                                    className="text-sm border-primary/20 focus-visible:ring-primary"
-                                  />
-                                </div>
-                              </div>
                             </div>
                           </div>
-                        )}
-
-                        {/* Error display for avatars */}
-                        {errors.avatars && (
-                          <p className="text-sm text-destructive flex items-center gap-2">
-                            <AlertCircle className="h-4 w-4" />
-                            {errors.avatars}
-                          </p>
-                        )}
+                        </div>
                       </div>
 
                       {/* Error Summary */}
@@ -941,7 +642,17 @@ export default function CreatePage() {
                       )}
 
                       {/* Action Buttons */}
-                      <div className="flex gap-4 pt-4">
+                      <div className="flex flex-col gap-4 pt-4">
+                        <div className="flex items-center justify-between px-1">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Zap className="h-4 w-4 text-amber-500 fill-amber-500" />
+                            <span>Estimated Research Cost</span>
+                          </div>
+                          <Badge variant="secondary" className="font-bold text-primary bg-primary/10">
+                            {JOB_CREDITS_BY_TYPE.deep_research} Credits
+                          </Badge>
+                        </div>
+                        <div className="flex gap-4">
                         <Button
                           type="submit"
                           className="flex-1 h-12 text-base font-medium bg-primary hover:bg-primary/90"
@@ -957,7 +668,8 @@ export default function CreatePage() {
                           )}
                         </Button>
                       </div>
-                    </form>
+                    </div>
+                  </form>
                   </CardContent>
                 </Card>
               </div>
@@ -966,15 +678,8 @@ export default function CreatePage() {
         </main>
       </div>
 
-      {/* Avatar Extraction Dialog */}
-      <AvatarExtractionDialog
-        isOpen={showAvatarDialog}
-        onClose={() => setShowAvatarDialog(false)}
-        onAvatarsSelected={handleAvatarsSelected}
-        salesPageUrl={formData.sales_page_url}
-        formData={formData}
-        isLoading={isLoading}
-      />
+      {/* Avatar Extraction Dialog removed - V2 handles this automatically */}
+
 
       {/* Research Generation Loading Dialog */}
       <Dialog open={showResearchLoading} onOpenChange={(open) => {
@@ -990,14 +695,12 @@ export default function CreatePage() {
             </p>
           </div>
           <div className="flex flex-col py-6 space-y-6">
-            {/* Selected Avatar */}
+            {/* Project Info */}
             <div className="space-y-3">
               <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Selected Avatar</p>
+                <p className="text-sm font-medium text-muted-foreground">Project</p>
                 <p className="text-base font-semibold text-foreground">
-                  {getFirstSelectedAvatar(formData.avatars)?.persona_name
-                    ? `Avatar ${getSelectedAvatarIndex(formData.avatars)}: ${getFirstSelectedAvatar(formData.avatars)!.persona_name}`
-                    : `Avatar ${getSelectedAvatarIndex(formData.avatars)}: Evidence-seeking fitness enthusiasts`}
+                  {formData.title || 'Untitled Project'}
                 </p>
               </div>
             </div>

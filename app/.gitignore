@@ -2,6 +2,9 @@
 
 # dependencies
 /node_modules
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
 # next.js
 /.next/
@@ -38,3 +41,11 @@ swipe_templates
 all templates
 json files/
 DEBUG_HIKE/
+run-v2-test.js
+test-v2-api.js
+v2-api-analysis.md
+v2-api-debug-log.json
+v2-job-final-debug-log.json
+v2-job-final-result.json
+v2-job-transformed-avatars.json
+v2_job.txt

@@ -2,6 +2,7 @@ import { query } from '@/lib/db/connection'
 import { deepCopyClient } from '@/lib/clients/deepcopy-client'
 import { updateJobStatus, createResult, getRandomInjectableTemplate } from '@/lib/db/queries'
 import { processJobResults } from '@/lib/utils/template-injection'
+import { logger } from '@/lib/utils/logger'
 
 // Global polling manager for background polling
 const backgroundPollingManager = new Map<string, NodeJS.Timeout>()
@@ -94,6 +95,18 @@ export class BackgroundPollingService {
           await this.storeJobResults(jobId, result, deepCopyJobId)
           await updateJobStatus(jobId, 'completed', 100)
 
+          try {
+            const jobRow = await query('SELECT user_id, is_avatar_job FROM jobs WHERE id = $1', [jobId])
+            if (jobRow.rows[0]) {
+              const { recordJobCreditEvent } = await import('@/lib/services/billing')
+              const { JOB_CREDITS_BY_TYPE } = await import('@/lib/constants/job-credits')
+              const jobType = jobRow.rows[0].is_avatar_job ? 'deep_research' : 'pre_lander'
+              await recordJobCreditEvent({ userId: jobRow.rows[0].user_id, jobId, jobType, credits: JOB_CREDITS_BY_TYPE[jobType] })
+            }
+          } catch (creditErr) {
+            logger.error('Failed to record job credit event:', creditErr)
+          }
+
           // Stop polling
           backgroundPollingManager.delete(jobId)
           return
@@ -146,6 +159,14 @@ export class BackgroundPollingService {
       }
 
       const advertorialType = jobResult.rows[0].advertorial_type as 'listicle' | 'advertorial'
+
+      // Extract product image from V2 results if available and update screenshot field
+      if (result.results?.product_image) {
+        const productImageUrl = result.results.product_image
+        console.log('Updating job with V2 product image:', productImageUrl)
+        // Update the job's screenshot field with the V2 product image URL
+        await query('UPDATE jobs SET screenshot = $1 WHERE id = $2', [productImageUrl, localJobId])
+      }
 
       // Process results using template injection system
       const { combinedHtml } = await processJobResults(result, advertorialType, getRandomInjectableTemplate)

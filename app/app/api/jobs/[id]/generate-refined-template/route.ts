@@ -171,21 +171,29 @@ export async function POST(
     const injectableTemplate = injectableTemplates[0]
 
     // Extract content from swipe result
-    const contentData = extractContentFromSwipeResult(swipeResult, advertorialType)
+    // Handle both { full_advertorial: {...} } and direct content
+    const swipeContent = (swipeResult as any).full_advertorial || swipeResult
+    
+    // Extract config_data - this is the full_advertorial object that contains image prompts
+    // For new templates (AD0001, LD0001), this will have article.heroImagePrompt, sections[].imagePrompt, product.imagePrompt
+    const configData = swipeContent && typeof swipeContent === 'object' ? swipeContent : null
+    
+    const contentData = extractContentFromSwipeResult(swipeContent, advertorialType, templateId)
 
     // Inject content into template
-    const injectedHtml = injectContentIntoTemplate(injectableTemplate, contentData)
+    const injectedHtml = injectContentIntoTemplate(injectableTemplate, contentData, templateId)
 
     // Use the angle index we found (1-based for database)
     const finalAngleIndex = angleIndex >= 0 ? angleIndex + 1 : swipeResults.length + 1
 
-    // Store in database
+    // Store in database with config_data
     const storedTemplate = await createInjectedTemplate(
       jobId,
       angle,
       templateId,
       injectedHtml,
-      finalAngleIndex
+      finalAngleIndex,
+      configData // Store the full config data (full_advertorial object) for image generation
     )
 
     return createSuccessResponse({

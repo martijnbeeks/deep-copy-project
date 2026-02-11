@@ -1,0 +1,387 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><span>{{content.meta.title}}</span></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            font-size: 20px;
+            line-height: 1.8;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        p {
+            font-size: 20px;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+
+<body class="bg-white text-[#333333]">
+    <div class="w-full bg-white">
+        <div class="mx-auto max-w-[1200px] px-5 pt-10 pb-5 md:px-10">
+            <div class="flex flex-col gap-10 lg:flex-row">
+                <div class="w-full lg:w-[65%]">
+                    <p class="mb-2 text-[13px] tracking-[0.5px] text-[#999999]">Advertorial</p>
+                    <h1 class="mb-6 text-[34px] md:text-[46px] font-bold leading-[1.3] text-[#333333]">
+                        <span>{{content.meta.title}}</span></h1>
+                    <div class="mb-6 flex items-center gap-4">
+                        <div class="h-16 w-16 shrink-0 overflow-hidden rounded-full">
+                            <img src="https://placehold.co/64x64?text=Author" alt="{{content.author.imageAlt}}"
+                                class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-[16px] font-bold text-[#1b8b7e]">{{content.author.name}}</span>
+                            <span class="text-[16px] text-[#999999]">{{content.author.date}}</span>
+                        </div>
+                    </div>
+
+                    <img src="https://placehold.co/600x300?text=Introduction"
+                            alt="{{content.introduction.imageAlt}}" class="w-full h-auto block" data-link="#next-step">
+
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.introduction.p1}}</span> <strong
+                            class="font-bold"><span>{{content.introduction.p1Bold}}</span></strong><span>{{content.introduction.p1Rest}}</span>
+                    </p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.introduction.p2}}</span></p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.introduction.p3}}</span> <strong
+                            class="font-bold"><span>{{content.introduction.p3Bold}}</span></strong><span>{{content.introduction.p3Rest}}</span>
+                    </p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.introduction.p4}}</span> <strong
+                            class="font-bold"><span>{{content.introduction.p4Bold}}</span></strong>
+                    </p>
+
+                    <h3 class="text-[#1b8b7e] text-[28px] font-bold leading-[1.3] mt-6 mb-4"><span>{{content.section1.title}}</span>
+                    </h3>
+                    <p class="text-[20px] leading-[1.7] mb-4"><span>{{content.section1.p1}}</span></p>
+                    <p class="text-[20px] leading-[1.7] mb-4"><span>{{content.section1.p2}}</span></p>
+                    <p class="text-[20px] leading-[1.7] mb-4 italic"><span>{{content.section1.p3Italic}}</span></p>
+                    <p class="text-[20px] leading-[1.7] mb-4"><span>{{content.section1.p4}}</span></p>
+                    <div class="w-full mb-6">
+                        <img src="https://placehold.co/600x300?text=Section1" alt="{{content.section1.imageAlt}}"
+                            class="w-full h-auto block">
+                    </div>
+
+                    <p class="mb-4 text-[20px] leading-[1.7]"><strong><span>{{content.section1.p5Bold}}</span></strong></p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section1.p6}}</span></p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section1.p7}}</span></p>
+                    <p class="mb-4 text-[20px] leading-[1.7] italic"><span>{{content.section1.p8Italic}}</span></p>
+                    <p class="mb-4 text-[20px] leading-[1.7] italic"><span>{{content.section1.p9Italic}}</span></p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section1.p10}}</span></p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section1.p11}}</span></p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><strong><span>{{content.section1.p12Bold}}</span></strong></p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section1.p13}}</span></p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section1.p14}}</span>
+                        <em><span>{{content.section1.p14Em}}</span></em><span>{{content.section1.p14Rest}}</span>
+                    </p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section1.p15}}</span>
+                        <em><span>{{content.section1.p15Em}}</span></em>
+                    </p>
+
+                    <h3 class="text-[28px] font-bold leading-[1.3] text-[#1b8b7e] mt-6 mb-4"><span>{{content.section2.title}}</span>
+                    </h3>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section2.p1}}</span></p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section2.p2}}</span>
+                        <strong><span>{{content.section2.p2Bold}}</span></strong>
+                    </p>
+                    <div class="mb-6 w-full">
+                        <img src="https://placehold.co/600x300?text=Section2" alt="{{content.section2.imageAlt}}"
+                                class="w-full h-auto" data-link="#next-step">
+                    </div>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section2.p3}}</span></p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section2.p4}}</span>
+                        <strong><span>{{content.section2.p4Bold1}}</span></strong><span>{{content.section2.p4Rest}}</span>
+                        <strong><span>{{content.section2.p4Bold2}}</span></strong><span>{{content.section2.p4Rest2}}</span>
+                    </p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section2.p5}}</span></p>
+
+                    <h3 class="text-[28px] font-bold leading-[1.3] text-[#1B8B7E] mt-[24px] mb-[16px]">
+                        <span>{{content.section3.title}}</span></h3>
+                    <div class="flex flex-col md:flex-row gap-[24px] mb-[16px]">
+                        <div class="w-full md:w-[40%] flex-shrink-0">
+                            <img src="https://placehold.co/400x300?text=Section3"
+                                    alt="{{content.section3.imageAlt}}" class="w-full h-auto" data-link="#">
+                        </div>
+                        <div class="w-full md:w-[60%]">
+                            <p class="mb-[16px] text-[20px] leading-[1.7]"><span>{{content.section3.p1}}</span> <a href="#next-step"
+                                    class="text-[#0051cc] underline"><span>{{content.section3.p1Link}}</span></a><span>{{content.section3.p1Rest}}</span>
+                            </p>
+                        </div>
+                    </div>
+                    <p class="mb-[16px] text-[20px] leading-[1.7]"><span>{{content.section3.p2}}</span></p>
+                    <p class="mb-[16px] text-[20px] leading-[1.7]"><span>{{content.section3.p3}}</span>
+                        <strong><span>{{content.section3.p3Bold}}</span></strong>
+                    </p>
+                    <p class="mb-[16px] text-[20px] leading-[1.7]"><span>{{content.section3.p4}}</span></p>
+                    <p class="mb-[16px] text-[20px] leading-[1.7]"><span>{{content.section3.p5}}</span></p>
+                    <p class="mb-[16px] text-[20px] leading-[1.7]"><span>{{content.section3.p6}}</span>
+                        <strong><span>{{content.section3.p6Bold}}</span></strong>
+                    </p>
+                    <p class="mb-[16px] text-[20px] leading-[1.7]"><span>{{content.section3.p7}}</span></p>
+                    <p class="mb-[16px] text-[20px] leading-[1.7]"><span>{{content.section3.p8}}</span>
+                        <strong><span>{{content.section3.p8Bold}}</span></strong><span>{{content.section3.p8Rest}}</span>
+                    </p>
+                    <p class="mb-[16px] text-[20px] leading-[1.7]"><span>{{content.section3.p9}}</span></p>
+                    <p class="mb-[16px] text-[20px] leading-[1.7]"><span>{{content.section3.p10}}</span>
+                        <strong><span>{{content.section3.p10Bold}}</span></strong>
+                    </p>
+
+                    <h3 class="text-[28px] font-bold text-[#1B8B7E] mt-6 mb-4 leading-[1.3]"><span>{{content.section4.title}}</span>
+                    </h3>
+                    <div class="mb-6">
+                        <img src="https://placehold.co/600x300?text=Section4" alt="{{content.section4.imageAlt}}"
+                                class="w-full h-auto" data-link="#next-step">
+                    </div>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section4.p1}}</span> <a href="#next-step"
+                            class="text-[#0051CC] underline"><span>{{content.section4.p1Link}}</span></a><span>{{content.section4.p1Rest}}</span>
+                    </p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section4.p2}}</span>
+                        <strong><span>{{content.section4.p2Bold1}}</span></strong><span>{{content.section4.p2Rest1}}</span>
+                        <strong><span>{{content.section4.p2Bold2}}</span></strong><span>{{content.section4.p2Rest2}}</span>
+                        <strong><span>{{content.section4.p2Bold3}}</span></strong>, and
+                        <strong><span>{{content.section4.p2Bold4}}</span></strong><span>{{content.section4.p2Rest3}}</span>
+                    </p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section4.p3}}</span>
+                        <strong><span>{{content.section4.p3Bold1}}</span></strong><span>{{content.section4.p3Rest1}}</span>
+                        <strong><span>{{content.section4.p3Bold2}}</span></strong>
+                    </p>
+
+                    <div class="mb-6 w-full">
+                        <img src="https://placehold.co/600x300?text=Section4-2" alt="{{content.section4.image2Alt}}"
+                                class="w-full h-auto block" data-link="#next-step">
+                    </div>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section4.p4}}</span>
+                        <strong><span>{{content.section4.p4Bold}}</span></strong>
+                    </p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.section4.p5}}</span>
+                        <strong><span>{{content.section4.p5Bold}}</span></strong>
+                    </p>
+
+                    <div class="mt-6 mb-8 text-center">
+                        <a href="#next-step"
+                            class="bg-[#3fa580] text-white py-3 px-8 rounded-[4px] font-bold text-[15px] tracking-[0.5px] uppercase inline-block hover:bg-[#348b6b]"><span>{{content.section5.ctaText}}</span>
+                        </a>
+                    </div>
+
+                    <h3 class="text-[28px] font-bold text-[#1b8b7e] mt-[24px] mb-[16px] leading-[1.3]">
+                        <span>{{content.section6.title}}</span></h3>
+                    <p class="text-[20px] leading-[1.7] mb-[16px]"><span>{{content.section6.p1}}</span></p>
+                    <p class="text-[20px] leading-[1.7] mb-[16px]"><span>{{content.section6.p2}}</span>
+                        <strong><span>{{content.section6.p2Bold1}}</span></strong><span>{{content.section6.p2Rest1}}</span>
+                        <strong><span>{{content.section6.p2Bold2}}</span></strong><span>{{content.section6.p2Rest2}}</span>
+                        <strong><span>{{content.section6.p2Bold3}}</span></strong>
+                    </p>
+                    <p class="text-[20px] leading-[1.7] mb-[16px]"><span>{{content.section6.p3}}</span></p>
+                    <p class="text-[20px] leading-[1.7] mb-[16px]"><span>{{content.section6.p4}}</span></p>
+                    <p class="text-[20px] leading-[1.7] mb-[16px]"><a href="#next-step"
+                            class="text-[#0051cc] underline"><span>{{content.section6.p5Link}}</span></a></p>
+                    <p class="text-[20px] leading-[1.7] mb-[16px]"><span>{{content.section6.p6}}</span>
+                        <strong><span>{{content.section6.p6Bold}}</span></strong>
+                    </p>
+
+                    <img src="https://placehold.co/600x300?text=Section6" alt="{{content.section6.imageAlt}}"
+                            class="w-full h-auto block" data-link="#next-step">
+
+                    <div class="flex mb-[32px]">
+                        <img src="https://placehold.co/48x48?text=T1" alt="{{content.testimonials.t1.imageAlt}}"
+                            class="w-[48px] h-[48px] rounded-full mr-[16px] shrink-0 object-cover">
+                        <div class="flex flex-col">
+                            <p class="text-[17px] font-bold text-[#333333] mb-0"><span>{{content.testimonials.t1.name}}</span></p>
+                            <p class="text-[17px] italic text-[#666666] leading-[1.7] mb-2 mt-1">
+                                <span>{{content.testimonials.t1.text}}</span></p>
+                            <div class="flex items-center gap-[4px] text-[13px] text-[#999999]">
+                                <a href="#next-step" class="text-[#0051cc] hover:underline mr-1">Like</a>
+                                <img src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/093f72e3-8ff6-4d0c-b38f-0aec79e38b4a-getfootpads-com/assets/icons/thumb-3.png"
+                                    alt="Like" class="w-[14px] h-[14px] opacity-60">
+                                <span>{{content.testimonials.t1.likeCount}}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="h-[1px] bg-[#cccccc] w-full mb-[24px]"></div>
+
+                    <div class="flex mb-[32px]">
+                        <img src="https://placehold.co/48x48?text=T2" alt="{{content.testimonials.t2.imageAlt}}"
+                            class="w-[48px] h-[48px] rounded-full mr-[16px] shrink-0 object-cover">
+                        <div class="flex flex-col">
+                            <p class="text-[17px] font-bold text-[#333333] mb-0"><span>{{content.testimonials.t2.name}}</span></p>
+                            <p class="text-[17px] italic text-[#666666] leading-[1.7] mb-2 mt-1">
+                                <span>{{content.testimonials.t2.text}}</span></p>
+                            <div class="flex items-center gap-[4px] text-[13px] text-[#999999]">
+                                <a href="#next-step" class="text-[#0051cc] hover:underline mr-1">Like</a>
+                                <img src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/093f72e3-8ff6-4d0c-b38f-0aec79e38b4a-getfootpads-com/assets/icons/thumb-3.png"
+                                    alt="Like" class="w-[14px] h-[14px] opacity-60">
+                                <span>{{content.testimonials.t2.likeCount}}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="h-[1px] bg-[#cccccc] w-full mb-[24px]"></div>
+
+                    <div class="flex mb-[32px]">
+                        <img src="https://placehold.co/48x48?text=T3" alt="{{content.testimonials.t3.imageAlt}}"
+                            class="w-[48px] h-[48px] rounded-full mr-[16px] shrink-0 object-cover">
+                        <div class="flex flex-col">
+                            <p class="text-[17px] font-bold text-[#333333] mb-0"><span>{{content.testimonials.t3.name}}</span></p>
+                            <p class="text-[17px] italic text-[#666666] leading-[1.7] mb-2 mt-1">
+                                <span>{{content.testimonials.t3.text}}</span></p>
+                            <div class="flex items-center gap-[4px] text-[13px] text-[#999999]">
+                                <a href="#next-step" class="text-[#0051cc] hover:underline mr-1">Like</a>
+                                <img src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/093f72e3-8ff6-4d0c-b38f-0aec79e38b4a-getfootpads-com/assets/icons/thumb-3.png"
+                                    alt="Like" class="w-[14px] h-[14px] opacity-60">
+                                <span>{{content.testimonials.t3.likeCount}}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#FFFACD] py-4 px-6 mb-4">
+                        <p class="m-0 text-[20px] leading-[1.7]"><span>{{content.closing.highlightBox}}</span>
+                            <strong><span>{{content.closing.highlightBoxBold}}</span></strong><span>{{content.closing.highlightBoxRest}}</span> <a
+                                href="#next-step"
+                                class="text-[#0051CC] underline"><span>{{content.closing.highlightBoxLink}}</span></a><span>{{content.closing.highlightBoxRest2}}</span>
+                        </p>
+                    </div>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><strong><span>{{content.closing.p1Bold}}</span></strong></p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.closing.p2}}</span> <a href="#next-step"
+                            class="text-[#0051CC] underline"><span>{{content.closing.p2Link}}</span></a><span>{{content.closing.p2Rest}}</span>
+                    </p>
+                    <p class="mb-4 text-[20px] leading-[1.7]"><span>{{content.closing.p3}}</span>
+                        <strong><span>{{content.closing.p3Bold}}</span></strong><span>{{content.closing.p3Rest}}</span>
+                    </p>
+
+                    <div class="bg-[#FFF3E0] border-2 border-dashed border-[#FF9800] p-4 md:p-6 mb-6">
+                        <p class="text-[20px] leading-[1.7] m-0"><strong><span>{{content.saleAlert.alertLabel}}</span></strong>
+                            <span>{{content.saleAlert.p1}}</span>
+                            <strong><span>{{content.saleAlert.p1Bold1}}</span></strong><span>{{content.saleAlert.p1Rest1}}</span>
+                            <strong><span>{{content.saleAlert.p1Bold2}}</span></strong><span>{{content.saleAlert.p1Rest2}}</span> <a href="#next-step"
+                                class="text-[#0051cc] underline"><span>{{content.saleAlert.p1Link}}</span></a><span>{{content.saleAlert.p1Rest3}}</span>
+                            <strong><span>{{content.saleAlert.p1Bold3}}</span></strong><span>{{content.saleAlert.p1Rest4}}</span>
+                        </p>
+                    </div>
+
+                    <img src="https://placehold.co/350x350?text=Product" alt="{{content.saleAlert.imageAlt}}"
+                            class="w-full h-auto object-contain" data-link="#next-step">
+
+                    <a href="#next-step"
+                        class="block w-full bg-[#3FA580] hover:bg-[#328466] text-white text-[15px] font-bold py-3 px-8 rounded-[4px] text-center uppercase tracking-[0.5px] mb-4 no-underline"><span>{{content.saleAlert.ctaText}}</span></a>
+
+                    <p class="text-center text-[20px] m-0 mb-8">⚡️ <span
+                            class="text-[#FF9800] font-bold"><span>{{content.saleAlert.flashSaleText}}</span>
+                            {{content.saleAlert.flashSaleBold}}</span> ⚡️</p>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="w-full lg:w-[35%] flex flex-col">
+                    <!-- Customer Reviews Section - Scrolls Normally -->
+                    <div class="border-t-[3px] border-[#1b8b7e] pt-4 mb-6">
+                        <h4 class="mb-4 text-[20px] font-bold text-[#333333]"><span>{{content.sidebar.reviewsTitle}}</span></h4>
+
+                        <div class="mb-8">
+                            <div class="mb-4 h-px w-full bg-[#cccccc]"></div>
+                            <div class="mb-3 flex justify-center">
+                                <img src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/093f72e3-8ff6-4d0c-b38f-0aec79e38b4a-getfootpads-com/assets/images/4_8-10.png"
+                                    alt="{{content.sidebar.r1.ratingImageAlt}}"
+                                    class="h-auto w-auto object-contain max-w-[120px]">
+                            </div>
+                            <p class="mb-4 text-[17px] leading-[1.7] text-[#666666] italic"><span>{{content.sidebar.r1.text}}</span>
+                                <strong
+                                    class="font-bold text-[#333333]"><span>{{content.sidebar.r1.textBold}}</span></strong><span>{{content.sidebar.r1.textRest}}</span>
+                            </p>
+                            <p class="text-[17px] font-bold text-[#333333]"><span>{{content.sidebar.r1.name}}</span></p>
+                            <p class="text-[17px] font-bold text-[#333333]"><span>{{content.sidebar.r1.location}}</span></p>
+                        </div>
+
+                        <div class="mb-8">
+                            <div class="mb-4 h-px w-full bg-[#cccccc]"></div>
+                            <div class="mb-3 flex justify-center">
+                                <img src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/093f72e3-8ff6-4d0c-b38f-0aec79e38b4a-getfootpads-com/assets/images/4_8-10.png"
+                                    alt="{{content.sidebar.r2.ratingImageAlt}}"
+                                    class="h-auto w-auto object-contain max-w-[120px]">
+                            </div>
+                            <p class="mb-4 text-[17px] leading-[1.7] text-[#666666] italic"><span>{{content.sidebar.r2.text}}</span>
+                                <strong
+                                    class="font-bold text-[#333333]"><span>{{content.sidebar.r2.textBold}}</span></strong><span>{{content.sidebar.r2.textRest}}</span>
+                            </p>
+                            <p class="text-[17px] font-bold text-[#333333]"><span>{{content.sidebar.r2.name}}</span></p>
+                            <p class="text-[17px] font-bold text-[#333333]"><span>{{content.sidebar.r2.location}}</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Product CTA Section - Sticky -->
+                    <div class="lg:sticky lg:top-5 self-start w-full">
+                        <div
+                            class="flex w-full flex-col items-center bg-white p-6 text-center border-t-[3px] border-[#1b8b7e]">
+                            <div class="mb-4 w-full max-w-[200px]">
+                                <img src="https://placehold.co/200x200?text=Product"
+                                    alt="{{content.sidebar.productCta.imageAlt}}"
+                                    class="mx-auto h-auto w-full object-contain">
+                            </div>
+                            <h2 class="mb-2 text-[22px] font-bold leading-[1.3] text-[#333333]">
+                                <a href="#next-step"
+                                    class="hover:underline text-[#333333] no-underline"><span>{{content.sidebar.productCta.title}}</span></a>
+                            </h2>
+                            <p class="mb-4 text-[17px] font-normal leading-[1.5] text-[#999999]">
+                                <span>{{content.sidebar.productCta.subtitle}}</span></p>
+                            <a href="#next-step"
+                                class="inline-block rounded-[4px] bg-[#3fa580] px-8 py-3 text-[15px] font-bold uppercase tracking-[0.5px] text-white hover:bg-[#358d6d] no-underline"><span>{{content.sidebar.productCta.ctaText}}</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="w-full bg-[#E3F2FD] py-10 px-5 text-center border-t border-transparent">
+        <div class="mx-auto max-w-[1200px]">
+            <div class="flex flex-wrap justify-center items-center gap-x-6 gap-y-3 mb-8">
+                <a href="#next-step"
+                    class="text-[#0051CC] text-[14px] font-bold uppercase hover:underline leading-none tracking-normal no-underline"><span>{{content.footer.links.terms}}</span>
+                </a>
+                <a href="#next-step"
+                    class="text-[#0051CC] text-[14px] font-bold uppercase hover:underline leading-none tracking-normal no-underline"><span>{{content.footer.links.privacy}}</span>
+                </a>
+                <a href="#next-step"
+                    class="text-[#0051CC] text-[14px] font-bold uppercase hover:underline leading-none tracking-normal no-underline"><span>{{content.footer.links.cookie}}</span>
+                </a>
+                <a href="#next-step"
+                    class="text-[#0051CC] text-[14px] font-bold uppercase hover:underline leading-none tracking-normal no-underline"><span>{{content.footer.links.contact}}</span>
+                </a>
+            </div>
+            <div class="mb-6 text-[13px] text-[#666666] tracking-wide"><span>{{content.footer.copyright}}</span></div>
+            <div class="space-y-4 text-[12px] leading-[1.7] text-[#999999] max-w-[980px] mx-auto tracking-normal">
+                <p class="uppercase font-medium tracking-wide"><span>{{content.footer.disclaimers.advertisement}}</span></p>
+                <p><span>{{content.footer.disclaimers.disclaimer}}</span></p>
+                <p><span>{{content.footer.disclaimers.marketing}}</span></p>
+                <p><span>{{content.footer.disclaimers.advertising}}</span>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <div class="fixed bottom-0 left-0 right-0 z-[100] w-full block lg:hidden">
+        <a href="#next-step"
+            class="block w-full bg-[#3FA580] text-[#ffffff] text-center py-[14px] px-4 font-bold text-[17px] uppercase no-underline shadow-[0_-4px_10px_rgba(0,0,0,0.15)] hover:bg-[#328566]"><span>{{content.stickyBottomCta.text}}</span></a>
+    </div>
+
+    <div class="pb-16 lg:pb-0"></div>
+</body>
+
+</html>
+
+

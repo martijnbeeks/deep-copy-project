@@ -1,9 +1,10 @@
 import { User } from '@/lib/db/types'
+import { AuthenticatedUser } from '@/lib/auth/user-auth'
 import { 
   getUserOrganizations, 
   getOrganizationUsageLimits, 
   getOrganizationUsage, 
-  incrementOrganizationUsage 
+  incrementOrganizationUsage,
 } from '@/lib/db/queries'
 import { UsageType } from '@/lib/db/types'
 
@@ -18,7 +19,7 @@ export interface UsageLimitResult {
 /**
  * Get user's primary organization (first organization they belong to)
  */
-export const getUserOrganization = async (user: User): Promise<string | null> => {
+export const getUserOrganization = async (user: AuthenticatedUser): Promise<string | null> => {
   const organizations = await getUserOrganizations(user.id)
   return organizations.length > 0 ? organizations[0].id : null
 }
@@ -68,7 +69,7 @@ export const getWeekStartDate = async (
  * Returns allowed status, current usage, and limit
  */
 export const checkUsageLimit = async (
-  user: User,
+  user: AuthenticatedUser,
   usageType: UsageType
 ): Promise<UsageLimitResult> => {
   // Users without organization have unlimited usage
@@ -99,6 +100,8 @@ export const checkUsageLimit = async (
     ? limits.deep_research_limit 
     : usageType === 'static_ads'
     ? limits.static_ads_limit
+    : usageType === 'templates_images'
+    ? limits.templates_images_limit
     : limits.pre_lander_limit
   
   // Get current week start date
@@ -128,41 +131,75 @@ export const checkUsageLimit = async (
     currentUsage,
     limit,
     organizationId,
-    error: !allowed 
-      ? `You've reached your weekly limit of ${limit} ${usageType === 'deep_research' ? 'Deep Research' : usageType === 'static_ads' ? 'Static Ads' : 'Pre-Lander'} actions. Your limit resets automatically based on a rolling 7-day window.`
+      error: !allowed 
+      ? `You've reached your weekly limit of ${limit} ${usageType === 'deep_research' ? 'Deep Research' : usageType === 'static_ads' ? 'Static Ads' : usageType === 'templates_images' ? 'Template Images' : 'Pre-Lander'} actions. Your limit resets automatically based on a rolling 7-day window.`
       : undefined
   }
 }
 
 /**
- * Check and increment usage (atomic operation)
- * Returns the result after incrementing
+ * Check and increment usage (analytics only - does not block jobs)
+ * Per-type usage is tracked for analytics purposes only
+ * Job credit enforcement is handled by checkJobCreationLimit in billing.ts
  */
 export const checkAndIncrementUsage = async (
-  user: User,
+  user: AuthenticatedUser,
   usageType: UsageType
 ): Promise<UsageLimitResult> => {
-  // First check the limit
-  const checkResult = await checkUsageLimit(user, usageType)
-  
-  if (!checkResult.allowed) {
-    return checkResult
+  // Get user's organization
+  const organizationId = await getUserOrganization(user)
+  if (!organizationId) {
+    // User without organization has unlimited usage
+    return {
+      allowed: true,
+      currentUsage: 0,
+      limit: Infinity,
+      organizationId: null
+    }
   }
   
-  // If user has no organization, allow and don't track
-  if (!checkResult.organizationId) {
-    return checkResult
-  }
-  
-  // Increment usage
-  const updatedUsage = await incrementOrganizationUsage(checkResult.organizationId, usageType)
-  
-  // Return updated result
+  // Always allow - per-type usage is analytics only
+  // Increment usage for tracking
+  const updatedUsage = await incrementOrganizationUsage(organizationId, usageType)
+
   return {
     allowed: true,
     currentUsage: updatedUsage.count,
-    limit: checkResult.limit,
-    organizationId: checkResult.organizationId
+    limit: Infinity, // No limit for analytics tracking
+    organizationId
+  }
+}
+
+/**
+ * Get current usage statistics for analytics (does not block jobs)
+ */
+export const getUsageStats = async (
+  user: AuthenticatedUser,
+  usageType: UsageType
+): Promise<{ count: number; limit: number; organizationId: string | null }> => {
+  const organizationId = await getUserOrganization(user)
+  if (!organizationId) {
+    return { count: 0, limit: Infinity, organizationId: null }
+  }
+  
+  const limits = await getOrganizationUsageLimits(organizationId)
+  if (!limits) {
+    return { count: 0, limit: Infinity, organizationId }
+  }
+  
+  const limit = usageType === 'deep_research' 
+    ? limits.deep_research_limit 
+    : usageType === 'static_ads'
+    ? limits.static_ads_limit
+    : limits.pre_lander_limit
+  
+  const weekStartDate = await getWeekStartDate(organizationId, usageType)
+  const usage = await getOrganizationUsage(organizationId, usageType, weekStartDate)
+  
+  return {
+    count: usage?.count || 0,
+    limit,
+    organizationId
   }
 }
 

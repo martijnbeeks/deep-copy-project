@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{content.brand.name}} - {{content.hero.headline}}</title>
+  <meta name="description" content="{{content.hero.subheadline}}" />
+  <link rel="icon"
+    href="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/icons/favicon-3.png" />
+  <link rel="apple-touch-icon"
+    href="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/icons/webclip-4.png" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* Global CSS Variables */
+    :root {
+      --color-background: #ffffff;
+      --color-foreground: #1a1a1a;
+      --color-primary-text: #1a1a1a;
+      --color-secondary-text: #6b6b6b;
+      --color-link-blue: #0066cc;
+      --color-border: #e5e5e5;
+      --font-body: "Inter", sans-serif;
+    }
+
+    /* Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-body);
+      line-height: 1.6;
+      color: var(--color-foreground);
+      background: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* Header */
+    header {
+      background: white;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 15px 16px;
+      display: flex;
+      align-items: center;
+    }
+
+    @media (min-width: 640px) {
+      .header-container {
+        padding: 15px 20px;
+      }
+    }
+
+    .header-logo {
+      width: 140px;
+    }
+
+    @media (min-width: 1024px) {
+      .header-logo {
+        width: 180px;
+      }
+    }
+
+    /* Main Layout */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    @media (min-width: 640px) {
+      main {
+        padding: 0 20px;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      main {
+        flex-direction: row;
+        gap: 32px;
+      }
+    }
+
+    .content-area {
+      flex: 1;
+    }
+
+    .content-inner {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* Sections */
+    section {
+      padding: 40px 0;
+    }
+
+    @media (min-width: 640px) {
+      section {
+        padding: 50px 0;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      section {
+        padding: 60px 0;
+      }
+    }
+
+    .bg-light {
+      background-color: #f8f9fa;
+    }
+
+    .bg-very-light {
+      background-color: #f9f9f9;
+    }
+
+    /* Typography */
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1.2;
+      color: #1a1a1a;
+      margin-bottom: 24px;
+    }
+
+    @media (min-width: 640px) {
+      h1 {
+        font-size: 2rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      h1 {
+        font-size: 2.5rem;
+      }
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 24px;
+    }
+
+    @media (min-width: 640px) {
+      h2 {
+        font-size: 1.75rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      h2 {
+        font-size: 2rem;
+      }
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    @media (min-width: 1024px) {
+      h3 {
+        font-size: 1.5rem;
+      }
+    }
+
+    p {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: #333333;
+      margin-bottom: 24px;
+    }
+
+    @media (min-width: 640px) {
+      p {
+        font-size: 1.05rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      p {
+        font-size: 1.125rem;
+      }
+    }
+
+    .text-small {
+      font-size: 0.95rem;
+      color: #666666;
+    }
+
+    .text-italic {
+      font-style: italic;
+      font-size: 1.125rem;
+      color: #333333;
+      padding: 16px;
+    }
+
+    strong {
+      font-weight: 700;
+    }
+
+    em {
+      font-style: italic;
+    }
+
+    /* Links */
+    a.link-green {
+      color: #28a745;
+      text-decoration: underline;
+    }
+
+    a.link-green:hover {
+      text-decoration: none;
+    }
+
+    /* Guarantee Box */
+    .guarantee-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 32px;
+    }
+
+    @media (min-width: 640px) {
+      .guarantee-box {
+        flex-direction: row;
+        align-items: flex-start;
+        text-align: left;
+        padding: 30px;
+      }
+    }
+
+    .guarantee-icon {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 16px;
+    }
+
+    @media (min-width: 640px) {
+      .guarantee-icon {
+        margin-bottom: 0;
+        margin-right: 20px;
+      }
+    }
+
+    /* Images */
+    .section-image {
+      border-radius: 8px;
+      width: 100%;
+      margin-bottom: 24px;
+    }
+
+    /* Two Column Layout */
+    .two-column {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      align-items: center;
+    }
+
+    @media (min-width: 640px) {
+      .two-column {
+        flex-direction: row;
+      }
+    }
+
+    .two-column>div {
+      width: 100%;
+    }
+
+    @media (min-width: 640px) {
+      .two-column>div {
+        width: 50%;
+      }
+    }
+
+    /* Lists */
+    ol {
+      list-style: decimal;
+      padding-left: 20px;
+      margin-bottom: 24px;
+    }
+
+    ol li {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: #333333;
+      margin-bottom: 16px;
+    }
+
+    @media (min-width: 640px) {
+      ol li {
+        font-size: 1.05rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      ol li {
+        font-size: 1.125rem;
+      }
+    }
+
+    /* Testimonials */
+    .testimonial-grid {
+      display: grid;
+      gap: 24px;
+    }
+
+    .testimonial-card {
+      background: #f8f9fa;
+      padding: 24px;
+      border-radius: 8px;
+    }
+
+    .quote-icon {
+      width: 30px;
+      margin-bottom: 16px;
+    }
+
+    .testimonial-text {
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .testimonial-author {
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .star-rating {
+      display: flex;
+      gap: 2px;
+    }
+
+    .star-rating img {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Comparison Table */
+    .comparison-table {
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 32px;
+      display: none;
+    }
+
+    @media (min-width: 640px) {
+      .comparison-table {
+        display: block;
+      }
+    }
+
+    .table-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      font-weight: 700;
+      text-align: center;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .table-header>div {
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .table-header>div:first-child {
+      border-right: 1px solid #dee2e6;
+    }
+
+    .table-header img {
+      max-width: 100px;
+    }
+
+    .table-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .table-row:last-child {
+      border-bottom: none;
+    }
+
+    .table-cell {
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .table-cell:first-child {
+      border-right: 1px solid #dee2e6;
+    }
+
+    .table-cell img {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    /* Mobile Comparison Stack */
+    .comparison-mobile {
+      display: grid;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    @media (min-width: 640px) {
+      .comparison-mobile {
+        display: none;
+      }
+    }
+
+    .comparison-card {
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .comparison-card h4 {
+      padding: 16px;
+      text-align: center;
+      font-weight: 700;
+      border-bottom: 1px solid #dee2e6;
+      display: flex;
+      justify-content: center;
+    }
+
+    .comparison-card h4 img {
+      max-width: 100px;
+    }
+
+    .comparison-card ul {
+      padding: 16px;
+      list-style: none;
+    }
+
+    .comparison-card li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .comparison-card li:last-child {
+      margin-bottom: 0;
+    }
+
+    .comparison-card li img {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      text-align: center;
+    }
+
+    .offer-badge {
+      background: #ffd700;
+      color: #1a1a1a;
+      font-weight: 700;
+      padding: 16px 15px;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+
+    .product-showcase {
+      display: block;
+      max-width: 400px;
+      margin: 0 auto 32px;
+      position: relative;
+    }
+
+    .badge-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 120px;
+    }
+
+    .cta-button {
+      display: block;
+      width: 100%;
+      background: #008b00;
+      color: white;
+      padding: 18px 40px;
+      border-radius: 8px;
+      font-size: 1.25rem;
+      font-weight: 600;
+      transition: all 0.3s;
+      text-decoration: none;
+    }
+
+    @media (min-width: 1024px) {
+      .cta-button {
+        display: inline-block;
+        width: auto;
+      }
+    }
+
+    .cta-button:hover {
+      background: #218838;
+      transform: scale(1.02);
+    }
+
+    .offer-box {
+      border: 3px solid #1a1a1a;
+      padding: 30px;
+      margin: 32px 0;
+      text-align: center;
+    }
+
+    .offer-box .highlight {
+      color: #28a745;
+      font-weight: 700;
+    }
+
+    .citations {
+      margin-top: 32px;
+    }
+
+    .citations h3 {
+      font-style: italic;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .citations p {
+      font-size: 0.8rem;
+      margin-bottom: 0;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      display: none;
+    }
+
+    @media (min-width: 1024px) {
+      .sidebar {
+        display: block;
+        width: 320px;
+        position: sticky;
+        top: 100px;
+        align-self: flex-start;
+        background: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 20px;
+        border-radius: 8px;
+      }
+    }
+
+    .sidebar-content {
+      text-align: center;
+    }
+
+    .sidebar h3 {
+      font-size: 1.5rem;
+      margin-bottom: 16px;
+    }
+
+    .sidebar-image {
+      margin-bottom: 24px;
+    }
+
+    /* Footer */
+    footer {
+      background: #2b4035;
+      color: white;
+      padding: 40px 0;
+      text-align: center;
+      margin-top: auto;
+    }
+
+    .footer-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    @media (min-width: 640px) {
+      .footer-container {
+        padding: 0 20px;
+      }
+    }
+
+    .footer-content {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    @media (min-width: 1024px) {
+      .footer-content {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        text-align: left;
+      }
+    }
+
+    .footer-logo {
+      max-width: 150px;
+      filter: brightness(0) invert(1);
+      margin: 0 auto;
+    }
+
+    @media (min-width: 1024px) {
+      .footer-logo {
+        margin: 0;
+      }
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    @media (min-width: 1024px) {
+      .footer-links {
+        justify-content: flex-start;
+      }
+    }
+
+    .footer-links a {
+      color: white;
+    }
+
+    .footer-links a:hover {
+      color: #a8d5ba;
+    }
+
+    .footer-copyright {
+      color: #cccccc;
+      font-size: 0.875rem;
+      margin: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <header>
+    <div class="header-container">
+      <img src="{{content.product.logo}}" alt="{{content.product.name}} Logo" class="header-logo" data-link="#next-step" />
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <main>
+    <!-- Content Area -->
+    <div class="content-area">
+      <div class="content-inner">
+        <!-- Hero Section -->
+        <section class="bg-light">
+          <h1>
+            <span><strong>{{content.hero.headline}}</strong></span>
+          </h1>
+          <p class="text-small"><span>{{content.hero.date}}</span></p>
+          <p class="text-italic"><span>{{content.hero.subheadline}}</span></p>
+          <div class="guarantee-box">
+            <img src="{{content.story.icon}}" alt="{{content.story.title}}" class="guarantee-icon" />
+            <div>
+              <h3><span>{{content.story.title}}</span></h3>
+              <p style="margin-bottom: 0"><span>{{content.story.body}}</span></p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Problem Section 1 -->
+        <section class="bg-very-light">
+          <div>
+            <img src="https://placehold.co/800x600/f5f5f5/666666?text=Section+1+Image"
+              alt="Pest infestation of cockroaches" class="section-image" data-link="#next-step" />
+          </div>
+          <h2><span>{{content.section1.title}}</span></h2>
+          <p><span>{{content.section1.body}}</span></p>
+        </section>
+
+        <!-- Problem Section 2 -->
+        <section style="background: white">
+          <div>
+            <img src="https://placehold.co/800x600/f5f5f5/666666?text=Section+2+Image" alt="Ants crawling on a surface"
+              class="section-image" data-link="#next-step" />
+          </div>
+          <h2>
+            <span><strong>{{content.section2.title}}</strong></span>
+          </h2>
+          <p><span>{{content.section2.body}}</span></p>
+        </section>
+
+        <!-- Solution Introduction -->
+        <section class="bg-very-light">
+          <div class="two-column">
+            <div>
+              <img src="https://placehold.co/500x400/f5f5f5/666666?text=Section+3+Image" alt="product"
+                class="section-image" data-link="#next-step" />
+            </div>
+            <div>
+              <h2>
+                <span><strong>{{content.section3.title}}</strong></span>
+              </h2>
+              <p><span>{{content.section3.body}}</span></p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Product Benefits -->
+        <section style="background: white">
+          <div>
+            <img src="https://placehold.co/800x600/f5f5f5/666666?text=Section+4+Image" alt="Product in use"
+              class="section-image" data-link="#next-step" />
+          </div>
+          <h2><span><strong>{{content.section4.title}}</strong></span></h2>
+          <p><span>{{content.section4.body}}</span></p>
+        </section>
+
+        <!-- How It Works -->
+        <section class="bg-very-light">
+          <div>
+            <img src="https://placehold.co/800x600/f5f5f5/666666?text=Section+5+Image" alt="How it works"
+              class="section-image" data-link="#next-step" />
+          </div>
+          <h2><span>{{content.section5.title}}</span></h2>
+          <p><span>{{content.section5.body}}</span></p>
+        </section>
+
+        <!-- Usage Instructions -->
+        <section style="background: white">
+          <div>
+            <img src="https://placehold.co/800x600/f5f5f5/666666?text=Section+6+Image" alt="Usage instructions"
+              class="section-image" data-link="#next-step" />
+          </div>
+          <h2><span>{{content.section6.title}}</span></h2>
+          <p><span>{{content.section6.body}}</span></p>
+        </section>
+
+        <!-- Testimonials -->
+        <section class="bg-very-light">
+          <div>
+            <img src="https://placehold.co/800x600/f5f5f5/666666?text=Section+7+Image" alt="Product"
+              class="section-image" data-link="#next-step" />
+          </div>
+          <h2><span>{{content.section7.title}}</span></h2>
+          <p><span>{{content.section7.body}}</span></p>
+          <div class="testimonial-grid">
+            <div class="testimonial-card">
+              <img
+                src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/icons/qoute_1qoute-2.png"
+                alt="Quote icon" class="quote-icon" />
+              <p class="testimonial-text"><span>"{{content.reactions.r1.text}}"</span></p>
+              <p class="testimonial-author"><span>{{content.reactions.r1.name}}</span></p>
+              <div class="star-rating">
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/yellowstar-9.jpg"
+                  alt="Star" />
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/yellowstar-9.jpg"
+                  alt="Star" />
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/yellowstar-9.jpg"
+                  alt="Star" />
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/yellowstar-9.jpg"
+                  alt="Star" />
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/yellowstar-9.jpg"
+                  alt="Star" />
+              </div>
+            </div>
+            <div class="testimonial-card">
+              <img
+                src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/icons/qoute_1qoute-2.png"
+                alt="Quote icon" class="quote-icon" />
+              <p class="testimonial-text"><span>"{{content.reactions.r2.text}}"</span></p>
+              <p class="testimonial-author"><span>{{content.reactions.r2.name}}</span></p>
+              <div class="star-rating">
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/yellowstar-9.jpg"
+                  alt="Star" />
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/yellowstar-9.jpg"
+                  alt="Star" />
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/yellowstar-9.jpg"
+                  alt="Star" />
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/yellowstar-9.jpg"
+                  alt="Star" />
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/yellowstar-9.jpg"
+                  alt="Star" />
+              </div>
+            </div>
+            <div class="testimonial-card">
+              <img
+                src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/icons/qoute_1qoute-2.png"
+                alt="Quote icon" class="quote-icon" />
+              <p class="testimonial-text"><span>"{{content.reactions.r3.text}}"</span></p>
+              <p class="testimonial-author"><span>{{content.reactions.r3.name}}</span></p>
+              <div class="star-rating">
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/yellowstar-9.jpg"
+                  alt="Star" />
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/yellowstar-9.jpg"
+                  alt="Star" />
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/yellowstar-9.jpg"
+                  alt="Star" />
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/yellowstar-9.jpg"
+                  alt="Star" />
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/yellowstar-9.jpg"
+                  alt="Star" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Comparison Table -->
+        <section style="background: white">
+          <h2>
+            <span><strong>{{content.section8.title}}</strong></span>
+          </h2>
+
+          <!-- Desktop Table -->
+          <div class="comparison-table">
+            <div class="table-header">
+              <div>
+                <img src="{{content.product.logo}}" alt="Logo" />
+              </div>
+              <div><span>{{content.section8.comparison.alternativeLabel}}</span></div>
+            </div>
+            <div class="table-row">
+              <div class="table-cell">
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/42189035-0-Check-12.svg"
+                  alt="Check" />
+                <span>{{content.section8.comparison.feature1.product}}</span>
+              </div>
+              <div class="table-cell">
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/42190610-0-Uncheck-13.svg"
+                  alt="Uncheck" />
+                <span>{{content.section8.comparison.feature1.alternative}}</span>
+              </div>
+            </div>
+            <div class="table-row">
+              <div class="table-cell">
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/42189035-0-Check-12.svg"
+                  alt="Check" />
+                <span>{{content.section8.comparison.feature2.product}}</span>
+              </div>
+              <div class="table-cell">
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/42190610-0-Uncheck-13.svg"
+                  alt="Uncheck" />
+                <span>{{content.section8.comparison.feature2.alternative}}</span>
+              </div>
+            </div>
+            <div class="table-row">
+              <div class="table-cell">
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/42189035-0-Check-12.svg"
+                  alt="Check" />
+                <span>{{content.section8.comparison.feature3.product}}</span>
+              </div>
+              <div class="table-cell">
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/42190610-0-Uncheck-13.svg"
+                  alt="Uncheck" />
+                <span>{{content.section8.comparison.feature3.alternative}}</span>
+              </div>
+            </div>
+            <div class="table-row">
+              <div class="table-cell">
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/42189035-0-Check-12.svg"
+                  alt="Check" />
+                <span>{{content.section8.comparison.feature4.product}}</span>
+              </div>
+              <div class="table-cell">
+                <img
+                  src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/42190610-0-Uncheck-13.svg"
+                  alt="Uncheck" />
+                <span>{{content.section8.comparison.feature4.alternative}}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mobile Stack -->
+          <div class="comparison-mobile">
+            <div class="comparison-card">
+              <h4>
+                <img src="{{content.product.logo}}" alt="Logo" />
+              </h4>
+              <ul>
+                <li>
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/42189035-0-Check-12.svg"
+                    alt="Check" />
+                  <span>{{content.section8.comparison.feature1.product}}</span>
+                </li>
+                <li>
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/42189035-0-Check-12.svg"
+                    alt="Check" />
+                  <span>{{content.section8.comparison.feature2.product}}</span>
+                </li>
+                <li>
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/42189035-0-Check-12.svg"
+                    alt="Check" />
+                  <span>{{content.section8.comparison.feature3.product}}*</span>
+                </li>
+                <li>
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/42189035-0-Check-12.svg"
+                    alt="Check" />
+                  <span>{{content.section8.comparison.feature4.product}}</span>
+                </li>
+              </ul>
+            </div>
+            <div class="comparison-card">
+              <h4><span>Alternative</span></h4>
+              <ul>
+                <li>
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/42190610-0-Uncheck-13.svg"
+                    alt="Uncheck" />
+                  <span>{{content.section8.comparison.feature1.alternative}}</span>
+                </li>
+                <li>
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/42190610-0-Uncheck-13.svg"
+                    alt="Uncheck" />
+                  <span>{{content.section8.comparison.feature2.alternative}}</span>
+                </li>
+                <li>
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/42190610-0-Uncheck-13.svg"
+                    alt="Uncheck" />
+                  <span>{{content.section8.comparison.feature3.alternative}}</span>
+                </li>
+                <li>
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/42190610-0-Uncheck-13.svg"
+                    alt="Uncheck" />
+                  <span>{{content.section8.comparison.feature4.alternative}}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div><span>{{content.section8.body}}</span></div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="bg-very-light cta-section">
+          <section class="bg-very-light cta-section">
+            <div class="offer-badge"><span>{{content.section9.offerBadge}}</span></div>
+            <div class="product-showcase">
+              <img
+                src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/internetonly-yellow-10.png"
+                alt="Internet Only Offer" class="badge-overlay" />
+              <img src="https://placehold.co/400x400/ffffff/cccccc?text=Product+Image" alt="Product"
+                style="width: 100%" data-link="#next-step" />
+            </div>
+
+            <h2><span><strong>{{content.section9.title}}</strong></span></h2>
+            <div><span>{{content.section9.body}}</span></div>
+
+            <div class="offer-box">
+              <p style="margin-bottom: 0">
+                <span style="color: #1a1a1a">{{content.section9.offerBox}}</span>
+              </p>
+            </div>
+
+            <a href="#next-step" class="cta-button">
+              <span>{{content.cta.primary}}</span>
+            </a>
+
+            <div class="citations">
+              <h3><em><span>{{content.section9.citations.heading}}</span></em></h3>
+              <p><span>{{content.section9.citations.items}}</span></p>
+            </div>
+          </section>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-content">
+        <div>
+          <h3><span>{{content.sidebar.title}}</span></h3>
+        </div>
+        <div>
+          <p><span>{{content.sidebar.subtitle}}</span></p>
+        </div>
+        <div>
+          <img src="https://placehold.co/300x300/ffffff/cccccc?text=Product" alt="Product" class="sidebar-image" data-link="#next-step" />
+        </div>
+        <div>
+          <a href="#next-step" class="cta-button">
+            <span>{{content.sidebar.ctaButton}}</span>
+          </a>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Footer -->
+  <!--
+    <footer>
+      <div class="footer-container">
+        <div class="footer-content">
+          <img
+            src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/121a93aa-0669-4454-9fcb-49c136d26f72-about-getbugmd-com/assets/images/logo2x-1.png"
+            alt="BugMD Logo"
+            class="footer-logo"
+          />
+          <div class="footer-links">
+            <a href="#next-step"
+              >Privacy Policy</a
+            >
+            <span>|</span>
+            <a href="#next-step"
+              >Terms of Service</a
+            >
+            <span>|</span>
+            <a href="#next-step">Returns</a>
+          </div>
+          <p class="footer-copyright">
+            Copyright © 2025 BugMD | All Rights Reserved
+          </p>
+        </div>
+      </div>
+    </footer>-->
+</body>
+
+</html>
+

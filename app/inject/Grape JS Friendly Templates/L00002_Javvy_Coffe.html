@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><span>{{content.brand.name}}</span> - <span>{{content.hero.headline}}</span></title>
+
+  <!-- Google Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Roboto:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      font-family: "Roboto", sans-serif;
+    }
+
+    /* Alert Banner */
+    .alert-banner {
+      background: #fef9e7;
+      padding: 14px 20px;
+      text-align: center;
+      font-size: 16px;
+      line-height: 1.6;
+      border-bottom: 1px solid #e0e0e0;
+      margin-top: 50px;
+    }
+
+    .alert-banner strong {
+      color: #ff0000;
+      font-weight: 700;
+    }
+
+    .font-montserrat {
+      font-family: "Montserrat", sans-serif;
+    }
+
+    .tracking-tight {
+      letter-spacing: -0.025em;
+    }
+
+    .leading-tight {
+      line-height: 1.25;
+    }
+
+    .leading-relaxed {
+      line-height: 1.75;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-white">
+  <!-- Top Banner - Fixed -->
+  <header
+    class="fixed top-0 left-0 w-full h-[60px] bg-gradient-to-r from-[#4A3F7B] to-[#5D4E8F] text-white flex items-center justify-center px-5 z-[1000] text-center">
+    <div class="flex items-center gap-5 flex-wrap justify-center">
+      <div class="font-bold text-sm"><span>{{content.topbar.label}}</span></div>
+      <div class="flex items-baseline gap-1.5 font-bold">
+        <div class="text-center">
+          <div class="text-xl">02</div>
+          <div class="text-xs uppercase hidden md:block">Hrs</div>
+        </div>
+        <div class="text-base">:</div>
+        <div class="text-center">
+          <div class="text-xl">00</div>
+          <div class="text-xs uppercase hidden md:block">min</div>
+        </div>
+        <div class="text-base">:</div>
+        <div class="text-center">
+          <div class="text-xl">00</div>
+          <div class="text-xs uppercase hidden md:block">sec</div>
+        </div>
+      </div>
+    </div>
+  </header>
+  <!---<div class="alert-banner">
+      <strong>UPDATE:</strong> <span>{{content.alert.banner}}</span>
+    </div>-->
+  <!-- Main Content -->
+  <main>
+    <!-- Hero Section -->
+    <section class="py-20 text-center md:py-[80px]">
+      <div class="max-w-[1200px] mx-auto pt-20 px-5 flex flex-col">
+        <h1
+          class="font-montserrat font-extrabold text-4xl md:text-5xl lg:text-6xl leading-tight tracking-tight text-[#1a1a1a] max-w-[900px] mx-auto">
+          <span>{{content.hero.headline}}</span>
+        </h1>
+        <div class="flex items-center justify-center gap-4 mt-8">
+          <img src="https://placehold.co/60x60?text=Author" alt="author-avatar" width="60" height="60"
+            class="rounded-full object-cover" />
+          <div class="text-left">
+            <p class="font-semibold text-[#1a1a1a]">
+              By <span>{{content.hero.author.name}}</span>
+            </p>
+            <p class="text-sm text-[#666]"><span>{{content.hero.date}}</span></p>
+          </div>
+        </div>
+
+        <div class="bg-[#F5F5F5] rounded-xl p-6 max-w-[800px] mx-auto mt-8 text-left">
+          <strong class="text-[#1a1a1a]">Summary: </strong><span>{{content.hero.summary}}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 1 -->
+    <section class="py-[60px]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <img src="https://placehold.co/800x450?text=Video+Placeholder" alt="Video placeholder"
+              class="w-full rounded-2xl" />
+            <div
+              class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              <span>{{content.section1.cta}}</span>
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              <span>{{content.section1.title}}</span>
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444]">
+              <span>{{content.section1.body}}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 2 -->
+    <section class="py-[60px] bg-[#FFF8E7]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative md:order-1">
+            <img src="https://placehold.co/800x450?text=Video+Placeholder" alt="Video placeholder"
+              class="w-full rounded-2xl" />
+            <div
+              class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              <span>{{content.section2.cta}}</span>
+            </div>
+          </div>
+          <div class="md:order-2">
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              <span>{{content.section2.title}}</span>
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444]">
+              <span>{{content.section2.body}}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 3 -->
+    <section class="py-[60px]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <img src="https://placehold.co/800x450?text=Video+Placeholder" alt="Video placeholder"
+              class="w-full rounded-2xl" />
+            <div
+              class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              <span>{{content.section3.cta}}</span>
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              <span>{{content.section3.title}}</span>
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              <span>{{content.section3.body}}</span>
+            </p>
+            <a href="#next-step"
+              class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline"><span>{{content.section3.Bodycta}}</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 4 -->
+    <section class="py-[60px] bg-[#FFF8E7]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <img src="https://placehold.co/800x450?text=Video+Placeholder" alt="Video placeholder"
+              class="w-full rounded-2xl" />
+            <div
+              class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              <span>{{content.section4.cta}}</span>
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              <span>{{content.section4.title}}</span>
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              <span>{{content.section4.body}}</span>
+            </p>
+            <a href="#next-step" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              <span>{{content.section4.Bodycta}}</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 5 -->
+    <section class="py-[60px]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <img src="https://placehold.co/800x450?text=Video+Placeholder" alt="Video placeholder"
+              class="w-full rounded-2xl" />
+            <div
+              class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              <span>{{content.section5.cta}}</span>
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              <span>{{content.section5.title}}</span>
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              <span>{{content.section5.body}}</span>
+            </p>
+            <a href="#next-step" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              <span>{{content.section5.Bodycta}}</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 6 -->
+    <section class="py-[60px] bg-[#FFF8E7]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <img src="https://placehold.co/800x450?text=Video+Placeholder" alt="Video placeholder"
+              class="w-full rounded-2xl" />
+            <div
+              class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              <span>{{content.section6.cta}}</span>
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              <span>{{content.section6.title}}</span>
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              <span>{{content.section6.body}}</span>
+            </p>
+            <a href="#next-step" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              <span>{{content.section6.Bodycta}}</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 7 -->
+    <section class="py-[60px]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <img src="https://placehold.co/800x450?text=Video+Placeholder" alt="Video placeholder"
+              class="w-full rounded-2xl" />
+            <div
+              class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              <span>{{content.section7.cta}}</span>
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              <span>{{content.section7.title}}</span>
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              <span>{{content.section7.body}}</span>
+            </p>
+            <a href="#next-step" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              <span>{{content.section7.Bodycta}}</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 8 -->
+    <section class="py-[60px] bg-[#FFF8E7]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <img src="https://placehold.co/800x450?text=Video+Placeholder" alt="Video placeholder"
+              class="w-full rounded-2xl" />
+            <div
+              class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              <span>{{content.section8.cta}}</span>
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              <span>{{content.section8.title}}</span>
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              <span>{{content.section8.body}}</span>
+            </p>
+            <a href="#next-step" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              <span>{{content.section8.Bodycta}}</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 9 -->
+    <section class="py-[60px]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <img src="https://placehold.co/800x450?text=Video+Placeholder" alt="Video placeholder"
+              class="w-full rounded-2xl" />
+            <div
+              class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              <span>{{content.section9.cta}}</span>
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              <span>{{content.section9.title}}</span>
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              <span>{{content.section9.body}}</span>
+            </p>
+            <a href="#next-step" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              <span>{{content.section9.Bodycta}}</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 10 -->
+    <section class="py-[60px] bg-[#FFF8E7]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <img src="https://placehold.co/800x450?text=Video+Placeholder" alt="Video placeholder"
+              class="w-full rounded-2xl" />
+            <div
+              class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              <span>{{content.section10.cta}}</span>
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              <span>{{content.section10.title}}</span>
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              <span>{{content.section10.body}}</span>
+            </p>
+            <a href="#next-step" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              <span>{{content.section10.Bodycta}}</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reason 11 -->
+    <section class="py-[60px]">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <div class="grid grid-cols-1 md:grid-cols-[40%_1fr] gap-10 items-center">
+          <div class="relative">
+            <img src="https://placehold.co/800x450?text=Video+Placeholder" alt="Video placeholder"
+              class="w-full rounded-2xl" />
+            <div
+              class="absolute left-5 bottom-5 bg-[#4A3F7B] text-white py-3 px-6 rounded-3xl font-bold text-lg flex items-center gap-2">
+              <span>{{content.section11.cta}}</span>
+            </div>
+          </div>
+          <div>
+            <h2 class="font-montserrat font-bold text-3xl md:text-4xl mb-4 text-[#1a1a1a] tracking-tight">
+              <span>{{content.section11.title}}</span>
+            </h2>
+            <p class="text-lg leading-relaxed text-[#444] mb-6">
+              <span>{{content.section11.body}}</span>
+            </p>
+            <a href="#next-step" class="inline-flex items-center gap-2 text-[#4A3F7B] font-semibold hover:underline">
+              <span>{{content.section11.Bodycta}}</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final CTA Section - Reason 12 -->
+    <section id="cta-section" class="py-20 bg-[#FFF8E7] text-center">
+      <div class="max-w-[1200px] mx-auto px-5">
+        <h2
+          class="font-montserrat font-bold text-3xl md:text-4xl lg:text-5xl max-w-[800px] mx-auto mb-4 text-[#1a1a1a] tracking-tight">
+          <span>{{content.section12.title}}</span>
+        </h2>
+        <p class="text-xl text-[#444] max-w-[700px] mx-auto mb-10">
+          <span>{{content.section12.body}}</span>
+        </p>
+
+        <div class="relative max-w-[1000px] mx-auto mt-16">
+          <div
+            class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#4A3F7B] text-white font-bold py-3 px-6 rounded-lg z-10">
+            <span>{{content.section12.cta}}</span>
+          </div>
+          <div class="relative max-w-[1000px] mx-auto mt-16">
+            <div
+              class="bg-white border-[3px] border-dashed border-[#999] rounded-2xl p-8 md:p-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-center text-center">
+              <img src="https://placehold.co/600x400?text=Offer+Banner" alt="offer banner image" width="400"
+                height="400" class="w-full max-w-[400px] mx-auto" />
+
+              <div>
+                <p class="font-semibold mb-4">
+                  <span>{{content.offer.freeGiftsText}}</span>
+                </p>
+                <p class="text-5xl md:text-6xl font-extrabold text-[#D32F2F] leading-tight mb-2">
+                  <span>{{content.offer.discountText}}</span>
+                </p>
+                <span class="font-bold block mb-6"><span>{{content.offer.timeLimitText}}</span></span>
+
+                <a href="#next-step"
+                  class="block w-full bg-[#4A3F7B] text-white rounded-xl py-5 px-12 text-xl font-bold uppercase hover:bg-[#5D4E8F] transition-all hover:scale-[1.02] mb-4">
+                  <span>{{content.cta.primary}}</span>
+                </a>
+
+                <div class="font-bold text-[#D32F2F] mb-4">
+                  <span>{{content.offer.countdownLabel}}</span>:
+                  <span>{{content.offer.countdownTime}}</span>
+                </div>
+
+                <div class="flex justify-center items-center gap-3 text-[#D32F2F] font-semibold mb-4">
+                  <div><span>{{content.offer.riskText}}</span></div>
+                  <div class="text-[#999]">|</div>
+                  <div class="text-[#1a1a1a]">
+                    <span>{{content.offer.shippingText}}</span>
+                  </div>
+                </div>
+
+                <p class="text-sm text-[#666] mt-6">
+                  <span>{{content.assurances.blurb}}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <!---<footer
+      class="bg-[#2D2845] text-white py-10 px-5 text-center text-sm leading-relaxed"
+    >
+      <div class="max-w-[1200px] mx-auto">
+        <p class="max-w-[800px] mx-auto mb-6 opacity-70">
+          *Special sale discount is valid only on the first delivery of a new
+          Javvy Coffee subscription created on https://try.javvycoffee.com/as by
+          10/16/2025 at 11:59pm PST and includes the price of free gifts. Javvy
+          Coffee subscription renews every 30 days at a discounted rate of the
+          price listed at checkout. Max one offer per customer; cannot be
+          combined with any other offers or sales.
+        </p>
+        <div class="mb-4">
+          © 2025 Javy Coffee Company. All right reserved.
+          <a href="#next-step" class="underline">Terms of Service</a>
+          <span class="mx-2">|</span>
+          <a href="#next-step" class="underline">Privacy Policy</a>
+        </div>
+      </div>
+    </footer>-->
+</body>
+
+</html>
+

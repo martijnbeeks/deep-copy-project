@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { RefreshCw, Edit, RotateCcw, Building2, AlertCircle } from "lucide-react"
+import { RefreshCw, Edit, Building2, AlertCircle } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 interface OrganizationUsageData {
@@ -19,15 +19,37 @@ interface OrganizationUsageData {
     created_at: string
     updated_at: string
   }
-  deep_research_limit: number
-  pre_lander_limit: number
-  static_ads_limit: number
-  current_deep_research_usage: number
-  current_pre_lander_usage: number
-  current_static_ads_usage: number
-  deep_research_week_start: string | null
-  pre_lander_week_start: string | null
-  static_ads_week_start: string | null
+  // Credit-based system (from feat/v2-api-miro-ui)
+  credits: {
+    plan_credits: number
+    admin_bonus_credits: number
+    total_available: number
+    used: number
+    remaining: number
+    billing_period_end: string
+  }
+  usage: {
+    deep_research: {
+      current: number
+      limit: number
+      week_start: string | null
+    }
+    pre_lander: {
+      current: number
+      limit: number
+      week_start: string | null
+    }
+    static_ads: {
+      current: number
+      limit: number
+      week_start: string | null
+    }
+    templates_images: {
+      current: number
+      limit: number
+      week_start: string | null
+    }
+  }
   created_at: string
   updated_at: string
 }
@@ -37,20 +59,14 @@ export function UsageLimitsTab() {
   const [loading, setLoading] = useState(false)
   const [editingOrg, setEditingOrg] = useState<OrganizationUsageData | null>(null)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [resetDialogOpen, setResetDialogOpen] = useState(false)
-  const [resettingOrg, setResettingOrg] = useState<OrganizationUsageData | null>(null)
-  const [resetType, setResetType] = useState<'all' | 'deep_research' | 'pre_lander' | 'static_ads'>('all')
   const hasLoadedRef = useRef(false)
   
   const [editForm, setEditForm] = useState({
-    deep_research_limit: '3',
-    pre_lander_limit: '30',
-    static_ads_limit: '30'
+    admin_bonus_credits: '0'
   })
 
-  // Helper function to handle numeric input (same as invite link)
+  // Helper function to handle numeric input
   const handleNumericInput = (value: string): string => {
-    // Only allow digits
     return value.replace(/[^0-9]/g, '')
   }
 
@@ -77,8 +93,22 @@ export function UsageLimitsTab() {
       if (age < CACHE_DURATION) {
         try {
           const data = JSON.parse(cachedData)
-          setOrganizations(data.organizations || [])
-          return // Don't fetch if we have fresh cache
+          const orgs = data.organizations || []
+          
+          // Validate cache has credit system fields
+          const hasValidShape = Array.isArray(orgs) && orgs.every((o: any) => 
+            o?.credits && 
+            typeof o.credits.used === 'number'
+          )
+          
+          if (hasValidShape) {
+            setOrganizations(orgs)
+            return // Don't fetch if we have fresh cache
+          }
+
+          // Cache exists but is not in expected shape, clear it and fetch fresh
+          sessionStorage.removeItem('usageLimitsData')
+          sessionStorage.removeItem('usageLimitsTimestamp')
         } catch (e) {
           // If cache is invalid, clear it and continue to fetch
           sessionStorage.removeItem('usageLimitsData')
@@ -128,9 +158,7 @@ export function UsageLimitsTab() {
   const handleEdit = (org: OrganizationUsageData) => {
     setEditingOrg(org)
     setEditForm({
-      deep_research_limit: org.deep_research_limit.toString(),
-      pre_lander_limit: org.pre_lander_limit.toString(),
-      static_ads_limit: org.static_ads_limit.toString()
+      admin_bonus_credits: String(org.credits.admin_bonus_credits)
     })
     setEditDialogOpen(true)
   }
@@ -138,16 +166,12 @@ export function UsageLimitsTab() {
   const handleSaveLimits = async () => {
     if (!editingOrg) return
 
-    // Type cast to integers before sending
-    const deepResearchLimit = parseInt(editForm.deep_research_limit) || 0
-    const preLanderLimit = parseInt(editForm.pre_lander_limit) || 0
-    const staticAdsLimit = parseInt(editForm.static_ads_limit) || 0
-
-    // Validate that values are positive
-    if (deepResearchLimit < 0 || preLanderLimit < 0 || staticAdsLimit < 0) {
+    const adminBonusCredits = parseInt(editForm.admin_bonus_credits, 10)
+    
+    if (Number.isNaN(adminBonusCredits) || adminBonusCredits < 0) {
       toast({
         title: "Validation Error",
-        description: "Limits must be non-negative integers",
+        description: "Admin bonus credits must be a non-negative integer",
         variant: "destructive"
       })
       return
@@ -160,10 +184,8 @@ export function UsageLimitsTab() {
           'Content-Type': 'application/json',
           ...getAuthHeaders()
         },
-        body: JSON.stringify({
-          deep_research_limit: deepResearchLimit,
-          pre_lander_limit: preLanderLimit,
-          static_ads_limit: staticAdsLimit
+        body: JSON.stringify({ 
+          admin_bonus_credits: adminBonusCredits
         })
       })
 
@@ -192,47 +214,6 @@ export function UsageLimitsTab() {
     }
   }
 
-  const handleResetUsage = async () => {
-    if (!resettingOrg) return
-
-    try {
-      const response = await fetch(`/api/admin/organizations/${resettingOrg.organization_id}/usage-limits`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
-        body: JSON.stringify({
-          usage_type: resetType === 'all' ? undefined : resetType
-        })
-      })
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: `Usage reset successfully for ${resetType === 'all' ? 'all types' : resetType}`
-        })
-        setResetDialogOpen(false)
-        setResettingOrg(null)
-        setResetType('all')
-        // Clear cache and reload fresh data
-        sessionStorage.removeItem('usageLimitsData')
-        sessionStorage.removeItem('usageLimitsTimestamp')
-        hasLoadedRef.current = false
-        loadOrganizations()
-      } else {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to reset usage')
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to reset usage",
-        variant: "destructive"
-      })
-    }
-  }
-
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return 'N/A'
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -243,7 +224,8 @@ export function UsageLimitsTab() {
   }
 
   const getUsagePercentage = (current: number, limit: number) => {
-    if (limit === 0) return 0
+    if (!Number.isFinite(limit) || limit <= 0) return 0
+    if (!Number.isFinite(current) || current <= 0) return 0
     return Math.min(100, (current / limit) * 100)
   }
 
@@ -269,7 +251,7 @@ export function UsageLimitsTab() {
           <div>
             <h3 className="text-sm font-semibold">Usage Limits</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Manage Deep Research, Pre-Lander, and Static Ads limits per organization
+              View job credits used and edit job credit limit per organization
             </p>
           </div>
           <Button onClick={() => {
@@ -304,31 +286,19 @@ export function UsageLimitsTab() {
                           <Edit className="h-3 w-3 mr-1" />
                           Edit
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setResettingOrg(org)
-                            setResetDialogOpen(true)
-                          }}
-                          className="h-7 px-2 text-xs"
-                        >
-                          <RotateCcw className="h-3 w-3 mr-1" />
-                          Reset
-                        </Button>
                       </div>
                     </div>
                   </div>
                   <div className="p-4 space-y-4">
-                    {/* Deep Research Usage */}
+                    {/* Job Credits (credit-based system from feat/v2-api-miro-ui) */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label className="text-sm font-medium">Deep Research</Label>
+                        <Label className="text-sm font-medium">Credits</Label>
                         <div className="flex items-center gap-2">
-                          <Badge variant={getUsageColor(org.current_deep_research_usage, org.deep_research_limit)}>
-                            {org.current_deep_research_usage} / {org.deep_research_limit}
+                          <Badge variant={getUsageColor(org.credits?.used ?? 0, org.credits?.total_available ?? 0)}>
+                            {org.credits?.used ?? 0} / {org.credits?.total_available ?? 0}
                           </Badge>
-                          {org.current_deep_research_usage >= org.deep_research_limit && (
+                          {(org.credits?.remaining ?? 0) <= 0 && (
                             <AlertCircle className="h-4 w-4 text-destructive" />
                           )}
                         </div>
@@ -336,60 +306,22 @@ export function UsageLimitsTab() {
                       <div className="w-full bg-muted rounded-full h-2">
                         <div
                           className="bg-primary h-2 rounded-full transition-all"
-                          style={{ width: `${getUsagePercentage(org.current_deep_research_usage, org.deep_research_limit)}%` }}
+                          style={{ width: `${getUsagePercentage(org.credits?.used ?? 0, org.credits?.total_available ?? 0)}%` }}
                         />
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Week started: {formatDate(org.deep_research_week_start)}
-                      </p>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <div>Plan: {org.credits?.plan_credits ?? 0} | Bonus: {org.credits?.admin_bonus_credits ?? 0}</div>
+                        <div>Remaining: {org.credits?.remaining ?? 0}</div>
+                        <div>Period ends: {formatDate(org.credits?.billing_period_end ?? null)}</div>
+                      </div>
                     </div>
 
-                    {/* Pre-Lander Usage */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm font-medium">Pre-Landers</Label>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={getUsageColor(org.current_pre_lander_usage, org.pre_lander_limit)}>
-                            {org.current_pre_lander_usage} / {org.pre_lander_limit}
-                          </Badge>
-                          {org.current_pre_lander_usage >= org.pre_lander_limit && (
-                            <AlertCircle className="h-4 w-4 text-destructive" />
-                          )}
-                        </div>
-                      </div>
-                      <div className="w-full bg-muted rounded-full h-2">
-                        <div
-                          className="bg-primary h-2 rounded-full transition-all"
-                          style={{ width: `${getUsagePercentage(org.current_pre_lander_usage, org.pre_lander_limit)}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Week started: {formatDate(org.pre_lander_week_start)}
-                      </p>
-                    </div>
-
-                    {/* Static Ads Usage */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm font-medium">Static Ads</Label>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={getUsageColor(org.current_static_ads_usage, org.static_ads_limit)}>
-                            {org.current_static_ads_usage} / {org.static_ads_limit}
-                          </Badge>
-                          {org.current_static_ads_usage >= org.static_ads_limit && (
-                            <AlertCircle className="h-4 w-4 text-destructive" />
-                          )}
-                        </div>
-                      </div>
-                      <div className="w-full bg-muted rounded-full h-2">
-                        <div
-                          className="bg-primary h-2 rounded-full transition-all"
-                          style={{ width: `${getUsagePercentage(org.current_static_ads_usage, org.static_ads_limit)}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Week started: {formatDate(org.static_ads_week_start)}
-                      </p>
+                    {/* Analytics only (read-only) - Deep Research, Pre-Landers, Static Ads, Template Images */}
+                    <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground border-t pt-3">
+                      <span>Deep Research: {org.usage?.deep_research?.current ?? 0}</span>
+                      <span>Pre-Landers: {org.usage?.pre_lander?.current ?? 0}</span>
+                      <span>Static Ads: {org.usage?.static_ads?.current ?? 0}</span>
+                      <span>Template Images: {org.usage?.templates_images?.current ?? 0}</span>
                     </div>
                   </div>
                 </div>
@@ -399,77 +331,35 @@ export function UsageLimitsTab() {
         </div>
       </div>
 
-      {/* Edit Limits Dialog */}
+      {/* Edit Dialog - combines both admin bonus credits and template images limit */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader className="space-y-1 pb-4">
             <DialogTitle className="text-base">Edit Usage Limits</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Update limits for {editingOrg?.organization.name}
+              Update admin bonus credits for {editingOrg?.organization.name}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 py-2">
+          <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="deep_research_limit" className="text-sm font-medium">
-                Deep Research Limit
+              <Label htmlFor="admin_bonus_credits" className="text-sm font-medium">
+                Admin bonus credits
               </Label>
               <Input
-                id="deep_research_limit"
+                id="admin_bonus_credits"
                 type="text"
                 inputMode="numeric"
-                value={editForm.deep_research_limit}
+                value={editForm.admin_bonus_credits}
                 onChange={(e) => {
                   const numericValue = handleNumericInput(e.target.value)
-                  setEditForm(prev => ({ ...prev, deep_research_limit: numericValue }))
+                  setEditForm(prev => ({ ...prev, admin_bonus_credits: numericValue }))
                 }}
-                placeholder="3"
+                placeholder="0"
                 className="h-10"
               />
               <p className="text-xs text-muted-foreground">
-                Maximum number of Deep Research actions per week
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="pre_lander_limit" className="text-sm font-medium">
-                Pre-Lander Limit
-              </Label>
-              <Input
-                id="pre_lander_limit"
-                type="text"
-                inputMode="numeric"
-                value={editForm.pre_lander_limit}
-                onChange={(e) => {
-                  const numericValue = handleNumericInput(e.target.value)
-                  setEditForm(prev => ({ ...prev, pre_lander_limit: numericValue }))
-                }}
-                placeholder="30"
-                className="h-10"
-              />
-              <p className="text-xs text-muted-foreground">
-                Maximum number of Pre-Lander generations per week
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="static_ads_limit" className="text-sm font-medium">
-                Static Ads Limit
-              </Label>
-              <Input
-                id="static_ads_limit"
-                type="text"
-                inputMode="numeric"
-                value={editForm.static_ads_limit}
-                onChange={(e) => {
-                  const numericValue = handleNumericInput(e.target.value)
-                  setEditForm(prev => ({ ...prev, static_ads_limit: numericValue }))
-                }}
-                placeholder="30"
-                className="h-10"
-              />
-              <p className="text-xs text-muted-foreground">
-                Maximum number of Static Ads images per week
+                Additional credits added to the organization's plan (admin controlled)
               </p>
             </div>
           </div>
@@ -491,105 +381,6 @@ export function UsageLimitsTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Reset Usage Dialog */}
-      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader className="space-y-1 pb-4">
-            <DialogTitle className="text-base">Reset Usage</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Reset usage tracking for {resettingOrg?.organization.name}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6 py-2">
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Reset Type</Label>
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
-                  <input
-                    type="radio"
-                    name="resetType"
-                    value="all"
-                    checked={resetType === 'all'}
-                    onChange={() => setResetType('all')}
-                    className="cursor-pointer"
-                  />
-                  <span className="text-sm">All Usage Types</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
-                  <input
-                    type="radio"
-                    name="resetType"
-                    value="deep_research"
-                    checked={resetType === 'deep_research'}
-                    onChange={() => setResetType('deep_research')}
-                    className="cursor-pointer"
-                  />
-                  <span className="text-sm">Deep Research Only</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
-                  <input
-                    type="radio"
-                    name="resetType"
-                    value="pre_lander"
-                    checked={resetType === 'pre_lander'}
-                    onChange={() => setResetType('pre_lander')}
-                    className="cursor-pointer"
-                  />
-                  <span className="text-sm">Pre-Landers Only</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
-                  <input
-                    type="radio"
-                    name="resetType"
-                    value="static_ads"
-                    checked={resetType === 'static_ads'}
-                    onChange={() => setResetType('static_ads')}
-                    className="cursor-pointer"
-                  />
-                  <span className="text-sm">Static Ads Only</span>
-                </label>
-              </div>
-            </div>
-
-            {resettingOrg && (
-              <div className="p-4 bg-muted/50 rounded-lg border border-border space-y-2">
-                <p className="text-sm font-medium text-foreground mb-2">Current Usage</p>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">
-                    Deep Research: <span className="font-medium text-foreground">{resettingOrg.current_deep_research_usage}</span> / {resettingOrg.deep_research_limit}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Pre-Landers: <span className="font-medium text-foreground">{resettingOrg.current_pre_lander_usage}</span> / {resettingOrg.pre_lander_limit}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Static Ads: <span className="font-medium text-foreground">{resettingOrg.current_static_ads_usage}</span> / {resettingOrg.static_ads_limit}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="gap-2 pt-4">
-            <Button
-              variant="outline"
-              onClick={() => setResetDialogOpen(false)}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleResetUsage}
-              className="w-full sm:w-auto"
-            >
-              Reset Usage
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   )
 }
-

@@ -41,7 +41,7 @@ export async function GET(
           'SELECT name FROM injectable_templates WHERE id::text = $1::text',
           [templateIdParam]
         )
-        
+
         if (nameResult.rows.length > 0) {
           swipe_file_name = nameResult.rows[0].name
         }
@@ -113,12 +113,80 @@ export async function DELETE(
       return createValidationErrorResponse('Template not found', 404)
     }
 
-    return createSuccessResponse({ 
+    return createSuccessResponse({
       message: 'Template deleted successfully',
-      id 
+      id
     })
 
   } catch (error) {
     return handleApiError(error)
   }
 }
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Check authentication
+    const authResult = await requireAuth(request)
+    if (authResult.error) {
+      return createAuthErrorResponse(authResult)
+    }
+
+    const { id } = params
+
+    if (!id) {
+      return createValidationErrorResponse('Template ID is required')
+    }
+
+    // Parse request body
+    const body = await request.json()
+    const { html } = body
+
+    if (!html || typeof html !== 'string') {
+      return createValidationErrorResponse('HTML content is required')
+    }
+
+    // Check if template exists and get job_id to verify ownership
+    const templateResult = await query(
+      'SELECT job_id FROM injected_templates WHERE id = $1',
+      [id]
+    )
+
+    if (templateResult.rows.length === 0) {
+      return createValidationErrorResponse('Template not found', 404)
+    }
+
+    const jobId = templateResult.rows[0].job_id
+
+    // Verify the user owns the job
+    const jobResult = await query(
+      'SELECT user_id FROM jobs WHERE id = $1',
+      [jobId]
+    )
+
+    if (jobResult.rows.length === 0 || jobResult.rows[0].user_id !== authResult.user.id) {
+      return createValidationErrorResponse('Unauthorized', 403)
+    }
+
+    // Update the template HTML
+    const updateResult = await query(
+      'UPDATE injected_templates SET html_content = $1 WHERE id = $2 RETURNING *',
+      [html, id]
+    )
+
+    if (updateResult.rowCount === 0) {
+      return createValidationErrorResponse('Failed to update template', 500)
+    }
+
+    return createSuccessResponse({
+      message: 'Template updated successfully',
+      template: updateResult.rows[0]
+    })
+
+  } catch (error) {
+    return handleApiError(error)
+  }
+}
+

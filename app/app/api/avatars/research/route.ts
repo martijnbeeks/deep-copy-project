@@ -4,12 +4,12 @@ import { deepCopyClient } from '@/lib/clients/deepcopy-client'
 import { query } from '@/lib/db/connection'
 import { requireAuth, createAuthErrorResponse } from '@/lib/auth/user-auth'
 import { handleApiError, createValidationErrorResponse, createSuccessResponse } from '@/lib/middleware/error-handler'
-import { checkAndIncrementUsage } from '@/lib/middleware/usage-limits'
+import { checkJobCreationLimit } from '@/lib/services/billing'
 import { logger } from '@/lib/utils/logger'
 
 export async function POST(request: NextRequest) {
   try {
-    const { jobId, personaName } = await request.json()
+    const { jobId, personaName, allowOverage } = await request.json()
 
     if (!jobId || !personaName) {
       return createValidationErrorResponse('Job ID and persona name are required')
@@ -67,17 +67,29 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Check usage limits before creating new research job
-    const usageCheck = await checkAndIncrementUsage(user, 'deep_research')
-    if (!usageCheck.allowed) {
+    // Check job credit limit (event-based) before creating research job
+    const limitCheck = await checkJobCreationLimit(user.id, 'deep_research')
+    if (!limitCheck.canCreate && !allowOverage) {
+      if (limitCheck.overageConfirmationRequired) {
+        return NextResponse.json(
+          {
+            error: 'Overage confirmation required',
+            code: 'JOB_CREDITS_OVERAGE_CONFIRMATION_REQUIRED',
+            message: limitCheck.reason,
+            remaining: limitCheck.remaining ?? 0,
+            required: limitCheck.required ?? 0,
+            overageCredits: limitCheck.overageCredits ?? 0,
+            overageCostPerCredit: limitCheck.overageCostPerCredit,
+            overageCostTotal: limitCheck.overageCostTotal,
+            currency: 'EUR',
+          },
+          { status: 402 }
+        )
+      }
+
       return NextResponse.json(
-        {
-          error: 'Usage limit exceeded',
-          message: usageCheck.error || `You've reached your weekly limit of ${usageCheck.limit} Deep Research actions. Your limit resets automatically based on a rolling 7-day window.`,
-          currentUsage: usageCheck.currentUsage,
-          limit: usageCheck.limit
-        },
-        { status: 429 } // Too Many Requests
+        { error: 'Job credit limit exceeded', message: limitCheck.reason },
+        { status: 429 }
       )
     }
 
@@ -154,6 +166,13 @@ export async function POST(request: NextRequest) {
           generated_at: new Date().toISOString()
         })
         await updateJobStatus(researchJob.id, 'completed', 100)
+        try {
+          const { recordJobCreditEvent } = await import('@/lib/services/billing')
+          const { JOB_CREDITS_BY_TYPE } = await import('@/lib/constants/job-credits')
+          await recordJobCreditEvent({ userId: user.id, jobId: researchJob.id, jobType: 'deep_research', credits: JOB_CREDITS_BY_TYPE.deep_research })
+        } catch (creditErr) {
+          logger.warn('Failed to record job credit event:', creditErr)
+        }
       } else if (statusResponse.status === 'FAILED') {
         await updateJobStatus(researchJob.id, 'failed')
       } else if (['RUNNING', 'SUBMITTED', 'PENDING'].includes(statusResponse.status)) {

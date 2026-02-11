@@ -1,6 +1,6 @@
 
 
-## Maintenance Mode
+
 
 The application includes a maintenance mode feature that allows you to block public access while still being able to access the app yourself.
 

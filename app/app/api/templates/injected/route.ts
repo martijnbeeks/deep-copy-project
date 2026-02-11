@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db/connection'
 
+// Increase timeout to 90 seconds for large HTML content responses
+export const maxDuration = 90
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -22,10 +25,11 @@ export async function GET(request: NextRequest) {
         angle_name,
         html_content,
         template_id,
+        config_data,
         created_at
       FROM injected_templates 
       WHERE job_id = $1 
-      ORDER BY angle_index ASC
+      ORDER BY angle_index ASC, created_at DESC
     `, [jobId])
 
     // Step 2: For each template, get the name from injectable_templates

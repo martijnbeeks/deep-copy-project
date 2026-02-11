@@ -66,30 +66,3 @@ export interface JobStatus {
   count: string
 }
 
-export interface Prompt {
-  id: string
-  name: string
-  description: string | null
-  category: 'process_job_v2' | 'write_swipe' | 'image_gen_process'
-  function_name: string
-  required_params: string[]
-  created_at: string
-  updated_at: string
-}
-
-export interface PromptVersion {
-  id: string
-  prompt_id: string
-  version_number: number
-  content: string
-  placeholders: string[]
-  created_by: string
-  created_at: string
-  notes: string | null
-}
-
-export interface PromptWithVersions extends Prompt {
-  versions: PromptVersion[]
-  latest_version: PromptVersion
-}
-

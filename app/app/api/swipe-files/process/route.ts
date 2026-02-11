@@ -93,15 +93,21 @@ export async function POST(request: NextRequest) {
 
     const templateEntries = Object.entries(responseData)
     for (let index = 0; index < templateEntries.length; index++) {
-      const [templateId, swipeData] = templateEntries[index]
+      const [templateIdKey, swipeData] = templateEntries[index]
+      
+      // Use the full template ID key (e.g., "AD0001_POV", "AD0002_AUTHORITY")
+      // The database stores the full ID with suffix
+      const templateId = templateIdKey
+      
       try {
-        // Validate template ID format (L00001, A00003, etc.)
-        if (!templateId.match(/^[LA]\d+$/)) {
+        // Validate template ID format (A00005, L00004, AD0001_POV, LD0001_POV, etc.)
+        // Accept: A/L followed by digits, or AD/LD followed by digits, optionally with suffix after underscore
+        if (!templateId.match(/^[LA]D?\d+(_[A-Z_]+)?$/)) {
           console.warn(`⚠️ Skipping invalid template ID: ${templateId}`)
           continue
         }
 
-        // Get the injectable template by ID
+        // Get the injectable template by ID (use full ID with suffix as stored in DB)
         const injectableTemplates = await getInjectableTemplateById(templateId)
         if (!injectableTemplates || injectableTemplates.length === 0) {
           console.error(`❌ Injectable template not found for ID: ${templateId}`)
@@ -117,6 +123,10 @@ export async function POST(request: NextRequest) {
         // Extract content from swipe data
         // Handle both { full_advertorial: {...} } and direct content
         const swipeContent = (swipeData as any).full_advertorial || swipeData
+        
+        // Extract config_data - this is the full_advertorial object that contains image prompts
+        // For new templates (AD0001, LD0001), this will have article.heroImagePrompt, sections[].imagePrompt, product.imagePrompt
+        const configData = swipeContent && typeof swipeContent === 'object' ? swipeContent : null
         
         // DEBUG: Log the actual structure for inspection
         if (templateId === 'A00002' || templateId === 'L00002') {
@@ -166,7 +176,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Extract structured content
-        const contentData = extractContentFromSwipeResult(swipeContent, advertorialType)
+        const contentData = extractContentFromSwipeResult(swipeContent, advertorialType, templateId)
         
         // DEBUG: Log what was extracted
         if (templateId === 'A00002' || templateId === 'L00002') {
@@ -181,15 +191,16 @@ export async function POST(request: NextRequest) {
         }
 
         // Inject content into template
-        const injectedHtml = injectContentIntoTemplate(injectableTemplate, contentData)
+        const injectedHtml = injectContentIntoTemplate(injectableTemplate, contentData, templateId)
 
-        // Store in database with angle_index (all templates for the same angle should have the same angle_index)
+        // Store in database with angle_index and config_data (all templates for the same angle should have the same angle_index)
         const storedTemplate = await createInjectedTemplate(
           jobId,
           angle,
           templateId,
           injectedHtml,
-          angleIndex // Use the determined angle_index for all templates of this angle
+          angleIndex, // Use the determined angle_index for all templates of this angle
+          configData // Store the full config data (full_advertorial object) for image generation
         )
 
         processedTemplates.push({

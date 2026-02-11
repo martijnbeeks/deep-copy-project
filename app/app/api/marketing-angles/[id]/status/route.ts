@@ -75,6 +75,17 @@ export async function GET(
         await updateJobStatus(marketingAngleId, 'completed', 100)
         logger.log(`✅ Successfully completed marketing angle ${marketingAngleId}`)
 
+        try {
+          const jobRow = await query('SELECT user_id FROM jobs WHERE id = $1', [marketingAngleId])
+          if (jobRow.rows[0]) {
+            const { recordJobCreditEvent } = await import('@/lib/services/billing')
+            const { JOB_CREDITS_BY_TYPE } = await import('@/lib/constants/job-credits')
+            await recordJobCreditEvent({ userId: jobRow.rows[0].user_id, jobId: marketingAngleId, jobType: 'pre_lander', credits: JOB_CREDITS_BY_TYPE.pre_lander })
+          }
+        } catch (creditErr) {
+          logger.error('Failed to record job credit event:', creditErr)
+        }
+
       } catch (resultError) {
         logger.error('❌ Error fetching/storing marketing angle results:', resultError)
         logger.error('❌ Full error details:', {
@@ -280,18 +291,26 @@ async function generateAndStoreInjectedTemplates(marketingAngleId: string, resul
           const { extractContentFromSwipeResult, injectContentIntoTemplate } = await import('@/lib/utils/template-injection')
 
           // Extract content from swipe result
-          const contentData = extractContentFromSwipeResult(swipeResult, marketingAngle.advertorial_type)
+          // Handle both { full_advertorial: {...} } and direct content
+          const swipeContent = (swipeResult as any).full_advertorial || swipeResult
+          
+          // Extract config_data - this is the full_advertorial object that contains image prompts
+          // For new templates (AD0001, LD0001), this will have article.heroImagePrompt, sections[].imagePrompt, product.imagePrompt
+          const configData = swipeContent && typeof swipeContent === 'object' ? swipeContent : null
+          
+          const contentData = extractContentFromSwipeResult(swipeContent, marketingAngle.advertorial_type, marketingAngle.template_id)
           logger.log(`📊 Content data extracted for angle ${i + 1}`)
 
           // Inject content into template
-          const injectedHtml = injectContentIntoTemplate(injectableTemplate, contentData)
+          const injectedHtml = injectContentIntoTemplate(injectableTemplate, contentData, marketingAngle.template_id)
           logger.log(`📊 Template injected for angle ${i + 1}, HTML length: ${injectedHtml.length}`)
 
-          // Store the injected template
+          // Store the injected template with config_data
+          const configDataJson = configData ? JSON.stringify(configData) : null
           await query(`
-            INSERT INTO injected_templates (job_id, angle_index, angle_name, html_content, template_id)
-            VALUES ($1, $2, $3, $4, $5)
-          `, [marketingAngleId, i + 1, angle || `Angle ${i + 1}`, injectedHtml, marketingAngle.template_id])
+            INSERT INTO injected_templates (job_id, angle_index, angle_name, html_content, template_id, config_data)
+            VALUES ($1, $2, $3, $4, $5, $6)
+          `, [marketingAngleId, i + 1, angle || `Angle ${i + 1}`, injectedHtml, marketingAngle.template_id, configDataJson])
 
           logger.log(`✅ Generated injected template for angle ${i + 1}: ${angle}`)
           successCount++

@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db/connection'
 import { deepCopyClient } from '@/lib/clients/deepcopy-client'
-import { updateJobStatus } from '@/lib/db/queries'
+import { updateJobStatus, updateJobAvatars, createResult, updateJobScreenshot } from '@/lib/db/queries'
 import { storeJobResults } from '@/lib/utils/job-results'
 import { getInjectableTemplateForJob } from '@/lib/utils/job-results-helpers'
 import { handleApiError, createValidationErrorResponse, createSuccessResponse } from '@/lib/middleware/error-handler'
 import { logger } from '@/lib/utils/logger'
+import { transformV2ToExistingSchema } from '@/lib/utils/v2-data-transformer'
+import { isDevMode } from '@/lib/utils/env'
+import { JOB_CREDITS_BY_TYPE } from '@/lib/constants/job-credits'
 
 export async function GET(
   request: NextRequest,
@@ -16,7 +19,7 @@ export async function GET(
 
     // Get job from database
     const result = await query(`
-      SELECT id, execution_id, status 
+      SELECT id, execution_id, status, target_approach
       FROM jobs 
       WHERE id = $1
     `, [jobId])
@@ -26,6 +29,7 @@ export async function GET(
     }
 
     const job = result.rows[0]
+    const isV2Job = job.target_approach === 'v2'
 
     // Use execution_id if available (jobs submitted to DeepCopy have this set),
     // otherwise use the job ID directly (for jobs created with DeepCopy job ID as primary key)
@@ -40,13 +44,16 @@ export async function GET(
 
     const dbStatus = currentJob.rows[0]
 
-    // Always poll the DeepCopy API to get the real status
-    // Don't skip API calls even for completed jobs
-
-    // Poll the DeepCopy API only if marketing angle is not completed
+    // Poll the DeepCopy API using the correct endpoint based on job type
     let statusResponse
     try {
-      statusResponse = await deepCopyClient.getMarketingAngleStatus(deepCopyJobId)
+      if (isV2Job) {
+        // Use V2 API endpoint
+        statusResponse = await deepCopyClient.getV2Status(deepCopyJobId)
+      } else {
+        // Use V1 API endpoint
+        statusResponse = await deepCopyClient.getMarketingAngleStatus(deepCopyJobId)
+      }
     } catch (apiError) {
       logger.error('❌ DeepCopy API Error in status check:', apiError)
       // If API call fails, return current database status instead of error
@@ -65,13 +72,34 @@ export async function GET(
     if (statusResponse.status === 'SUCCEEDED') {
       await updateJobStatus(jobId, 'completed', 100)
 
-      // Get results and store them
+      // Get results and store them using the correct method
       try {
-        const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
-        await storeJobResults(jobId, result, deepCopyJobId)
+        if (isV2Job) {
+          // V2: Get results, transform avatars, and store
+          const result = await deepCopyClient.getV2Result(deepCopyJobId)
+          await storeV2JobResults(jobId, result, deepCopyJobId)
+        } else {
+          // V1: Store results as-is
+          const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
+          await storeJobResults(jobId, result, deepCopyJobId)
+        }
       } catch (resultError) {
         logger.error('❌ Error fetching/storing job results:', resultError)
         // Continue even if result fetching fails
+      }
+
+      // Record job credit event (event-based billing)
+      try {
+        const jobRow = await query('SELECT user_id, is_avatar_job FROM jobs WHERE id = $1', [jobId])
+        if (jobRow.rows[0]) {
+          const { recordJobCreditEvent } = await import('@/lib/services/billing')
+          // V2 jobs and avatar research jobs use deep_research credits; marketing angle completion uses pre_lander
+          const jobType = isV2Job || jobRow.rows[0].is_avatar_job ? 'deep_research' : 'pre_lander'
+          const credits = JOB_CREDITS_BY_TYPE[jobType]
+          await recordJobCreditEvent({ userId: jobRow.rows[0].user_id, jobId, jobType, credits })
+        }
+      } catch (creditErr) {
+        logger.error('❌ Failed to record job credit event:', creditErr)
       }
 
     } else if (statusResponse.status === 'FAILED') {
@@ -141,6 +169,51 @@ export async function GET(
 }
 
 // Use shared utilities from lib/utils/job-results
+
+// Strip null bytes from strings/objects/arrays (used in dev mode to avoid DB errors)
+function stripNulls(value: any): any {
+  if (typeof value === 'string') return value.replace(/\u0000/g, '')
+  if (Array.isArray(value)) return value.map(stripNulls)
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, stripNulls(v)]))
+  }
+  return value
+}
+
+// Store V2 job results in database
+async function storeV2JobResults(localJobId: string, result: any, deepCopyJobId: string) {
+  try {
+    const sanitizedResult = isDevMode() ? stripNulls(result) : result
+
+    // Transform V2 avatars to existing schema format
+    const transformedAvatars = transformV2ToExistingSchema(sanitizedResult)
+    const sanitizedAvatars = isDevMode() ? stripNulls(transformedAvatars) : transformedAvatars
+
+    // Update job with transformed avatars
+    await updateJobAvatars(localJobId, sanitizedAvatars)
+
+    // Persist product image (DeepCopy screenshot) to reuse across sessions
+    const productImage = sanitizedResult?.results?.product_image || sanitizedResult?.product_image
+    if (productImage && typeof productImage === 'string') {
+      await updateJobScreenshot(localJobId, productImage)
+    }
+
+    // Store the complete JSON result as metadata
+    await createResult(localJobId, '', {
+      deepcopy_job_id: deepCopyJobId,
+      full_result: sanitizedResult,
+      project_name: sanitizedResult.project_name,
+      timestamp_iso: sanitizedResult.timestamp_iso,
+      job_id: sanitizedResult.job_id,
+      api_version: sanitizedResult.api_version || 'v2',
+      generated_at: new Date().toISOString()
+    })
+
+  } catch (error) {
+    logger.error('Error storing V2 job results:', error)
+    throw error
+  }
+}
 
 async function generateAndStoreInjectedTemplates(jobId: string, result: any) {
   try {
@@ -227,15 +300,23 @@ async function generateAndStoreInjectedTemplates(jobId: string, result: any) {
           const { extractContentFromSwipeResult, injectContentIntoTemplate } = await import('@/lib/utils/template-injection')
 
           // Extract content from swipe result
-          const contentData = extractContentFromSwipeResult(swipeResult, job.advertorial_type)
+          // Handle both { full_advertorial: {...} } and direct content
+          const swipeContent = (swipeResult as any).full_advertorial || swipeResult
+          
+          // Extract config_data - this is the full_advertorial object that contains image prompts
+          // For new templates (AD0001, LD0001), this will have article.heroImagePrompt, sections[].imagePrompt, product.imagePrompt
+          const configData = swipeContent && typeof swipeContent === 'object' ? swipeContent : null
+          
+          const contentData = extractContentFromSwipeResult(swipeContent, job.advertorial_type, job.template_id)
           // Inject content into template
-          const injectedHtml = injectContentIntoTemplate(injectableTemplate, contentData)
+          const injectedHtml = injectContentIntoTemplate(injectableTemplate, contentData, job.template_id)
 
-          // Store the injected template
+          // Store the injected template with config_data
+          const configDataJson = configData ? JSON.stringify(configData) : null
           await query(`
-            INSERT INTO injected_templates (job_id, angle_index, angle_name, html_content, template_id)
-            VALUES ($1, $2, $3, $4, $5)
-          `, [jobId, i + 1, angle || `Angle ${i + 1}`, injectedHtml, job.template_id])
+            INSERT INTO injected_templates (job_id, angle_index, angle_name, html_content, template_id, config_data)
+            VALUES ($1, $2, $3, $4, $5, $6)
+          `, [jobId, i + 1, angle || `Angle ${i + 1}`, injectedHtml, job.template_id, configDataJson])
 
           successCount++
         } catch (error) {

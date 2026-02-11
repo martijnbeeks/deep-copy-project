@@ -1,5 +1,5 @@
 import { query } from './connection'
-import { User, Template, Job, Result, JobWithTemplate, JobWithResult, InjectableTemplate, InviteLink, Organization, OrganizationMember, UserRole, MemberStatus, InviteType, UsageType, OrganizationUsageLimits, OrganizationUsageTracking } from './types'
+import { User, Template, Job, Result, JobWithTemplate, JobWithResult, InjectableTemplate, InviteLink, Organization, OrganizationMember, UserRole, MemberStatus, InviteType, UsageType, OrganizationUsageLimits, OrganizationUsageTracking, JobCreditEvent } from './types'
 import bcrypt from 'bcryptjs'
 
 // User queries
@@ -273,6 +273,13 @@ export const getJobById = async (id: string, userId?: string): Promise<JobWithRe
   }
 }
 
+export const updateJobAvatars = async (id: string, avatars: any[]): Promise<void> => {
+  await query(
+    'UPDATE jobs SET avatars = $2, updated_at = NOW() WHERE id = $1',
+    [id, JSON.stringify(avatars)]
+  )
+}
+
 export const updateJobStatus = async (id: string, status: string, progress?: number, execution_id?: string): Promise<void> => {
   const updates: string[] = ['status = $2', 'updated_at = NOW()']
   const params: any[] = [id, status]
@@ -298,7 +305,7 @@ export const updateJobStatus = async (id: string, status: string, progress?: num
       `)
 
       if (columnCheck.rows.length > 0) {
-        updates.push('completed_at = NOW()')
+        updates.push('completed_at = COALESCE(completed_at, NOW())')
       }
     } catch (error) {
       // completed_at column not found, skipping
@@ -483,7 +490,8 @@ export const createInjectedTemplate = async (
   angleName: string,
   templateId: string,
   htmlContent: string,
-  angleIndex?: number
+  angleIndex?: number,
+  configData?: any
 ): Promise<any> => {
   // Ensure injected_templates table exists
   await query(`
@@ -494,16 +502,46 @@ export const createInjectedTemplate = async (
       angle_name VARCHAR(255) NOT NULL,
       html_content TEXT NOT NULL,
       template_id VARCHAR(255),
+      config_data JSONB,
       created_at TIMESTAMP DEFAULT NOW()
     )
   `)
 
+  // Add config_data column if it doesn't exist (for existing tables)
+  try {
+    await query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'injected_templates' 
+          AND column_name = 'config_data'
+        ) THEN
+          ALTER TABLE injected_templates 
+          ADD COLUMN config_data JSONB;
+        END IF;
+      END $$;
+    `)
+  } catch (error) {
+    console.log('Error adding config_data column (may already exist):', error)
+  }
+
   // Use provided angleIndex or default to 1
   const finalAngleIndex = angleIndex || 1
 
+  // Prepare config_data - if it's an object, stringify it; if it's already a string, use as-is; otherwise null
+  let configDataValue: string | null = null
+  if (configData !== undefined && configData !== null) {
+    if (typeof configData === 'string') {
+      configDataValue = configData
+    } else if (typeof configData === 'object') {
+      configDataValue = JSON.stringify(configData)
+    }
+  }
+
   const result = await query(
-    'INSERT INTO injected_templates (job_id, angle_index, angle_name, html_content, template_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-    [jobId, finalAngleIndex, angleName, htmlContent, templateId]
+    'INSERT INTO injected_templates (job_id, angle_index, angle_name, html_content, template_id, config_data) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+    [jobId, finalAngleIndex, angleName, htmlContent, templateId, configDataValue]
   )
   return result.rows[0]
 }
@@ -511,7 +549,7 @@ export const createInjectedTemplate = async (
 export const getInjectedTemplatesByJob = async (jobId: string): Promise<any[]> => {
   // First get all injected templates
   const injectedTemplates = await query(
-    'SELECT * FROM injected_templates WHERE job_id = $1 ORDER BY angle_index, created_at',
+    'SELECT * FROM injected_templates WHERE job_id = $1 ORDER BY angle_index, created_at DESC',
     [jobId]
   )
   
@@ -650,7 +688,7 @@ export const deleteInviteLink = async (id: string): Promise<boolean> => {
     'DELETE FROM invite_links WHERE id = $1',
     [id]
   )
-  return result.rowCount > 0
+  return (result.rowCount ?? 0) > 0
 }
 
 // Organization queries
@@ -675,7 +713,8 @@ export const createOrganization = async (name: string, created_by: string): Prom
   await setOrganizationUsageLimits(organization.id, {
     deep_research_limit: 3,
     pre_lander_limit: 30,
-    static_ads_limit: 30
+    static_ads_limit: 30,
+    templates_images_limit: 30
   })
   console.log('[CREATE_ORG] Usage limits set successfully', { orgId: organization.id })
   
@@ -793,17 +832,19 @@ export const createUserWithUsername = async (email: string, password: string, na
 }
 
 // Usage Limits Schema Setup
-export const ensureUsageLimitsTables = async (): Promise<void> => {
+export const ensureUsageLimitsTables = async (client?: any): Promise<void> => {
+  const runner = client || { query };
   console.log('[ENSURE_TABLES] Starting ensureUsageLimitsTables', { timestamp: new Date().toISOString() })
   
   // Create organization_usage_limits table
   console.log('[ENSURE_TABLES] Creating organization_usage_limits table')
-  await query(`
+  await runner.query(`
     CREATE TABLE IF NOT EXISTS organization_usage_limits (
       organization_id TEXT PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
       deep_research_limit INTEGER NOT NULL DEFAULT 3,
       pre_lander_limit INTEGER NOT NULL DEFAULT 30,
       static_ads_limit INTEGER NOT NULL DEFAULT 30,
+      templates_images_limit INTEGER NOT NULL DEFAULT 30,
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW()
     )
@@ -812,7 +853,7 @@ export const ensureUsageLimitsTables = async (): Promise<void> => {
   
   // Add static_ads_limit column if it doesn't exist (for existing tables)
   try {
-    await query(`
+    await runner.query(`
       DO $$ 
       BEGIN
         IF NOT EXISTS (
@@ -830,13 +871,33 @@ export const ensureUsageLimitsTables = async (): Promise<void> => {
     console.log('[ENSURE_TABLES] Error adding static_ads_limit column (may already exist):', error)
   }
 
+  // Add templates_images_limit column if it doesn't exist (for existing tables)
+  try {
+    await runner.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'organization_usage_limits' 
+          AND column_name = 'templates_images_limit'
+        ) THEN
+          ALTER TABLE organization_usage_limits 
+          ADD COLUMN templates_images_limit INTEGER NOT NULL DEFAULT 30;
+        END IF;
+      END $$;
+    `)
+    console.log('[ENSURE_TABLES] templates_images_limit column ensured')
+  } catch (error) {
+    console.log('[ENSURE_TABLES] Error adding templates_images_limit column (may already exist):', error)
+  }
+
   // Create organization_usage_tracking table
   console.log('[ENSURE_TABLES] Creating organization_usage_tracking table')
-  await query(`
+  await runner.query(`
     CREATE TABLE IF NOT EXISTS organization_usage_tracking (
       id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
       organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-      usage_type TEXT NOT NULL CHECK (usage_type IN ('deep_research', 'pre_lander', 'static_ads')),
+      usage_type TEXT NOT NULL CHECK (usage_type IN ('deep_research', 'pre_lander', 'static_ads', 'templates_images')),
       week_start_date DATE NOT NULL,
       count INTEGER NOT NULL DEFAULT 0,
       created_at TIMESTAMP DEFAULT NOW(),
@@ -848,7 +909,7 @@ export const ensureUsageLimitsTables = async (): Promise<void> => {
   
   // Update CHECK constraint to include 'static_ads' if table exists with old constraint
   try {
-    await query(`
+    await runner.query(`
       DO $$ 
       BEGIN
         -- Drop old constraint if it exists
@@ -860,10 +921,10 @@ export const ensureUsageLimitsTables = async (): Promise<void> => {
           DROP CONSTRAINT organization_usage_tracking_usage_type_check;
         END IF;
         
-        -- Add new constraint with static_ads
+        -- Add new constraint with static_ads and templates_images
         ALTER TABLE organization_usage_tracking 
         ADD CONSTRAINT organization_usage_tracking_usage_type_check 
-        CHECK (usage_type IN ('deep_research', 'pre_lander', 'static_ads'));
+        CHECK (usage_type IN ('deep_research', 'pre_lander', 'static_ads', 'templates_images'));
       END $$;
     `)
     console.log('[ENSURE_TABLES] usage_type CHECK constraint updated')
@@ -873,7 +934,7 @@ export const ensureUsageLimitsTables = async (): Promise<void> => {
 
   // Create index for faster lookups
   console.log('[ENSURE_TABLES] Creating index')
-  await query(`
+  await runner.query(`
     CREATE INDEX IF NOT EXISTS idx_usage_tracking_org_type_date 
     ON organization_usage_tracking(organization_id, usage_type, week_start_date)
   `)
@@ -899,7 +960,7 @@ export const getOrganizationUsageLimits = async (organizationId: string): Promis
   if (result.rows.length === 0) {
     console.log('[GET_LIMITS] No limits found, creating default limits', { organizationId })
     // Create default limits if they don't exist
-    await setOrganizationUsageLimits(organizationId, { deep_research_limit: 3, pre_lander_limit: 30, static_ads_limit: 30 })
+    await setOrganizationUsageLimits(organizationId, { deep_research_limit: 3, pre_lander_limit: 30, static_ads_limit: 30, templates_images_limit: 30 })
     console.log('[GET_LIMITS] Default limits created, querying again', { organizationId })
     const newResult = await query(
       'SELECT * FROM organization_usage_limits WHERE organization_id = $1',
@@ -915,75 +976,96 @@ export const getOrganizationUsageLimits = async (organizationId: string): Promis
 
 export const setOrganizationUsageLimits = async (
   organizationId: string,
-  limits: { deep_research_limit?: number; pre_lander_limit?: number; static_ads_limit?: number }
+  limits: { deep_research_limit?: number; pre_lander_limit?: number; static_ads_limit?: number; templates_images_limit?: number, job_credits_limit?: number },
+  client?: any
 ): Promise<OrganizationUsageLimits> => {
+  const runner = client || { query };
   console.log('[SET_LIMITS] Starting setOrganizationUsageLimits', { organizationId, limits, timestamp: new Date().toISOString() })
-  
-  console.log('[SET_LIMITS] Calling ensureUsageLimitsTables')
+
   await ensureUsageLimitsTables()
-  console.log('[SET_LIMITS] ensureUsageLimitsTables completed')
-  
-  // Directly query to avoid infinite recursion with getOrganizationUsageLimits
-  console.log('[SET_LIMITS] Querying existing usage limits directly', { organizationId })
+
   const existingResult = await query(
     'SELECT * FROM organization_usage_limits WHERE organization_id = $1',
     [organizationId]
   )
   const existing = existingResult.rows[0] || null
-  console.log('[SET_LIMITS] Existing limits retrieved', { organizationId, hasExisting: !!existing })
-  
+
   if (existing) {
-    console.log('[SET_LIMITS] Updating existing limits', { organizationId })
     const updates: string[] = ['updated_at = NOW()']
     const params: any[] = [organizationId]
-    
+
     if (limits.deep_research_limit !== undefined) {
       updates.push(`deep_research_limit = $${params.length + 1}`)
       params.push(limits.deep_research_limit)
     }
-    
     if (limits.pre_lander_limit !== undefined) {
       updates.push(`pre_lander_limit = $${params.length + 1}`)
       params.push(limits.pre_lander_limit)
     }
-    
     if (limits.static_ads_limit !== undefined) {
       updates.push(`static_ads_limit = $${params.length + 1}`)
       params.push(limits.static_ads_limit)
     }
     
+    if (limits.templates_images_limit !== undefined) {
+      updates.push(`templates_images_limit = $${params.length + 1}`)
+      params.push(limits.templates_images_limit)
+    }
+    
     console.log('[SET_LIMITS] Executing UPDATE query', { organizationId, updates })
+    if (limits.job_credits_limit !== undefined) {
+      updates.push(`job_credits_limit = $${params.length + 1}`)
+      params.push(limits.job_credits_limit)
+    }
+
     const result = await query(
       `UPDATE organization_usage_limits SET ${updates.join(', ')} WHERE organization_id = $1 RETURNING *`,
       params
     )
-    console.log('[SET_LIMITS] UPDATE completed', { organizationId, resultId: result.rows[0]?.organization_id })
-    return result.rows[0]
-  } else {
-    console.log('[SET_LIMITS] Inserting new limits', { organizationId, limits })
-    const result = await query(
-      `INSERT INTO organization_usage_limits (organization_id, deep_research_limit, pre_lander_limit, static_ads_limit) 
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [
-        organizationId,
-        limits.deep_research_limit ?? 3,
-        limits.pre_lander_limit ?? 30,
-        limits.static_ads_limit ?? 30
-      ]
-    )
-    console.log('[SET_LIMITS] INSERT completed', { organizationId, resultId: result.rows[0]?.organization_id })
     return result.rows[0]
   }
+
+  const result = await runner.query(
+    `INSERT INTO organization_usage_limits (
+      organization_id, 
+      deep_research_limit, 
+      pre_lander_limit, 
+      static_ads_limit,
+      templates_images_limit,
+      job_credits_limit
+    )
+    VALUES ($1, $2, $3, $4, $5, $6)
+    ON CONFLICT (organization_id) 
+    DO UPDATE SET 
+      deep_research_limit = COALESCE($2, organization_usage_limits.deep_research_limit),
+      pre_lander_limit = COALESCE($3, organization_usage_limits.pre_lander_limit),
+      static_ads_limit = COALESCE($4, organization_usage_limits.static_ads_limit),
+      templates_images_limit = COALESCE($5, organization_usage_limits.templates_images_limit),
+      job_credits_limit = COALESCE($6, organization_usage_limits.job_credits_limit),
+      updated_at = NOW()
+    RETURNING *`,
+    [
+      organizationId,
+      limits.deep_research_limit ?? null,
+      limits.pre_lander_limit ?? null,
+      limits.static_ads_limit ?? null,
+      limits.templates_images_limit ?? null,
+      limits.job_credits_limit ?? null
+    ]
+  )
+  return result.rows[0]
 }
 
 export const getOrganizationUsage = async (
   organizationId: string,
   usageType: UsageType,
-  weekStartDate: string
+  weekStartDate: string,
+  client?: any
 ): Promise<OrganizationUsageTracking | null> => {
-  await ensureUsageLimitsTables()
+  const runner = client || { query };
+  await ensureUsageLimitsTables(client)
   
-  const result = await query(
+  const result = await runner.query(
     'SELECT * FROM organization_usage_tracking WHERE organization_id = $1 AND usage_type = $2 AND week_start_date = $3',
     [organizationId, usageType, weekStartDate]
   )
@@ -993,9 +1075,11 @@ export const getOrganizationUsage = async (
 
 export const incrementOrganizationUsage = async (
   organizationId: string,
-  usageType: UsageType
+  usageType: UsageType,
+  client?: any
 ): Promise<OrganizationUsageTracking> => {
-  await ensureUsageLimitsTables()
+  const runner = client || { query };
+  await ensureUsageLimitsTables(client)
   
   const today = new Date().toISOString().split('T')[0]
   
@@ -1004,7 +1088,7 @@ export const incrementOrganizationUsage = async (
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
   const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0]
   
-  const existingResult = await query(
+  const existingResult = await runner.query(
     `SELECT * FROM organization_usage_tracking 
      WHERE organization_id = $1 AND usage_type = $2 
      AND week_start_date >= $3 
@@ -1022,7 +1106,7 @@ export const incrementOrganizationUsage = async (
     
     if (daysDiff < 7) {
       // Still within window, increment existing count
-      const result = await query(
+      const result = await runner.query(
         `UPDATE organization_usage_tracking 
          SET count = count + 1, updated_at = NOW() 
          WHERE id = $1 RETURNING *`,
@@ -1031,7 +1115,7 @@ export const incrementOrganizationUsage = async (
       return result.rows[0]
     } else {
       // Outside window, create new entry with today's date
-      const result = await query(
+      const result = await runner.query(
         `INSERT INTO organization_usage_tracking (organization_id, usage_type, week_start_date, count) 
          VALUES ($1, $2, $3, 1) RETURNING *`,
         [organizationId, usageType, today]
@@ -1040,7 +1124,7 @@ export const incrementOrganizationUsage = async (
     }
   } else {
     // No existing usage, create new tracking entry
-    const result = await query(
+    const result = await runner.query(
       `INSERT INTO organization_usage_tracking (organization_id, usage_type, week_start_date, count) 
        VALUES ($1, $2, $3, 1) RETURNING *`,
       [organizationId, usageType, today]
@@ -1049,49 +1133,32 @@ export const incrementOrganizationUsage = async (
   }
 }
 
-export const resetOrganizationUsage = async (
-  organizationId: string,
-  usageType?: UsageType
-): Promise<void> => {
-  await ensureUsageLimitsTables()
-  
-  if (usageType) {
-    // Reset specific usage type
-    await query(
-      'DELETE FROM organization_usage_tracking WHERE organization_id = $1 AND usage_type = $2',
-      [organizationId, usageType]
-    )
-  } else {
-    // Reset all usage types
-    await query(
-      'DELETE FROM organization_usage_tracking WHERE organization_id = $1',
-      [organizationId]
-    )
-  }
-}
-
-export const getAllOrganizationsWithLimits = async (): Promise<Array<OrganizationUsageLimits & {
+export const getAllOrganizationsWithLimits = async (client?: any): Promise<Array<OrganizationUsageLimits & {
   organization: Organization
   current_deep_research_usage: number
   current_pre_lander_usage: number
   current_static_ads_usage: number
+  current_templates_images_usage: number
+  current_job_credits_usage: number
   deep_research_week_start: string | null
   pre_lander_week_start: string | null
   static_ads_week_start: string | null
+  templates_images_week_start: string | null
 }>> => {
-  await ensureUsageLimitsTables()
+  const runner = client || { query };
+  await ensureUsageLimitsTables(client)
   
   // First, ensure all organizations have limits (create defaults if missing) in a single query
-  await query(`
-    INSERT INTO organization_usage_limits (organization_id, deep_research_limit, pre_lander_limit, static_ads_limit)
-    SELECT id, 3, 30, 30
+  await runner.query(`
+    INSERT INTO organization_usage_limits (organization_id, deep_research_limit, pre_lander_limit, static_ads_limit, templates_images_limit, job_credits_limit)
+    SELECT id, 3, 30, 30, 30, 19
     FROM organizations
     WHERE id NOT IN (SELECT organization_id FROM organization_usage_limits)
     ON CONFLICT (organization_id) DO NOTHING
   `)
   
   // Now get all organizations with their limits
-  const result = await query(`
+  const result = await runner.query(`
     SELECT 
       oul.*,
       o.id as org_id,
@@ -1100,57 +1167,67 @@ export const getAllOrganizationsWithLimits = async (): Promise<Array<Organizatio
       o.created_at as org_created_at,
       o.updated_at as org_updated_at,
       COALESCE((
-        SELECT SUM(count) 
-        FROM organization_usage_tracking 
-        WHERE organization_id = oul.organization_id 
+        SELECT SUM(count)
+        FROM organization_usage_tracking
+        WHERE organization_id = oul.organization_id
         AND usage_type = 'deep_research'
-        AND week_start_date >= CURRENT_DATE - INTERVAL '7 days'
       ), 0) as current_deep_research_usage,
       COALESCE((
-        SELECT SUM(count) 
-        FROM organization_usage_tracking 
-        WHERE organization_id = oul.organization_id 
+        SELECT SUM(count)
+        FROM organization_usage_tracking
+        WHERE organization_id = oul.organization_id
         AND usage_type = 'pre_lander'
-        AND week_start_date >= CURRENT_DATE - INTERVAL '7 days'
       ), 0) as current_pre_lander_usage,
+      COALESCE((
+        SELECT SUM(count)
+        FROM organization_usage_tracking
+        WHERE organization_id = oul.organization_id
+        AND usage_type = 'static_ads'
+      ), 0) as current_static_ads_usage,
       COALESCE((
         SELECT SUM(count) 
         FROM organization_usage_tracking 
         WHERE organization_id = oul.organization_id 
-        AND usage_type = 'static_ads'
-        AND week_start_date >= CURRENT_DATE - INTERVAL '7 days'
-      ), 0) as current_static_ads_usage,
+        AND usage_type = 'templates_images'
+      ), 0) as current_templates_images_usage,
+      0 as current_job_credits_usage,
       (
         SELECT MAX(week_start_date)
         FROM organization_usage_tracking
         WHERE organization_id = oul.organization_id
         AND usage_type = 'deep_research'
-        AND week_start_date >= CURRENT_DATE - INTERVAL '7 days'
       ) as deep_research_week_start,
       (
         SELECT MAX(week_start_date)
         FROM organization_usage_tracking
         WHERE organization_id = oul.organization_id
         AND usage_type = 'pre_lander'
-        AND week_start_date >= CURRENT_DATE - INTERVAL '7 days'
       ) as pre_lander_week_start,
       (
         SELECT MAX(week_start_date)
         FROM organization_usage_tracking
         WHERE organization_id = oul.organization_id
         AND usage_type = 'static_ads'
-        AND week_start_date >= CURRENT_DATE - INTERVAL '7 days'
       ) as static_ads_week_start
+      ,
+      (
+        SELECT MAX(week_start_date)
+        FROM organization_usage_tracking
+        WHERE organization_id = oul.organization_id
+        AND usage_type = 'templates_images'
+      ) as templates_images_week_start
     FROM organization_usage_limits oul
     INNER JOIN organizations o ON oul.organization_id = o.id
     ORDER BY o.name
   `)
   
-  return result.rows.map(row => ({
+  return result.rows.map((row: any) => ({
     organization_id: row.organization_id,
     deep_research_limit: row.deep_research_limit,
     pre_lander_limit: row.pre_lander_limit,
     static_ads_limit: row.static_ads_limit || 30,
+    templates_images_limit: row.templates_images_limit || 30,
+    job_credits_limit: row.job_credits_limit || 19,
     created_at: row.created_at,
     updated_at: row.updated_at,
     organization: {
@@ -1163,9 +1240,12 @@ export const getAllOrganizationsWithLimits = async (): Promise<Array<Organizatio
     current_deep_research_usage: parseInt(row.current_deep_research_usage) || 0,
     current_pre_lander_usage: parseInt(row.current_pre_lander_usage) || 0,
     current_static_ads_usage: parseInt(row.current_static_ads_usage) || 0,
+    current_templates_images_usage: parseInt(row.current_templates_images_usage) || 0,
+    current_job_credits_usage: parseInt(row.current_job_credits_usage) || 0,
     deep_research_week_start: row.deep_research_week_start,
     pre_lander_week_start: row.pre_lander_week_start,
-    static_ads_week_start: row.static_ads_week_start
+    static_ads_week_start: row.static_ads_week_start,
+    templates_images_week_start: row.templates_images_week_start
   }))
 }
 
@@ -1205,9 +1285,10 @@ export interface ImageLibraryItem {
 }
 
 // Ensure static ads tables exist
-const ensureStaticAdsTables = async (): Promise<void> => {
+const ensureStaticAdsTables = async (client?: any): Promise<void> => {
+  const runner = client || { query };
   // Create static_ad_jobs table
-  await query(`
+  await runner.query(`
     CREATE TABLE IF NOT EXISTS static_ad_jobs (
       id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
       original_job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
@@ -1223,7 +1304,7 @@ const ensureStaticAdsTables = async (): Promise<void> => {
   `)
   
   // Add selected_angles column if it doesn't exist (for existing tables)
-  await query(`
+  await runner.query(`
     ALTER TABLE static_ad_jobs 
     ADD COLUMN IF NOT EXISTS selected_angles TEXT
   `).catch(() => {
@@ -1231,7 +1312,7 @@ const ensureStaticAdsTables = async (): Promise<void> => {
   })
   
   // Create generated_static_ads table
-  await query(`
+  await runner.query(`
     CREATE TABLE IF NOT EXISTS generated_static_ads (
       id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
       static_ad_job_id TEXT NOT NULL REFERENCES static_ad_jobs(id) ON DELETE CASCADE,
@@ -1247,7 +1328,7 @@ const ensureStaticAdsTables = async (): Promise<void> => {
   `)
   
   // Create image_library table
-  await query(`
+  await runner.query(`
     CREATE TABLE IF NOT EXISTS image_library (
       id SERIAL PRIMARY KEY,
       library_id TEXT NOT NULL UNIQUE,
@@ -1257,30 +1338,31 @@ const ensureStaticAdsTables = async (): Promise<void> => {
   `)
   
   // Create indexes
-  await query(`
+  await runner.query(`
     CREATE INDEX IF NOT EXISTS idx_static_ad_jobs_original_job 
     ON static_ad_jobs(original_job_id)
   `)
   
-  await query(`
+  await runner.query(`
     CREATE INDEX IF NOT EXISTS idx_static_ad_jobs_user 
     ON static_ad_jobs(user_id)
   `)
   
-  await query(`
+  await runner.query(`
     CREATE INDEX IF NOT EXISTS idx_generated_static_ads_job 
     ON generated_static_ads(static_ad_job_id)
   `)
   
-  await query(`
+  await runner.query(`
     CREATE INDEX IF NOT EXISTS idx_generated_static_ads_original_job 
     ON generated_static_ads(original_job_id)
   `)
 }
 
-export const getImageLibrary = async (): Promise<ImageLibraryItem[]> => {
-  await ensureStaticAdsTables()
-  const result = await query('SELECT * FROM image_library ORDER BY id ASC')
+export const getImageLibrary = async (client?: any): Promise<ImageLibraryItem[]> => {
+  const runner = client || { query };
+  await ensureStaticAdsTables(client)
+  const result = await runner.query('SELECT * FROM image_library ORDER BY id ASC')
   return result.rows
 }
 
@@ -1289,10 +1371,11 @@ export const createStaticAdJob = async (data: {
   external_job_id: string
   user_id: string
   selected_angles?: string[]
-}): Promise<StaticAdJob> => {
-  await ensureStaticAdsTables()
+}, client?: any): Promise<StaticAdJob> => {
+  const runner = client || { query };
+  await ensureStaticAdsTables(client)
   const selectedAnglesJson = data.selected_angles ? JSON.stringify(data.selected_angles) : null
-  const result = await query(
+  const result = await runner.query(
     `INSERT INTO static_ad_jobs (original_job_id, external_job_id, user_id, status, progress, selected_angles)
      VALUES ($1, $2, $3, 'pending', 0, $4) RETURNING *`,
     [data.original_job_id, data.external_job_id, data.user_id, selectedAnglesJson]
@@ -1300,15 +1383,17 @@ export const createStaticAdJob = async (data: {
   return result.rows[0]
 }
 
-export const getStaticAdJob = async (id: string): Promise<StaticAdJob | null> => {
-  await ensureStaticAdsTables()
-  const result = await query('SELECT * FROM static_ad_jobs WHERE id = $1', [id])
+export const getStaticAdJob = async (id: string, client?: any): Promise<StaticAdJob | null> => {
+  const runner = client || { query };
+  await ensureStaticAdsTables(client)
+  const result = await runner.query('SELECT * FROM static_ad_jobs WHERE id = $1', [id])
   return result.rows[0] || null
 }
 
-export const getStaticAdJobByExternalId = async (externalJobId: string): Promise<StaticAdJob | null> => {
-  await ensureStaticAdsTables()
-  const result = await query('SELECT * FROM static_ad_jobs WHERE external_job_id = $1', [externalJobId])
+export const getStaticAdJobByExternalId = async (externalJobId: string, client?: any): Promise<StaticAdJob | null> => {
+  const runner = client || { query };
+  await ensureStaticAdsTables(client)
+  const result = await runner.query('SELECT * FROM static_ad_jobs WHERE external_job_id = $1', [externalJobId])
   return result.rows[0] || null
 }
 
@@ -1316,9 +1401,11 @@ export const updateStaticAdJobStatus = async (
   id: string,
   status: string,
   progress?: number,
-  errorMessage?: string | null
+  errorMessage?: string | null,
+  client?: any
 ): Promise<void> => {
-  await ensureStaticAdsTables()
+  const runner = client || { query };
+  await ensureStaticAdsTables(client)
   const updates: string[] = ['status = $2', 'updated_at = NOW()']
   const params: any[] = [id, status]
 
@@ -1332,12 +1419,13 @@ export const updateStaticAdJobStatus = async (
     params.push(errorMessage)
   }
 
-  await query(`UPDATE static_ad_jobs SET ${updates.join(', ')} WHERE id = $1`, params)
+  await runner.query(`UPDATE static_ad_jobs SET ${updates.join(', ')} WHERE id = $1`, params)
 }
 
-export const getStaticAdJobsByOriginalJob = async (originalJobId: string): Promise<StaticAdJob[]> => {
-  await ensureStaticAdsTables()
-  const result = await query(
+export const getStaticAdJobsByOriginalJob = async (originalJobId: string, client?: any): Promise<StaticAdJob[]> => {
+  const runner = client || { query };
+  await ensureStaticAdsTables(client)
+  const result = await runner.query(
     'SELECT * FROM static_ad_jobs WHERE original_job_id = $1 ORDER BY created_at DESC',
     [originalJobId]
   )
@@ -1345,10 +1433,11 @@ export const getStaticAdJobsByOriginalJob = async (originalJobId: string): Promi
 }
 
 // Ensure unique index exists on generated_static_ads to prevent duplicates
-const ensureGeneratedStaticAdsUniqueConstraint = async (): Promise<boolean> => {
+const ensureGeneratedStaticAdsUniqueConstraint = async (client?: any): Promise<boolean> => {
+  const runner = client || { query };
   try {
     // Check if unique index already exists
-    const indexCheck = await query(`
+    const indexCheck = await runner.query(`
       SELECT 1 FROM pg_indexes 
       WHERE indexname = 'generated_static_ads_job_url_unique'
       LIMIT 1
@@ -1360,7 +1449,7 @@ const ensureGeneratedStaticAdsUniqueConstraint = async (): Promise<boolean> => {
     }
     
     // Index doesn't exist, check if we have duplicates that would prevent creation
-    const duplicateCheck = await query(`
+    const duplicateCheck = await runner.query(`
       SELECT static_ad_job_id, image_url, COUNT(*) as count
       FROM generated_static_ads
       GROUP BY static_ad_job_id, image_url
@@ -1371,7 +1460,7 @@ const ensureGeneratedStaticAdsUniqueConstraint = async (): Promise<boolean> => {
     if (duplicateCheck.rows.length > 0) {
       // We have duplicates, clean them up first (keep the oldest record for each job+url)
       console.log('[ENSURE_INDEX] Cleaning up duplicates before creating unique index...')
-      await query(`
+      await runner.query(`
         DELETE FROM generated_static_ads
         WHERE id NOT IN (
           SELECT DISTINCT ON (static_ad_job_id, image_url) id
@@ -1384,7 +1473,7 @@ const ensureGeneratedStaticAdsUniqueConstraint = async (): Promise<boolean> => {
     
     // Now create unique index to prevent duplicate images per job
     // This will be used by ON CONFLICT clause
-    await query(`
+    await runner.query(`
       CREATE UNIQUE INDEX generated_static_ads_job_url_unique 
       ON generated_static_ads(static_ad_job_id, image_url)
     `)
@@ -1410,16 +1499,17 @@ export const createGeneratedStaticAd = async (data: {
   variation_number: number
   angle_name: string
   status?: string
-}): Promise<{ record: GeneratedStaticAd | null; isNew: boolean }> => {
-  await ensureStaticAdsTables()
+}, client?: any): Promise<{ record: GeneratedStaticAd | null; isNew: boolean }> => {
+  const runner = client || { query };
+  await ensureStaticAdsTables(client)
   // Ensure unique constraint exists (idempotent)
   // Returns true if index exists/created, false otherwise
-  const indexExists = await ensureGeneratedStaticAdsUniqueConstraint()
+  const indexExists = await ensureGeneratedStaticAdsUniqueConstraint(client)
   
   // Try using ON CONFLICT first (if index exists)
   if (indexExists) {
     try {
-      const result = await query(
+      const result = await runner.query(
         `INSERT INTO generated_static_ads 
          (static_ad_job_id, original_job_id, image_url, angle_index, variation_number, angle_name, status)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -1443,7 +1533,7 @@ export const createGeneratedStaticAd = async (data: {
       
       // If no row returned, the image already exists (ON CONFLICT prevented insert)
       // Fetch and return the existing record
-      const existing = await query(
+      const existing = await runner.query(
         `SELECT * FROM generated_static_ads 
          WHERE static_ad_job_id = $1 AND image_url = $2 
          LIMIT 1`,
@@ -1469,7 +1559,7 @@ export const createGeneratedStaticAd = async (data: {
   
   // Fallback: Use WHERE NOT EXISTS (atomic but works without unique index)
   // This handles cases where the index doesn't exist or couldn't be created
-  const result = await query(
+  const result = await runner.query(
     `INSERT INTO generated_static_ads 
      (static_ad_job_id, original_job_id, image_url, angle_index, variation_number, angle_name, status)
      SELECT $1, $2, $3, $4, $5, $6, $7
@@ -1496,7 +1586,7 @@ export const createGeneratedStaticAd = async (data: {
   
   // If no row returned, the image already exists (WHERE NOT EXISTS prevented insert)
   // Fetch and return the existing record
-  const existing = await query(
+  const existing = await runner.query(
     `SELECT * FROM generated_static_ads 
      WHERE static_ad_job_id = $1 AND image_url = $2 
      LIMIT 1`,
@@ -1513,122 +1603,37 @@ export const createGeneratedStaticAd = async (data: {
 
 export const updateGeneratedStaticAdStatus = async (
   id: string,
-  status: string
+  status: string,
+  client?: any
 ): Promise<void> => {
-  await ensureStaticAdsTables()
-  await query(
+  const runner = client || { query };
+  await ensureStaticAdsTables(client)
+  await runner.query(
     'UPDATE generated_static_ads SET status = $2, updated_at = NOW() WHERE id = $1',
     [id, status]
   )
 }
 
 export const getGeneratedStaticAds = async (
-  staticAdJobId: string
+  staticAdJobId: string,
+  client?: any
 ): Promise<GeneratedStaticAd[]> => {
-  await ensureStaticAdsTables()
-  const result = await query(
+  const runner = client || { query };
+  await ensureStaticAdsTables(client)
+  const result = await runner.query(
     'SELECT * FROM generated_static_ads WHERE static_ad_job_id = $1 ORDER BY angle_index, variation_number',
     [staticAdJobId]
   )
   return result.rows
 }
 
-// Prompt version queries
-export const getLatestPromptVersion = async (promptName: string) => {
-  const result = await query(`
-    SELECT pv.content, pv.placeholders, pv.version_number, p.name, p.category
-    FROM prompt_versions pv
-    JOIN prompts p ON p.id = pv.prompt_id
-    WHERE p.name = $1
-    ORDER BY pv.version_number DESC
-    LIMIT 1
-  `, [promptName])
-  return result.rows[0]
-}
-
-export function extractPlaceholders(content: string): string[] {
-  const regex = /\{([^}]+)\}/g
-  const matches = content.matchAll(regex)
-  const placeholders = Array.from(matches, m => m[1])
-  return [...new Set(placeholders)]
-}
-
-export function validatePlaceholders(content: string, requiredParams: string[]): {
-  valid: boolean
-  found: string[]
-  missing: string[]
-  extra: string[]
-} {
-  const found = extractPlaceholders(content)
-  const missing = requiredParams.filter(p => !found.includes(p))
-  const extra = found.filter(p => !requiredParams.includes(p))
-  return { valid: missing.length === 0, found, missing, extra }
-}
-
-export const getAllPrompts = async (category?: string) => {
-  let sql = `
-    SELECT p.*, pv.version_number as latest_version_number, pv.content as latest_content
-    FROM prompts p
-    LEFT JOIN LATERAL (
-      SELECT version_number, content
-      FROM prompt_versions
-      WHERE prompt_id = p.id
-      ORDER BY version_number DESC
-      LIMIT 1
-    ) pv ON true
-  `
-  const params: string[] = []
-  if (category) {
-    sql += ' WHERE p.category = $1'
-    params.push(category)
-  }
-  sql += ' ORDER BY p.category, p.name'
-  const result = await query(sql, params)
-  return result.rows
-}
-
-export const getPromptById = async (id: string) => {
-  const result = await query('SELECT * FROM prompts WHERE id = $1', [id])
-  return result.rows[0] || null
-}
-
-export const getPromptVersions = async (promptId: string) => {
-  const result = await query(
-    'SELECT * FROM prompt_versions WHERE prompt_id = $1 ORDER BY version_number DESC',
-    [promptId]
-  )
-  return result.rows
-}
-
-export const createPromptVersion = async (
-  promptId: string,
-  content: string,
-  createdBy: string,
-  notes?: string
-) => {
-  const maxResult = await query(
-    'SELECT COALESCE(MAX(version_number), 0) as max_version FROM prompt_versions WHERE prompt_id = $1',
-    [promptId]
-  )
-  const nextVersion = parseInt(maxResult.rows[0].max_version) + 1
-  const placeholders = extractPlaceholders(content)
-
-  const result = await query(
-    `INSERT INTO prompt_versions (prompt_id, version_number, content, placeholders, created_by, notes)
-     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-    [promptId, nextVersion, content, JSON.stringify(placeholders), createdBy, notes || null]
-  )
-
-  await query('UPDATE prompts SET updated_at = NOW() WHERE id = $1', [promptId])
-
-  return result.rows[0]
-}
-
 export const getGeneratedStaticAdsByOriginalJob = async (
-  originalJobId: string
+  originalJobId: string,
+  client?: any
 ): Promise<GeneratedStaticAd[]> => {
-  await ensureStaticAdsTables()
-  const result = await query(
+  const runner = client || { query };
+  await ensureStaticAdsTables(client)
+  const result = await runner.query(
     `SELECT gsa.* FROM generated_static_ads gsa
      INNER JOIN static_ad_jobs saj ON gsa.static_ad_job_id = saj.id
      WHERE saj.original_job_id = $1
@@ -1636,4 +1641,733 @@ export const getGeneratedStaticAdsByOriginalJob = async (
     [originalJobId]
   )
   return result.rows
+}
+
+// ==================== STRIPE / BILLING QUERIES ====================
+
+export interface DbCustomer {
+  id: string
+  organization_id: string
+  stripe_customer_id: string
+  email: string
+  created_at: string
+}
+
+export interface DbSubscription {
+  id: string
+  organization_id: string
+  stripe_subscription_id: string
+  stripe_customer_id: string
+  plan_id: string
+  status: string
+  current_period_end: string
+  last_event_created_at: number
+  created_at: string
+  updated_at: string
+}
+
+export interface DbWebhookLog {
+  id: string
+  stripe_event_id: string
+  event_type: string
+  payload: any
+  status: 'pending' | 'processed' | 'failed'
+  error_message: string | null
+  created_at: string
+}
+
+/**
+ * Creates or updates a customer record
+ */
+export const upsertCustomer = async (data: {
+  organization_id: string
+  stripe_customer_id: string
+  email: string
+}, client?: any): Promise<DbCustomer> => {
+  const runner = client || { query };
+  const result = await runner.query(
+    `INSERT INTO customers (organization_id, stripe_customer_id, email)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (stripe_customer_id) 
+     DO UPDATE SET 
+       email = CASE 
+         WHEN EXCLUDED.email != '' THEN EXCLUDED.email 
+         ELSE customers.email 
+       END
+     RETURNING *`,
+    [data.organization_id, data.stripe_customer_id, data.email]
+  )
+  return result.rows[0];
+}
+
+/**
+ * Logs a webhook event to the database
+ */
+export const logWebhookEvent = async (data: {
+  stripe_event_id: string
+  event_type: string
+  payload: any
+}, client?: any): Promise<DbWebhookLog> => {
+  const runner = client || { query };
+  const result = await runner.query(
+    `INSERT INTO stripe_webhook_logs (stripe_event_id, event_type, payload)
+     VALUES ($1, $2, $3)
+     RETURNING *`,
+    [data.stripe_event_id, data.event_type, JSON.stringify(data.payload)]
+  )
+  return result.rows[0];
+}
+
+/**
+ * Updates the status of a logged webhook event
+ */
+export const updateWebhookLogStatus = async (
+  stripeEventId: string, 
+  status: 'processed' | 'failed', 
+  errorMessage?: string,
+  client?: any
+): Promise<void> => {
+  const runner = client || { query };
+  await runner.query(
+    `UPDATE stripe_webhook_logs 
+     SET status = $2, error_message = $3 
+     WHERE stripe_event_id = $1`,
+    [stripeEventId, status, errorMessage || null]
+  )
+}
+
+/**
+ * Updates an organization's subscription
+ */
+export const updateSubscription = async (data: {
+  stripe_subscription_id: string
+  stripe_customer_id: string
+  plan_id?: string
+  status?: string
+  current_period_end: Date
+  last_event_created_at: number
+  organization_id?: string
+}, client?: any): Promise<DbSubscription> => {
+  const runner = client || { query };
+  const result = await runner.query(
+    `INSERT INTO subscriptions (organization_id, stripe_subscription_id, stripe_customer_id, plan_id, status, current_period_end, last_event_created_at)
+     VALUES (
+       COALESCE($1, (SELECT organization_id FROM customers WHERE stripe_customer_id = $3)),
+       $2, $3, 
+       COALESCE($4, 'free'), 
+       COALESCE($5, 'active'), 
+       $6, $7
+     )
+     ON CONFLICT (stripe_subscription_id) 
+     DO UPDATE SET 
+       status = COALESCE($5, subscriptions.status),
+       plan_id = COALESCE($4, subscriptions.plan_id),
+       current_period_end = EXCLUDED.current_period_end,
+       last_event_created_at = EXCLUDED.last_event_created_at,
+       updated_at = NOW()
+     RETURNING *`,
+    [
+      data.organization_id || null,
+      data.stripe_subscription_id,
+      data.stripe_customer_id,
+      data.plan_id || null,
+      data.status || null,
+      data.current_period_end,
+      data.last_event_created_at
+    ]
+  )
+  
+  const subscription = result.rows[0]
+  
+  // If plan changed, update organization usage limits
+  if (subscription && subscription.organization_id) {
+    const limits = {
+      starter: { deep: 10, pre: 10, static: 10 },
+      business: { deep: 50, pre: 50, static: 50 },
+      'scale-up': { deep: 200, pre: 200, static: 200 }
+    }[subscription.plan_id as 'starter' | 'business' | 'scale-up'] || { deep: 3, pre: 30, static: 30 }
+
+    await setOrganizationUsageLimits(subscription.organization_id, {
+      deep_research_limit: limits.deep,
+      pre_lander_limit: limits.pre,
+      static_ads_limit: limits.static
+    }, client)
+  }
+  
+  return subscription
+}
+
+/**
+ * Fetches subscription by Stripe ID with a row-level lock
+ */
+export const getSubscriptionByStripeIdForUpdate = async (stripeSubscriptionId: string, client: any): Promise<DbSubscription | null> => {
+  const result = await client.query(
+    'SELECT * FROM subscriptions WHERE stripe_subscription_id = $1 FOR UPDATE',
+    [stripeSubscriptionId]
+  )
+  return result.rows[0] || null
+}
+
+/**
+ * Fetches subscription by Stripe ID
+ */
+export const getSubscriptionByStripeId = async (stripeSubscriptionId: string): Promise<DbSubscription | null> => {
+  const result = await query(
+    'SELECT * FROM subscriptions WHERE stripe_subscription_id = $1',
+    [stripeSubscriptionId]
+  )
+  return result.rows[0] || null
+}
+
+/**
+ * Fetches the active subscription for an organization.
+ * Prefers active/past_due so we return the current subscription when an org has multiple rows (e.g. canceled then resubscribed).
+ */
+export const getSubscriptionByOrganizationId = async (organizationId: string): Promise<DbSubscription | null> => {
+  const result = await query(
+    `SELECT * FROM subscriptions
+     WHERE organization_id = $1 AND status IN ('active', 'past_due')
+     ORDER BY current_period_end DESC NULLS LAST
+     LIMIT 1`,
+    [organizationId]
+  )
+  return result.rows[0] || null
+}
+
+/**
+ * Fetches customer info by org ID
+ */
+export const getCustomerByOrganizationId = async (organizationId: string): Promise<DbCustomer | null> => {
+  const result = await query(
+    'SELECT * FROM customers WHERE organization_id = $1',
+    [organizationId]
+  )
+  return result.rows[0] || null
+}
+
+/**
+ * Resolve organization_id from Stripe customer ID (for invoice webhooks when metadata is missing)
+ */
+export const getOrganizationIdByStripeCustomerId = async (stripeCustomerId: string): Promise<string | null> => {
+  const result = await query(
+    'SELECT organization_id FROM customers WHERE stripe_customer_id = $1 LIMIT 1',
+    [stripeCustomerId]
+  )
+  return result.rows[0]?.organization_id ?? null
+}
+
+// ==================== BILLING INVOICES & NOTIFICATIONS ====================
+
+export interface DbBillingInvoice {
+  id: string
+  organization_id: string
+  stripe_invoice_id: string
+  amount_due: number
+  amount_paid: number | null
+  currency: string
+  status: string
+  period_start: string | null
+  period_end: string | null
+  billing_reason: string | null
+  hosted_invoice_url: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface DbBillingNotification {
+  id: string
+  organization_id: string
+  type: string
+  title: string
+  message: string | null
+  payload: Record<string, unknown> | null
+  read_at: string | null
+  created_at: string
+}
+
+export const upsertBillingInvoice = async (data: {
+  organization_id: string
+  stripe_invoice_id: string
+  amount_due: number
+  amount_paid?: number | null
+  currency: string
+  status: 'upcoming' | 'open' | 'paid' | 'failed'
+  period_start?: Date | null
+  period_end?: Date | null
+  billing_reason?: string | null
+  hosted_invoice_url?: string | null
+}, client?: any): Promise<DbBillingInvoice> => {
+  const runner = client || { query }
+  const result = await runner.query(
+    `INSERT INTO billing_invoices (
+      organization_id, stripe_invoice_id, amount_due, amount_paid, currency,
+      status, period_start, period_end, billing_reason, hosted_invoice_url
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    ON CONFLICT (stripe_invoice_id) DO UPDATE SET
+      amount_due = EXCLUDED.amount_due,
+      amount_paid = COALESCE(EXCLUDED.amount_paid, billing_invoices.amount_paid),
+      currency = EXCLUDED.currency,
+      status = CASE WHEN billing_invoices.status = 'paid' THEN 'paid' ELSE EXCLUDED.status END,
+      period_start = COALESCE(EXCLUDED.period_start, billing_invoices.period_start),
+      period_end = COALESCE(EXCLUDED.period_end, billing_invoices.period_end),
+      billing_reason = COALESCE(EXCLUDED.billing_reason, billing_invoices.billing_reason),
+      hosted_invoice_url = COALESCE(EXCLUDED.hosted_invoice_url, billing_invoices.hosted_invoice_url),
+      updated_at = NOW()
+    RETURNING *`,
+    [
+      data.organization_id,
+      data.stripe_invoice_id,
+      data.amount_due,
+      data.amount_paid ?? null,
+      data.currency,
+      data.status,
+      data.period_start ?? null,
+      data.period_end ?? null,
+      data.billing_reason ?? null,
+      data.hosted_invoice_url ?? null,
+    ]
+  )
+  return result.rows[0]
+}
+
+export const getBillingInvoicesByOrganizationId = async (
+  organizationId: string,
+  options: { status?: string[]; limit?: number; offset?: number } = {}
+): Promise<DbBillingInvoice[]> => {
+  const { status: statuses, limit = 50, offset = 0 } = options
+  let sql = 'SELECT * FROM billing_invoices WHERE organization_id = $1'
+  const params: unknown[] = [organizationId]
+  if (statuses && statuses.length > 0) {
+    sql += ` AND status = ANY($${params.length + 1})`
+    params.push(statuses)
+  }
+  sql += ' ORDER BY COALESCE(period_end, created_at) DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2)
+  params.push(limit, offset)
+  const result = await query(sql, params)
+  return result.rows
+}
+
+export const getUpcomingInvoiceByOrganizationId = async (organizationId: string): Promise<DbBillingInvoice | null> => {
+  const result = await query(
+    `SELECT * FROM billing_invoices
+     WHERE organization_id = $1 AND status = $2
+     ORDER BY period_end DESC NULLS LAST
+     LIMIT 1`,
+    [organizationId, 'upcoming']
+  )
+  return result.rows[0] || null
+}
+
+/**
+ * Returns the current open (unpaid) invoice for the organization, if any.
+ * Used to show "Payment due" and Pay Now in the billing UI.
+ */
+export const getOpenInvoiceByOrganizationId = async (organizationId: string): Promise<DbBillingInvoice | null> => {
+  const result = await query(
+    `SELECT * FROM billing_invoices
+     WHERE organization_id = $1 AND status = $2 AND amount_due > 0
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [organizationId, 'open']
+  )
+  return result.rows[0] || null
+}
+
+export const insertBillingNotification = async (data: {
+  organization_id: string
+  type: 'upcoming_invoice' | 'payment_success' | 'payment_failed'
+  title: string
+  message?: string | null
+  payload?: Record<string, unknown> | null
+}, client?: any): Promise<DbBillingNotification> => {
+  const runner = client || { query }
+  const result = await runner.query(
+    `INSERT INTO billing_notifications (organization_id, type, title, message, payload)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+    [
+      data.organization_id,
+      data.type,
+      data.title,
+      data.message ?? null,
+      data.payload ? JSON.stringify(data.payload) : null,
+    ]
+  )
+  return result.rows[0]
+}
+
+export const getUnreadBillingNotificationsByOrganizationId = async (
+  organizationId: string,
+  limit = 20
+): Promise<DbBillingNotification[]> => {
+  const result = await query(
+    `SELECT * FROM billing_notifications
+     WHERE organization_id = $1 AND read_at IS NULL
+     ORDER BY created_at DESC
+     LIMIT $2`,
+    [organizationId, limit]
+  )
+  return result.rows.map((row: Record<string, unknown> & { payload?: string | null }) => ({
+    ...row,
+    payload: row.payload != null ? (typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload) : null,
+  })) as DbBillingNotification[]
+}
+
+export const getBillingNotificationById = async (id: string): Promise<DbBillingNotification | null> => {
+  const result = await query('SELECT * FROM billing_notifications WHERE id = $1', [id])
+  const row = result.rows[0]
+  if (!row) return null
+  return {
+    ...row,
+    payload: row.payload != null ? (typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload) : null,
+  }
+}
+
+export const markBillingNotificationRead = async (notificationId: string, client?: any): Promise<void> => {
+  const runner = client || { query }
+  await runner.query('UPDATE billing_notifications SET read_at = NOW() WHERE id = $1', [notificationId])
+}
+
+export const hasUnpaidFailedInvoice = async (organizationId: string): Promise<boolean> => {
+  const result = await query(
+    `SELECT 1 FROM billing_invoices
+     WHERE organization_id = $1 AND status = $2
+     LIMIT 1`,
+    [organizationId, 'failed']
+  )
+  return result.rows.length > 0
+}
+
+// ==================== USAGE TRACKING FOR BILLING ====================
+
+/**
+ * Gets used credits for the current billing period (single source: job_credit_events)
+ */
+export const getMonthlyUsedCredits = async (userId: string): Promise<number> => {
+  const userResult = await query(
+    'SELECT organization_id FROM organization_members WHERE user_id = $1 AND status = $2 LIMIT 1',
+    [userId, 'approved']
+  )
+  if (userResult.rows.length === 0) return 0
+  const organizationId = userResult.rows[0].organization_id
+  const period = await getCurrentBillingPeriodForOrganization(organizationId)
+  return getUsedCreditsInPeriod(organizationId, period.start)
+}
+
+/**
+ * Gets plan credits for an organization (from subscription plan or free tier)
+ */
+export const getPlanCredits = async (organizationId: string): Promise<number> => {
+  const { getJobCreditLimitByPlanId } = await import('@/lib/constants/job-credits')
+  const subResult = await query(
+    'SELECT plan_id FROM subscriptions WHERE organization_id = $1 AND status IN ($2, $3) LIMIT 1',
+    [organizationId, 'active', 'past_due']
+  )
+  if (subResult.rows.length > 0 && subResult.rows[0].plan_id) {
+    return getJobCreditLimitByPlanId(subResult.rows[0].plan_id)
+  }
+  const limitResult = await query(
+    'SELECT job_credits_limit FROM organization_usage_limits WHERE organization_id = $1',
+    [organizationId]
+  )
+  if (limitResult.rows.length > 0 && limitResult.rows[0].job_credits_limit !== null) {
+    return parseInt(limitResult.rows[0].job_credits_limit)
+  }
+  return getJobCreditLimitByPlanId('free')
+}
+
+/**
+ * Gets admin bonus credits for an organization
+ */
+export const getAdminBonusCredits = async (organizationId: string): Promise<number> => {
+  const result = await query(
+    'SELECT COALESCE(admin_bonus_credits, 0)::integer AS bonus FROM organizations WHERE id = $1',
+    [organizationId]
+  )
+  return parseInt(result.rows[0]?.bonus) || 0
+}
+
+/**
+ * Gets total available credits (plan + admin bonus) for an organization
+ */
+export const getTotalAvailableCredits = async (organizationId: string): Promise<number> => {
+  const [planCredits, adminBonusCredits] = await Promise.all([
+    getPlanCredits(organizationId),
+    getAdminBonusCredits(organizationId)
+  ])
+  return planCredits + adminBonusCredits
+}
+
+/**
+ * Gets remaining credits for an organization (total available - used in current period)
+ */
+export const getRemainingCredits = async (organizationId: string): Promise<number> => {
+  const [totalAvailable, period] = await Promise.all([
+    getTotalAvailableCredits(organizationId),
+    getCurrentBillingPeriodForOrganization(organizationId)
+  ])
+  const usedCredits = await getUsedCreditsInPeriod(organizationId, period.start)
+  return totalAvailable - usedCredits
+}
+
+/**
+ * Gets organization job credit limit (paid = plan constant, free = organization_usage_limits)
+ * @deprecated Use getTotalAvailableCredits instead for new logic
+ */
+export const getOrganizationJobCreditLimit = async (userId: string): Promise<number> => {
+  const { getJobCreditLimitByPlanId } = await import('@/lib/constants/job-credits')
+  const userResult = await query(
+    'SELECT organization_id FROM organization_members WHERE user_id = $1 AND status = $2 LIMIT 1',
+    [userId, 'approved']
+  )
+  if (userResult.rows.length === 0) return getJobCreditLimitByPlanId('free')
+  const organizationId = userResult.rows[0].organization_id
+  return await getPlanCredits(organizationId)
+}
+
+/**
+ * Gets job credit limit for an organization (for billing status; paid = plan, free = usage_limits)
+ * @deprecated Use getPlanCredits instead for new logic
+ */
+export const getOrganizationJobCreditLimitByOrg = async (organizationId: string): Promise<number> => {
+  return await getPlanCredits(organizationId)
+}
+
+/**
+ * Current billing period for an org (Stripe period for paid, calendar month for free)
+ */
+export const getCurrentBillingPeriodForOrganization = async (organizationId: string): Promise<{ start: Date; end: Date }> => {
+  const subResult = await query(
+    'SELECT current_period_end FROM subscriptions WHERE organization_id = $1 AND status IN ($2, $3) LIMIT 1',
+    [organizationId, 'active', 'past_due']
+  )
+  if (subResult.rows.length > 0 && subResult.rows[0].current_period_end) {
+    const endRaw = subResult.rows[0].current_period_end
+    const end = endRaw instanceof Date ? endRaw : new Date(endRaw)
+    const start = new Date(end)
+    start.setMonth(start.getMonth() - 1)
+    return { start, end }
+  }
+  const now = new Date()
+  const start = new Date(now.getFullYear(), now.getMonth(), 1)
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+  return { start, end }
+}
+
+/**
+ * Sum of credits consumed in a billing period (from job_credit_events)
+ */
+export const getUsedCreditsInPeriod = async (organizationId: string, billingPeriodStart: Date): Promise<number> => {
+  const result = await query(
+    `SELECT COALESCE(SUM(credits), 0)::integer AS total
+     FROM job_credit_events
+     WHERE organization_id = $1 AND billing_period_start = $2`,
+    [organizationId, billingPeriodStart]
+  )
+  return parseInt(result.rows[0]?.total) || 0
+}
+
+/**
+ * Insert one job credit event (idempotent by job_id + stripe_meter_event_identifier)
+ */
+export const insertJobCreditEvent = async (params: {
+  organizationId: string
+  userId: string
+  jobId: string
+  jobType: 'deep_research' | 'pre_lander' | 'static_ads' | 'templates_images'
+  credits: number
+  billingPeriodStart: Date
+  subscriptionId?: string | null
+  isOverage?: boolean
+  stripeMeterEventIdentifier?: string
+}): Promise<void> => {
+  const identifier = params.stripeMeterEventIdentifier ?? 'job_credits_used'
+  await query(
+    `INSERT INTO job_credit_events (
+       user_id, job_id, credits, organization_id, billing_period_start, job_type, is_overage, stripe_meter_event_identifier, status
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
+     ON CONFLICT (job_id, stripe_meter_event_identifier) DO NOTHING`,
+    [
+      params.userId,
+      params.jobId,
+      params.credits,
+      params.organizationId,
+      params.billingPeriodStart,
+      params.jobType,
+      params.isOverage ?? false,
+      identifier,
+    ]
+  )
+}
+
+export const hasActiveSubscription = async (userId: string): Promise<boolean> => {
+  // First get user's organization
+  const userResult = await query(
+    'SELECT organization_id FROM organization_members WHERE user_id = $1 AND status = $2 LIMIT 1',
+    [userId, 'approved']
+  )
+  
+  if (userResult.rows.length === 0) {
+    return false // User not in any organization
+  }
+  
+  const organizationId = userResult.rows[0].organization_id
+  
+  // Check for active subscription
+  const subscriptionResult = await query(
+    'SELECT * FROM subscriptions WHERE organization_id = $1 AND status IN ($2, $3) LIMIT 1',
+    [organizationId, 'active', 'past_due']
+  )
+  
+  return subscriptionResult.rows.length > 0
+}
+
+/**
+ * Update admin bonus credits for an organization
+ */
+export const updateAdminBonusCredits = async (organizationId: string, bonusCredits: number): Promise<number> => {
+  const result = await query(
+    'UPDATE organizations SET admin_bonus_credits = $1 WHERE id = $2 RETURNING admin_bonus_credits',
+    [bonusCredits, organizationId]
+  )
+  return parseInt(result.rows[0]?.admin_bonus_credits) || 0
+}
+
+/**
+ * Gets Stripe customer ID for a user (if they have active subscription)
+ */
+export const getStripeCustomerId = async (userId: string): Promise<string | null> => {
+  // First get user's organization
+  const userResult = await query(
+    'SELECT organization_id FROM organization_members WHERE user_id = $1 AND status = $2 LIMIT 1',
+    [userId, 'approved']
+  )
+  
+  if (userResult.rows.length === 0) {
+    return null
+  }
+  
+  const organizationId = userResult.rows[0].organization_id
+  
+  // Get customer info
+  const customerResult = await query(
+    'SELECT stripe_customer_id FROM customers WHERE organization_id = $1 LIMIT 1',
+    [organizationId]
+  )
+  
+  return customerResult.rows[0]?.stripe_customer_id || null
+}
+
+/**
+ * Gets detailed job credit events for an organization with optional filtering
+ */
+export const getJobCreditEvents = async (
+  organizationId: string, 
+  filters: {
+    limit?: number
+    offset?: number
+    jobType?: UsageType
+    isOverage?: boolean
+    startDate?: Date
+    endDate?: Date
+  } = {}
+): Promise<JobCreditEvent[]> => {
+  let sql = `
+    SELECT jce.*, u.name as user_name, u.email as user_email, j.created_at as job_created_at
+    FROM job_credit_events jce
+    LEFT JOIN jobs j ON jce.job_id::text = j.id::text
+    LEFT JOIN users u ON jce.user_id::text = u.id::text
+    WHERE jce.organization_id = $1
+  `
+  const params: any[] = [organizationId]
+  const conditions: string[] = []
+
+  if (filters.jobType) {
+    conditions.push('jce.job_type = $' + (params.length + 1))
+    params.push(filters.jobType)
+  }
+
+  if (filters.isOverage !== undefined) {
+    conditions.push('jce.is_overage = $' + (params.length + 1))
+    params.push(filters.isOverage)
+  }
+
+  if (filters.startDate) {
+    conditions.push('j.created_at >= $' + (params.length + 1))
+    params.push(filters.startDate)
+  }
+
+  if (filters.endDate) {
+    conditions.push('j.created_at <= $' + (params.length + 1))
+    params.push(filters.endDate)
+  }
+
+  if (conditions.length > 0) {
+    sql += ' AND ' + conditions.join(' AND ')
+  }
+
+  sql += ' ORDER BY j.created_at DESC'
+
+  if (filters.limit) {
+    sql += ' LIMIT $' + (params.length + 1)
+    params.push(filters.limit)
+  }
+
+  if (filters.offset) {
+    sql += ' OFFSET $' + (params.length + 1)
+    params.push(filters.offset)
+  }
+
+  const result = await query(sql, params)
+  console.log('Raw job credit events query result:', result.rows)
+  return result.rows
+}
+
+/**
+ * Gets count of job credit events for pagination
+ */
+export const getJobCreditEventsCount = async (
+  organizationId: string,
+  filters: {
+    jobType?: UsageType
+    isOverage?: boolean
+    startDate?: Date
+    endDate?: Date
+  } = {}
+): Promise<number> => {
+  let sql = `
+    SELECT COUNT(*) as count 
+    FROM job_credit_events jce
+    LEFT JOIN jobs j ON jce.job_id::text = j.id::text
+    WHERE jce.organization_id = $1
+  `
+  const params: any[] = [organizationId]
+  const conditions: string[] = []
+
+  if (filters.jobType) {
+    conditions.push('jce.job_type = $' + (params.length + 1))
+    params.push(filters.jobType)
+  }
+
+  if (filters.isOverage !== undefined) {
+    conditions.push('jce.is_overage = $' + (params.length + 1))
+    params.push(filters.isOverage)
+  }
+
+  if (filters.startDate) {
+    conditions.push('j.created_at >= $' + (params.length + 1))
+    params.push(filters.startDate)
+  }
+
+  if (filters.endDate) {
+    conditions.push('j.created_at <= $' + (params.length + 1))
+    params.push(filters.endDate)
+  }
+
+  if (conditions.length > 0) {
+    sql += ' AND ' + conditions.join(' AND ')
+  }
+
+  const result = await query(sql, params)
+  return parseInt(result.rows[0]?.count) || 0
 }

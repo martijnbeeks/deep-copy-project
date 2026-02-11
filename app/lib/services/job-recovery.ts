@@ -34,7 +34,20 @@ async function checkJobStatus(job: { id: string; execution_id: string; updated_a
       const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
       await storeJobResults(job.id, result, deepCopyJobId)
       await updateJobStatus(job.id, 'completed', 100)
-      
+
+      try {
+        const { query } = await import('@/lib/db/connection')
+        const jobRow = await query('SELECT user_id, is_avatar_job FROM jobs WHERE id = $1', [job.id])
+        if (jobRow.rows[0]) {
+          const { recordJobCreditEvent } = await import('@/lib/services/billing')
+          const { JOB_CREDITS_BY_TYPE } = await import('@/lib/constants/job-credits')
+          const jobType = jobRow.rows[0].is_avatar_job ? 'deep_research' : 'pre_lander'
+          await recordJobCreditEvent({ userId: jobRow.rows[0].user_id, jobId: job.id, jobType, credits: JOB_CREDITS_BY_TYPE[jobType] })
+        }
+      } catch (creditErr) {
+        // don't fail recovery
+      }
+
     } else if (statusResponse.status === 'FAILED') {
       // Job failed
       await updateJobStatus(job.id, 'failed')

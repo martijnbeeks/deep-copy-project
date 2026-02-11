@@ -107,13 +107,15 @@ export interface OrganizationMember {
   updated_at: string
 }
 
-export type UsageType = 'deep_research' | 'pre_lander' | 'static_ads'
+export type UsageType = 'deep_research' | 'pre_lander' | 'static_ads' | 'templates_images'
 
 export interface OrganizationUsageLimits {
   organization_id: string
   deep_research_limit: number
   pre_lander_limit: number
   static_ads_limit: number
+  templates_images_limit: number
+  job_credits_limit?: number | null
   created_at: string
   updated_at: string
 }
@@ -126,4 +128,24 @@ export interface OrganizationUsageTracking {
   count: number
   created_at: string
   updated_at: string
+}
+
+export interface JobCreditEvent {
+  id: string
+  user_id: string
+  job_id: string
+  credits: number
+  organization_id?: string | null
+  billing_period_start?: string | null
+  job_type?: UsageType | null
+  is_overage: boolean
+  stripe_meter_event_identifier?: string | null
+  status: 'pending' | 'processed' | 'failed'
+  created_at: string
+  updated_at?: string | null
+  // Joined fields from queries
+  job_title?: string | null
+  user_name?: string | null
+  user_email?: string | null
+  job_created_at?: string | null
 }

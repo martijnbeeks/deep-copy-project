@@ -52,7 +52,12 @@ function SalesPagePreviewComponent({ url, jobId, className = "" }: SalesPagePrev
         if (response.ok) {
           const data = await response.json()
           if (data.screenshot) {
-            setScreenshot(`data:image/png;base64,${data.screenshot}`)
+            // Check if screenshot is already a URL or needs base64 prefix
+            if (data.screenshot.startsWith('http')) {
+              setScreenshot(data.screenshot)
+            } else {
+              setScreenshot(`data:image/png;base64,${data.screenshot}`)
+            }
           }
         }
       } catch (error) {
@@ -97,13 +102,12 @@ function SalesPagePreviewComponent({ url, jobId, className = "" }: SalesPagePrev
         {screenshot ? (
           <div className="relative w-full h-full overflow-hidden">
             <Image
-              src={screenshot}
-              alt={`Preview of ${domain}`}
-              fill
-              className="object-cover transition-transform duration-300 group-hover:scale-110"
-              unoptimized
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-            />
+            src={screenshot}
+            alt={`Preview of ${domain}`}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-110"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+          />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors pointer-events-none" />
 
             {/* URL Badge - Bottom Right Corner */}

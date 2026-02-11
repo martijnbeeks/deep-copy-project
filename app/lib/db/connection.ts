@@ -85,3 +85,24 @@ export const query = async (text: string, params?: any[]) => {
 
   throw lastError
 }
+
+/**
+ * Execute a block of code within a database transaction.
+ * Automatically handles client checkout, BEGIN, COMMIT, and ROLLBACK.
+ */
+export const withTransaction = async <T>(
+  callback: (client: any) => Promise<T>
+): Promise<T> => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await callback(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};

@@ -15,13 +15,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UsageLimitDialog } from "@/components/ui/usage-limit-dialog";
 import { useAuthStore } from "@/stores/auth-store";
+import { isV2Job } from "@/lib/utils/v2-data-transformer";
+import { AvatarSelectorV2 } from "./avatar-selector-v2";
+import { AngleSelectorV2 } from "./angle-selector-v2";
+import { JOB_CREDITS_BY_TYPE } from "@/lib/constants/job-credits";
 
 
 interface GenerateStaticAdsProps {
-  originalJobId: string;
+  originalJobId?: string;
   marketingAngles: any[];
   selectedAvatar: any; // Currently selected avatar from results page
   foundationalDocText?: string; // Deep research output
+  isV2?: boolean; // Whether this is a V2 job
   onClose?: () => void;
 }
 
@@ -43,23 +48,59 @@ interface GeneratedImage {
   staticAdJobId?: string;
 }
 
+// Helper function to parse angle data
+function parseAngle(angle: any) {
+  let angleTitle = "";
+  let angleDescription = "";
+  let angleString = "";
+
+  if (typeof angle === "string") {
+    // Handle string format "Title: Description"
+    if (angle.includes(": ")) {
+      const parts = angle.split(": ");
+      angleTitle = parts[0];
+      angleDescription = parts.slice(1).join(": ");
+      angleString = angle;
+    } else {
+      angleTitle = angle;
+      angleString = angle;
+    }
+  } else if (typeof angle === "object" && angle !== null) {
+    // Handle object format
+    angleTitle = angle.angle_title || angle.title || "";
+    angleDescription = angle.angle_subtitle || angle.angle || angle.description || "";
+
+    // Construct standardized angle string
+    if (angleTitle && angleDescription) {
+      angleString = `${angleTitle}: ${angleDescription}`;
+    } else {
+      angleString = angleTitle || angleDescription || "";
+    }
+  }
+
+  return { angleTitle, angleDescription, angleString };
+}
+
 export function GenerateStaticAds({
   originalJobId,
   marketingAngles,
   selectedAvatar,
   foundationalDocText,
+  isV2: isV2Prop,
   onClose,
 }: GenerateStaticAdsProps) {
-  const [step, setStep] = useState<1 | 2 | 3>(1); // 1 = angles, 2 = images, 3 = product image
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1); // 1 = avatar, 2 = angles, 3 = images, 4 = product image
+  const [selectedAvatarIndex, setSelectedAvatarIndex] = useState<number | null>(null);
   const [selectedAngles, setSelectedAngles] = useState<Set<string>>(new Set());
   const [selectedImageIds, setSelectedImageIds] = useState<Set<string>>(new Set());
+  const [uploadedImages, setUploadedImages] = useState<{ file: File; preview: string; id: string }[]>([]);
   const [productImage, setProductImage] = useState<File | null>(null);
   const [imageLibrary, setImageLibrary] = useState<ImageLibraryItem[]>([]);
   const [loadingLibrary, setLoadingLibrary] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [staticAdJobId, setStaticAdJobId] = useState<string | null>(null);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
-  const [jobStatus, setJobStatus] = useState<string>("pending");
+  const [jobStatus, setJobStatus] = useState<string>("completed");
   const [jobProgress, setJobProgress] = useState<number>(0);
   const [currentStep, setCurrentStep] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -73,14 +114,15 @@ export function GenerateStaticAds({
   const [generatingCounts, setGeneratingCounts] = useState<Map<string, number>>(new Map());
   // Angle filter state (similar to prelanders)
   const [selectedAngleFilter, setSelectedAngleFilter] = useState<string>("all");
-  
+
   const imageLibraryScrollRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef<number>(0);
   const [sortBy, setSortBy] = useState<"latest" | "oldest" | "angle">("latest");
 
   // Ref for file input to control it properly
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+  const uploadFileInputRef = useRef<HTMLInputElement>(null);
+
   // Credit/Usage limit state
   const [credits, setCredits] = useState<{
     currentUsage: number;
@@ -93,14 +135,24 @@ export function GenerateStaticAds({
   const { toast } = useToast();
   const { user } = useAuthStore();
 
-  const maxImages = selectedAngles.size * 2;
+  // V2 job detection - use prop if provided, otherwise check avatar
+  const isV2 = useMemo(() => {
+    if (isV2Prop !== undefined) return isV2Prop;
+    // Fallback to checking avatar
+    const avatarToCheck = selectedAvatar ? [selectedAvatar] : [];
+    return avatarToCheck.length > 0 && isV2Job(avatarToCheck);
+  }, [isV2Prop, selectedAvatar]);
+
+  // Calculate max images: 2 per selected angle, minimum 2
+  const maxImages = Math.max(selectedAngles.size * 2, 2);
+  const totalSelectedImages = selectedImageIds.size + uploadedImages.length;
 
   // Helper function to download image
   const downloadImage = async (imageUrl: string, filename: string) => {
     try {
       // Check if it's a Cloudflare CDN URL (imagedelivery.net)
       const isCloudflareUrl = imageUrl.includes('imagedelivery.net') || imageUrl.includes('cloudflare')
-      
+
       // For Cloudflare URLs, try fetching with proper CORS settings
       // Cloudflare Images should support CORS, but we need to ensure proper headers
       const fetchOptions: RequestInit = {
@@ -109,20 +161,20 @@ export function GenerateStaticAds({
         cache: 'no-cache',
         credentials: 'omit', // Don't send credentials for public images
       }
-      
+
       const response = await fetch(imageUrl, fetchOptions);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const blob = await response.blob();
-      
+
       // Validate that we got an image blob
       if (!blob.type.startsWith('image/')) {
         throw new Error('Response is not an image');
       }
-      
+
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
@@ -130,22 +182,22 @@ export function GenerateStaticAds({
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
-      
+
       // Clean up after a short delay
       setTimeout(() => {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(blobUrl);
       }, 100);
-      
+
     } catch (error: any) {
       logger.error("Error downloading image:", error);
-      
+
       // For Cloudflare URLs, try alternative method: create an img element and download via canvas
       if (imageUrl.includes('imagedelivery.net') || imageUrl.includes('cloudflare')) {
         try {
           const img = new Image();
           img.crossOrigin = 'anonymous'; // Enable CORS for image
-          
+
           img.onload = () => {
             try {
               const canvas = document.createElement('canvas');
@@ -175,7 +227,7 @@ export function GenerateStaticAds({
               window.open(imageUrl, '_blank');
             }
           };
-          
+
           img.onerror = () => {
             toast({
               title: "Download Failed",
@@ -184,14 +236,14 @@ export function GenerateStaticAds({
             });
             window.open(imageUrl, '_blank');
           };
-          
+
           img.src = imageUrl;
           return; // Exit early, download will happen in onload
         } catch (imgError) {
           logger.error("Image element download failed:", imgError);
         }
       }
-      
+
       // Final fallback: open in new tab
       toast({
         title: "Download Failed",
@@ -208,7 +260,8 @@ export function GenerateStaticAds({
       if (currentAvatar) return;
 
       try {
-        const jobData = await internalApiClient.getJob(originalJobId);
+        if (!originalJobId) return;
+        const jobData = await internalApiClient.getJob(originalJobId) as any;
         if (jobData) {
           let avatars = jobData.avatars;
           if (typeof avatars === 'string') {
@@ -219,7 +272,7 @@ export function GenerateStaticAds({
               avatars = [];
             }
           }
-          
+
           if (Array.isArray(avatars) && avatars.length > 0) {
             setCurrentAvatar(avatars[0]);
           }
@@ -243,43 +296,47 @@ export function GenerateStaticAds({
     const loadPreviousImages = async () => {
       setIsLoadingPrevious(true);
       try {
-        const data = await internalApiClient.getStaticAdsByOriginalJob(originalJobId);
-        
+        if (!originalJobId) {
+          setIsLoadingPrevious(false);
+          return;
+        }
+        const data = await internalApiClient.getStaticAdsByOriginalJob(originalJobId) as any;
+
         if (data.generatedImages && data.generatedImages.length > 0) {
           setGeneratedImages(data.generatedImages);
         }
-        
+
         // Find the most recent job
         const allJobs = data.jobs || [];
-        const mostRecentJob = allJobs.length > 0 
-          ? allJobs.sort((a: any, b: any) => 
-              new Date(b.createdAt || b.updatedAt || 0).getTime() - 
-              new Date(a.createdAt || a.updatedAt || 0).getTime()
-            )[0]
+        const mostRecentJob = allJobs.length > 0
+          ? allJobs.sort((a: any, b: any) =>
+            new Date(b.createdAt || b.updatedAt || 0).getTime() -
+            new Date(a.createdAt || a.updatedAt || 0).getTime()
+          )[0]
           : null;
-        
+
         if (mostRecentJob) {
           const status = (mostRecentJob.status || "").toLowerCase();
-          const isActive = status !== "completed" && 
-                          status !== "succeeded" && 
-                          status !== "complete" && 
-                          status !== "failed" &&
-                          status !== "failure" &&
-                          status !== "error";
-          
+          const isActive = status !== "completed" &&
+            status !== "succeeded" &&
+            status !== "complete" &&
+            status !== "failed" &&
+            status !== "failure" &&
+            status !== "error";
+
           const normalizedJobStatus = (mostRecentJob.status || "pending").toLowerCase();
-          const finalJobStatus = normalizedJobStatus === "completed" || normalizedJobStatus === "succeeded" || normalizedJobStatus === "complete" 
-            ? "completed" 
+          const finalJobStatus = normalizedJobStatus === "completed" || normalizedJobStatus === "succeeded" || normalizedJobStatus === "complete"
+            ? "completed"
             : normalizedJobStatus === "failed" || normalizedJobStatus === "failure" || normalizedJobStatus === "error"
-            ? "failed"
-            : normalizedJobStatus === "processing" || normalizedJobStatus === "running" || normalizedJobStatus === "in_progress"
-            ? "processing"
-            : "pending";
-          
+              ? "failed"
+              : normalizedJobStatus === "processing" || normalizedJobStatus === "running" || normalizedJobStatus === "in_progress"
+                ? "processing"
+                : "pending";
+
           setStaticAdJobId(mostRecentJob.id);
           setJobStatus(finalJobStatus);
           setJobProgress(mostRecentJob.progress || 0);
-          
+
           // Restore generatingAngles and counts from job's selected_angles if job is active
           if (isActive && mostRecentJob.selectedAngles && Array.isArray(mostRecentJob.selectedAngles)) {
             setGeneratingAngles(new Set(mostRecentJob.selectedAngles));
@@ -292,7 +349,7 @@ export function GenerateStaticAds({
           }
         } else {
           setStaticAdJobId(null);
-          setJobStatus("pending");
+          setJobStatus("completed");
           setJobProgress(0);
         }
       } catch (error) {
@@ -309,7 +366,7 @@ export function GenerateStaticAds({
   useEffect(() => {
     const fetchCredits = async () => {
       if (!user) return;
-      
+
       setIsLoadingCredits(true);
       try {
         const response = await fetch(`/api/usage/check?type=static_ads`, {
@@ -352,7 +409,7 @@ export function GenerateStaticAds({
   useEffect(() => {
     const refreshCredits = async () => {
       if (!user || jobStatus !== "completed") return;
-      
+
       try {
         const response = await fetch(`/api/usage/check?type=static_ads`, {
           method: 'GET',
@@ -386,7 +443,7 @@ export function GenerateStaticAds({
       setLoadingLibrary(true);
       try {
         const data = await internalApiClient.getImageLibrary();
-        setImageLibrary(data.images || []);
+        setImageLibrary((data as any).images || data || []);
       } catch (error) {
         logger.error("Error loading image library:", error);
         toast({
@@ -407,7 +464,7 @@ export function GenerateStaticAds({
   // Polling logic - works in background, not just in modal
   useEffect(() => {
     const normalizedStatus = (jobStatus || "").toLowerCase();
-    
+
     // CRITICAL: Don't poll if no job ID is set - this prevents polling old jobs
     if (!staticAdJobId) {
       if (pollingIntervalRef.current) {
@@ -420,7 +477,7 @@ export function GenerateStaticAds({
       }
       return;
     }
-    
+
     if (normalizedStatus === "completed" || normalizedStatus === "succeeded" || normalizedStatus === "complete" || normalizedStatus === "failed") {
       if (pollingInterval) {
         clearInterval(pollingInterval);
@@ -431,22 +488,22 @@ export function GenerateStaticAds({
 
     const poll = async () => {
       try {
-        const data = await internalApiClient.getStaticAdStatus(staticAdJobId);
-        
+        const data = await internalApiClient.getStaticAdStatus(staticAdJobId) as any;
+
         const normalizedStatus = (data.status || "pending").toLowerCase();
-        const finalStatus = normalizedStatus === "completed" || normalizedStatus === "succeeded" || normalizedStatus === "complete" 
-          ? "completed" 
+        const finalStatus = normalizedStatus === "completed" || normalizedStatus === "succeeded" || normalizedStatus === "complete"
+          ? "completed"
           : normalizedStatus === "failed" || normalizedStatus === "failure" || normalizedStatus === "error"
-          ? "failed"
-          : normalizedStatus === "processing" || normalizedStatus === "running" || normalizedStatus === "in_progress"
-          ? "processing"
-          : "pending";
-        
+            ? "failed"
+            : normalizedStatus === "processing" || normalizedStatus === "running" || normalizedStatus === "in_progress"
+              ? "processing"
+              : "pending";
+
         setJobStatus(finalStatus);
         setJobProgress(data.progress || 0);
         setCurrentStep(data.currentStep || "");
         setError(data.error || null);
-        
+
         // Update generated images - merge with existing to avoid duplicates
         if (data.generatedImages && Array.isArray(data.generatedImages)) {
           setGeneratedImages((prevImages) => {
@@ -458,16 +515,16 @@ export function GenerateStaticAds({
                 staticAdJobId: staticAdJobId
               }));
             const merged = [...prevImages, ...newImages];
-            const sorted = merged.sort((a, b) => 
+            const sorted = merged.sort((a, b) =>
               new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
             );
-            
+
             // Update generatingCounts as NEW images arrive - reduce count by 1 for each new image
             // This ensures skeleton loaders decrease as images are generated
             if (newImages.length > 0) {
               setGeneratingCounts((prevCounts) => {
                 const updated = new Map(prevCounts);
-                newImages.forEach((img) => {
+                newImages.forEach((img: any) => {
                   const angleIdx = img.angleIndex || 1;
                   const marketingAngle = marketingAngles[angleIdx - 1];
                   if (marketingAngle) {
@@ -482,7 +539,7 @@ export function GenerateStaticAds({
                 return updated;
               });
             }
-            
+
             // Refresh credits when new images arrive (credits are deducted per image)
             if (newImages.length > 0 && user) {
               // Debounce credit refresh to avoid too many requests
@@ -507,7 +564,7 @@ export function GenerateStaticAds({
                 }
               }, 1000); // Wait 1 second before refreshing to allow backend to process
             }
-            
+
             return sorted;
           });
         }
@@ -520,7 +577,7 @@ export function GenerateStaticAds({
             pollingIntervalRef.current = null;
             setPollingInterval(null);
           }
-          
+
           if (statusLower === "completed" || statusLower === "succeeded" || statusLower === "complete") {
             setJobStatus("completed");
             setJobProgress(100);
@@ -529,9 +586,11 @@ export function GenerateStaticAds({
             setGeneratingCounts(new Map());
             // Reload all images
             try {
-              const previousData = await internalApiClient.getStaticAdsByOriginalJob(originalJobId);
-              if (previousData.generatedImages && previousData.generatedImages.length > 0) {
-                setGeneratedImages(previousData.generatedImages);
+              if (originalJobId) {
+                const previousData = await internalApiClient.getStaticAdsByOriginalJob(originalJobId) as any;
+                if (previousData.generatedImages && previousData.generatedImages.length > 0) {
+                  setGeneratedImages(previousData.generatedImages);
+                }
               }
             } catch (error) {
               logger.error("Error reloading images after completion:", error);
@@ -611,23 +670,91 @@ export function GenerateStaticAds({
     if (imageLibraryScrollRef.current) {
       scrollPositionRef.current = imageLibraryScrollRef.current.scrollTop;
     }
-    
+
     setSelectedImageIds((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(libraryId)) {
         newSet.delete(libraryId);
-      } else if (newSet.size < maxImages) {
+      } else if (totalSelectedImages < maxImages) {
         newSet.add(libraryId);
       } else {
         toast({
           title: "Limit reached",
-          description: `You can select at most ${maxImages} images (${selectedAngles.size} angles × 2)`,
+          description: `You can select at most ${maxImages} images total`,
           variant: "destructive",
         });
       }
       return newSet;
     });
-  }, [maxImages, selectedAngles.size, toast]);
+  }, [totalSelectedImages, maxImages, toast]);
+
+  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+
+    // Validate file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Image must be less than 10MB",
+        variant: "destructive",
+      });
+      if (uploadFileInputRef.current) {
+        uploadFileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload an image file (PNG, JPG, JPEG, WebP)",
+        variant: "destructive",
+      });
+      if (uploadFileInputRef.current) {
+        uploadFileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Check if we can add more images
+    if (totalSelectedImages >= maxImages) {
+      toast({
+        title: "Limit reached",
+        description: `You can select at most ${maxImages} images total`,
+        variant: "destructive",
+      });
+      if (uploadFileInputRef.current) {
+        uploadFileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Create preview URL
+    const preview = URL.createObjectURL(file);
+    const id = `uploaded-${Date.now()}-${Math.random()}`;
+
+    setUploadedImages((prev) => [...prev, { file, preview, id }]);
+
+    // Clear input
+    if (uploadFileInputRef.current) {
+      uploadFileInputRef.current.value = '';
+    }
+  }, [totalSelectedImages, maxImages, toast]);
+
+  const handleRemoveUploadedImage = useCallback((id: string) => {
+    setUploadedImages((prev) => {
+      const imageToRemove = prev.find((img) => img.id === id);
+      if (imageToRemove) {
+        // Revoke preview URL to prevent memory leaks
+        URL.revokeObjectURL(imageToRemove.preview);
+      }
+      return prev.filter((img) => img.id !== id);
+    });
+  }, []);
 
   const handleProductImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -684,7 +811,7 @@ export function GenerateStaticAds({
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (allowOverage: boolean = false) => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -728,7 +855,7 @@ export function GenerateStaticAds({
     }
 
     const avatarToUse = currentAvatar || selectedAvatar;
-    
+
     if (!avatarToUse) {
       toast({
         title: "Error",
@@ -749,13 +876,13 @@ export function GenerateStaticAds({
       clearInterval(pollingInterval);
       setPollingInterval(null);
     }
-    
+
     // Clear old job ID and reset state BEFORE setting new skeletons
     setStaticAdJobId(null);
     setJobStatus("pending");
     setJobProgress(0);
     setError(null);
-    
+
     // Save selected angles before resetting (needed for API call)
     const selectedAnglesArray = Array.from(selectedAngles);
     const selectedImageIdsArray = Array.from(selectedImageIds);
@@ -765,7 +892,7 @@ export function GenerateStaticAds({
     // This ensures skeleton loaders appear right away, before the API call completes
     setJobStatus("processing");
     setJobProgress(0);
-    
+
     // Set skeleton loaders immediately (optimistic UI update)
     selectedAnglesArray.forEach((angle) => {
       setGeneratingAngles(prev => new Set(prev).add(angle));
@@ -788,18 +915,124 @@ export function GenerateStaticAds({
     // Show toast immediately so user knows action was taken
     toast({
       title: "Starting Generation",
-      description: "Static ads generation is being started...",
+      description: uploadedImages.length > 0
+        ? `Uploading ${uploadedImages.length} custom image${uploadedImages.length > 1 ? 's' : ''}...`
+        : "Static ads generation is being started...",
     });
 
+    // Prepare variables that will be needed in error handling
+    const avatarDescription = avatarToUse.description ||
+      `${avatarToUse.persona_name || ""}${avatarToUse.age_range ? `, ${avatarToUse.age_range}` : ""}${avatarToUse.gender ? `, ${avatarToUse.gender}` : ""}`;
+    let productImageUrl: string | null = null;
+    let uploadedImageUrls: string[] = [];
+
     try {
+      // Upload custom images to Cloudflare first
+
+      if (uploadedImages.length > 0) {
+        for (let i = 0; i < uploadedImages.length; i++) {
+          const uploadedImg = uploadedImages[i];
+
+          try {
+            const uploadFormData = new FormData();
+            uploadFormData.append('file', uploadedImg.file);
+
+            const uploadResponse = await fetch('/api/upload-image', {
+              method: 'POST',
+              body: uploadFormData
+            });
+
+            if (!uploadResponse.ok) {
+              const errorData = await uploadResponse.json();
+              throw new Error(errorData.error || 'Failed to upload image');
+            }
+
+            const uploadData = await uploadResponse.json();
+            uploadedImageUrls.push(uploadData.url);
+
+            // Update toast to show progress
+            if (i < uploadedImages.length - 1) {
+              toast({
+                title: "Uploading Images",
+                description: `Uploaded ${i + 1}/${uploadedImages.length} images...`,
+              });
+            }
+          } catch (uploadError: any) {
+            logger.error(`Error uploading custom image ${i + 1}:`, uploadError);
+
+            // Clear skeleton loaders on upload error
+            setGeneratingAngles(new Set());
+            setGeneratingCounts(new Map());
+            setJobStatus("failed");
+
+            toast({
+              title: "Upload Failed",
+              description: uploadError.message || `Failed to upload image ${i + 1}`,
+              variant: "destructive",
+            });
+
+            setIsGenerating(false);
+            return;
+          }
+        }
+
+        // Show success toast after all uploads complete
+        toast({
+          title: "Images Uploaded",
+          description: `${uploadedImageUrls.length} custom image${uploadedImageUrls.length > 1 ? 's' : ''} uploaded successfully`,
+        });
+      }
+
+      // Upload product image to Cloudflare if provided
+      let productImageUrl = null;
+      if (productImageFile) {
+        try {
+          const productUploadFormData = new FormData();
+          productUploadFormData.append('file', productImageFile);
+
+          const productUploadResponse = await fetch('/api/upload-image', {
+            method: 'POST',
+            body: productUploadFormData
+          });
+
+          if (!productUploadResponse.ok) {
+            const errorData = await productUploadResponse.json();
+            throw new Error(errorData.error || 'Failed to upload product image');
+          }
+
+          const productUploadData = await productUploadResponse.json();
+          productImageUrl = productUploadData.url;
+
+          toast({
+            title: "Product Image Uploaded",
+            description: "Product image uploaded successfully",
+          });
+        } catch (uploadError: any) {
+          logger.error('Error uploading product image:', uploadError);
+
+          // Clear skeleton loaders on upload error
+          setGeneratingAngles(new Set());
+          setGeneratingCounts(new Map());
+          setJobStatus("failed");
+
+          toast({
+            title: "Upload Failed",
+            description: uploadError.message || 'Failed to upload product image',
+            variant: "destructive",
+          });
+
+          setIsGenerating(false);
+          return;
+        }
+      }
+
+      // Build FormData payload
       const formData = new FormData();
-      formData.append("original_job_id", originalJobId);
-      
-      const avatarDescription = avatarToUse.description || 
-        `${avatarToUse.persona_name || ""}${avatarToUse.age_range ? `, ${avatarToUse.age_range}` : ""}${avatarToUse.gender ? `, ${avatarToUse.gender}` : ""}`;
+      formData.append("original_job_id", originalJobId || "");
+
       formData.append("selectedAvatar", avatarDescription);
 
-      // Use saved selected angles array
+      // Add selected angles
       selectedAnglesArray.forEach((angle) => {
         formData.append("selectedAngles", angle);
       });
@@ -808,19 +1041,29 @@ export function GenerateStaticAds({
         formData.append("foundationalDocText", foundationalDocText);
       }
 
-      if (productImageFile) {
-        formData.append("productImage", productImageFile);
+      // Add product image URL (Cloudflare URL, not file)
+      if (productImageUrl) {
+        formData.append("productImageUrl", productImageUrl);
       }
 
+      // Add gallery image IDs
       selectedImageIdsArray.forEach((id) => {
         formData.append("forcedReferenceImageIds", id);
       });
 
+      // Add uploaded reference image URLs
+      uploadedImageUrls.forEach((url) => {
+        formData.append("uploadedReferenceImageUrls", url);
+      });
+
       formData.append("language", "english");
       formData.append("enableVideoScripts", "false");
+      if (allowOverage) {
+        formData.append("allowOverage", "true");
+      }
 
       const data = await internalApiClient.generateStaticAds(formData);
-      
+
       if (data.jobId) {
         // Only set the new job ID AFTER successful creation
         // This will trigger the polling effect to start polling the NEW job
@@ -836,7 +1079,24 @@ export function GenerateStaticAds({
       }
     } catch (error: any) {
       logger.error("Error generating static ads:", error);
-      
+
+      if (error.status === 402 && (error as any).code === "JOB_CREDITS_OVERAGE_CONFIRMATION_REQUIRED") {
+        // Show toast notification about overage
+        const overageCredits = (error as any).overageCredits ?? 0;
+        const overageCostTotal = (error as any).overageCostTotal ?? 0;
+        const currency = (error as any).currency ?? "EUR";
+        
+        toast({
+          title: "Overage Charges Apply",
+          description: `This job requires ${overageCredits} extra credit${overageCredits === 1 ? '' : 's'} (${overageCostTotal.toFixed(2)} ${currency}). Overage charges will be added to your next invoice.`,
+          variant: "default",
+        });
+
+        // Automatically retry with allowOverage=true
+        await handleSubmit(true);
+        return;
+      }
+
       if (error.status === 429 || (error as any).status === 429) {
         const errorData = {
           currentUsage: (error as any).currentUsage || 0,
@@ -860,7 +1120,7 @@ export function GenerateStaticAds({
         });
         return;
       }
-      
+
       setError(error.message || "Failed to start static ads generation");
       setJobStatus("failed");
       // Clear skeleton loaders on error
@@ -890,11 +1150,11 @@ export function GenerateStaticAds({
         angleString: angle
       };
     }
-    
+
     const title = angle.title || null;
     const description = angle.angle || angle.description || '';
     const angleString = title ? `${title}: ${description}` : description;
-    
+
     return {
       angleObj: angle,
       angleTitle: title,
@@ -906,19 +1166,19 @@ export function GenerateStaticAds({
   // Filter and sort images by selected angle and sort criteria
   const filteredImages = useMemo(() => {
     let filtered = generatedImages;
-    
+
     // Filter by angle
     if (selectedAngleFilter !== "all") {
       const angleIndex = marketingAngles.findIndex((angle: any) => {
         const parsed = parseAngle(angle);
         return parsed.angleString === selectedAngleFilter;
       });
-      
+
       if (angleIndex !== -1) {
         filtered = filtered.filter((img) => img.angleIndex === angleIndex + 1);
       }
     }
-    
+
     // Sort the filtered results
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
@@ -936,36 +1196,36 @@ export function GenerateStaticAds({
           return 0;
       }
     });
-    
+
     return sorted;
   }, [generatedImages, selectedAngleFilter, marketingAngles, sortBy]);
 
   // Create flat list of all images with skeleton loaders
   const allDisplayItems = useMemo(() => {
     const items: Array<{ type: 'image' | 'skeleton'; data?: GeneratedImage; angleIndex: number; angleString: string }> = [];
-    
+
     // Add existing images
     filteredImages.forEach((img) => {
-      const angleString = marketingAngles[img.angleIndex - 1] 
-        ? parseAngle(marketingAngles[img.angleIndex - 1]).angleString 
+      const angleString = marketingAngles[img.angleIndex - 1]
+        ? parseAngle(marketingAngles[img.angleIndex - 1]).angleString
         : `Angle ${img.angleIndex}`;
       items.push({ type: 'image', data: img, angleIndex: img.angleIndex, angleString });
     });
-    
+
     // Add skeleton loaders for generating angles
     if (jobStatus === "processing" || jobStatus === "pending") {
       marketingAngles.forEach((angle, angleIndex) => {
         const parsed = parseAngle(angle);
         const angleString = parsed.angleString;
         const angleNum = angleIndex + 1;
-        
+
         // Check if this angle is being generated
         if (generatingAngles.has(angleString)) {
           // Check if we should show skeletons (if filter is "all" or matches this angle)
           if (selectedAngleFilter === "all" || selectedAngleFilter === angleString) {
             const skeletonsToShow = generatingCounts.get(angleString) || 2;
             const existingCount = filteredImages.filter(img => img.angleIndex === angleNum).length;
-            
+
             // Only show skeletons if we don't have all images yet
             if (existingCount < skeletonsToShow) {
               for (let i = 0; i < skeletonsToShow - existingCount; i++) {
@@ -976,7 +1236,7 @@ export function GenerateStaticAds({
         }
       });
     }
-    
+
     return items;
   }, [filteredImages, marketingAngles, generatingAngles, generatingCounts, jobStatus, selectedAngleFilter]);
 
@@ -1024,6 +1284,9 @@ export function GenerateStaticAds({
     setStep(1);
     setSelectedAngles(new Set());
     setSelectedImageIds(new Set());
+    // Clean up uploaded images
+    uploadedImages.forEach((img) => URL.revokeObjectURL(img.preview));
+    setUploadedImages([]);
     setProductImage(null);
     setIsGenerating(false);
     setError(null);
@@ -1031,6 +1294,9 @@ export function GenerateStaticAds({
     // Reset file input when modal opens
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+    if (uploadFileInputRef.current) {
+      uploadFileInputRef.current.value = '';
     }
     setShowGenerateModal(true);
   };
@@ -1041,6 +1307,9 @@ export function GenerateStaticAds({
       setStep(1);
       setSelectedAngles(new Set());
       setSelectedImageIds(new Set());
+      // Clean up uploaded images
+      uploadedImages.forEach((img) => URL.revokeObjectURL(img.preview));
+      setUploadedImages([]);
       setProductImage(null);
       setIsGenerating(false);
       setError(null);
@@ -1049,14 +1318,17 @@ export function GenerateStaticAds({
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+      if (uploadFileInputRef.current) {
+        uploadFileInputRef.current.value = '';
+      }
     }
   };
 
   // Memoize image library items to prevent scroll reset
   const memoizedImageLibraryItems = useMemo(() => {
-    return imageLibrary.map((image) => {
+    return [...imageLibrary].reverse().map((image) => {
       const isSelected = selectedImageIds.has(image.library_id);
-      const canSelect = selectedImageIds.size < maxImages;
+      const canSelect = totalSelectedImages < maxImages;
       const canClick = isSelected || canSelect;
 
       return {
@@ -1066,7 +1338,7 @@ export function GenerateStaticAds({
         canClick,
       };
     });
-  }, [imageLibrary, selectedImageIds, maxImages]);
+  }, [imageLibrary, selectedImageIds, maxImages, totalSelectedImages]);
 
   // Save scroll position on scroll
   const handleScroll = useCallback(() => {
@@ -1077,12 +1349,16 @@ export function GenerateStaticAds({
 
   // Restore scroll position after selectedImageIds changes
   useLayoutEffect(() => {
-    if (step === 2 && imageLibraryScrollRef.current) {
-      // Restore scroll position synchronously before paint
-      const savedPosition = scrollPositionRef.current;
-      if (savedPosition > 0) {
-        imageLibraryScrollRef.current.scrollTop = savedPosition;
-      }
+    if (step === 3 && imageLibraryScrollRef.current) {
+      // Use requestAnimationFrame to ensure DOM has updated
+      requestAnimationFrame(() => {
+        if (imageLibraryScrollRef.current) {
+          const savedPosition = scrollPositionRef.current;
+          if (savedPosition > 0) {
+            imageLibraryScrollRef.current.scrollTop = savedPosition;
+          }
+        }
+      });
     }
   }, [selectedImageIds, step]);
 
@@ -1092,232 +1368,330 @@ export function GenerateStaticAds({
       {/* Step Indicator */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {[1, 2, 3].map((s) => (
+          {[1, 2, 3, 4].map((s) => (
             <div key={s} className="flex items-center gap-2">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  step === s
-                    ? "bg-primary text-primary-foreground"
-                    : step > s
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${step === s
+                  ? "bg-primary text-primary-foreground"
+                  : step > s
                     ? "bg-green-500 text-white"
                     : "bg-muted text-muted-foreground"
-                }`}
+                  }`}
               >
                 {step > s ? <CheckCircle2 className="w-4 h-4" /> : s}
               </div>
-              {s < 3 && (
+              {s < 4 && (
                 <div
-                  className={`w-12 h-1 ${
-                    step > s ? "bg-green-500" : "bg-muted"
-                  }`}
+                  className={`w-12 h-1 ${step > s ? "bg-green-500" : "bg-muted"
+                    }`}
                 />
               )}
             </div>
           ))}
         </div>
         <div className="text-sm text-muted-foreground">
-          Step {step} of 3
+          Step {step} of 4
         </div>
       </div>
 
-      {/* Step 1: Select Marketing Angles */}
-      {step === 1 && (
+      {/* Step 1: Select Avatar (V2 only) */}
+      {step === 1 && isV2 && (
         <div className="space-y-4">
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Select Marketing Angles</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Select one or more marketing angles. You'll be able to select up to {selectedAngles.size * 2} reference images (2 per angle).
-            </p>
-          </div>
-
-          <Accordion type="multiple" className="space-y-2">
-            {marketingAngles.map((angle, index) => {
-              const { angleString, angleTitle, angleDescription } = parseAngle(angle);
-              const isSelected = selectedAngles.has(angleString);
-
-              return (
-                <AccordionItem key={index} value={`angle-${index}`} className="border-none">
-                  <Card
-                    className={`cursor-pointer transition-all hover:shadow-md ${
-                      isSelected
-                        ? "border-2 border-primary bg-primary/10"
-                        : "border border-border hover:border-primary/50"
-                    }`}
-                    onClick={() => handleAngleToggle(angleString)}
-                  >
-                    <div className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 flex-1">
-                          {isSelected ? (
-                            <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                          ) : (
-                            <div className="w-5 h-5 rounded-full border-2 border-muted-foreground flex-shrink-0" />
-                          )}
-                          <div className="flex-1">
-                            {angleTitle && (
-                              <div className="flex items-center gap-2 flex-wrap mb-1">
-                                <Badge variant="outline" className="text-xs">
-                                  #{index + 1}
-                                </Badge>
-                                <h4 className="text-base font-semibold">{angleTitle}</h4>
-                              </div>
-                            )}
-                            <p className="text-sm text-muted-foreground">{angleDescription}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </AccordionItem>
-              );
-            })}
-          </Accordion>
+          <AvatarSelectorV2
+            avatars={marketingAngles || []}
+            selectedAvatarIndex={selectedAvatarIndex}
+            onSelectAvatar={(index) => {
+              setSelectedAvatarIndex(index);
+              // Reset angle selection when avatar changes
+              setSelectedAngles(new Set());
+            }}
+            title="Select Customer Avatar"
+            description="Choose the customer avatar you want to target with your content"
+          />
 
           <div className="flex justify-between pt-4">
-            <Button variant="outline" onClick={() => handleModalClose(false)}>
+            <Button variant="outline" onClick={() => onClose?.()}>
               Cancel
             </Button>
-            <Button onClick={handleNext} disabled={selectedAngles.size === 0}>
-              Next: Select Images ({selectedAngles.size} angle{selectedAngles.size !== 1 ? "s" : ""} selected)
+            <Button onClick={() => setStep(2)} disabled={selectedAvatarIndex === null}>
+              Next: Select Angles
             </Button>
           </div>
         </div>
       )}
 
-      {/* Step 2: Select Reference Images */}
-{step === 2 && (
-  <div className="space-y-4">
-    <div>
-      <h3 className="text-lg font-semibold mb-2">Select Reference Images</h3>
-      <p className="text-sm text-muted-foreground mb-4">We will generate 2 images per selected marketing angle.</p>
-      <p className="text-sm text-muted-foreground mb-4">
-        Select up to {maxImages} reference images ({selectedAngles.size} angles × 2) or let AI choose the best suited ones.
-      </p>
-      <p className="text-xs text-muted-foreground mb-4">
-        Selected: {selectedImageIds.size}/{maxImages}
-      </p>
-    </div>
+      {/* Step 2: Select Marketing Angles */}
+      {step === 2 && (() => {
+        // Determine which angles to show based on V1 vs V2
+        let anglesToShow: any[] = [];
+        let selectedAvatar: any = null;
 
-    {loadingLibrary ? (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-      </div>
-    ) : (
-      <div 
-        ref={imageLibraryScrollRef}
-        onScroll={handleScroll}
-        className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-[500px] overflow-y-auto"
-      >
-        {memoizedImageLibraryItems.map(({ image, isSelected, canSelect, canClick }) => (
-          <Card
-            key={image.library_id}
-            className={`cursor-pointer transition-all hover:shadow-md relative ${
-              isSelected
-                ? "border-2 border-primary bg-primary/10"
-                : canSelect
-                ? "border border-border hover:border-primary/50"
-                : "border border-border opacity-50 cursor-not-allowed"
-            }`}
-            onClick={() => {
-              if (canClick) {
-                handleImageToggle(image.library_id);
-              }
-            }}
-          >
-            <div className="relative aspect-square w-full">
-              <img
-                src={image.url}
-                alt={`Image ${image.library_id}`}
-                className="w-full h-full object-cover rounded-t-lg"
-              />
-              {isSelected && (
-                <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">
-                  <CheckCircle2 className="w-3 h-3" />
-                </div>
-              )}
-            </div>
-            <CardContent className="p-1">
-              <p className="text-xs text-center text-muted-foreground truncate">
+        if (isV2) {
+          // For V2, use the selected avatar from Step 1
+          selectedAvatar = selectedAvatarIndex !== null ? marketingAngles[selectedAvatarIndex] : null;
+          if (selectedAvatar) {
+            anglesToShow = selectedAvatar.v2_angles_data?.generated_angles || selectedAvatar.marketing_angles || [];
+          }
+        } else {
+          // V1 behavior
+          anglesToShow = marketingAngles || [];
+        }
 
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    )}
+        // Helper to convert angle index to angle string
+        const getAngleString = (angle: any, index: number): string => {
+          if (isV2) {
+            return angle.angle_subtitle
+              ? `${angle.angle_title}: ${angle.angle_subtitle}`
+              : angle.angle_title || `Angle ${index + 1}`;
+          } else {
+            const parsed = parseAngle(angle);
+            return parsed.angleString;
+          }
+        };
 
-          <div className="flex justify-between pt-4">
-            <Button variant="outline" onClick={handleBack}>
-              Back
-            </Button>
-            <Button onClick={handleNext}>
-              Next: Upload Product Image
-            </Button>
-          </div>
-        </div>
-      )}
+        // Convert selectedAngles (Set<string>) to indices for display
+        const currentIndices: number[] = [];
+        anglesToShow.forEach((angle, index) => {
+          const angleString = getAngleString(angle, index);
+          if (selectedAngles.has(angleString)) {
+            currentIndices.push(index);
+          }
+        });
 
-      {/* Step 3: Product Image & Generation */}
-      {step === 3 && (
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Upload Product Image</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Upload a clear product image with white or transparent background. Max file size: 50MB. Allowed file types: PNG, JPG, JPEG.
-            </p>
-          </div>
+        // Handler to sync indices back to selectedAngles
+        const handleAngleToggle = (index: number) => {
+          const angle = anglesToShow[index];
+          if (!angle) return;
 
-          <div className="space-y-2">
-            <Label htmlFor="product-image">Product Image</Label>
-            <Input
-              ref={fileInputRef}
-              id="product-image"
-              type="file"
-              accept="image/*,.pdf"
-              onChange={handleProductImageChange}
-              key={`product-image-input-${step}`} // Force re-render when step changes to ensure proper initialization
+          const angleString = getAngleString(angle, index);
+          const newSelectedAngles = new Set(selectedAngles);
+
+          if (newSelectedAngles.has(angleString)) {
+            newSelectedAngles.delete(angleString);
+          } else {
+            newSelectedAngles.add(angleString);
+          }
+
+          setSelectedAngles(newSelectedAngles);
+        };
+
+        return (
+          <div className="space-y-4">
+            <AngleSelectorV2
+              angles={anglesToShow}
+              selectedAngles={currentIndices}
+              onToggleAngle={handleAngleToggle}
+              avatarName={selectedAvatar?.persona_name || selectedAvatar?.v2_avatar_data?.overview?.name}
+              title="Select Marketing Angles"
+              description={`Select one or more marketing angles. You'll be able to select up to ${Math.max(selectedAngles.size * 2, 2)} reference images (2 per angle).`}
+              multiSelect={true}
+              top3Angles={selectedAvatar?.v2_angles_data?.top_3_angles}
+              ranking={selectedAvatar?.v2_angles_data?.ranking}
             />
-            {productImage && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2 p-2 bg-muted rounded-md">
-                <span className="font-medium">{productImage.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  ({(productImage.size / 1024 / 1024).toFixed(2)} MB)
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto"
+            <div className="flex justify-between pt-4">
+              <Button variant="outline" onClick={() => isV2 ? setStep(1) : onClose?.()}>
+                {isV2 ? "Back to Avatar" : "Cancel"}
+              </Button>
+              <Button onClick={() => setStep(3)} disabled={selectedAngles.size === 0}>
+                Next: Select Images ({selectedAngles.size} {selectedAngles.size === 1 ? "angle" : "angles"} selected)
+              </Button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Step 3: Select Reference Images */}
+      {
+        step === 3 && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Select Reference Images</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Select exactly {maxImages} reference images ({selectedAngles.size} {selectedAngles.size === 1 ? "angle" : "angles"} × 2 images per angle). You can upload custom images or choose from the gallery below.
+              </p>
+              <p className="text-xs text-muted-foreground mb-4">
+                Selected: {totalSelectedImages}/{maxImages} images ({selectedAngles.size} {selectedAngles.size === 1 ? "angle" : "angles"} × 2 images)
+              </p>
+            </div>
+
+            {loadingLibrary ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div
+                ref={imageLibraryScrollRef}
+                onScroll={handleScroll}
+                className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 max-h-[500px] overflow-y-auto p-1"
+              >
+                {/* Upload Cards - Show upload slots */}
+                {uploadedImages.map((uploadedImg) => (
+                  <Card
+                    key={uploadedImg.id}
+                    className="cursor-default overflow-hidden rounded-lg border p-0 ring-2 ring-primary ring-offset-2"
+                  >
+                    <div className="relative aspect-square w-full overflow-hidden">
+                      <img
+                        src={uploadedImg.preview}
+                        alt="Uploaded reference"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                        <div className="bg-primary text-primary-foreground rounded-full p-2 shadow-lg">
+                          <CheckCircle2 className="w-5 h-5" />
+                        </div>
+                      </div>
+                      {/* Remove button */}
+                      <button
+                        onClick={() => handleRemoveUploadedImage(uploadedImg.id)}
+                        className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow-lg hover:bg-destructive/90 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </Card>
+                ))}
+
+                {/* Upload button card - always visible but disabled when limit reached */}
+                <Card
+                  className={`overflow-hidden rounded-lg border p-0 transition-colors ${totalSelectedImages >= maxImages
+                    ? "opacity-50 cursor-not-allowed border-border border-dashed border-2"
+                    : "cursor-pointer border-dashed border-2 border-primary/50 hover:border-primary hover:bg-primary/5"
+                    }`}
                   onClick={() => {
-                    setProductImage(null);
-                    if (fileInputRef.current) {
-                      fileInputRef.current.value = '';
+                    if (totalSelectedImages < maxImages && uploadFileInputRef.current) {
+                      uploadFileInputRef.current.click();
                     }
                   }}
                 >
-                  <X className="w-4 h-4" />
-                </Button>
+                  <div className={`relative aspect-square w-full overflow-hidden flex flex-col items-center justify-center gap-2 p-4 ${totalSelectedImages >= maxImages ? "opacity-50" : ""
+                    }`}>
+                    <Upload className={`w-8 h-8 ${totalSelectedImages >= maxImages ? "text-muted-foreground" : "text-primary"}`} />
+                    <p className="text-xs text-center text-muted-foreground">
+                      Upload Image
+                    </p>
+                  </div>
+                </Card>
+
+                {/* Hidden file input */}
+                <input
+                  ref={uploadFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+
+                {/* Gallery Images */}
+                {memoizedImageLibraryItems.map(({ image, isSelected, canSelect, canClick }) => (
+                  <Card
+                    key={image.library_id}
+                    className={`cursor-pointer transition-colors overflow-hidden rounded-lg border p-0 ${isSelected
+                      ? "ring-2 ring-primary ring-offset-2"
+                      : canSelect
+                        ? "border-border hover:border-primary/50"
+                        : "opacity-50 cursor-not-allowed border-border"
+                      }`}
+                    onClick={() => {
+                      if (canClick) {
+                        handleImageToggle(image.library_id);
+                      }
+                    }}
+                  >
+                    <div className="relative aspect-square w-full overflow-hidden">
+                      <img
+                        src={image.url}
+                        alt={`Reference image ${image.library_id}`}
+                        className="w-full h-full object-cover"
+                      />
+                      {isSelected && (
+                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                          <div className="bg-primary text-primary-foreground rounded-full p-2 shadow-lg">
+                            <CheckCircle2 className="w-5 h-5" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                ))}
               </div>
             )}
-          </div>
 
-          <div className="flex justify-between pt-4">
-            <Button variant="outline" onClick={handleBack}>
-              Back
-            </Button>
-            <Button onClick={handleSubmit} disabled={isGenerating}>
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Starting...
-                </>
-              ) : (
-                "Generate Static Ads"
-              )}
-            </Button>
+            <div className="flex justify-between pt-4">
+              <Button variant="outline" onClick={() => setStep(2)}>
+                Back to Angles
+              </Button>
+              <Button onClick={() => setStep(4)} disabled={totalSelectedImages !== maxImages}>
+                Next: Upload Product Image {totalSelectedImages !== maxImages && `(${totalSelectedImages}/${maxImages} selected)`}
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+
+      {/* Step 4: Product Image & Generation */}
+      {
+        step === 4 && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Upload Product Image</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Upload a clear product image with white or transparent background. Max file size: 50MB. Allowed file types: PNG, JPG, JPEG.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="product-image">Product Image</Label>
+              <Input
+                ref={fileInputRef}
+                id="product-image"
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleProductImageChange}
+                key={`product-image-input-${step}`} // Force re-render when step changes to ensure proper initialization
+              />
+              {productImage && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2 p-2 bg-muted rounded-md">
+                  <span className="font-medium">{productImage.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({(productImage.size / 1024 / 1024).toFixed(2)} MB)
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto"
+                    onClick={() => {
+                      setProductImage(null);
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-between pt-4">
+              <Button variant="outline" onClick={() => setStep(3)}>
+                Back to Images
+              </Button>
+              <Button onClick={() => handleSubmit()} disabled={isGenerating}>
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  `Generate Static Ads (${selectedAngles.size * 2 * JOB_CREDITS_BY_TYPE.static_ads} Credits)`
+                )}
+              </Button>
+            </div>
+          </div>
+        )
+      }
+    </div >
   );
 
   return (
@@ -1353,32 +1727,6 @@ export function GenerateStaticAds({
                     </div>
                   ) : (
                     <div className="space-y-6">
-                      {/* Show active job status if any */}
-                      {(jobStatus === "processing" || jobStatus === "pending") && (
-                        <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium">Generation in Progress</span>
-                            <Badge variant="secondary">{jobStatus}</Badge>
-                          </div>
-                          {jobProgress > 0 && (
-                            <div className="space-y-1">
-                              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                <span>Progress: {jobProgress.toFixed(1)}%</span>
-                              </div>
-                              <div className="w-full bg-muted rounded-full h-2">
-                                <div
-                                  className="bg-primary h-2 rounded-full transition-all"
-                                  style={{ width: `${jobProgress}%` }}
-                                />
-                              </div>
-                            </div>
-                          )}
-                          {currentStep && (
-                            <p className="text-xs text-muted-foreground mt-2">{currentStep}</p>
-                          )}
-                        </div>
-                      )}
-
                       {/* Filter and Image Count */}
                       {generatedImages.length > 0 && (
                         <div className="flex items-center justify-between mb-4">
@@ -1390,22 +1738,22 @@ export function GenerateStaticAds({
                               {(() => {
                                 const filteredCount = filteredImages.length;
                                 const totalCount = generatedImages.length;
-                                
+
                                 if (totalCount === 0) {
                                   return "No images generated yet";
                                 }
-                                
+
                                 if (selectedAngleFilter !== "all") {
                                   const selectedAngle = marketingAngles.find((ma: any) => {
                                     const parsed = parseAngle(ma);
                                     return parsed.angleString === selectedAngleFilter;
                                   });
-                                  const angleTitle = selectedAngle 
+                                  const angleTitle = selectedAngle
                                     ? parseAngle(selectedAngle).angleTitle || selectedAngleFilter
                                     : selectedAngleFilter;
                                   return `${filteredCount} of ${totalCount} image${totalCount !== 1 ? 's' : ''} (${angleTitle})`;
                                 }
-                                
+
                                 return `${totalCount} image${totalCount !== 1 ? 's' : ''} generated`;
                               })()}
                             </p>
@@ -1426,18 +1774,18 @@ export function GenerateStaticAds({
                                     });
                                     return;
                                   }
-                                  
+
                                   toast({
                                     title: "Downloading...",
                                     description: `Downloading ${filteredImages.length} image${filteredImages.length !== 1 ? 's' : ''}...`,
                                   });
-                                  
+
                                   // Download all filtered images with a small delay between each
                                   for (let i = 0; i < filteredImages.length; i++) {
                                     const img = filteredImages[i];
                                     const angleName = img.angleName.replace(/[^a-z0-9]/gi, '_');
                                     const filename = `${angleName}_angle_${img.angleIndex}_variation_${img.variationNumber}.png`;
-                                    
+
                                     try {
                                       await downloadImage(img.imageUrl, filename);
                                       // Small delay to prevent browser from blocking multiple downloads
@@ -1448,7 +1796,7 @@ export function GenerateStaticAds({
                                       logger.error(`Error downloading image ${i + 1}:`, error);
                                     }
                                   }
-                                  
+
                                   toast({
                                     title: "Download Complete",
                                     description: `Successfully downloaded ${filteredImages.length} image${filteredImages.length !== 1 ? 's' : ''}.`,
@@ -1484,22 +1832,28 @@ export function GenerateStaticAds({
                                   <SelectItem value="all">
                                     All Angles
                                   </SelectItem>
-                                  {marketingAngles.map((angle: any, index: number) => {
-                                    const parsed = parseAngle(angle);
-                                    const displayTitle = parsed.angleTitle 
-                                      ? (parsed.angleTitle.length > 35 
-                                          ? parsed.angleTitle.substring(0, 32) + "..." 
+                                  {marketingAngles
+                                    .map((angle: any, index: number) => {
+                                      const parsed = parseAngle(angle);
+                                      // Skip angles with empty string values (not allowed by Radix UI)
+                                      if (!parsed.angleString || parsed.angleString.trim() === "") {
+                                        return null;
+                                      }
+                                      const displayTitle = parsed.angleTitle
+                                        ? (parsed.angleTitle.length > 35
+                                          ? parsed.angleTitle.substring(0, 32) + "..."
                                           : parsed.angleTitle)
-                                      : parsed.angleDescription.substring(0, 35) + (parsed.angleDescription.length > 35 ? "..." : "");
-                                    return (
-                                      <SelectItem
-                                        key={parsed.angleString}
-                                        value={parsed.angleString}
-                                      >
-                                        {displayTitle}
-                                      </SelectItem>
-                                    );
-                                  })}
+                                        : parsed.angleDescription.substring(0, 35) + (parsed.angleDescription.length > 35 ? "..." : "");
+                                      return (
+                                        <SelectItem
+                                          key={`angle-${index}-${parsed.angleString}`}
+                                          value={parsed.angleString}
+                                        >
+                                          {displayTitle}
+                                        </SelectItem>
+                                      );
+                                    })
+                                    .filter(Boolean)}
                                 </SelectContent>
                               </Select>
                             </div>
@@ -1509,32 +1863,31 @@ export function GenerateStaticAds({
 
                       {/* Uniform Grid Display */}
                       {allDisplayItems.length > 0 ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                           {allDisplayItems.map((item, index) => {
                             if (item.type === 'image' && item.data) {
                               const img = item.data;
-                              
+
                               // Calculate actual variation number dynamically
                               const imagesForThisAngle = generatedImages
                                 .filter(gi => gi.angleIndex === img.angleIndex)
                                 .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
                               const actualVariationNumber = imagesForThisAngle.findIndex(gi => gi.id === img.id) + 1;
                               const adNumber = `${img.angleIndex}.${actualVariationNumber}`;
-                              
+
                               return (
-                                <Card key={img.id} className="overflow-hidden group">
-                                  <div className="relative aspect-[4/3] h-48 overflow-hidden">
+                                <Card key={img.id} className="overflow-hidden group rounded-xl border">
+                                  <div className="relative aspect-[4/3] overflow-hidden bg-muted">
                                     <img
                                       src={img.imageUrl}
                                       alt={`${img.angleName} - Variation ${actualVariationNumber}`}
                                       className="w-full h-full object-cover"
                                     />
                                     {/* Ad Number Label */}
-                                    <div className="absolute bottom-2 right-2 bg-gray-500/80 text-white text-xs font-semibold px-2 py-1 rounded">
+                                    <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-md shadow-lg">
                                       {adNumber}
                                     </div>
                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                            
                                       <Button
                                         size="sm"
                                         variant="secondary"
@@ -1556,84 +1909,77 @@ export function GenerateStaticAds({
                                       </Button>
                                     </div>
                                   </div>
-                                  <CardContent className="p-1.5 space-y-2">
-                                    <div className="flex items-center justify-center gap-2 flex-wrap">
-                                      {/* Angle number badge - same style as prelanders */}
+                                  <CardContent className="p-4 space-y-3 bg-card">
+                                    <div className="flex items-center justify-between gap-2">
+                                      {/* Angle number badge */}
                                       <Badge
                                         variant="default"
-                                        className="text-xs font-semibold w-fit bg-primary/10 text-primary border-primary"
-                                        style={{
-                                          backgroundColor: 'rgba(93, 113, 244, 0.1)',
-                                          color: '#5d71f4',
-                                          borderColor: '#5d71f4'
-                                        }}
+                                        className="text-xs font-semibold bg-primary/10 text-primary border-primary/20 px-2 py-1"
                                       >
                                         <Target className="h-3 w-3 mr-1" />
-                                        {img.angleIndex}
+                                        Angle {img.angleIndex}
                                       </Badge>
-                                      {/* Angle name */}
-                                      {(() => {
-                                        const angle = marketingAngles[img.angleIndex - 1];
-                                        if (angle) {
-                                          const parsed = parseAngle(angle);
-                                          return (
-                                            <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-                                              {parsed.angleTitle || parsed.angleDescription}
-                                            </span>
-                                          );
-                                        }
-                                        return null;
-                                      })()}
+                                      {/* Creation Date */}
+                                      {img.createdAt && (
+                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                          <Calendar className="h-3.5 w-3.5" />
+                                          <span>
+                                            {new Date(img.createdAt).toLocaleDateString("en-US", {
+                                              month: "short",
+                                              day: "numeric"
+                                            })}
+                                          </span>
+                                        </div>
+                                      )}
                                     </div>
-                                    {/* Creation Date */}
-                                    {img.createdAt && (
-                                      <div className="flex items-center justify-start gap-1.5 text-xs text-muted-foreground ml-2">
-                                        <Calendar className="h-3.5 w-3.5" />
-                                        <span>
-                                          {new Date(img.createdAt).toLocaleDateString("en-US", {
-                                            month: "short",
-                                            day: "numeric",
-                                            year: "numeric"
-                                          })}
-                                        </span>
-                                      </div>
-                                    )}
+                                    {/* Angle name */}
+                                    {(() => {
+                                      const angle = marketingAngles[img.angleIndex - 1];
+                                      if (angle) {
+                                        const parsed = parseAngle(angle);
+                                        return (
+                                          <p className="text-sm text-foreground/80 line-clamp-2 leading-relaxed">
+                                            {parsed.angleTitle || parsed.angleDescription}
+                                          </p>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
                                   </CardContent>
                                 </Card>
                               );
                             } else if (item.type === 'skeleton') {
                               return (
-                                <Card key={`skeleton-${item.angleIndex}-${index}`} className="overflow-hidden">
-                                  <div className="relative aspect-[4/3] h-48 bg-muted animate-pulse">
+                                <Card key={`skeleton-${item.angleIndex}-${index}`} className="overflow-hidden rounded-xl border">
+                                  <div className="relative aspect-[4/3] bg-gradient-to-br from-muted to-muted/50 animate-pulse">
                                     <div className="w-full h-full flex items-center justify-center">
-                                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                                      <Loader2 className="w-8 h-8 animate-spin text-muted-foreground/50" />
                                     </div>
                                   </div>
-                                  <CardContent className="p-1.5 space-y-2">
-                                    <div className="flex items-center justify-center gap-2 flex-wrap">
-                                      {/* Angle number badge - same style as prelanders */}
+                                  <CardContent className="p-4 space-y-3 bg-card">
+                                    <div className="flex items-center justify-between gap-2">
                                       <Badge
                                         variant="outline"
-                                        className="text-xs font-semibold bg-muted text-foreground border-border w-fit"
+                                        className="text-xs font-semibold bg-muted/50 text-muted-foreground border-border px-2 py-1"
                                       >
                                         <Target className="h-3 w-3 mr-1" />
-                                        {item.angleIndex}
+                                        Angle {item.angleIndex}
                                       </Badge>
-                                      {/* Angle name */}
-                                      {(() => {
-                                        const angle = marketingAngles[item.angleIndex - 1];
-                                        if (angle) {
-                                          const parsed = parseAngle(angle);
-                                          return (
-                                            <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-                                              {parsed.angleTitle || parsed.angleDescription}
-                                            </span>
-                                          );
-                                        }
-                                        return null;
-                                      })()}
                                     </div>
-                                    <div className="flex items-center justify-center">
+                                    {/* Angle name */}
+                                    {(() => {
+                                      const angle = marketingAngles[item.angleIndex - 1];
+                                      if (angle) {
+                                        const parsed = parseAngle(angle);
+                                        return (
+                                          <p className="text-sm text-muted-foreground/60 line-clamp-2">
+                                            {parsed.angleTitle || parsed.angleDescription}
+                                          </p>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
+                                    <div className="flex items-center justify-center pt-1">
                                       <p className="text-xs text-center text-muted-foreground">
                                         Generating...
                                       </p>
@@ -1645,43 +1991,80 @@ export function GenerateStaticAds({
                             return null;
                           })}
                         </div>
-                      ) : (
-                        selectedAngleFilter !== "all" && (
+                      ) : (<>
+                        {selectedAngleFilter !== "all" && (
                           <div className="text-center py-12">
                             <p className="text-sm text-muted-foreground">
                               No images found for the selected angle filter.
                             </p>
                           </div>
-                        )
-                      )}
+                        )}
 
-                      {/* Empty state */}
-                      {allDisplayItems.length === 0 && generatingAngles.size === 0 && (
-                        <div className="text-center py-12">
-                          <p className="text-sm text-muted-foreground mb-4">
-                            No static ads generated yet. Click the button below to generate your first set of static ads.
-                          </p>
-                          <Button
-                            onClick={handleModalOpen}
-                            size="lg"
-                          >
-                            <Sparkles className="h-4 w-4 mr-2" />
-                            Generate Static Ads
-                          </Button>
-                        </div>
-                      )}
+                        {selectedAngleFilter === "all" && (
+                          <div className="space-y-4">
+                            {!isV2 && (
+                              <div className="p-4 bg-muted/50 border border-border rounded-lg">
+                                <p className="text-sm text-muted-foreground">
+                                  <strong>Note:</strong> This is a V1 job. V1 jobs are now read-only. You can view existing content, but cannot generate new static ads. Please create a new V2 job for full functionality.
+                                </p>
+                              </div>
+                            )}
+                            <p className="text-sm text-muted-foreground mb-4">
+                              No static ads generated yet. Click the button below to generate your first set of static ads.
+                            </p>
+                            <div className="mt-4">
+                              <Button
+                                onClick={() => {
+                                  if (!isV2) {
+                                    toast({
+                                      title: "V1 Job Read-Only",
+                                      description: "V1 jobs are read-only. Please create a new V2 job to generate static ads.",
+                                      variant: "default",
+                                    });
+                                    return;
+                                  }
+                                  handleModalOpen();
+                                }}
+                                size="lg"
+                                className="w-full"
+                                disabled={!isV2}
+                              >
+                                <Sparkles className="h-4 w-4 mr-2" />
+                                Generate Static Ads (1 Credit per ad)
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </>)}
 
                       {/* Generate More Button */}
                       {(allDisplayItems.length > 0 || generatingAngles.size > 0) && (
                         <div className="pt-4 border-t">
+                          {!isV2 && (
+                            <div className="mb-4 p-4 bg-muted/50 border border-border rounded-lg">
+                              <p className="text-sm text-muted-foreground">
+                                <strong>Note:</strong> This is a V1 job. V1 jobs are now read-only. You can view existing static ads, but cannot generate new ones. Please create a new V2 job for full functionality.
+                              </p>
+                            </div>
+                          )}
                           <Button
-                            onClick={handleModalOpen}
+                            onClick={() => {
+                              if (!isV2) {
+                                toast({
+                                  title: "V1 Job Read-Only",
+                                  description: "V1 jobs are read-only. Please create a new V2 job to generate static ads.",
+                                  variant: "default",
+                                });
+                                return;
+                              }
+                              handleModalOpen();
+                            }}
                             size="lg"
                             className="w-full"
-                            disabled={jobStatus === "processing" || jobStatus === "pending"}
+                            disabled={!isV2 || jobStatus === "processing" || jobStatus === "pending"}
                           >
                             <Sparkles className="h-4 w-4 mr-2" />
-                            Generate More Ads
+                            Generate More Ads (1 Credit per ad)
                           </Button>
                         </div>
                       )}
@@ -1698,29 +2081,12 @@ export function GenerateStaticAds({
       <Dialog open={showGenerateModal} onOpenChange={handleModalClose}>
         <DialogContent className="!max-w-[95vw] !max-h-[95vh] !w-[95vw] !h-[95vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex items-center justify-between">
               <div>
                 <DialogTitle>Generate Static Ads</DialogTitle>
                 <DialogDescription>
                   Follow the steps below to generate new static ad images
                 </DialogDescription>
               </div>
-              {/* Credit Badge */}
-              {credits && (
-                <Badge 
-                  variant={credits.allowed ? "secondary" : "destructive"}
-                  className="ml-4"
-                >
-                  {isLoadingCredits ? (
-                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                  ) : (
-                    <>
-                      {credits.currentUsage} / {credits.limit === Infinity ? "∞" : credits.limit} Credits
-                    </>
-                  )}
-                </Badge>
-              )}
-            </div>
           </DialogHeader>
           <GenerateForm />
         </DialogContent>

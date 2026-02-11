@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{content.brand.name}} - {{content.hero.headline}}</title>
+    <meta name="description" content="{{content.hero.subheadline}}" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        line-height: 1.6;
+        color: #1a1a1a;
+        background: white;
+        min-height: 100vh;
+        padding-bottom: 60px;
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      /* Top Bar */
+      .top-bar {
+        background: #2c2c2c;
+        color: white;
+        padding: 10px 0;
+      }
+
+      .top-bar-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .top-bar img {
+        width: 32px;
+        height: auto;
+      }
+
+      /* Alert Banner */
+      .alert-banner {
+        background: #fff8dc;
+        padding: 14px 20px;
+        margin: 1rem 20px;
+        max-width: 1200px;
+        border-top: 3px solid rgb(221, 221, 166);
+        border-left: 1px solid rgb(221, 221, 166);
+        border-right: 1px solid rgb(221, 221, 166);
+        border-radius: 8px;
+        text-align: left;
+        font-size: 16px;
+        line-height: 1.6;
+        border-bottom: 3px solid rgb(221, 221, 166);
+      }
+
+      @media (min-width: 1240px) {
+        .alert-banner {
+          margin: 1rem auto;
+        }
+      }
+
+      .alert-banner strong {
+        color: #ff0000;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      /* Update Section */
+      #inwstt7 {
+        background: #fff8dc;
+        border: 1px solid #d4a574;
+        padding: 14px 20px;
+        margin: 0 auto;
+        max-width: 1200px;
+      }
+
+      #inwstt7 .fk-col {
+        text-align: left;
+      }
+
+      #i73ejl {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #1a1a1a;
+      }
+
+      #ixtrsbv {
+        color: #ff0000;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      #iqsxy,
+      #i14as,
+      #idzgx {
+        display: none;
+      }
+
+      /* Container */
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      /* Main Layout */
+      .main-layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 40px;
+        padding-bottom: 100px;
+      }
+
+      @media (min-width: 1024px) {
+        .main-layout {
+          grid-template-columns: 2fr 1fr;
+          gap: 60px;
+          padding-bottom: 0;
+        }
+      }
+
+      /* Content Column */
+      .breadcrumb {
+        font-size: 15px;
+        color: #888;
+        margin-top: 30px;
+        margin-bottom: 20px;
+      }
+
+      @media (min-width: 1024px) {
+        .breadcrumb {
+          margin-top: 40px;
+        }
+      }
+
+      h1 {
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1.2;
+        color: #1a1a1a;
+        margin: 0 0 8px 0;
+      }
+
+      @media (min-width: 1024px) {
+        h1 {
+          font-size: 48px;
+        }
+      }
+
+      .subtitle {
+        font-size: 18px;
+        line-height: 1.6;
+        margin-top: 14px;
+        color: #4a4a4a;
+      }
+
+      @media (min-width: 1024px) {
+        .subtitle {
+          font-size: 20px;
+        }
+      }
+
+      h2 {
+        font-size: 24px;
+        font-weight: 800;
+        margin: 24px 0 16px;
+      }
+
+      @media (min-width: 1024px) {
+        h2 {
+          font-size: 36px;
+        }
+      }
+
+      h3 {
+        font-size: 14px;
+        font-weight: 700;
+        margin: 0 0 4px;
+        color: #385898;
+      }
+
+      p {
+        margin-bottom: 20px;
+        font-size: 16px;
+        line-height: 1.7;
+      }
+
+      @media (min-width: 1024px) {
+        p {
+          font-size: 20px;
+        }
+      }
+
+      section {
+        margin-bottom: 40px;
+      }
+
+      .section-image {
+        border-radius: 8px;
+        margin: 16px 0 24px;
+        width: 100%;
+      }
+
+      /* Video Support */
+      .section-video {
+        border-radius: 8px;
+        margin: 16px 0 24px;
+        width: 100%;
+        position: relative;
+        padding-bottom: 56.25%;
+        /* 16:9 aspect ratio */
+        height: 0;
+        overflow: hidden;
+      }
+
+      .section-video video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
+      }
+
+      .embed-responsive {
+        position: relative;
+        display: block;
+        width: 100%;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      .embed-responsive-16by9::before {
+        padding-top: 56.25%;
+      }
+
+      .embed-responsive::before {
+        display: block;
+        content: "";
+      }
+
+      .embed-responsive-item {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+
+      ul,
+      ol {
+        margin-bottom: 20px;
+        padding-left: 24px;
+        font-size: 16px;
+        line-height: 1.7;
+      }
+
+      @media (min-width: 1024px) {
+        ul,
+        ol {
+          font-size: 20px;
+        }
+      }
+
+      ul li,
+      ol li {
+        margin-bottom: 12px;
+      }
+
+      strong {
+        font-weight: 700;
+      }
+
+      /* Blockquotes */
+      .quote {
+        border-left: 3px solid #ccc;
+        padding-left: 20px;
+        margin-bottom: 30px;
+        font-style: italic;
+      }
+
+      .quote p {
+        margin-bottom: 10px;
+      }
+
+      .quote .author {
+        font-weight: 700;
+        font-style: normal;
+        margin-bottom: 0;
+      }
+
+      /* Warning Box */
+      .warning-box {
+        background: #f8f9fa;
+        border: 1px solid #e0e0e0;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 40px;
+      }
+
+      .warning-box h2 {
+        margin-top: 0;
+      }
+
+      .warning-box ul {
+        list-style: none;
+        padding-left: 0;
+      }
+
+      /* Offer Box */
+      .offer-box {
+        text-align: center;
+        border: 2px dashed #ff0000;
+        padding: 30px 20px;
+        border-radius: 8px;
+        background: #fffaf0;
+        margin-bottom: 40px;
+      }
+
+      .offer-box h2 {
+        margin-top: 0;
+      }
+
+      .offer-box ul {
+        list-style: none;
+        padding-left: 0;
+        font-size: 16px;
+      }
+
+      @media (min-width: 1024px) {
+        .offer-box ul {
+          font-size: 18px;
+        }
+      }
+
+      .offer-box ul li {
+        padding-left: 10px;
+        text-align: left;
+        margin: 10px auto;
+        max-width: 350px;
+      }
+
+      .countdown {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 20px 0;
+        color: #ff0000;
+      }
+
+      /* CTA Button */
+      .cta-button {
+        display: block;
+        width: 100%;
+        background: #218838;
+        color: #1a1a1a;
+        font-weight: 800;
+        font-size: 20px;
+        text-align: center;
+        padding: 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: all 0.2s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .cta-button-sidebar {
+        display: block;
+        width: 100%;
+        background: #ffc107;
+        color: #1a1a1a;
+        font-weight: 800;
+        font-size: 20px;
+        text-align: center;
+        padding: 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: all 0.2s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .cta-button:hover {
+        transform: scale(1.05);
+        filter: brightness(0.95);
+      }
+
+      /* Comments Section */
+      .comments {
+        margin-top: 48px;
+        background: #f0f2f5;
+        padding: 20px;
+        margin-bottom: 60px;
+        border-radius: 8px;
+      }
+
+      .comments h2 {
+        margin-top: 0;
+        margin-bottom: 24px;
+      }
+
+      .comment {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 20px;
+      }
+
+      .comment-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .comment-content {
+        background: white;
+        padding: 10px 14px;
+        border-radius: 18px;
+        font-size: 15px;
+        flex-grow: 1;
+      }
+
+      .comment-content h3 {
+        font-size: 14px;
+        margin-bottom: 4px;
+      }
+
+      .comment-content p {
+        margin: 0;
+        line-height: 1.4;
+        font-size: 15px;
+      }
+
+      .comment-meta {
+        font-size: 13px;
+        color: #606770;
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .comment-meta a {
+        font-weight: 600;
+        color: #385898;
+      }
+
+      .comment-meta img {
+        width: 18px;
+        height: 18px;
+      }
+
+      .comment-reply {
+        padding-left: 55px;
+      }
+
+      /* Sidebar */
+      .sidebar {
+        display: none;
+      }
+
+      @media (min-width: 1024px) {
+        .sidebar {
+          display: block;
+          position: sticky;
+          top: 20px;
+          align-self: start;
+        }
+      }
+
+      .sidebar-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        background: white;
+      }
+
+      .sidebar-card h3 {
+        font-size: 24px;
+        color: #0066cc;
+        margin: 0 0 14px;
+        font-weight: 800;
+      }
+
+      .sidebar-card img {
+        margin: 0 auto 20px;
+        border-radius: 8px;
+      }
+
+      .sidebar-cta {
+        font-size: 20px;
+        padding: 20px;
+      }
+
+      /* Mobile CTA Card */
+      .mobile-cta {
+        display: block;
+        margin: 40px 0;
+      }
+
+      @media (min-width: 1024px) {
+        .mobile-cta {
+          display: none;
+        }
+      }
+
+      /* Sticky Footer CTA */
+      .sticky-cta {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        padding: 14px;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+      }
+
+      @media (min-width: 768px) {
+        .sticky-cta {
+          display: none;
+        }
+      }
+
+      .sticky-cta .cta-button {
+        font-size: 18px;
+        padding: 18px 20px;
+      }
+
+      /* Sticky Bottom Bar */
+      #ix4a36-4 {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        align-items: stretch;
+        justify-content: center;
+        border-style: none;
+        border-width: 0px;
+        padding-top: 15px;
+        padding-bottom: 15px;
+        margin: 0px;
+        background-color: rgb(182, 181, 181) !important;
+        z-index: 1001;
+        display: flex;
+      }
+
+      #ix4a36-4 .fk-col {
+        width: 100%;
+        text-align: center;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      #ix4a36-4 a {
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 18px;
+        text-decoration: none;
+        display: inline-block;
+        padding: 15px 30px;
+        background-color: #28a745;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s;
+      }
+
+      #ix4a36-4 a:hover {
+        background-color: #218838;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+
+      @media (min-width: 768px) {
+        #ix4a36-4 a {
+          font-size: 20px;
+          padding: 18px 40px;
+        }
+      }
+
+      .mt-4 {
+        margin-top: 16px;
+      }
+
+      /* Footer */
+      footer {
+        background: #f8f9fa;
+        padding: 40px 0;
+        margin-top: 48px;
+        text-align: center;
+        font-size: 13px;
+        color: #6c757d;
+      }
+
+      footer .container {
+        max-width: 720px;
+      }
+
+      footer p {
+        margin-bottom: 16px;
+        font-size: 13px;
+      }
+
+      footer a {
+        color: #6c757d;
+      }
+
+      footer img {
+        max-width: 300px;
+        margin: 20px auto;
+      }
+
+      .mobile-padding {
+        height: 90px;
+      }
+
+      @media (min-width: 768px) {
+        .mobile-padding {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div class="top-bar-content">
+        <img
+          src="{{content.topbar.icon}}"
+          data-image-role="topbar-icon"
+          onerror="this.src='https://placehold.co/32x32/2c2c2c/ffffff?text=🏳'"
+          alt="US Flag"
+        />
+        <span>{{content.topbar.label}}</span>
+      </div>
+    </div>
+    <!-- Alert Banner -->
+    <div class="alert-banner">
+      <strong>UPDATE:</strong> <span>{{content.alert.banner}}</span>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+      <div class="main-layout">
+        <!-- Content Column -->
+        <div>
+          <!-- Breadcrumb -->
+          <p class="breadcrumb"><span>{{content.breadcrumbs}}</span></p>
+
+          <!-- Hero Section -->
+          <section>
+            <h1><span>{{content.hero.headline}}</span></h1>
+            <p class="subtitle"><span>{{content.hero.subheadline}}</span></p>
+            <img
+              src="{{content.hero.videoHtml}}"
+              data-image-role="hero"
+              alt="{{content.section1.altvideoHtml}}"
+              class="section-image"
+              onerror="this.src='https://placehold.co/500x400/f8f9fa/333333?text=hero+Image'"
+            />
+            <span>{{content.story.intro}}</span>
+          </section>
+
+          <!-- Section 1 -->
+          <section>
+            <h2><span>{{content.section1.title}}</span></h2>
+            <span>{{content.section1.videoHtml}}</span>
+            <img
+              src="{{content.section1.image}}"
+              data-image-role="section-1"
+              alt="{{content.section1.imageAlt}}"
+              class="section-image"
+              onerror="this.src='https://placehold.co/500x400/f8f9fa/333333?text=Section+1+Image'"
+            />
+            <span>{{content.section1.body}}</span>
+          </section>
+
+          <!-- Section 2 -->
+          <section>
+            <h2><span>{{content.section2.title}}</span></h2>
+            <img
+              src="{{content.section2.image}}"
+              data-image-role="section-2"
+              alt="{{content.section2.imageAlt}}"
+              class="section-image"
+              onerror="this.src='https://placehold.co/700x400/f8f9fa/333333?text=Section+2+Image'"
+            />
+            <span>{{content.section2.body}}</span>
+          </section>
+
+          <!-- Section 3 -->
+          <section>
+            <h2><span>{{content.section3.title}}</span></h2>
+            <img
+              src="{{content.section3.image}}"
+              data-image-role="section-3"
+              alt="{{content.section3.imageAlt}}"
+              class="section-image"
+              onerror="this.src='https://placehold.co/500x400/f8f9fa/333333?text=Section+3+Image'"
+            />
+            <span>{{content.section3.body}}</span>
+          </section>
+
+          <!-- Mobile CTA Card -->
+          <!--<div class="mobile-cta">
+          <div class="sidebar-card">
+            <h3>
+              {{content.sidebar.title}}<br />{{content.sidebar.subtitle}}
+            </h3>
+            <img src="{{content.sidebar.productImage}}" alt="Product"
+              onerror="this.src='https://placehold.co/400x400/ffffff/333333?text=Product'" />
+            <a href="#next-step" class="cta-button sidebar-cta">
+              {{content.sidebar.ctaButton}}
+            </a>
+          </div>
+        </div>-->
+
+          <!-- Section 4 -->
+          <section>
+            <h2><span>{{content.section4.title}}</span></h2>
+            <img
+              src="{{content.section4.image}}"
+              data-image-role="section-4"
+              alt="{{content.section4.imageAlt}}"
+              class="section-image"
+              onerror="this.src='https://placehold.co/500x400/f8f9fa/333333?text=Section+4+Image'"
+            />
+            <span>{{content.section4.body}}</span>
+          </section>
+
+          <!-- Section 5 -->
+          <section>
+            <h2><span>{{content.section5.title}}</span></h2>
+            <img
+              src="{{content.section5.image}}"
+              data-image-role="section-5"
+              alt="{{content.section5.imageAlt}}"
+              class="section-image"
+              onerror="this.src='https://placehold.co/700x400/f8f9fa/333333?text=Section+5+Image'"
+            />
+            <span>{{content.section5.body}}</span>
+          </section>
+
+          <!-- Section 6 -->
+          <section>
+            <h2><span>{{content.section6.title}}</span></h2>
+            <img
+              src="{{content.section6.image}}"
+              data-image-role="section-6"
+              alt="{{content.section6.imageAlt}}"
+              class="section-image"
+              onerror="this.src='https://placehold.co/700x400/f8f9fa/333333?text=Section+6+Image'"
+            />
+            <span>{{content.section6.body}}</span>
+          </section>
+
+          <!-- Section 7 -->
+          <section>
+            <h2><span>{{content.section7.title}}</span></h2>
+            <img
+              src="{{content.section7.image}}"
+              data-image-role="section-7"
+              alt="{{content.section7.imageAlt}}"
+              class="section-image"
+              onerror="this.src='https://placehold.co/500x400/f8f9fa/333333?text=Section+7+Image'"
+            />
+            <span>{{content.section7.body}}</span>
+          </section>
+
+          <!-- Section 8 -->
+          <section style="text-align: left">
+            <h2><span>{{content.section8.title}}</span></h2>
+            <img
+              src="{{content.section8.image}}"
+              data-image-role="section-8"
+              alt="{{content.section8.imageAlt}}"
+              class="section-image"
+              onerror="this.src='https://placehold.co/700x400/f8f9fa/333333?text=Section+8+Image'"
+            />
+            <span>{{content.section8.body}}</span>
+          </section>
+
+          <!-- Section 9 -->
+          <section style="text-align: left">
+            <h2><span>{{content.section9.title}}</span></h2>
+            <img
+              src="{{content.section9.image}}"
+              data-image-role="section-9"
+              alt="{{content.section9.imageAlt}}"
+              class="section-image"
+              onerror="this.src='https://placehold.co/700x400/f8f9fa/333333?text=Section+9+Image'"
+            />
+            <span>{{content.section9.body}}</span>
+          </section>
+
+          <section style="text-align: left">
+            <h2><span>{{content.section10.title}}</span></h2>
+            <img
+              src="{{content.section10.image}}"
+              data-image-role="section-10"
+              alt="{{content.section10.imageAlt}}"
+              class="section-image"
+              onerror="this.src='https://placehold.co/700x400/f8f9fa/333333?text=Section+10+Image'"
+            />
+            <span>{{content.section10.body}}</span>
+          </section>
+          <!-- Offer Section -->
+          <!--<section>
+          <div class="offer-box">
+            <h2>{{content.section10.title}}</h2>
+            <img src="{{content.section10.image}}" alt="{{content.section10.imageAlt}}" class="section-image"
+              onerror="this.src='https://placehold.co/700x400/f8f9fa/333333?text=Section+10+Image'" />
+            {{content.section10.body}}
+            <div class="countdown">
+              {{content.section10.countdownLabel}}: ⏰
+              <span>{{content.section10.countdownTime}}</span>
+            </div>
+            <a href="#next-step" class="cta-button">
+              {{content.cta.primary}}
+            </a>
+            <p style="margin-top: 14px; margin-bottom: 0">
+              <strong>{{content.assurances.refund}}</strong>
+            </p>
+          </div>
+        </section>
+
+        <!-- Section 11 -->
+          <section>
+            <h2>{{content.section11.title}}</h2>
+            <img
+              src="{{content.section11.image}}"
+              alt="{{content.section11.imageAlt}}"
+              class="section-image"
+              onerror="this.src='https://placehold.co/700x400/f8f9fa/333333?text=Section+11+Image'"
+            />
+            <span>{{content.section11.body}}</span>
+            <a href="#next-step" class="cta-button mt-4">
+              <span>{{content.cta.secondary}}</span>
+            </a>
+          </section>
+
+          <!-- Section 12 -->
+          <!--<section>
+          <h2>{{content.section12.title}}</h2>
+          <a href="#next-step" class="cta-button">
+            {{content.cta.secondary}}
+          </a>
+        </section>-->
+
+          <!-- Contact Info / Assurances -->
+          <section>
+            <span>{{content.assurances.blurb}}</span> <span>{{content.contact.html}}</span>
+            <img
+              src="{{content.section12.image}}"
+              data-image-role="section-12"
+              alt="{{content.section12.imageAlt}}"
+              class="section-image"
+              onerror="this.src='https://placehold.co/700x400/f8f9fa/333333?text=Section+12+Image'"
+            />
+            <span>{{content.section12.body}}</span>
+            <a href="#next-step" class="cta-button mt-4">
+              <span>{{content.cta.secondary}}</span>
+            </a>
+          </section>
+
+          <!-- Comments Section -->
+          <div class="comments">
+            <h2>Comments</h2>
+            <div class="comment">
+              <img
+                src="{{content.reactions.r1.avatar}}"
+                alt="{{content.reactions.r1.name}}"
+                class="comment-avatar"
+                onerror="this.src='https://placehold.co/40x40/cccccc/666666?text=👤'"
+              />
+              <div class="comment-content">
+                <h3><span>{{content.reactions.r1.name}}</span></h3>
+                <p><span>{{content.reactions.r1.text}}</span></p>
+                <div class="comment-meta">
+                  <a href="#next-step">Like</a> · <a href="#next-step">Reply</a> ·
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/8c8da47d-1b35-4595-b42e-df94a17bef0d-shop-try-spartan-com/assets/icons/1750416781287_download_3_-2.png"
+                    alt="like"
+                    onerror="this.src='https://placehold.co/18x18/f8f9fa/333333?text=👍'"
+                  />
+                  <span>{{content.reactions.r1.likes}}</span> ·
+                  <span>{{content.reactions.r1.time}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="comment">
+              <img
+                src="{{content.reactions.r2.avatar}}"
+                alt="{{content.reactions.r2.name}}"
+                class="comment-avatar"
+                onerror="this.src='https://placehold.co/40x40/cccccc/666666?text=👤'"
+              />
+              <div class="comment-content">
+                <h3><span>{{content.reactions.r2.name}}</span></h3>
+                <p><span>{{content.reactions.r2.text}}</span></p>
+                <div class="comment-meta">
+                  <a href="#next-step">Like</a> · <a href="#next-step">Reply</a> ·
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/8c8da47d-1b35-4595-b42e-df94a17bef0d-shop-try-spartan-com/assets/icons/1750416781287_download_3_-2.png"
+                    alt="like"
+                    onerror="this.src='https://placehold.co/18x18/f8f9fa/333333?text=👍'"
+                  />
+                  <span>{{content.reactions.r2.likes}}</span> ·
+                  <span>{{content.reactions.r2.time}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="comment">
+              <img
+                src="{{content.reactions.r3.avatar}}"
+                alt="{{content.reactions.r3.name}}"
+                class="comment-avatar"
+                onerror="this.src='https://placehold.co/40x40/cccccc/666666?text=👤'"
+              />
+              <div class="comment-content">
+                <h3><span>{{content.reactions.r3.name}}</span></h3>
+                <p><span>{{content.reactions.r3.text}}</span></p>
+                <div class="comment-meta">
+                  <a href="#next-step">Like</a> · <a href="#next-step">Reply</a> ·
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/8c8da47d-1b35-4595-b42e-df94a17bef0d-shop-try-spartan-com/assets/icons/1750416781287_download_3_-2.png"
+                    alt="like"
+                    onerror="this.src='https://placehold.co/18x18/f8f9fa/333333?text=👍'"
+                  />
+                  <span>{{content.reactions.r3.likes}}</span> ·
+                  <span>{{content.reactions.r3.time}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="comment">
+              <img
+                src="{{content.reactions.r4.avatar}}"
+                alt="{{content.reactions.r4.name}}"
+                class="comment-avatar"
+                onerror="this.src='https://placehold.co/40x40/cccccc/666666?text=👤'"
+              />
+              <div class="comment-content">
+                <h3><span>{{content.reactions.r4.name}}</span></h3>
+                <p><span>{{content.reactions.r4.text}}</span></p>
+                <div class="comment-meta">
+                  <a href="#next-step">Like</a> · <a href="#next-step">Reply</a> ·
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/8c8da47d-1b35-4595-b42e-df94a17bef0d-shop-try-spartan-com/assets/icons/1750416781287_download_3_-2.png"
+                    alt="like"
+                    onerror="this.src='https://placehold.co/18x18/f8f9fa/333333?text=👍'"
+                  />
+                  <span>{{content.reactions.r4.likes}}</span> ·
+                  <span>{{content.reactions.r4.time}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="comment">
+              <img
+                src="{{content.reactions.r5.avatar}}"
+                alt="{{content.reactions.r5.name}}"
+                class="comment-avatar"
+                onerror="this.src='https://placehold.co/40x40/cccccc/666666?text=👤'"
+              />
+              <div class="comment-content">
+                <h3><span>{{content.reactions.r5.name}}</span></h3>
+                <p><span>{{content.reactions.r5.text}}</span></p>
+                <div class="comment-meta">
+                  <a href="#next-step">Like</a> · <a href="#next-step">Reply</a> ·
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/8c8da47d-1b35-4595-b42e-df94a17bef0d-shop-try-spartan-com/assets/icons/1750416781287_download_3_-2.png"
+                    alt="like"
+                    onerror="this.src='https://placehold.co/18x18/f8f9fa/333333?text=👍'"
+                  />
+                  <span>{{content.reactions.r5.likes}}</span> ·
+                  <span>{{content.reactions.r5.time}}</span>
+                </div>
+              </div>
+            </div>
+            <!-- Reaction 5 Reply 1 -->
+            <div class="comment-reply">
+              <div class="comment">
+                <img
+                  src="{{content.reactions.r5.reply1.avatar}}"
+                  alt="{{content.reactions.r5.reply1.name}}"
+                  class="comment-avatar"
+                  onerror="this.src='https://placehold.co/40x40/cccccc/666666?text=👤'"
+                />
+                <div class="comment-content">
+                  <h3><span>{{content.reactions.r5.reply1.name}}</span></h3>
+                  <p><span>{{content.reactions.r5.reply1.text}}</span></p>
+                  <div class="comment-meta">
+                    <a href="#next-step">Like</a> · <a href="#next-step">Reply</a> ·
+                    <img
+                      src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/8c8da47d-1b35-4595-b42e-df94a17bef0d-shop-try-spartan-com/assets/icons/1750416781287_download_3_-2.png"
+                      alt="like"
+                      onerror="this.src='https://placehold.co/18x18/f8f9fa/333333?text=👍'"
+                    />
+                    <span>{{content.reactions.r5.reply1.likes}}</span> ·
+                    <span>{{content.reactions.r5.reply1.time}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="comment">
+              <img
+                src="{{content.reactions.r6.avatar}}"
+                alt="{{content.reactions.r6.name}}"
+                class="comment-avatar"
+                onerror="this.src='https://placehold.co/40x40/cccccc/666666?text=👤'"
+              />
+              <div class="comment-content">
+                <h3><span>{{content.reactions.r6.name}}</span></h3>
+                <p><span>{{content.reactions.r6.text}}</span></p>
+                <div class="comment-meta">
+                  <a href="#next-step">Like</a> · <a href="#next-step">Reply</a> ·
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/8c8da47d-1b35-4595-b42e-df94a17bef0d-shop-try-spartan-com/assets/icons/1750416781287_download_3_-2.png"
+                    alt="like"
+                    onerror="this.src='https://placehold.co/18x18/f8f9fa/333333?text=👍'"
+                  />
+                  <span>{{content.reactions.r6.likes}}</span> ·
+                  <span>{{content.reactions.r6.time}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="comment">
+              <img
+                src="{{content.reactions.r7.avatar}}"
+                alt="{{content.reactions.r7.name}}"
+                class="comment-avatar"
+                onerror="this.src='https://placehold.co/40x40/cccccc/666666?text=👤'"
+              />
+              <div class="comment-content">
+                <h3><span>{{content.reactions.r7.name}}</span></h3>
+                <p><span>{{content.reactions.r7.text}}</span></p>
+                <div class="comment-meta">
+                  <a href="#next-step">Like</a> · <a href="#next-step">Reply</a> ·
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/8c8da47d-1b35-4595-b42e-df94a17bef0d-shop-try-spartan-com/assets/icons/1750416781287_download_3_-2.png"
+                    alt="like"
+                    onerror="this.src='https://placehold.co/18x18/f8f9fa/333333?text=👍'"
+                  />
+                  <span>{{content.reactions.r7.likes}}</span> ·
+                  <span>{{content.reactions.r7.time}}</span>
+                </div>
+              </div>
+            </div>
+            <!-- Reaction 7 Reply 1 -->
+            <div class="comment-reply">
+              <div class="comment">
+                <img
+                  src="{{content.reactions.r7.reply1.avatar}}"
+                  alt="{{content.reactions.r7.reply1.name}}"
+                  class="comment-avatar"
+                  onerror="this.src='https://placehold.co/40x40/cccccc/666666?text=👤'"
+                />
+                <div class="comment-content">
+                  <h3><span>{{content.reactions.r7.reply1.name}}</span></h3>
+                  <p><span>{{content.reactions.r7.reply1.text}}</span></p>
+                  <div class="comment-meta">
+                    <a href="#next-step">Like</a> · <a href="#next-step">Reply</a> ·
+                    <img
+                      src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/8c8da47d-1b35-4595-b42e-df94a17bef0d-shop-try-spartan-com/assets/icons/1750416781287_download_3_-2.png"
+                      alt="like"
+                      onerror="this.src='https://placehold.co/18x18/f8f9fa/333333?text=👍'"
+                    />
+                    <span>{{content.reactions.r7.reply1.likes}}</span> ·
+                    <span>{{content.reactions.r7.reply1.time}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="comment">
+              <img
+                src="{{content.reactions.r8.avatar}}"
+                alt="{{content.reactions.r8.name}}"
+                class="comment-avatar"
+                onerror="this.src='https://placehold.co/40x40/cccccc/666666?text=👤'"
+              />
+              <div class="comment-content">
+                <h3><span>{{content.reactions.r8.name}}</span></h3>
+                <p><span>{{content.reactions.r8.text}}</span></p>
+                <div class="comment-meta">
+                  <a href="#next-step">Like</a> · <a href="#next-step">Reply</a> ·
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/8c8da47d-1b35-4595-b42e-df94a17bef0d-shop-try-spartan-com/assets/icons/1750416781287_download_3_-2.png"
+                    alt="like"
+                    onerror="this.src='https://placehold.co/18x18/f8f9fa/333333?text=👍'"
+                  />
+                  <span>{{content.reactions.r8.likes}}</span> ·
+                  <span>{{content.reactions.r8.time}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="comment">
+              <img
+                src="{{content.reactions.r9.avatar}}"
+                alt="{{content.reactions.r9.name}}"
+                class="comment-avatar"
+                onerror="this.src='https://placehold.co/40x40/cccccc/666666?text=👤'"
+              />
+              <div class="comment-content">
+                <h3><span>{{content.reactions.r9.name}}</span></h3>
+                <p><span>{{content.reactions.r9.text}}</span></p>
+                <div class="comment-meta">
+                  <a href="#next-step">Like</a> · <a href="#next-step">Reply</a> ·
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/8c8da47d-1b35-4595-b42e-df94a17bef0d-shop-try-spartan-com/assets/icons/1750416781287_download_3_-2.png"
+                    alt="like"
+                    onerror="this.src='https://placehold.co/18x18/f8f9fa/333333?text=👍'"
+                  />
+                  <span>{{content.reactions.r9.likes}}</span> ·
+                  <span>{{content.reactions.r9.time}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="comment">
+              <img
+                src="{{content.reactions.r10.avatar}}"
+                alt="{{content.reactions.r10.name}}"
+                class="comment-avatar"
+                onerror="this.src='https://placehold.co/40x40/cccccc/666666?text=👤'"
+              />
+              <div class="comment-content">
+                <h3><span>{{content.reactions.r10.name}}</span></h3>
+                <p><span>{{content.reactions.r10.text}}</span></p>
+                <div class="comment-meta">
+                  <a href="#next-step">Like</a> · <a href="#next-step">Reply</a> ·
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/8c8da47d-1b35-4595-b42e-df94a17bef0d-shop-try-spartan-com/assets/icons/1750416781287_download_3_-2.png"
+                    alt="like"
+                    onerror="this.src='https://placehold.co/18x18/f8f9fa/333333?text=👍'"
+                  />
+                  <span>{{content.reactions.r10.likes}}</span> ·
+                  <span>{{content.reactions.r10.time}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="comment">
+              <img
+                src="{{content.reactions.r11.avatar}}"
+                alt="{{content.reactions.r11.name}}"
+                class="comment-avatar"
+                onerror="this.src='https://placehold.co/40x40/cccccc/666666?text=👤'"
+              />
+              <div class="comment-content">
+                <h3><span>{{content.reactions.r11.name}}</span></h3>
+                <p><span>{{content.reactions.r11.text}}</span></p>
+                <div class="comment-meta">
+                  <a href="#next-step">Like</a> · <a href="#next-step">Reply</a> ·
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/8c8da47d-1b35-4595-b42e-df94a17bef0d-shop-try-spartan-com/assets/icons/1750416781287_download_3_-2.png"
+                    alt="like"
+                    onerror="this.src='https://placehold.co/18x18/f8f9fa/333333?text=👍'"
+                  />
+                  <span>{{content.reactions.r11.likes}}</span> ·
+                  <span>{{content.reactions.r11.time}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="comment-reply">
+              <div class="comment">
+                <img
+                  src="{{content.reactions.r11.reply1.avatar}}"
+                  alt="{{content.reactions.r11.reply1.name}}"
+                  class="comment-avatar"
+                  onerror="this.src='https://placehold.co/40x40/cccccc/666666?text=👤'"
+                />
+                <div class="comment-content">
+                  <h3><span>{{content.reactions.r11.reply1.name}}</span></h3>
+                  <p><span>{{content.reactions.r11.reply1.text}}</span></p>
+                  <div class="comment-meta">
+                    <a href="#next-step">Like</a> · <a href="#next-step">Reply</a> ·
+                    <img
+                      src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/8c8da47d-1b35-4595-b42e-df94a17bef0d-shop-try-spartan-com/assets/icons/1750416781287_download_3_-2.png"
+                      alt="like"
+                      onerror="this.src='https://placehold.co/18x18/f8f9fa/333333?text=👍'"
+                    />
+                    <span>{{content.reactions.r11.reply1.likes}}</span> ·
+                    <span>{{content.reactions.r11.reply1.time}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="comment">
+              <img
+                src="{{content.reactions.r12.avatar}}"
+                alt="{{content.reactions.r12.name}}"
+                class="comment-avatar"
+                onerror="this.src='https://placehold.co/40x40/cccccc/666666?text=👤'"
+              />
+              <div class="comment-content">
+                <h3><span>{{content.reactions.r12.name}}</span></h3>
+                <p><span>{{content.reactions.r12.text}}</span></p>
+                <div class="comment-meta">
+                  <a href="#next-step">Like</a> · <a href="#next-step">Reply</a> ·
+                  <img
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/8c8da47d-1b35-4595-b42e-df94a17bef0d-shop-try-spartan-com/assets/icons/1750416781287_download_3_-2.png"
+                    alt="like"
+                    onerror="this.src='https://placehold.co/18x18/f8f9fa/333333?text=👍'"
+                  />
+                  <span>{{content.reactions.r12.likes}}</span> ·
+                  <span>{{content.reactions.r12.time}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar (Desktop Only) -->
+        <div class="sidebar">
+          <div class="sidebar-card">
+            <h3><span>{{content.sidebar.title}}</span><br /><span>{{content.sidebar.subtitle}}</span></h3>
+            <img
+              src="{{content.sidebar.productImage}}"
+              data-image-role="sidebar-product"
+              alt="Product"
+              onerror="this.src='https://placehold.co/400x400/ffffff/333333?text=Product'"
+            />
+            <div>
+              <a
+                href="#next-step"
+                class="cta-button-sidebar sidebar-cta"
+              >
+                <span>{{content.sidebar.ctaButton}}</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sticky Footer CTA (Mobile Only) -->
+    <!--<div class="sticky-cta">
+    <a href="#next-step" class="cta-button">
+      {{content.sticky.cta}}
+    </a>
+  </div>
+
+  <!-- Footer -->
+    <!-- <footer>
+      <div class="container">
+        <p>
+          <strong>MEDICAL & HEALTH DISCLOSURE:</strong> Results may vary. The
+          content and products presented here are not intended to diagnose,
+          treat, cure, or prevent any disease. This offer is not a replacement
+          for any medications or treatments prescribed by a doctor or healthcare
+          professional. We recommend consulting a physician before using any
+          products or implementing any recommendations mentioned on this page.
+          The FDA has not evaluated these statements.
+        </p>
+        <p>SPARTAN - Copyright 2025 - All Rights Reserved.</p>
+        <p>
+          <a href="#next-step"
+            >Privacy Policy</a
+          >
+          -
+          <a href="#next-step"
+            >Terms Of Service</a
+          >
+          -
+          <a href="#next-step"
+            >Refund Policy</a
+          >
+        </p>
+        <img
+          src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/8c8da47d-1b35-4595-b42e-df94a17bef0d-shop-try-spartan-com/assets/images/1750412901220_1719483630013_1718789453182_f1e052fc3f19b3c0bf6479b1c7f772a2-28.webp"
+          alt="Payment Methods"
+        />
+        <p>
+          <a href="#next-step">Powered by CheckoutChamp</a>
+        </p>
+      </div>
+    </footer> -->
+
+    <!-- Mobile Padding -->
+    <div class="mobile-padding"></div>
+
+    <!-- Sticky Bottom Bar -->
+    <div data-secondsdelay="" id="ix4a36-4" class="fk-row sticky-bar front">
+      <div
+        align="center"
+        data-secondsdelay=""
+        id="igo1za"
+        class="fk-col col max-width"
+      >
+        <a
+          id="fkt-link-afa-fb4-a09"
+          data-id="fkt-link-afa-fb4-a09"
+          title="Get Nebroo Sticky"
+          target="_self"
+          action="route"
+          align="center"
+          animate="none"
+          speed="none"
+          delay="none"
+          data-secondsdelay=""
+          data-minutesdelay=""
+          replaceproductid=""
+          billnow="false"
+          quantity=""
+          price=""
+          onclick="linkMethod(event)"
+          variantvalue=""
+          offer=""
+          upsell=""
+          style="cursor: pointer"
+          href="#next-step"
+          ><span>{{content.sticky.bottomBarText}}</span></a
+        >
+      </div>
+    </div>
+  </body>
+</html>

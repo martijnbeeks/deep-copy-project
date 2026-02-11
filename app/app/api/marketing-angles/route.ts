@@ -3,7 +3,7 @@ import { getJobsByUserId, createJob, updateJobStatus, createResult } from '@/lib
 import { deepCopyClient } from '@/lib/clients/deepcopy-client'
 import { requireAuth, createAuthErrorResponse } from '@/lib/auth/user-auth'
 import { handleApiError, createSuccessResponse, createValidationErrorResponse } from '@/lib/middleware/error-handler'
-import { checkAndIncrementUsage } from '@/lib/middleware/usage-limits'
+import { checkJobCreationLimit } from '@/lib/services/billing'
 import { logger } from '@/lib/utils/logger'
 
 export async function GET(request: NextRequest) {
@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
       sales_page_url,
       target_approach,
       avatars,
-      product_image
+      product_image,
+      allowOverage
     } = await request.json()
 
     if (!title) {
@@ -91,18 +92,29 @@ export async function POST(request: NextRequest) {
       return createSuccessResponse(marketingAngle)
     }
 
-    // Check usage limits before creating marketing angle (deep research)
-    // Only check if there are researched avatars to process
-    const usageCheck = await checkAndIncrementUsage(user, 'deep_research')
-    if (!usageCheck.allowed) {
+    // Check job credit limit (event-based) before creating marketing angle
+    const limitCheck = await checkJobCreationLimit(user.id, 'deep_research')
+    if (!limitCheck.canCreate && !allowOverage) {
+      if (limitCheck.overageConfirmationRequired) {
+        return NextResponse.json(
+          {
+            error: 'Overage confirmation required',
+            code: 'JOB_CREDITS_OVERAGE_CONFIRMATION_REQUIRED',
+            message: limitCheck.reason,
+            remaining: limitCheck.remaining ?? 0,
+            required: limitCheck.required ?? 0,
+            overageCredits: limitCheck.overageCredits ?? 0,
+            overageCostPerCredit: limitCheck.overageCostPerCredit,
+            overageCostTotal: limitCheck.overageCostTotal,
+            currency: 'EUR',
+          },
+          { status: 402 }
+        )
+      }
+
       return NextResponse.json(
-        {
-          error: 'Usage limit exceeded',
-          message: usageCheck.error || `You've reached your weekly limit of ${usageCheck.limit} Deep Research actions. Your limit resets automatically based on a rolling 7-day window.`,
-          currentUsage: usageCheck.currentUsage,
-          limit: usageCheck.limit
-        },
-        { status: 429 } // Too Many Requests
+        { error: 'Job credit limit exceeded', message: limitCheck.reason },
+        { status: 429 }
       )
     }
 

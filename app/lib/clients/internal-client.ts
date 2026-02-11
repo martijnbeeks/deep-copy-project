@@ -63,17 +63,27 @@ class InternalApiClient {
         errorData = { error: errorText }
       }
       
-      // Preserve error data including status code and usage limit info
+      // Preserve error data including status code, usage limit, and overage info
       const error = new Error(errorData.error || errorData.message || `API request failed: ${response.status}`) as Error & {
         status?: number
         currentUsage?: number
         limit?: number
         message?: string
+        code?: string
+        overageCredits?: number
+        overageCostPerCredit?: number
+        overageCostTotal?: number
+        currency?: string
       }
       error.status = response.status
       if (errorData.currentUsage !== undefined) error.currentUsage = errorData.currentUsage
       if (errorData.limit !== undefined) error.limit = errorData.limit
       if (errorData.message) error.message = errorData.message
+      if (errorData.code) error.code = errorData.code
+      if (errorData.overageCredits !== undefined) error.overageCredits = errorData.overageCredits
+      if (errorData.overageCostPerCredit !== undefined) error.overageCostPerCredit = errorData.overageCostPerCredit
+      if (errorData.overageCostTotal !== undefined) error.overageCostTotal = errorData.overageCostTotal
+      if (errorData.currency) error.currency = errorData.currency
       
       throw error
     }
@@ -157,9 +167,11 @@ class InternalApiClient {
     return this.request<string[]>(`/api/jobs/${jobId}/generated-angles`)
   }
 
-  async getInjectedTemplates(jobId: string) {
+  async getInjectedTemplates(jobId: string, includeHtml: boolean = true) {
     // Use jobs endpoint since we're working with job IDs
-    return this.request(`/api/jobs/${jobId}/injected-templates`)
+    // By default include HTML for backward compatibility, but can be disabled for faster requests
+    const params = includeHtml ? '?includeHtml=true' : ''
+    return this.request(`/api/jobs/${jobId}/injected-templates${params}`)
   }
 
   async updateGeneratedAngles(marketingAngleId: string, angles: string[]) {
@@ -192,7 +204,8 @@ class InternalApiClient {
 
   async generateSwipeFiles(data: {
     original_job_id: string
-    select_angle: string
+    avatar_id: string
+    angle_id: string
     swipe_file_ids?: string[]
   }) {
     return this.request('/api/swipe-files/generate', {
@@ -302,11 +315,21 @@ class InternalApiClient {
         currentUsage?: number
         limit?: number
         message?: string
+        code?: string
+        overageCredits?: number
+        overageCostPerCredit?: number
+        overageCostTotal?: number
+        currency?: string
       }
       error.status = response.status
       if (errorData.currentUsage !== undefined) error.currentUsage = errorData.currentUsage
       if (errorData.limit !== undefined) error.limit = errorData.limit
       if (errorData.message) error.message = errorData.message
+      if (errorData.code) error.code = errorData.code
+      if (errorData.overageCredits !== undefined) error.overageCredits = errorData.overageCredits
+      if (errorData.overageCostPerCredit !== undefined) error.overageCostPerCredit = errorData.overageCostPerCredit
+      if (errorData.overageCostTotal !== undefined) error.overageCostTotal = errorData.overageCostTotal
+      if (errorData.currency) error.currency = errorData.currency
       
       throw error
     }

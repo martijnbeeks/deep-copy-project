@@ -4,7 +4,8 @@ import { useState, useRef, useEffect, useMemo } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Eye, FileText } from "lucide-react"
 
-interface TemplatePreviewProps {
+// Update interface to include optional prediction data
+export interface TemplatePreviewProps {
   template: {
     id: string
     name: string
@@ -14,7 +15,15 @@ interface TemplatePreviewProps {
   }
   isSelected: boolean
   onClick: () => void
+  prediction?: {
+    overall_fit_score: number
+    reasoning: string
+    audience_fit?: number
+    pain_point_fit?: number
+    tone_fit?: number
+  }
 }
+
 
 // Lazy iframe component that only loads when visible
 function LazyIframe({ srcDoc, className, style, title, onLoad, onError, ...props }: React.IframeHTMLAttributes<HTMLIFrameElement> & { srcDoc: string }) {
@@ -60,7 +69,7 @@ function LazyIframe({ srcDoc, className, style, title, onLoad, onError, ...props
   )
 }
 
-export function TemplatePreview({ template, isSelected, onClick }: TemplatePreviewProps) {
+export function TemplatePreview({ template, isSelected, onClick, prediction }: TemplatePreviewProps) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDialogClosing, setIsDialogClosing] = useState(false)
@@ -196,9 +205,9 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
   return (
     <div
       key={template.id}
-      className={`relative cursor-pointer rounded-xl border-2 p-2 md:p-3 transition-all h-[280px] md:h-[320px] flex flex-col ${isSelected
+      className={`relative cursor-pointer rounded-xl border-2 p-3 transition-all h-auto min-h-[420px] flex flex-col group ${isSelected
         ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-        : 'border-border bg-card'
+        : 'border-border bg-card hover:border-sidebar-accent-foreground/20'
         }`}
       onClick={(e) => {
         // Call the selection handler when clicking on the template
@@ -212,8 +221,20 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
         }
       }}
     >
+      {/* Prediction Score Banner */}
+      {prediction && (
+        <div className="absolute -top-3 right-2 z-10">
+          <div className={`
+            px-3 py-1 rounded-full text-xs font-bold shadow-sm border
+            bg-zinc-900 border-zinc-800 backdrop-blur-sm
+          `}>
+            <span className="text-primary">{(prediction.overall_fit_score * 100).toFixed(0)}%</span> <span className="text-white">Match</span>
+          </div>
+        </div>
+      )}
+
       {/* Template Header */}
-      <div className="flex items-start justify-between mb-1.5 gap-1.5">
+      <div className="flex items-start justify-between mb-3 gap-1.5 pt-2 px-1">
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-sm text-foreground break-words line-clamp-1">{template.name}</h3>
           <p className="text-xs text-muted-foreground break-words line-clamp-1">{template.description || 'No description available'}</p>
@@ -229,14 +250,12 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
 
       {/* Preview Area */}
       <div
-        className="flex-1 relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border cursor-pointer"
+        className="relative bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border cursor-pointer h-[200px] mb-3 group-hover:border-primary/50 transition-colors"
         onClick={(e) => {
           e.stopPropagation()
-          // Call the selection handler when clicking the preview area
           onClick()
         }}
       >
-
         <LazyIframe
           key={template.id}
           srcDoc={smallPreviewHTML}
@@ -249,8 +268,53 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
             setIsLoaded(true)
           }}
         />
-
       </div>
+
+      {/* Prediction Details Footer */}
+      {prediction ? (
+        <div className="space-y-3 pt-2 border-t border-border/50">
+          {/* Reasoning */}
+          {prediction.reasoning && (
+            <div className="bg-muted/30 rounded-md p-2 text-xs text-muted-foreground border border-border/50">
+              <span className="font-semibold text-primary block mb-0.5 text-[10px] uppercase tracking-wider">Why we picked this:</span>
+              <p className="transition-all leading-relaxed">
+                {prediction.reasoning}
+              </p>
+            </div>
+          )}
+
+          {/* Sub-scores */}
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: 'Audience', value: prediction.audience_fit },
+              { label: 'Pain', value: prediction.pain_point_fit },
+              { label: 'Tone', value: prediction.tone_fit }
+            ].map((metric, i) => (
+              metric.value !== undefined && (
+                <div key={i} className="flex flex-col gap-1" title={`${metric.label} Fit: ${Math.round(metric.value * 100)}%`}>
+                  <div className="flex justify-between items-center text-[10px] text-muted-foreground font-medium">
+                    <span>{metric.label}</span>
+                    <span>{Math.round(metric.value * 100)}%</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-secondary/50 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        metric.value >= 0.8 ? 'bg-green-500' : 
+                        metric.value >= 0.5 ? 'bg-amber-500' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${metric.value * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1" /> /* Spacer if no prediction */
+      )}
+
+
 
       {/* Action Buttons */}
       <div className="flex items-center justify-between mt-3">
@@ -313,6 +377,7 @@ export function TemplatePreview({ template, isSelected, onClick }: TemplatePrevi
             </div>
           </DialogContent>
         </Dialog>
+
 
         {/* Selection Indicator */}
         {isSelected && (

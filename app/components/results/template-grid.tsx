@@ -5,7 +5,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Copy, Download, Eye, FileText, DownloadCloud, Trash2 } from "lucide-react"
+import { Copy, Download, Eye, FileText, DownloadCloud, Trash2, Edit } from "lucide-react"
+import { getAuthorizationHeader } from "@/lib/utils/client-auth"
 import { useToast } from "@/hooks/use-toast"
 import JSZip from "jszip"
 
@@ -23,6 +24,7 @@ interface TemplateGridProps {
     templates: Template[]
     isLoading?: boolean
     onDelete?: (templateId: string) => void
+    jobId?: string
 }
 
 // Lazy iframe component that only loads when visible
@@ -68,7 +70,7 @@ function LazyIframe({ srcDoc, className, style, sandbox, title, ...props }: Reac
     )
 }
 
-export function TemplateGrid({ templates, isLoading, onDelete }: TemplateGridProps) {
+export function TemplateGrid({ templates, isLoading, onDelete, jobId }: TemplateGridProps) {
     const [copied, setCopied] = useState(false)
     const [deleting, setDeleting] = useState<string | null>(null)
     const { toast } = useToast()
@@ -76,19 +78,7 @@ export function TemplateGrid({ templates, isLoading, onDelete }: TemplateGridPro
     // Memoize HTML processing function
     const createPreviewHTML = useMemo(() => {
         return (htmlContent: string) => {
-            const raw = htmlContent;
-            const hasRealImages = /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(raw);
-            if (!hasRealImages) return raw;
-            const noOnError = raw
-                .replace(/\s+onerror="[^"]*"/gi, '')
-                .replace(/\s+onerror='[^']*'/gi, '');
-            const stripFallbackScripts = noOnError.replace(/<script[\s\S]*?<\/script>/gi, (block) => {
-                const lower = block.toLowerCase();
-                return (lower.includes('handlebrokenimages') || lower.includes('createfallbackimage') || lower.includes('placehold.co'))
-                    ? ''
-                    : block;
-            });
-            return stripFallbackScripts;
+            return htmlContent;
         }
     }, [])
 
@@ -118,20 +108,6 @@ export function TemplateGrid({ templates, isLoading, onDelete }: TemplateGridPro
 </head>
 <body>
   ${createPreviewHTML(template.html)}
-  <script>
-    (function(){
-      function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }
-      function ph(img){ var alt=(img.getAttribute('alt')||'Image'); var text=encodeURIComponent(alt.replace(/[^a-zA-Z0-9\s]/g,'').substring(0,20)||'Image'); return 'https://placehold.co/600x400?text='+text; }
-      function apply(img){
-        if (isTrusted(img.src)) { img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); }; return; }
-        if (!img.complete || img.naturalWidth === 0) { img.src = ph(img); }
-        img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); };
-      }
-      function run(){ document.querySelectorAll('img').forEach(apply); }
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
-      setTimeout(run, 800);
-    })();
-  </script>
 </body>
 </html>`;
             return acc;
@@ -159,7 +135,90 @@ export function TemplateGrid({ templates, isLoading, onDelete }: TemplateGridPro
 
     const handleDownload = (content: string, filename: string) => {
         try {
-            const blob = new Blob([content], { type: 'text/html' })
+            // Check if content already has proper HTML structure with Tailwind
+            const hasTailwindCDN = /cdn\.tailwindcss\.com/i.test(content)
+            const hasDoctype = content.includes('<!DOCTYPE html>')
+            
+            let finalContent = content
+            
+            // If content doesn't have proper structure or Tailwind, wrap it
+            if (!hasDoctype || !hasTailwindCDN) {
+                // Extract body content - handle both cases:
+                // 1. Proper HTML with <body> tag
+                // 2. Malformed HTML starting with <style> tag (backward compatible)
+                const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i)
+                let bodyContent: string
+                
+                if (bodyMatch) {
+                    // Case 1: Has <body> tag - extract its content
+                    bodyContent = bodyMatch[1]
+                } else {
+                    // Case 2: No <body> tag - find content after <style> tag
+                    const styleTagMatch = content.match(/<\/style>/i)
+                    if (styleTagMatch && styleTagMatch.index !== undefined) {
+                        // Content starts after </style> tag
+                        bodyContent = content.substring(styleTagMatch.index + styleTagMatch[0].length).trim()
+                    } else {
+                        // No style tag either - look for first HTML element
+                        const contentPatterns = [
+                            /<div[^>]*>/i,
+                            /<section[^>]*>/i,
+                            /<header[^>]*>/i,
+                            /<main[^>]*>/i,
+                            /<article[^>]*>/i
+                        ]
+                        
+                        let found = false
+                        for (const pattern of contentPatterns) {
+                            const match = content.match(pattern)
+                            if (match && match.index !== undefined) {
+                                bodyContent = content.substring(match.index).trim()
+                                found = true
+                                break
+                            }
+                        }
+                        
+                        if (!found) {
+                            // Last resort: use whole content
+                            bodyContent = content
+                        }
+                    }
+                }
+                
+                // Extract existing stylesheets and scripts from head
+                const stylesheetLinks = content.match(/<link[^>]*rel\s*=\s*["']stylesheet["'][^>]*>/gi) || []
+                const scriptTags = content.match(/<script[^>]*src\s*=\s*["']([^"']+)["'][^>]*><\/script>/gi) || []
+                
+                // Extract inline CSS from <style> tags
+                const styleMatches = content.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || []
+                const inlineCSS = styleMatches.map(m => {
+                    const cssMatch = m.match(/<style[^>]*>([\s\S]*?)<\/style>/i)
+                    return cssMatch ? cssMatch[1] : ''
+                }).join('\n\n')
+                
+                // Extract title
+                const titleMatch = content.match(/<title[^>]*>([\s\S]*?)<\/title>/i)
+                const title = titleMatch ? titleMatch[1].replace(/<[^>]*>/g, '').trim() : 'Template'
+                
+                // Build proper HTML document
+                finalContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+${stylesheetLinks.map(link => `  ${link}`).join('\n')}
+${scriptTags.filter(tag => !tag.includes('tailwindcss')).map(tag => `  ${tag}`).join('\n')}
+${inlineCSS ? `  <style>\n${inlineCSS}\n  </style>` : ''}
+</head>
+<body>
+${bodyContent}
+</body>
+</html>`
+            }
+            
+            const blob = new Blob([finalContent], { type: 'text/html;charset=utf-8' })
             const url = URL.createObjectURL(blob)
             const a = document.createElement('a')
             a.href = url
@@ -198,8 +257,12 @@ export function TemplateGrid({ templates, isLoading, onDelete }: TemplateGridPro
 
         setDeleting(templateId)
         try {
+            const authHeaders = getAuthorizationHeader()
             const response = await fetch(`/api/templates/injected/${templateId}`, {
                 method: 'DELETE',
+                headers: {
+                    ...authHeaders,
+                },
             })
 
             if (!response.ok) {
@@ -375,29 +438,41 @@ export function TemplateGrid({ templates, isLoading, onDelete }: TemplateGridPro
                                     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/20 pointer-events-none"></div>
                                 </div>
 
-                                <div className="flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleDownload(template.html, `${template.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`)}
-                                        className="flex-1"
-                                    >
-                                        <Download className="h-4 w-4 mr-2" />
-                                        Download
-                                    </Button>
-                                    {template.id && (
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex gap-2">
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            onClick={() => handleDelete(template.id!, template.angle || template.name)}
-                                            disabled={deleting === template.id}
-                                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                            onClick={() => handleDownload(template.html, `${template.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`)}
+                                            className="flex-1"
                                         >
-                                            <Trash2 className="h-4 w-4 mr-2" />
-                                            {deleting === template.id ? 'Deleting...' : 'Delete'}
+                                            <Download className="h-4 w-4 mr-2" />
+                                            Download
                                         </Button>
-                                    )}
-                                    <Dialog>
+                                        {template.id && (
+                                            <>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => window.open(`/editor/${template.id}`, '_blank')}
+                                                    className="flex-1"
+                                                >
+                                                    <Edit className="h-4 w-4 mr-2" />
+                                                    Edit
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleDelete(template.id!, template.angle || template.name)}
+                                                    disabled={deleting === template.id}
+                                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                >
+                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                    {deleting === template.id ? 'Deleting...' : 'Delete'}
+                                                </Button>
+                                            </>
+                                        )}
+                                        <Dialog>
                                         <DialogTrigger asChild>
                                             <Button className="flex-1" size="sm">
                                                 <Eye className="h-4 w-4 mr-2" />
@@ -426,25 +501,32 @@ export function TemplateGrid({ templates, isLoading, onDelete }: TemplateGridPro
                                                     }}
                                                 />
                                             </div>
-                                            <div className="flex gap-2 pt-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handleCopyHTML(template.html)}
-                                                >
-                                                    {copied ? 'Copied!' : 'Copy HTML'}
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handleDownload(template.html, `${template.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`)}
-                                                >
-                                                    <Download className="h-4 w-4 mr-2" />
-                                                    Download
-                                                </Button>
+                                            <div className="flex flex-col gap-2 pt-2">
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleCopyHTML(template.html)}
+                                                    >
+                                                        {copied ? 'Copied!' : 'Copy HTML'}
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleDownload(template.html, `${template.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`)}
+                                                    >
+                                                        <Download className="h-4 w-4 mr-2" />
+                                                        Download
+                                                    </Button>
+                                                </div>
+                                                {jobId && (
+                                                    null // Image generation is now handled via dialog when viewing preview/editor
+                                                )}
                                             </div>
                                         </DialogContent>
                                     </Dialog>
+                                    </div>
+                                    {/* Image generation is now handled via dialog when viewing preview/editor */}
                                 </div>
                             </div>
                         </CardContent>

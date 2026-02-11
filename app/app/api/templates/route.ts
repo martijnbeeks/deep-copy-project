@@ -3,6 +3,9 @@ import { getTemplates } from '@/lib/db/queries'
 import { handleApiError, createSuccessResponse } from '@/lib/middleware/error-handler'
 import { logger } from '@/lib/utils/logger'
 
+// Increase timeout to 90 seconds for large HTML content responses
+export const maxDuration = 90
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)

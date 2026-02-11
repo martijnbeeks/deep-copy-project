@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDeepCopyAccessToken } from '@/lib/auth/deepcopy-auth'
 import { handleApiError, createValidationErrorResponse, createSuccessResponse } from '@/lib/middleware/error-handler'
-import { checkAndIncrementUsage } from '@/lib/middleware/usage-limits'
+import { checkJobCreationLimit } from '@/lib/services/billing'
 import { getJobById } from '@/lib/db/queries'
 import { query } from '@/lib/db/connection'
 import { isDevMode } from '@/lib/utils/env'
@@ -12,10 +12,10 @@ const DEEPCOPY_API_URL = 'https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { original_job_id, select_angle, swipe_file_ids } = body
+    const { original_job_id, avatar_id, angle_id, swipe_file_ids, allowOverage } = body
 
-    if (!original_job_id || !select_angle) {
-      return createValidationErrorResponse('original_job_id and select_angle are required')
+    if (!original_job_id || !avatar_id || !angle_id) {
+      return createValidationErrorResponse('original_job_id, avatar_id, and angle_id are required')
     }
 
     // Get the job to find the user
@@ -31,17 +31,29 @@ export async function POST(request: NextRequest) {
     }
     const user = userResult.rows[0]
 
-    // Check usage limits before generating pre-landers
-    const usageCheck = await checkAndIncrementUsage(user, 'pre_lander')
-    if (!usageCheck.allowed) {
+    // Check job credit limit (event-based) before generating pre-landers
+    const limitCheck = await checkJobCreationLimit(job.user_id, 'pre_lander')
+    if (!limitCheck.canCreate && !allowOverage) {
+      if (limitCheck.overageConfirmationRequired) {
+        return NextResponse.json(
+          {
+            error: 'Overage confirmation required',
+            code: 'JOB_CREDITS_OVERAGE_CONFIRMATION_REQUIRED',
+            message: limitCheck.reason,
+            remaining: limitCheck.remaining ?? 0,
+            required: limitCheck.required ?? 0,
+            overageCredits: limitCheck.overageCredits ?? 0,
+            overageCostPerCredit: limitCheck.overageCostPerCredit,
+            overageCostTotal: limitCheck.overageCostTotal,
+            currency: 'EUR',
+          },
+          { status: 402 }
+        )
+      }
+
       return NextResponse.json(
-        {
-          error: 'Usage limit exceeded',
-          message: usageCheck.error || `You've reached your weekly limit of ${usageCheck.limit} Pre-Lander actions. Your limit resets automatically based on a rolling 7-day window.`,
-          currentUsage: usageCheck.currentUsage,
-          limit: usageCheck.limit
-        },
-        { status: 429 } // Too Many Requests
+        { error: 'Job credit limit exceeded', message: limitCheck.reason },
+        { status: 429 }
       )
     }
 
@@ -67,7 +79,7 @@ export async function POST(request: NextRequest) {
         const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 seconds
 
         logger.log(`🔧 ${isDevMode() ? 'DEV MODE' : 'PRODUCTION'}: Submitting swipe file generation to ${endpoint} (attempt ${attempt})`)
-        logger.log(`🔧 Request payload: original_job_id=${deepCopyJobId}, select_angle=${select_angle}`)
+        logger.log(`🔧 Request payload: original_job_id=${deepCopyJobId}, avatar_id=${avatar_id}, angle_id=${angle_id}`)
 
         const response = await fetch(`${DEEPCOPY_API_URL}${endpoint}?t=${Date.now()}`, {
           method: 'POST',
@@ -81,7 +93,8 @@ export async function POST(request: NextRequest) {
           },
           body: JSON.stringify({
             original_job_id: deepCopyJobId, // Use DeepCopy job ID, not local database ID
-            select_angle,
+            avatar_id,
+            angle_id,
             ...(swipe_file_ids && swipe_file_ids.length > 0 && { swipe_file_ids })
           }),
           signal: controller.signal
@@ -95,6 +108,26 @@ export async function POST(request: NextRequest) {
         }
 
         const data = await response.json()
+
+        // Record job credit event for pre_lander generation (event-based billing)
+        try {
+          const { JOB_CREDITS_BY_TYPE } = await import('@/lib/constants/job-credits')
+          const { recordJobCreditEvent } = await import('@/lib/services/billing')
+
+          // Use a unique synthetic job ID so each generation is billed separately
+          const deepCopyJobId = job.execution_id || job.id
+          const preLanderJobId = `prelander_${deepCopyJobId}_${angle_id}_${Date.now()}`
+
+          await recordJobCreditEvent({
+            userId: job.user_id,
+            jobId: preLanderJobId,
+            jobType: 'pre_lander',
+            credits: JOB_CREDITS_BY_TYPE.pre_lander,
+          })
+        } catch (creditError: any) {
+          logger.error(`❌ Failed to record pre_lander job credit event: ${creditError.message}`)
+        }
+
         return createSuccessResponse(data)
 
       } catch (error: any) {

@@ -1,0 +1,2656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <title>Advertorial</title>
+    <link rel="icon" id="favicon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║                    ⬇️  PASTE AI OUTPUT BELOW  ⬇️                              ║
+║                                                                              ║
+║   Paste the complete "const CONFIG = { ... };" from AI output here.          ║
+║   Then add your image URLs and save.                                         ║
+║                                                                              ║
+║   THEME OPTIONS: "health" (green), "medical" (blue), "beauty" (dusty rose),  ║
+║                  "energy" (orange), "calm" (soft lavender)                   ║
+║                                                                              ║
+║   SECTIONS: Add as many as needed. Empty sections are automatically skipped. ║
+║                                                                              ║
+║   BODY HTML ELEMENTS:                                                        ║
+║   - <p>Regular paragraph</p>                                                 ║
+║   - <p class="short">Short paragraph</p>                                     ║
+║   - <strong>bold</strong>                                                    ║
+║   - <span class="highlight">highlight</span>                                 ║
+║   - <div class="quote-box"><p>Peer quote</p></div>                          ║
+║   - <div class="mechanism-box"><p>UMP explanation</p></div>                 ║
+║   - <div class="validation-box"><p>You're not broken</p></div>              ║
+║   - <p class="failed-solution"><strong>X</strong> — why</p>                 ║
+║   - <p class="timeline-item"><strong>Time:</strong> Event</p>               ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+
+<script>
+const CONFIG = {                                                                                                                
+      // ============ THEME ============                                                                                          
+      THEME: {{theme}},                                                                                                           
+                                                                                                                                  
+      // ============ SITE ============                                                                                           
+      SITE_NAME: {{site.name}},                                                                                                   
+      CATEGORY: {{site.category}},                                                                                                
+                                                                                                                                  
+      // ============ ARTICLE ============                                                                                        
+      HEADLINE: {{article.headline}},                                                                                             
+      SUBHEADLINE: {{article.subheadline}},                                                                                       
+      AUTHOR_NAME: {{article.authorName}},                                                                                        
+      HERO_IMAGE: {{article.heroImage}},                                                                                          
+                                                                                                                                  
+      // ============ SECTIONS ============                                                                                       
+      SECTIONS: {{article.sections}},                                                                                             
+                                                                                                                                  
+      // ============ PRODUCT ============                                                                                        
+      PRODUCT_NAME: {{product.name}},                                                                                             
+      PRODUCT_IMAGE: {{product.image}},                                                                                           
+      PRODUCT_DESCRIPTION: {{product.description}},                                                                               
+      PRODUCT_BENEFITS: {{product.benefits}},                                                                                     
+      ORDER_URL: {{product.orderUrl}},                                                                                            
+                                                                                                                                  
+      // ============ SIGN-OFF ============                                                                                       
+      SIGN_OFF_TEXT: {{signOff.text}},                                                                                            
+      SIGN_OFF_NAME: {{signOff.name}},                                                                                            
+                                                                                                                                  
+      // ============ SIDEBAR REVIEWS (3) ============                                                                            
+      SIDEBAR_REVIEWS: {{reviews.sidebar}},                                                                                       
+                                                                                                                                  
+      // ============ REVIEWS SECTION ============                                                                                
+      REVIEWS_SCORE: {{reviews.score}},                                                                                           
+      REVIEWS_COUNT: {{reviews.count}},                                                                                           
+      REVIEWS: {{reviews.main}}                                                                                                   
+  };
+</script>
+
+    <style>
+        :root {
+            --primary: #1a5f4a;
+            --primary-light: #2d8a6e;
+            --primary-dark: #166534;
+            --primary-bg: #f0fdf4;
+            --primary-bg-light: #dcfce7;
+            --warning: #f59e0b;
+            --warning-bg: #fffbeb;
+            --warning-border: #fef3c7;
+            --danger: #dc2626;
+            --danger-dark: #b91c1c;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { width: 100%; overflow-x: hidden; }
+        
+        body {
+            font-family: 'Open Sans', Georgia, serif;
+            font-size: 19px;
+            line-height: 1.8;
+            color: #2d2d2d;
+            background-color: #fafafa;
+            overflow-x: hidden;
+        }
+
+        /* ============ HEADER ============ */
+        .site-header {
+            background: #ffffff;
+            border-bottom: 2px solid var(--primary);
+            padding: 10px 0;
+            width: 100vw;
+            margin-left: calc(-50vw + 50%);
+            position: relative;
+            left: 0;
+            right: 0;
+        }
+
+        .header-container {
+            max-width: 910px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .logo {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-icon {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        /* ============ ARTICLE CONTAINER ============ */
+        .article-container {
+            max-width: 910px;
+            margin: 0 auto;
+            padding: 25px 25px 60px;
+            background: #ffffff;
+        }
+
+        .article-wrapper {
+            display: flex;
+            flex-direction: row-reverse;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        .main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* ============ ARTICLE HEADER ============ */
+        .category-tag {
+            display: inline-block;
+            background: #e8f5f1;
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 32px;
+            line-height: 1.25;
+            color: #1a1a1a;
+            margin-bottom: 18px;
+            font-weight: 700;
+        }
+
+        .subheadline {
+            font-size: 18px;
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            font-style: italic;
+            border-left: 4px solid var(--primary);
+            padding-left: 15px;
+        }
+
+        .article-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .author-thumb {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .author-info { flex: 1; }
+        
+        .author-name {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 14px;
+        }
+
+        .author-title {
+            font-size: 12px;
+            color: #5a5a5a;
+        }
+
+        .social-icons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .social-icons span {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+
+        /* ============ HERO IMAGE ============ */
+        .hero-image {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            display: block;
+            transition: opacity 0.2s ease;
+        }
+
+        .hero-image:hover { opacity: 0.9; }
+
+        /* ============ CONTENT SECTIONS ============ */
+        .content-section {
+            margin-bottom: 40px;
+        }
+
+        .content-section h2 {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 26px;
+            color: #1a1a1a;
+            margin-bottom: 25px;
+            line-height: 1.3;
+            font-weight: 700;
+        }
+
+        .content-section p {
+            margin-bottom: 20px;
+            font-size: 18px;
+            line-height: 1.85;
+        }
+
+        .content-section p.short {
+            margin-bottom: 8px;
+        }
+
+        .content-section p:last-child {
+            margin-bottom: 0;
+        }
+
+        strong { color: #1a1a1a; }
+
+        .highlight {
+            background: linear-gradient(to bottom, transparent 60%, #fef3c7 60%);
+            padding: 0 2px;
+        }
+
+        .section-image {
+            width: 100%;
+            border-radius: 8px;
+            margin: 25px 0;
+            display: block;
+            transition: opacity 0.2s ease;
+        }
+
+        .section-image:hover { opacity: 0.9; }
+
+        a .section-image,
+        a .hero-image { cursor: pointer; }
+
+        /* ============ SPECIAL BOXES ============ */
+        .quote-box {
+            background: #f8f9fa;
+            border-left: 4px solid var(--primary);
+            padding: 25px 30px;
+            margin: 25px 0;
+            font-style: italic;
+        }
+
+        .quote-box p {
+            margin-bottom: 0;
+            color: #444;
+        }
+
+        .mechanism-box {
+            background: linear-gradient(135deg, var(--warning-bg) 0%, var(--warning-border) 100%);
+            border: 2px solid var(--warning);
+            border-radius: 10px;
+            padding: 25px 30px;
+            margin: 25px 0;
+        }
+
+        .mechanism-box p {
+            margin-bottom: 12px;
+        }
+
+        .mechanism-box p:last-child {
+            margin-bottom: 0;
+        }
+
+        .validation-box {
+            background: var(--primary-bg);
+            border-radius: 10px;
+            padding: 25px 30px;
+            margin: 25px 0;
+        }
+
+        .validation-box p {
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+
+        .validation-box p:last-child {
+            margin-bottom: 0;
+        }
+
+        .guarantee-box {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            padding: 25px 30px;
+            margin: 25px 0;
+            text-align: center;
+        }
+
+        .guarantee-box p {
+            margin-bottom: 10px;
+        }
+
+        .failed-solution {
+            margin-bottom: 12px;
+            padding-left: 0;
+        }
+
+        .failed-solution strong {
+            color: var(--danger);
+        }
+
+        .timeline-item {
+            margin-bottom: 8px;
+        }
+
+        .timeline-item strong {
+            color: var(--primary);
+        }
+
+        /* ============ PRODUCT BOX ============ */
+        .product-box {
+            background: #ffffff;
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 35px;
+            margin: 40px 0;
+            text-align: center;
+        }
+
+        .product-image {
+            max-width: 250px;
+            margin: 0 auto 25px;
+            display: block;
+            border-radius: 12px;
+            transition: opacity 0.2s ease;
+        }
+
+        .product-image:hover { opacity: 0.9; }
+
+        .product-name {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 24px;
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .product-description {
+            font-size: 17px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        .benefit-list {
+            text-align: left;
+            max-width: 450px;
+            margin: 20px auto;
+        }
+
+        .benefit-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .benefit-check {
+            color: var(--primary);
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        /* ============ CTA BUTTON ============ */
+        .cta-container {
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 18px 45px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .cta-subtext {
+            font-size: 14px;
+            color: #555;
+            margin-top: 12px;
+        }
+
+        /* ============ SIGN-OFF ============ */
+        .sign-off {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px 30px;
+            margin: 40px 0;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .sign-off p {
+            margin-bottom: 10px;
+        }
+
+        .sign-off .author-signature {
+            font-weight: 700;
+            font-style: normal;
+            color: var(--primary);
+        }
+
+        /* ============ SIDEBAR ============ */
+        .sidebar {
+            width: 250px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sidebar-review {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .sidebar-stars {
+            color: #f59e0b;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .sidebar-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #555;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            flex-shrink: 0;
+        }
+
+        .sidebar-name span {
+            white-space: nowrap;
+        }
+
+        .sidebar-avatar {
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-product {
+            background: var(--primary-bg);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid var(--primary-bg-light);
+        }
+
+        .sidebar-product-name {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 14px;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+
+        .sidebar-product-rating {
+            font-size: 13px;
+            color: #555;
+        }
+
+        .sidebar-cta {
+            display: block;
+            background: var(--primary);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 700;
+            margin-top: 12px;
+            transition: background 0.2s;
+        }
+
+        .sidebar-cta:hover {
+            background: var(--primary-dark);
+        }
+
+        /* ============ REVIEWS SECTION ============ */
+        .reviews-section {
+            margin-top: 50px;
+            padding-top: 40px;
+            border-top: 2px solid #eee;
+        }
+
+        .reviews-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .reviews-header h2 {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 26px;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .reviews-score {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .reviews-stars {
+            color: #f59e0b;
+            font-size: 24px;
+            margin: 5px 0;
+        }
+
+        .reviews-count {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .reviews-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .inline-review {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+        }
+
+        .inline-review-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .inline-review-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .inline-review-info { flex: 1; }
+
+        .inline-review-name {
+            font-weight: 700;
+            color: #333;
+        }
+
+        .inline-review-meta {
+            font-size: 12px;
+            color: #777;
+        }
+
+        .inline-review-stars {
+            color: #f59e0b;
+            font-size: 14px;
+        }
+
+        .inline-review-title {
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .inline-review-text {
+            font-size: 16px;
+            line-height: 1.7;
+            color: #555;
+        }
+
+        /* ============ WRITE REVIEW FORM ============ */
+        .write-review-box {
+            background: linear-gradient(135deg, var(--primary-bg) 0%, var(--primary-bg-light) 100%);
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+
+        .write-review-box h3 {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 20px;
+            color: var(--primary);
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .write-review-box > p {
+            color: #555;
+            margin-bottom: 20px;
+            font-size: 15px;
+        }
+
+        .review-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-input-small { flex: 0 0 100px; }
+        .form-input-full { width: 100%; }
+
+        .star-rating-input {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .star-rating-input span {
+            color: #555;
+            font-size: 15px;
+        }
+
+        .star-select {
+            display: flex;
+            gap: 5px;
+        }
+
+        .star-option {
+            font-size: 28px;
+            color: #ddd;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .star-option:hover,
+        .star-option.active {
+            color: #f59e0b;
+        }
+
+        .form-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .submit-review-btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 14px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            align-self: flex-start;
+        }
+
+        .submit-review-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(26, 95, 74, 0.35);
+        }
+
+        /* ============ DISCLAIMER ============ */
+        .disclaimer {
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 20px 25px;
+            margin-top: 40px;
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.6;
+        }
+
+        .disclaimer-title {
+            font-weight: 700;
+            color: #4b5563;
+            margin-bottom: 8px;
+        }
+
+        /* ============ FOOTER ============ */
+        .site-footer {
+            background: #1a1a1a;
+            color: #b3b3b3;
+            padding: 40px 20px 25px;
+            margin-top: 50px;
+            text-align: center;
+            width: 100vw;
+            margin-left: calc(-50vw + 50%);
+            position: relative;
+        }
+
+        .footer-logo {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 20px;
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            font-size: 13px;
+        }
+
+        .footer-links span { cursor: pointer; }
+        .footer-links span:hover { color: white; }
+
+        .footer-copyright {
+            font-size: 12px;
+            color: #8a8a8a;
+        }
+
+        /* ============ STICKY CTA ============ */
+        .sticky-atc {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            padding: 15px 20px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.12);
+            display: flex;
+            justify-content: center;
+            z-index: 1000;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .sticky-atc.visible {
+            transform: translateY(0);
+        }
+
+        .sticky-atc-button {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 14px 35px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 1100px) {
+            .sidebar { display: none; }
+            .article-wrapper { display: block; }
+        }
+
+        @media (max-width: 768px) {
+            body { font-size: 17px; }
+            h1 { font-size: 26px; }
+            .content-section h2 { font-size: 22px; }
+            .article-container { padding: 20px 18px 100px; }
+            .product-box { padding: 25px 20px; }
+            .reviews-score { font-size: 36px; }
+            .form-row { flex-direction: column; }
+            .form-input-small { flex: 1; }
+            .write-review-box { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============ HEADER ============ -->
+    <header class="site-header">
+        <div class="header-container">
+            <a href="#" class="logo">
+                <div class="logo-icon" id="logo-icon">✦</div>
+                <span id="site-name"></span>
+            </a>
+        </div>
+    </header>
+
+    <!-- ============ ARTICLE ============ -->
+    <article class="article-container">
+        <div class="article-wrapper">
+            
+            <!-- SIDEBAR -->
+            <aside class="sidebar" id="sidebar"></aside>
+
+            <!-- MAIN CONTENT -->
+            <div class="main-content">
+                
+                <!-- Article Header -->
+                <span class="category-tag" id="category"></span>
+                <h1 id="headline"></h1>
+                
+                <!-- Hero Image (after headline, before subheadline) -->
+                <a href="#order" id="hero-link">
+                    <img src="" alt="Hero" class="hero-image" id="hero-image">
+                </a>
+                
+                <p class="subheadline" id="subheadline"></p>
+                
+                <div class="article-meta" id="article-meta-container">
+                    <img src="" alt="Author" class="author-thumb" id="author-image">
+                    <div class="author-info">
+                        <div class="author-name" id="author-name"></div>
+                        <div class="author-title" id="article-meta"></div>
+                    </div>
+                    <div class="social-icons">
+                        <span>f</span>
+                        <span>in</span>
+                        <span>✉</span>
+                    </div>
+                </div>
+
+                <!-- SECTIONS CONTAINER -->
+                <div id="sections-container"></div>
+
+                <!-- PRODUCT BOX -->
+                <div class="product-box" id="product-section">
+                    <a href="#order">
+                        <img src="" alt="Product" class="product-image" id="product-image">
+                    </a>
+                    <h3 class="product-name" id="product-name"></h3>
+                    <p class="product-description" id="product-description"></p>
+                    <div class="benefit-list" id="benefit-list"></div>
+                </div>
+
+                <!-- CTA -->
+                <div class="cta-container">
+                    <a href="#order" class="cta-button" id="cta-button"></a>
+                    <p class="cta-subtext" id="cta-subtext"></p>
+                </div>
+
+                <!-- SIGN-OFF -->
+                <div class="sign-off" id="sign-off"></div>
+
+                <!-- REVIEWS SECTION -->
+                <div class="reviews-section" id="reviews-section">
+                    <div class="reviews-header">
+                        <h2>What Others Are Saying</h2>
+                        <div class="reviews-score" id="reviews-score"></div>
+                        <div class="reviews-stars">★★★★★</div>
+                        <div class="reviews-count" id="reviews-count"></div>
+                    </div>
+                    
+                    <!-- Write Review Form -->
+                    <div class="write-review-box" id="write-review-box">
+                        <h3>Share Your Experience</h3>
+                        <p id="write-review-prompt"></p>
+                        <div class="review-form">
+                            <div class="form-row">
+                                <input type="text" placeholder="Your Name" class="form-input" id="review-name">
+                                <input type="number" placeholder="Your Age" class="form-input form-input-small" id="review-age" min="18" max="99">
+                            </div>
+                            <div class="form-row">
+                                <div class="star-rating-input">
+                                    <span>Your Rating:</span>
+                                    <div class="star-select">
+                                        <span class="star-option" data-rating="1">★</span>
+                                        <span class="star-option" data-rating="2">★</span>
+                                        <span class="star-option" data-rating="3">★</span>
+                                        <span class="star-option" data-rating="4">★</span>
+                                        <span class="star-option" data-rating="5">★</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="text" placeholder="Review Title" class="form-input form-input-full" id="review-title">
+                            <textarea placeholder="" class="form-textarea" id="review-text"></textarea>
+                            <button type="button" class="submit-review-btn" id="submit-review-btn">Submit Review</button>
+                        </div>
+                    </div>
+                    
+                    <div class="reviews-grid" id="reviews-grid"></div>
+                    
+                    <div class="cta-container" style="margin-top: 40px;">
+                        <a href="#order" class="cta-button" id="cta-button-2"></a>
+                        <p class="cta-subtext" id="cta-subtext-2"></p>
+                    </div>
+                </div>
+
+                <!-- DISCLAIMER -->
+                <div class="disclaimer" id="disclaimer-container">
+                    <p class="disclaimer-title">Medical Disclaimer</p>
+                    <p id="disclaimer-text"></p>
+                </div>
+
+            </div>
+        </div>
+    </article>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-logo" id="footer-logo"></div>
+        <div class="footer-links">
+            <span>About Us</span>
+            <span>Contact</span>
+            <span>Privacy Policy</span>
+            <span>Terms of Service</span>
+            <span>Disclaimer</span>
+        </div>
+        <p class="footer-copyright" id="footer-copyright"></p>
+    </footer>
+
+    <!-- ============ STICKY CTA ============ -->
+    <div class="sticky-atc" id="stickyATC">
+        <a href="#order" class="sticky-atc-button" id="sticky-cta"></a>
+    </div>
+
+    <!-- ============ POPULATE PAGE ============ -->
+    <script>
+        // ============ THEME SYSTEM ============
+        const themes = {
+            health: { primary: '#1a5f4a', primaryLight: '#2d8a6e', primaryDark: '#166534', primaryBg: '#f0fdf4', primaryBgLight: '#dcfce7', siteName: 'Daily Wellness Journal', logoIcon: '✦' },
+            medical: { primary: '#1e40af', primaryLight: '#3b82f6', primaryDark: '#1e3a8a', primaryBg: '#eff6ff', primaryBgLight: '#dbeafe', siteName: 'Health Monitor Weekly', logoIcon: '✚' },
+            beauty: { primary: '#b4838d', primaryLight: '#d4a5ad', primaryDark: '#96696f', primaryBg: '#faf6f7', primaryBgLight: '#f5eef0', siteName: 'Beauty & Glow Magazine', logoIcon: '✿' },
+            energy: { primary: '#c2410c', primaryLight: '#f97316', primaryDark: '#9a3412', primaryBg: '#fff7ed', primaryBgLight: '#ffedd5', siteName: 'Vitality Today', logoIcon: '⚡' },
+            calm: { primary: '#8b93b8', primaryLight: '#a8b0c9', primaryDark: '#6b7399', primaryBg: '#f7f8fc', primaryBgLight: '#eef0f7', siteName: 'Restful Living', logoIcon: '☾' }
+        };
+        
+        // Apply theme
+        const theme = themes[CONFIG.THEME] || themes.health;
+        document.documentElement.style.setProperty('--primary', theme.primary);
+        document.documentElement.style.setProperty('--primary-light', theme.primaryLight);
+        document.documentElement.style.setProperty('--primary-dark', theme.primaryDark);
+        document.documentElement.style.setProperty('--primary-bg', theme.primaryBg);
+        document.documentElement.style.setProperty('--primary-bg-light', theme.primaryBgLight);
+        
+        // Site name and logo
+        const siteName = CONFIG.SITE_NAME || theme.siteName;
+        document.getElementById('site-name').textContent = siteName;
+        document.getElementById('footer-logo').textContent = siteName;
+        document.getElementById('logo-icon').textContent = theme.logoIcon;
+        document.getElementById('footer-copyright').textContent = `© ${new Date().getFullYear()} ${siteName}. All rights reserved.`;
+        
+        // Dynamic page title (bookmark name) - use headline
+        document.title = CONFIG.HEADLINE || siteName;
+        
+        // Dynamic favicon based on theme logo
+        const faviconSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${theme.logoIcon}</text></svg>`;
+        document.getElementById('favicon').href = `data:image/svg+xml,${encodeURIComponent(faviconSvg)}`;
+        
+        // ============ CALCULATE READING TIME ============
+        function calculateReadingTime() {
+            let totalText = CONFIG.HEADLINE + ' ' + CONFIG.SUBHEADLINE + ' ';
+            CONFIG.SECTIONS.forEach(section => {
+                if (section.body) {
+                    // Strip HTML tags and count words
+                    const plainText = section.body.replace(/<[^>]*>/g, ' ');
+                    totalText += plainText + ' ';
+                }
+            });
+            const wordCount = totalText.split(/\s+/).filter(word => word.length > 0).length;
+            const readingTime = Math.ceil(wordCount / 200); // 200 words per minute
+            return readingTime;
+        }
+        
+        // ============ ARTICLE HEADER ============
+        if (CONFIG.CATEGORY) {
+            document.getElementById('category').textContent = CONFIG.CATEGORY;
+        } else {
+            document.getElementById('category').style.display = 'none';
+        }
+        
+        document.getElementById('headline').textContent = CONFIG.HEADLINE || '';
+        
+        if (CONFIG.SUBHEADLINE) {
+            document.getElementById('subheadline').textContent = CONFIG.SUBHEADLINE;
+        } else {
+            document.getElementById('subheadline').style.display = 'none';
+        }
+        
+        // Author info - auto-generated
+        const readingTime = calculateReadingTime();
+        const today = new Date();
+        const dateStr = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        
+        document.getElementById('author-name').textContent = CONFIG.AUTHOR_NAME ? `By ${CONFIG.AUTHOR_NAME}` : 'By Staff Writer';
+        document.getElementById('article-meta').textContent = `${dateStr} • ${readingTime}-minute read`;
+        document.getElementById('author-image').src = 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=100&h=100&fit=crop&crop=face';
+        
+        // Hero Image
+        if (CONFIG.HERO_IMAGE) {
+            document.getElementById('hero-image').src = CONFIG.HERO_IMAGE;
+            document.getElementById('hero-link').href = CONFIG.ORDER_URL || '#order';
+        } else {
+            document.getElementById('hero-link').style.display = 'none';
+        }
+        
+        // ============ SECTIONS ============
+        const sectionsContainer = document.getElementById('sections-container');
+        const orderUrl = CONFIG.ORDER_URL || '#order';
+        
+        if (CONFIG.SECTIONS && CONFIG.SECTIONS.length > 0) {
+            CONFIG.SECTIONS.forEach((section, configIndex) => {
+                // Skip empty sections
+                if (!section.headline && !section.body) return;
+                
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'content-section';
+                
+                let sectionHTML = '';
+                
+                if (section.headline) {
+                    sectionHTML += `<h2>${section.headline}</h2>`;
+                }
+                
+                if (section.image) {
+                    sectionHTML += `<a href="${orderUrl}"><img src="${section.image}" alt="Section image" class="section-image"></a>`;
+                }
+                
+                if (section.body) {
+                    sectionHTML += section.body;
+                }
+                
+                sectionDiv.innerHTML = sectionHTML;
+                sectionsContainer.appendChild(sectionDiv);
+                
+                // Add invisible marker after Section 5 (index 4) for sticky ATC trigger
+                if (configIndex === 4) {
+                    const marker = document.createElement('div');
+                    marker.id = 'sticky-trigger';
+                    sectionsContainer.appendChild(marker);
+                }
+            });
+        }
+        
+        // ============ PRODUCT BOX ============
+        if (CONFIG.PRODUCT_NAME || CONFIG.PRODUCT_IMAGE) {
+            if (CONFIG.PRODUCT_IMAGE) {
+                document.getElementById('product-image').src = CONFIG.PRODUCT_IMAGE;
+            } else {
+                document.getElementById('product-image').style.display = 'none';
+            }
+            document.getElementById('product-name').textContent = CONFIG.PRODUCT_NAME || '';
+            document.getElementById('product-description').textContent = CONFIG.PRODUCT_DESCRIPTION || '';
+            
+            const benefitList = document.getElementById('benefit-list');
+            if (CONFIG.PRODUCT_BENEFITS && CONFIG.PRODUCT_BENEFITS.length > 0) {
+                CONFIG.PRODUCT_BENEFITS.forEach(benefit => {
+                    if (!benefit) return;
+                    const item = document.createElement('div');
+                    item.className = 'benefit-item';
+                    item.innerHTML = `<span class="benefit-check">✓</span><span>${benefit}</span>`;
+                    benefitList.appendChild(item);
+                });
+            }
+        } else {
+            document.getElementById('product-section').style.display = 'none';
+        }
+        
+        // ============ CTAs - AUTO-GENERATED ============
+        const ctaText = `Check Availability →`;
+        const ctaSubtext = '90-Day Money-Back Guarantee • Free Shipping';
+        
+        document.getElementById('cta-button').textContent = ctaText;
+        document.getElementById('cta-button').href = orderUrl;
+        document.getElementById('cta-button-2').textContent = ctaText;
+        document.getElementById('cta-button-2').href = orderUrl;
+        document.getElementById('cta-subtext').textContent = ctaSubtext;
+        document.getElementById('cta-subtext-2').textContent = ctaSubtext;
+        document.getElementById('sticky-cta').textContent = ctaText;
+        document.getElementById('sticky-cta').href = orderUrl;
+        
+        // ============ SIGN-OFF ============
+        if (CONFIG.SIGN_OFF_TEXT || CONFIG.SIGN_OFF_NAME) {
+            document.getElementById('sign-off').innerHTML = `
+                <p>${CONFIG.SIGN_OFF_TEXT || ''}</p>
+                <p class="author-signature">${CONFIG.SIGN_OFF_NAME || ''}</p>
+            `;
+        } else {
+            document.getElementById('sign-off').style.display = 'none';
+        }
+        
+        // ============ SIDEBAR ============
+        const sidebar = document.getElementById('sidebar');
+        if (CONFIG.SIDEBAR_REVIEWS && CONFIG.SIDEBAR_REVIEWS.length > 0) {
+            CONFIG.SIDEBAR_REVIEWS.forEach(review => {
+                if (!review.text) return;
+                const reviewDiv = document.createElement('div');
+                reviewDiv.className = 'sidebar-review';
+                reviewDiv.innerHTML = `
+                    <div class="sidebar-stars">${review.stars || '★★★★★'}</div>
+                    <p class="sidebar-text">${review.text}</p>
+                    <div class="sidebar-name">
+                        <div class="sidebar-avatar">${review.initial || review.name?.charAt(0) || '?'}</div>
+                        <span>${review.name || ''}${review.age ? `, ${review.age}` : ''}</span>
+                    </div>
+                `;
+                sidebar.appendChild(reviewDiv);
+            });
+            
+            // Sidebar Product
+            if (CONFIG.PRODUCT_NAME) {
+                const sidebarProduct = document.createElement('div');
+                sidebarProduct.className = 'sidebar-product';
+                sidebarProduct.innerHTML = `
+                    <div class="sidebar-stars">★★★★★</div>
+                    <div class="sidebar-product-name">${CONFIG.PRODUCT_NAME}</div>
+                    <div class="sidebar-product-rating">${CONFIG.REVIEWS_SCORE || '4.9'}/5 (${CONFIG.REVIEWS_COUNT || ''} reviews)</div>
+                    <a href="${orderUrl}" class="sidebar-cta">Learn More →</a>
+                `;
+                sidebar.appendChild(sidebarProduct);
+            }
+        }
+        
+        // ============ REVIEWS SECTION ============
+        if (CONFIG.REVIEWS && CONFIG.REVIEWS.length > 0 && CONFIG.REVIEWS.some(r => r.text)) {
+            document.getElementById('reviews-score').textContent = CONFIG.REVIEWS_SCORE || '4.9';
+            document.getElementById('reviews-count').textContent = `Based on ${CONFIG.REVIEWS_COUNT || '10,000'} reviews`;
+            document.getElementById('write-review-prompt').textContent = `Have you tried ${CONFIG.PRODUCT_NAME || 'this product'}? We'd love to hear from you.`;
+            document.getElementById('review-text').placeholder = 'Write your review here... What changed for you?';
+            
+            const reviewsGrid = document.getElementById('reviews-grid');
+            CONFIG.REVIEWS.forEach(review => {
+                if (!review.text) return;
+                const reviewDiv = document.createElement('div');
+                reviewDiv.className = 'inline-review';
+                reviewDiv.innerHTML = `
+                    <div class="inline-review-header">
+                        <div class="inline-review-avatar">${review.initial || review.name?.charAt(0) || '?'}</div>
+                        <div class="inline-review-info">
+                            <div class="inline-review-name">${review.name || ''}</div>
+                            <div class="inline-review-meta">Verified Purchase${review.age ? ` • Age ${review.age}` : ''}</div>
+                        </div>
+                        <div class="inline-review-stars">${review.stars || '★★★★★'}</div>
+                    </div>
+                    ${review.title ? `<p class="inline-review-title">"${review.title}"</p>` : ''}
+                    <p class="inline-review-text">${review.text}</p>
+                `;
+                reviewsGrid.appendChild(reviewDiv);
+            });
+        } else {
+            document.getElementById('reviews-section').style.display = 'none';
+        }
+        
+        // ============ DISCLAIMER - STANDARD ============
+        document.getElementById('disclaimer-text').textContent = 'This article is for informational purposes only and is not intended as medical advice. Individual results may vary. Consult a healthcare professional before starting any new supplement or health regimen. These statements have not been evaluated by the FDA. This product is not intended to diagnose, treat, cure, or prevent any disease.';
+        
+        // ============ STAR RATING ============
+        const starOptions = document.querySelectorAll('.star-option');
+        let selectedRating = 5;
+        
+        function updateStars(rating) {
+            starOptions.forEach((star, index) => {
+                star.classList.toggle('active', index < rating);
+            });
+        }
+        updateStars(selectedRating);
+
+        starOptions.forEach((star, index) => {
+            star.addEventListener('click', () => {
+                selectedRating = index + 1;
+                updateStars(selectedRating);
+            });
+            star.addEventListener('mouseenter', () => updateStars(index + 1));
+        });
+
+        document.querySelector('.star-select')?.addEventListener('mouseleave', () => updateStars(selectedRating));
+
+        // ============ SUBMIT REVIEW ============
+        document.getElementById('submit-review-btn')?.addEventListener('click', () => {
+            const name = document.getElementById('review-name').value;
+            const age = document.getElementById('review-age').value;
+            const text = document.getElementById('review-text').value;
+
+            if (!name || !text) {
+                alert('Please fill in your name and review.');
+                return;
+            }
+            
+            if (age && (parseInt(age) < 18 || parseInt(age) > 99)) {
+                alert('Please enter a valid age between 18 and 99.');
+                return;
+            }
+
+            document.getElementById('write-review-box').innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">✓</div>
+                    <h3 style="color: var(--primary); margin-bottom: 10px;">Thank You, ${name}!</h3>
+                    <p style="color: #555;">Your review has been submitted and is pending approval.</p>
+                </div>
+            `;
+        });
+        
+        // ============ STICKY CTA ============
+        const stickyATC = document.getElementById('stickyATC');
+        const stickyTrigger = document.getElementById('sticky-trigger');
+        
+        window.addEventListener('scroll', () => {
+            if (stickyTrigger) {
+                const triggerPosition = stickyTrigger.getBoundingClientRect().top;
+                stickyATC.classList.toggle('visible', triggerPosition < window.innerHeight * 0.5);
+            }
+        });
+    </script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <title>Advertorial</title>
+    <link rel="icon" id="favicon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║                    ⬇️  PASTE AI OUTPUT BELOW  ⬇️                              ║
+║                                                                              ║
+║   Paste the complete "const CONFIG = { ... };" from AI output here.          ║
+║   Then add your image URLs and save.                                         ║
+║                                                                              ║
+║   THEME OPTIONS: "health" (green), "medical" (blue), "beauty" (dusty rose),  ║
+║                  "energy" (orange), "calm" (soft lavender)                   ║
+║                                                                              ║
+║   SECTIONS: Add as many as needed. Empty sections are automatically skipped. ║
+║                                                                              ║
+║   BODY HTML ELEMENTS:                                                        ║
+║   - <p>Regular paragraph</p>                                                 ║
+║   - <p class="short">Short paragraph</p>                                     ║
+║   - <strong>bold</strong>                                                    ║
+║   - <span class="highlight">highlight</span>                                 ║
+║   - <div class="quote-box"><p>Peer quote</p></div>                          ║
+║   - <div class="mechanism-box"><p>UMP explanation</p></div>                 ║
+║   - <div class="validation-box"><p>You're not broken</p></div>              ║
+║   - <p class="failed-solution"><strong>X</strong> — why</p>                 ║
+║   - <p class="timeline-item"><strong>Time:</strong> Event</p>               ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+
+<script>
+const CONFIG = {                                                                                                                
+      // ============ THEME ============                                                                                          
+      THEME: {{theme}},                                                                                                           
+                                                                                                                                  
+      // ============ SITE ============                                                                                           
+      SITE_NAME: {{site.name}},                                                                                                   
+      CATEGORY: {{site.category}},                                                                                                
+                                                                                                                                  
+      // ============ ARTICLE ============                                                                                        
+      HEADLINE: {{article.headline}},                                                                                             
+      SUBHEADLINE: {{article.subheadline}},                                                                                       
+      AUTHOR_NAME: {{article.authorName}},                                                                                        
+      HERO_IMAGE: {{article.heroImage}},                                                                                          
+                                                                                                                                  
+      // ============ SECTIONS ============                                                                                       
+      SECTIONS: {{article.sections}},                                                                                             
+                                                                                                                                  
+      // ============ PRODUCT ============                                                                                        
+      PRODUCT_NAME: {{product.name}},                                                                                             
+      PRODUCT_IMAGE: {{product.image}},                                                                                           
+      PRODUCT_DESCRIPTION: {{product.description}},                                                                               
+      PRODUCT_BENEFITS: {{product.benefits}},                                                                                     
+      ORDER_URL: {{product.orderUrl}},                                                                                            
+                                                                                                                                  
+      // ============ SIGN-OFF ============                                                                                       
+      SIGN_OFF_TEXT: {{signOff.text}},                                                                                            
+      SIGN_OFF_NAME: {{signOff.name}},                                                                                            
+                                                                                                                                  
+      // ============ SIDEBAR REVIEWS (3) ============                                                                            
+      SIDEBAR_REVIEWS: {{reviews.sidebar}},                                                                                       
+                                                                                                                                  
+      // ============ REVIEWS SECTION ============                                                                                
+      REVIEWS_SCORE: {{reviews.score}},                                                                                           
+      REVIEWS_COUNT: {{reviews.count}},                                                                                           
+      REVIEWS: {{reviews.main}}                                                                                                   
+  };
+</script>
+
+    <style>
+        :root {
+            --primary: #1a5f4a;
+            --primary-light: #2d8a6e;
+            --primary-dark: #166534;
+            --primary-bg: #f0fdf4;
+            --primary-bg-light: #dcfce7;
+            --warning: #f59e0b;
+            --warning-bg: #fffbeb;
+            --warning-border: #fef3c7;
+            --danger: #dc2626;
+            --danger-dark: #b91c1c;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { width: 100%; overflow-x: hidden; }
+        
+        body {
+            font-family: 'Open Sans', Georgia, serif;
+            font-size: 19px;
+            line-height: 1.8;
+            color: #2d2d2d;
+            background-color: #fafafa;
+            overflow-x: hidden;
+        }
+
+        /* ============ HEADER ============ */
+        .site-header {
+            background: #ffffff;
+            border-bottom: 2px solid var(--primary);
+            padding: 10px 0;
+            width: 100vw;
+            margin-left: calc(-50vw + 50%);
+            position: relative;
+            left: 0;
+            right: 0;
+        }
+
+        .header-container {
+            max-width: 910px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .logo {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-icon {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        /* ============ ARTICLE CONTAINER ============ */
+        .article-container {
+            max-width: 910px;
+            margin: 0 auto;
+            padding: 25px 25px 60px;
+            background: #ffffff;
+        }
+
+        .article-wrapper {
+            display: flex;
+            flex-direction: row-reverse;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        .main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* ============ ARTICLE HEADER ============ */
+        .category-tag {
+            display: inline-block;
+            background: #e8f5f1;
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 32px;
+            line-height: 1.25;
+            color: #1a1a1a;
+            margin-bottom: 18px;
+            font-weight: 700;
+        }
+
+        .subheadline {
+            font-size: 18px;
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            font-style: italic;
+            border-left: 4px solid var(--primary);
+            padding-left: 15px;
+        }
+
+        .article-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .author-thumb {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .author-info { flex: 1; }
+        
+        .author-name {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 14px;
+        }
+
+        .author-title {
+            font-size: 12px;
+            color: #5a5a5a;
+        }
+
+        .social-icons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .social-icons span {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+
+        /* ============ HERO IMAGE ============ */
+        .hero-image {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            display: block;
+            transition: opacity 0.2s ease;
+        }
+
+        .hero-image:hover { opacity: 0.9; }
+
+        /* ============ CONTENT SECTIONS ============ */
+        .content-section {
+            margin-bottom: 40px;
+        }
+
+        .content-section h2 {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 26px;
+            color: #1a1a1a;
+            margin-bottom: 25px;
+            line-height: 1.3;
+            font-weight: 700;
+        }
+
+        .content-section p {
+            margin-bottom: 20px;
+            font-size: 18px;
+            line-height: 1.85;
+        }
+
+        .content-section p.short {
+            margin-bottom: 8px;
+        }
+
+        .content-section p:last-child {
+            margin-bottom: 0;
+        }
+
+        strong { color: #1a1a1a; }
+
+        .highlight {
+            background: linear-gradient(to bottom, transparent 60%, #fef3c7 60%);
+            padding: 0 2px;
+        }
+
+        .section-image {
+            width: 100%;
+            border-radius: 8px;
+            margin: 25px 0;
+            display: block;
+            transition: opacity 0.2s ease;
+        }
+
+        .section-image:hover { opacity: 0.9; }
+
+        a .section-image,
+        a .hero-image { cursor: pointer; }
+
+        /* ============ SPECIAL BOXES ============ */
+        .quote-box {
+            background: #f8f9fa;
+            border-left: 4px solid var(--primary);
+            padding: 25px 30px;
+            margin: 25px 0;
+            font-style: italic;
+        }
+
+        .quote-box p {
+            margin-bottom: 0;
+            color: #444;
+        }
+
+        .mechanism-box {
+            background: linear-gradient(135deg, var(--warning-bg) 0%, var(--warning-border) 100%);
+            border: 2px solid var(--warning);
+            border-radius: 10px;
+            padding: 25px 30px;
+            margin: 25px 0;
+        }
+
+        .mechanism-box p {
+            margin-bottom: 12px;
+        }
+
+        .mechanism-box p:last-child {
+            margin-bottom: 0;
+        }
+
+        .validation-box {
+            background: var(--primary-bg);
+            border-radius: 10px;
+            padding: 25px 30px;
+            margin: 25px 0;
+        }
+
+        .validation-box p {
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+
+        .validation-box p:last-child {
+            margin-bottom: 0;
+        }
+
+        .guarantee-box {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            padding: 25px 30px;
+            margin: 25px 0;
+            text-align: center;
+        }
+
+        .guarantee-box p {
+            margin-bottom: 10px;
+        }
+
+        .failed-solution {
+            margin-bottom: 12px;
+            padding-left: 0;
+        }
+
+        .failed-solution strong {
+            color: var(--danger);
+        }
+
+        .timeline-item {
+            margin-bottom: 8px;
+        }
+
+        .timeline-item strong {
+            color: var(--primary);
+        }
+
+        /* ============ PRODUCT BOX ============ */
+        .product-box {
+            background: #ffffff;
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 35px;
+            margin: 40px 0;
+            text-align: center;
+        }
+
+        .product-image {
+            max-width: 250px;
+            margin: 0 auto 25px;
+            display: block;
+            border-radius: 12px;
+            transition: opacity 0.2s ease;
+        }
+
+        .product-image:hover { opacity: 0.9; }
+
+        .product-name {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 24px;
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .product-description {
+            font-size: 17px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        .benefit-list {
+            text-align: left;
+            max-width: 450px;
+            margin: 20px auto;
+        }
+
+        .benefit-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .benefit-check {
+            color: var(--primary);
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        /* ============ CTA BUTTON ============ */
+        .cta-container {
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 18px 45px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .cta-subtext {
+            font-size: 14px;
+            color: #555;
+            margin-top: 12px;
+        }
+
+        /* ============ SIGN-OFF ============ */
+        .sign-off {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px 30px;
+            margin: 40px 0;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .sign-off p {
+            margin-bottom: 10px;
+        }
+
+        .sign-off .author-signature {
+            font-weight: 700;
+            font-style: normal;
+            color: var(--primary);
+        }
+
+        /* ============ SIDEBAR ============ */
+        .sidebar {
+            width: 250px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sidebar-review {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .sidebar-stars {
+            color: #f59e0b;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .sidebar-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #555;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            flex-shrink: 0;
+        }
+
+        .sidebar-name span {
+            white-space: nowrap;
+        }
+
+        .sidebar-avatar {
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-product {
+            background: var(--primary-bg);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid var(--primary-bg-light);
+        }
+
+        .sidebar-product-name {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 14px;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+
+        .sidebar-product-rating {
+            font-size: 13px;
+            color: #555;
+        }
+
+        .sidebar-cta {
+            display: block;
+            background: var(--primary);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 700;
+            margin-top: 12px;
+            transition: background 0.2s;
+        }
+
+        .sidebar-cta:hover {
+            background: var(--primary-dark);
+        }
+
+        /* ============ REVIEWS SECTION ============ */
+        .reviews-section {
+            margin-top: 50px;
+            padding-top: 40px;
+            border-top: 2px solid #eee;
+        }
+
+        .reviews-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .reviews-header h2 {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 26px;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .reviews-score {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .reviews-stars {
+            color: #f59e0b;
+            font-size: 24px;
+            margin: 5px 0;
+        }
+
+        .reviews-count {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .reviews-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .inline-review {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+        }
+
+        .inline-review-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .inline-review-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .inline-review-info { flex: 1; }
+
+        .inline-review-name {
+            font-weight: 700;
+            color: #333;
+        }
+
+        .inline-review-meta {
+            font-size: 12px;
+            color: #777;
+        }
+
+        .inline-review-stars {
+            color: #f59e0b;
+            font-size: 14px;
+        }
+
+        .inline-review-title {
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .inline-review-text {
+            font-size: 16px;
+            line-height: 1.7;
+            color: #555;
+        }
+
+        /* ============ WRITE REVIEW FORM ============ */
+        .write-review-box {
+            background: linear-gradient(135deg, var(--primary-bg) 0%, var(--primary-bg-light) 100%);
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+
+        .write-review-box h3 {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 20px;
+            color: var(--primary);
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .write-review-box > p {
+            color: #555;
+            margin-bottom: 20px;
+            font-size: 15px;
+        }
+
+        .review-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-input-small { flex: 0 0 100px; }
+        .form-input-full { width: 100%; }
+
+        .star-rating-input {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .star-rating-input span {
+            color: #555;
+            font-size: 15px;
+        }
+
+        .star-select {
+            display: flex;
+            gap: 5px;
+        }
+
+        .star-option {
+            font-size: 28px;
+            color: #ddd;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .star-option:hover,
+        .star-option.active {
+            color: #f59e0b;
+        }
+
+        .form-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .submit-review-btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 14px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            align-self: flex-start;
+        }
+
+        .submit-review-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(26, 95, 74, 0.35);
+        }
+
+        /* ============ DISCLAIMER ============ */
+        .disclaimer {
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 20px 25px;
+            margin-top: 40px;
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.6;
+        }
+
+        .disclaimer-title {
+            font-weight: 700;
+            color: #4b5563;
+            margin-bottom: 8px;
+        }
+
+        /* ============ FOOTER ============ */
+        .site-footer {
+            background: #1a1a1a;
+            color: #b3b3b3;
+            padding: 40px 20px 25px;
+            margin-top: 50px;
+            text-align: center;
+            width: 100vw;
+            margin-left: calc(-50vw + 50%);
+            position: relative;
+        }
+
+        .footer-logo {
+            font-family: 'Merriweather', Georgia, serif;
+            font-size: 20px;
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            font-size: 13px;
+        }
+
+        .footer-links span { cursor: pointer; }
+        .footer-links span:hover { color: white; }
+
+        .footer-copyright {
+            font-size: 12px;
+            color: #8a8a8a;
+        }
+
+        /* ============ STICKY CTA ============ */
+        .sticky-atc {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            padding: 15px 20px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.12);
+            display: flex;
+            justify-content: center;
+            z-index: 1000;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .sticky-atc.visible {
+            transform: translateY(0);
+        }
+
+        .sticky-atc-button {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 14px 35px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 1100px) {
+            .sidebar { display: none; }
+            .article-wrapper { display: block; }
+        }
+
+        @media (max-width: 768px) {
+            body { font-size: 17px; }
+            h1 { font-size: 26px; }
+            .content-section h2 { font-size: 22px; }
+            .article-container { padding: 20px 18px 100px; }
+            .product-box { padding: 25px 20px; }
+            .reviews-score { font-size: 36px; }
+            .form-row { flex-direction: column; }
+            .form-input-small { flex: 1; }
+            .write-review-box { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============ HEADER ============ -->
+    <header class="site-header">
+        <div class="header-container">
+            <a href="#" class="logo">
+                <div class="logo-icon" id="logo-icon">✦</div>
+                <span id="site-name"></span>
+            </a>
+        </div>
+    </header>
+
+    <!-- ============ ARTICLE ============ -->
+    <article class="article-container">
+        <div class="article-wrapper">
+            
+            <!-- SIDEBAR -->
+            <aside class="sidebar" id="sidebar"></aside>
+
+            <!-- MAIN CONTENT -->
+            <div class="main-content">
+                
+                <!-- Article Header -->
+                <span class="category-tag" id="category"></span>
+                <h1 id="headline"></h1>
+                
+                <!-- Hero Image (after headline, before subheadline) -->
+                <a href="#order" id="hero-link">
+                    <img src="" alt="Hero" class="hero-image" id="hero-image">
+                </a>
+                
+                <p class="subheadline" id="subheadline"></p>
+                
+                <div class="article-meta" id="article-meta-container">
+                    <img src="" alt="Author" class="author-thumb" id="author-image">
+                    <div class="author-info">
+                        <div class="author-name" id="author-name"></div>
+                        <div class="author-title" id="article-meta"></div>
+                    </div>
+                    <div class="social-icons">
+                        <span>f</span>
+                        <span>in</span>
+                        <span>✉</span>
+                    </div>
+                </div>
+
+                <!-- SECTIONS CONTAINER -->
+                <div id="sections-container"></div>
+
+                <!-- PRODUCT BOX -->
+                <div class="product-box" id="product-section">
+                    <a href="#order">
+                        <img src="" alt="Product" class="product-image" id="product-image">
+                    </a>
+                    <h3 class="product-name" id="product-name"></h3>
+                    <p class="product-description" id="product-description"></p>
+                    <div class="benefit-list" id="benefit-list"></div>
+                </div>
+
+                <!-- CTA -->
+                <div class="cta-container">
+                    <a href="#order" class="cta-button" id="cta-button"></a>
+                    <p class="cta-subtext" id="cta-subtext"></p>
+                </div>
+
+                <!-- SIGN-OFF -->
+                <div class="sign-off" id="sign-off"></div>
+
+                <!-- REVIEWS SECTION -->
+                <div class="reviews-section" id="reviews-section">
+                    <div class="reviews-header">
+                        <h2>What Others Are Saying</h2>
+                        <div class="reviews-score" id="reviews-score"></div>
+                        <div class="reviews-stars">★★★★★</div>
+                        <div class="reviews-count" id="reviews-count"></div>
+                    </div>
+                    
+                    <!-- Write Review Form -->
+                    <div class="write-review-box" id="write-review-box">
+                        <h3>Share Your Experience</h3>
+                        <p id="write-review-prompt"></p>
+                        <div class="review-form">
+                            <div class="form-row">
+                                <input type="text" placeholder="Your Name" class="form-input" id="review-name">
+                                <input type="number" placeholder="Your Age" class="form-input form-input-small" id="review-age" min="18" max="99">
+                            </div>
+                            <div class="form-row">
+                                <div class="star-rating-input">
+                                    <span>Your Rating:</span>
+                                    <div class="star-select">
+                                        <span class="star-option" data-rating="1">★</span>
+                                        <span class="star-option" data-rating="2">★</span>
+                                        <span class="star-option" data-rating="3">★</span>
+                                        <span class="star-option" data-rating="4">★</span>
+                                        <span class="star-option" data-rating="5">★</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="text" placeholder="Review Title" class="form-input form-input-full" id="review-title">
+                            <textarea placeholder="" class="form-textarea" id="review-text"></textarea>
+                            <button type="button" class="submit-review-btn" id="submit-review-btn">Submit Review</button>
+                        </div>
+                    </div>
+                    
+                    <div class="reviews-grid" id="reviews-grid"></div>
+                    
+                    <div class="cta-container" style="margin-top: 40px;">
+                        <a href="#order" class="cta-button" id="cta-button-2"></a>
+                        <p class="cta-subtext" id="cta-subtext-2"></p>
+                    </div>
+                </div>
+
+                <!-- DISCLAIMER -->
+                <div class="disclaimer" id="disclaimer-container">
+                    <p class="disclaimer-title">Medical Disclaimer</p>
+                    <p id="disclaimer-text"></p>
+                </div>
+
+            </div>
+        </div>
+    </article>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-logo" id="footer-logo"></div>
+        <div class="footer-links">
+            <span>About Us</span>
+            <span>Contact</span>
+            <span>Privacy Policy</span>
+            <span>Terms of Service</span>
+            <span>Disclaimer</span>
+        </div>
+        <p class="footer-copyright" id="footer-copyright"></p>
+    </footer>
+
+    <!-- ============ STICKY CTA ============ -->
+    <div class="sticky-atc" id="stickyATC">
+        <a href="#order" class="sticky-atc-button" id="sticky-cta"></a>
+    </div>
+
+    <!-- ============ POPULATE PAGE ============ -->
+    <script>
+        // ============ THEME SYSTEM ============
+        const themes = {
+            health: { primary: '#1a5f4a', primaryLight: '#2d8a6e', primaryDark: '#166534', primaryBg: '#f0fdf4', primaryBgLight: '#dcfce7', siteName: 'Daily Wellness Journal', logoIcon: '✦' },
+            medical: { primary: '#1e40af', primaryLight: '#3b82f6', primaryDark: '#1e3a8a', primaryBg: '#eff6ff', primaryBgLight: '#dbeafe', siteName: 'Health Monitor Weekly', logoIcon: '✚' },
+            beauty: { primary: '#b4838d', primaryLight: '#d4a5ad', primaryDark: '#96696f', primaryBg: '#faf6f7', primaryBgLight: '#f5eef0', siteName: 'Beauty & Glow Magazine', logoIcon: '✿' },
+            energy: { primary: '#c2410c', primaryLight: '#f97316', primaryDark: '#9a3412', primaryBg: '#fff7ed', primaryBgLight: '#ffedd5', siteName: 'Vitality Today', logoIcon: '⚡' },
+            calm: { primary: '#8b93b8', primaryLight: '#a8b0c9', primaryDark: '#6b7399', primaryBg: '#f7f8fc', primaryBgLight: '#eef0f7', siteName: 'Restful Living', logoIcon: '☾' }
+        };
+        
+        // Apply theme
+        const theme = themes[CONFIG.THEME] || themes.health;
+        document.documentElement.style.setProperty('--primary', theme.primary);
+        document.documentElement.style.setProperty('--primary-light', theme.primaryLight);
+        document.documentElement.style.setProperty('--primary-dark', theme.primaryDark);
+        document.documentElement.style.setProperty('--primary-bg', theme.primaryBg);
+        document.documentElement.style.setProperty('--primary-bg-light', theme.primaryBgLight);
+        
+        // Site name and logo
+        const siteName = CONFIG.SITE_NAME || theme.siteName;
+        document.getElementById('site-name').textContent = siteName;
+        document.getElementById('footer-logo').textContent = siteName;
+        document.getElementById('logo-icon').textContent = theme.logoIcon;
+        document.getElementById('footer-copyright').textContent = `© ${new Date().getFullYear()} ${siteName}. All rights reserved.`;
+        
+        // Dynamic page title (bookmark name) - use headline
+        document.title = CONFIG.HEADLINE || siteName;
+        
+        // Dynamic favicon based on theme logo
+        const faviconSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${theme.logoIcon}</text></svg>`;
+        document.getElementById('favicon').href = `data:image/svg+xml,${encodeURIComponent(faviconSvg)}`;
+        
+        // ============ CALCULATE READING TIME ============
+        function calculateReadingTime() {
+            let totalText = CONFIG.HEADLINE + ' ' + CONFIG.SUBHEADLINE + ' ';
+            CONFIG.SECTIONS.forEach(section => {
+                if (section.body) {
+                    // Strip HTML tags and count words
+                    const plainText = section.body.replace(/<[^>]*>/g, ' ');
+                    totalText += plainText + ' ';
+                }
+            });
+            const wordCount = totalText.split(/\s+/).filter(word => word.length > 0).length;
+            const readingTime = Math.ceil(wordCount / 200); // 200 words per minute
+            return readingTime;
+        }
+        
+        // ============ ARTICLE HEADER ============
+        if (CONFIG.CATEGORY) {
+            document.getElementById('category').textContent = CONFIG.CATEGORY;
+        } else {
+            document.getElementById('category').style.display = 'none';
+        }
+        
+        document.getElementById('headline').textContent = CONFIG.HEADLINE || '';
+        
+        if (CONFIG.SUBHEADLINE) {
+            document.getElementById('subheadline').textContent = CONFIG.SUBHEADLINE;
+        } else {
+            document.getElementById('subheadline').style.display = 'none';
+        }
+        
+        // Author info - auto-generated
+        const readingTime = calculateReadingTime();
+        const today = new Date();
+        const dateStr = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        
+        document.getElementById('author-name').textContent = CONFIG.AUTHOR_NAME ? `By ${CONFIG.AUTHOR_NAME}` : 'By Staff Writer';
+        document.getElementById('article-meta').textContent = `${dateStr} • ${readingTime}-minute read`;
+        document.getElementById('author-image').src = 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=100&h=100&fit=crop&crop=face';
+        
+        // Hero Image
+        if (CONFIG.HERO_IMAGE) {
+            document.getElementById('hero-image').src = CONFIG.HERO_IMAGE;
+            document.getElementById('hero-link').href = CONFIG.ORDER_URL || '#order';
+        } else {
+            document.getElementById('hero-link').style.display = 'none';
+        }
+        
+        // ============ SECTIONS ============
+        const sectionsContainer = document.getElementById('sections-container');
+        const orderUrl = CONFIG.ORDER_URL || '#order';
+        
+        if (CONFIG.SECTIONS && CONFIG.SECTIONS.length > 0) {
+            CONFIG.SECTIONS.forEach((section, configIndex) => {
+                // Skip empty sections
+                if (!section.headline && !section.body) return;
+                
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'content-section';
+                
+                let sectionHTML = '';
+                
+                if (section.headline) {
+                    sectionHTML += `<h2>${section.headline}</h2>`;
+                }
+                
+                if (section.image) {
+                    sectionHTML += `<a href="${orderUrl}"><img src="${section.image}" alt="Section image" class="section-image"></a>`;
+                }
+                
+                if (section.body) {
+                    sectionHTML += section.body;
+                }
+                
+                sectionDiv.innerHTML = sectionHTML;
+                sectionsContainer.appendChild(sectionDiv);
+                
+                // Add invisible marker after Section 5 (index 4) for sticky ATC trigger
+                if (configIndex === 4) {
+                    const marker = document.createElement('div');
+                    marker.id = 'sticky-trigger';
+                    sectionsContainer.appendChild(marker);
+                }
+            });
+        }
+        
+        // ============ PRODUCT BOX ============
+        if (CONFIG.PRODUCT_NAME || CONFIG.PRODUCT_IMAGE) {
+            if (CONFIG.PRODUCT_IMAGE) {
+                document.getElementById('product-image').src = CONFIG.PRODUCT_IMAGE;
+            } else {
+                document.getElementById('product-image').style.display = 'none';
+            }
+            document.getElementById('product-name').textContent = CONFIG.PRODUCT_NAME || '';
+            document.getElementById('product-description').textContent = CONFIG.PRODUCT_DESCRIPTION || '';
+            
+            const benefitList = document.getElementById('benefit-list');
+            if (CONFIG.PRODUCT_BENEFITS && CONFIG.PRODUCT_BENEFITS.length > 0) {
+                CONFIG.PRODUCT_BENEFITS.forEach(benefit => {
+                    if (!benefit) return;
+                    const item = document.createElement('div');
+                    item.className = 'benefit-item';
+                    item.innerHTML = `<span class="benefit-check">✓</span><span>${benefit}</span>`;
+                    benefitList.appendChild(item);
+                });
+            }
+        } else {
+            document.getElementById('product-section').style.display = 'none';
+        }
+        
+        // ============ CTAs - AUTO-GENERATED ============
+        const ctaText = `Check Availability →`;
+        const ctaSubtext = '90-Day Money-Back Guarantee • Free Shipping';
+        
+        document.getElementById('cta-button').textContent = ctaText;
+        document.getElementById('cta-button').href = orderUrl;
+        document.getElementById('cta-button-2').textContent = ctaText;
+        document.getElementById('cta-button-2').href = orderUrl;
+        document.getElementById('cta-subtext').textContent = ctaSubtext;
+        document.getElementById('cta-subtext-2').textContent = ctaSubtext;
+        document.getElementById('sticky-cta').textContent = ctaText;
+        document.getElementById('sticky-cta').href = orderUrl;
+        
+        // ============ SIGN-OFF ============
+        if (CONFIG.SIGN_OFF_TEXT || CONFIG.SIGN_OFF_NAME) {
+            document.getElementById('sign-off').innerHTML = `
+                <p>${CONFIG.SIGN_OFF_TEXT || ''}</p>
+                <p class="author-signature">${CONFIG.SIGN_OFF_NAME || ''}</p>
+            `;
+        } else {
+            document.getElementById('sign-off').style.display = 'none';
+        }
+        
+        // ============ SIDEBAR ============
+        const sidebar = document.getElementById('sidebar');
+        if (CONFIG.SIDEBAR_REVIEWS && CONFIG.SIDEBAR_REVIEWS.length > 0) {
+            CONFIG.SIDEBAR_REVIEWS.forEach(review => {
+                if (!review.text) return;
+                const reviewDiv = document.createElement('div');
+                reviewDiv.className = 'sidebar-review';
+                reviewDiv.innerHTML = `
+                    <div class="sidebar-stars">${review.stars || '★★★★★'}</div>
+                    <p class="sidebar-text">${review.text}</p>
+                    <div class="sidebar-name">
+                        <div class="sidebar-avatar">${review.initial || review.name?.charAt(0) || '?'}</div>
+                        <span>${review.name || ''}${review.age ? `, ${review.age}` : ''}</span>
+                    </div>
+                `;
+                sidebar.appendChild(reviewDiv);
+            });
+            
+            // Sidebar Product
+            if (CONFIG.PRODUCT_NAME) {
+                const sidebarProduct = document.createElement('div');
+                sidebarProduct.className = 'sidebar-product';
+                sidebarProduct.innerHTML = `
+                    <div class="sidebar-stars">★★★★★</div>
+                    <div class="sidebar-product-name">${CONFIG.PRODUCT_NAME}</div>
+                    <div class="sidebar-product-rating">${CONFIG.REVIEWS_SCORE || '4.9'}/5 (${CONFIG.REVIEWS_COUNT || ''} reviews)</div>
+                    <a href="${orderUrl}" class="sidebar-cta">Learn More →</a>
+                `;
+                sidebar.appendChild(sidebarProduct);
+            }
+        }
+        
+        // ============ REVIEWS SECTION ============
+        if (CONFIG.REVIEWS && CONFIG.REVIEWS.length > 0 && CONFIG.REVIEWS.some(r => r.text)) {
+            document.getElementById('reviews-score').textContent = CONFIG.REVIEWS_SCORE || '4.9';
+            document.getElementById('reviews-count').textContent = `Based on ${CONFIG.REVIEWS_COUNT || '10,000'} reviews`;
+            document.getElementById('write-review-prompt').textContent = `Have you tried ${CONFIG.PRODUCT_NAME || 'this product'}? We'd love to hear from you.`;
+            document.getElementById('review-text').placeholder = 'Write your review here... What changed for you?';
+            
+            const reviewsGrid = document.getElementById('reviews-grid');
+            CONFIG.REVIEWS.forEach(review => {
+                if (!review.text) return;
+                const reviewDiv = document.createElement('div');
+                reviewDiv.className = 'inline-review';
+                reviewDiv.innerHTML = `
+                    <div class="inline-review-header">
+                        <div class="inline-review-avatar">${review.initial || review.name?.charAt(0) || '?'}</div>
+                        <div class="inline-review-info">
+                            <div class="inline-review-name">${review.name || ''}</div>
+                            <div class="inline-review-meta">Verified Purchase${review.age ? ` • Age ${review.age}` : ''}</div>
+                        </div>
+                        <div class="inline-review-stars">${review.stars || '★★★★★'}</div>
+                    </div>
+                    ${review.title ? `<p class="inline-review-title">"${review.title}"</p>` : ''}
+                    <p class="inline-review-text">${review.text}</p>
+                `;
+                reviewsGrid.appendChild(reviewDiv);
+            });
+        } else {
+            document.getElementById('reviews-section').style.display = 'none';
+        }
+        
+        // ============ DISCLAIMER - STANDARD ============
+        document.getElementById('disclaimer-text').textContent = 'This article is for informational purposes only and is not intended as medical advice. Individual results may vary. Consult a healthcare professional before starting any new supplement or health regimen. These statements have not been evaluated by the FDA. This product is not intended to diagnose, treat, cure, or prevent any disease.';
+        
+        // ============ STAR RATING ============
+        const starOptions = document.querySelectorAll('.star-option');
+        let selectedRating = 5;
+        
+        function updateStars(rating) {
+            starOptions.forEach((star, index) => {
+                star.classList.toggle('active', index < rating);
+            });
+        }
+        updateStars(selectedRating);
+
+        starOptions.forEach((star, index) => {
+            star.addEventListener('click', () => {
+                selectedRating = index + 1;
+                updateStars(selectedRating);
+            });
+            star.addEventListener('mouseenter', () => updateStars(index + 1));
+        });
+
+        document.querySelector('.star-select')?.addEventListener('mouseleave', () => updateStars(selectedRating));
+
+        // ============ SUBMIT REVIEW ============
+        document.getElementById('submit-review-btn')?.addEventListener('click', () => {
+            const name = document.getElementById('review-name').value;
+            const age = document.getElementById('review-age').value;
+            const text = document.getElementById('review-text').value;
+
+            if (!name || !text) {
+                alert('Please fill in your name and review.');
+                return;
+            }
+            
+            if (age && (parseInt(age) < 18 || parseInt(age) > 99)) {
+                alert('Please enter a valid age between 18 and 99.');
+                return;
+            }
+
+            document.getElementById('write-review-box').innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">✓</div>
+                    <h3 style="color: var(--primary); margin-bottom: 10px;">Thank You, ${name}!</h3>
+                    <p style="color: #555;">Your review has been submitted and is pending approval.</p>
+                </div>
+            `;
+        });
+        
+        // ============ STICKY CTA ============
+        const stickyATC = document.getElementById('stickyATC');
+        const stickyTrigger = document.getElementById('sticky-trigger');
+        
+        window.addEventListener('scroll', () => {
+            if (stickyTrigger) {
+                const triggerPosition = stickyTrigger.getBoundingClientRect().top;
+                stickyATC.classList.toggle('visible', triggerPosition < window.innerHeight * 0.5);
+            }
+        });
+    </script>
+
+</body>
+</html>

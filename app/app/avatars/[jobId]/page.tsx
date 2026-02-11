@@ -67,6 +67,16 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
         limit: number
     } | null>(null)
 
+    const [showOverageDialog, setShowOverageDialog] = useState(false)
+    const [pendingOverage, setPendingOverage] = useState<{
+        overageCredits: number
+        overageCostPerCredit: number
+        overageCostTotal: number
+        currency: string
+        payload: { jobId: string; personaName: string; allowOverage: true }
+    } | null>(null)
+    const [retryOverageAvatar, setRetryOverageAvatar] = useState<Avatar | null>(null)
+
     // Optimistic UI state - show loading immediately
     const [isCheckingLimit, setIsCheckingLimit] = useState(false)
     const [pendingAvatar, setPendingAvatar] = useState<Avatar | null>(null)
@@ -130,7 +140,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
         setShowAvatarDetails(true)
     }
 
-    const handleStartResearch = async (avatar: Avatar) => {
+    const handleStartResearch = async (avatar: Avatar, opts?: { allowOverage?: boolean; skipUsageCheck?: boolean }) => {
         // Close details modal
         setShowAvatarDetails(false)
 
@@ -144,44 +154,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
             setPendingAvatar(avatar)
             setIsResearching(true)
 
-            // Check usage limit in the background
-            try {
-                const limitCheckResponse = await fetch(`/api/usage/check?type=deep_research`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${user?.email || ''}`
-                    }
-                })
-
-                if (!limitCheckResponse.ok) {
-                    const errorData = await limitCheckResponse.json()
-                    setIsCheckingLimit(false)
-                    setIsResearching(false)
-                    setPendingAvatar(null)
-                    setUsageLimitData({
-                        usageType: 'deep_research',
-                        currentUsage: errorData.currentUsage || 0,
-                        limit: errorData.limit || 0
-                    })
-                    setShowUsageLimitDialog(true)
-                    return // Don't proceed if limit check fails
-                }
-
-                const limitCheck = await limitCheckResponse.json()
-                if (!limitCheck.allowed) {
-                    setIsCheckingLimit(false)
-                    setIsResearching(false)
-                    setPendingAvatar(null)
-                    setUsageLimitData({
-                        usageType: 'deep_research',
-                        currentUsage: limitCheck.currentUsage || 0,
-                        limit: limitCheck.limit || 0
-                    })
-                    setShowUsageLimitDialog(true)
-                    return // Don't proceed if limit is exceeded
-                }
-
-                // Limit check passed - show research loading modal
+            if (opts?.skipUsageCheck) {
                 setIsCheckingLimit(false)
                 setPendingAvatar(null)
                 setSelectedAvatar(avatar)
@@ -189,10 +162,10 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                 setResearchProgress(0)
                 setResearchStage(0)
                 setCurrentJobId(null)
-
-                // Reset source status
                 setSourceStatus(resetSourceStatus())
+            }
 
+            const startResearch = async () => {
                 // Start progress animation
                 const startTime = Date.now()
                 let progressInterval: NodeJS.Timeout | null = null
@@ -221,21 +194,58 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
 
                 try {
                     setIsResearching(true)
-                    const response = await fetch('/api/avatars/research', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${user?.email || ''}`
-                        },
-                        body: JSON.stringify({
-                            jobId: avatar.job_id,
-                            personaName: avatar.persona_name
+                    const submitResearch = async (submitOpts?: { allowOverage?: boolean }) => {
+                        return fetch('/api/avatars/research', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${user?.email || ''}`
+                            },
+                            body: JSON.stringify({
+                                jobId: avatar.job_id,
+                                personaName: avatar.persona_name,
+                                ...(submitOpts?.allowOverage ? { allowOverage: true } : {}),
+                            })
                         })
-                    })
+                    }
+
+                    const response = await submitResearch({ allowOverage: opts?.allowOverage })
 
                     if (!response.ok) {
-                        const errorData = await response.json()
-                        throw new Error(errorData.error || 'Failed to start research')
+                        const errorData = await response.json().catch(() => ({} as any))
+                        if (
+                            response.status === 402 &&
+                            errorData?.code === 'JOB_CREDITS_OVERAGE_CONFIRMATION_REQUIRED'
+                        ) {
+                            if (progressInterval) {
+                                clearInterval(progressInterval)
+                            }
+                            setShowResearchLoading(false)
+                            setResearchProgress(0)
+                            setResearchStage(0)
+                            setCurrentJobId(null)
+                            setSelectedAvatar(null)
+                            setSelectedAvatarForDetails(null)
+                            setSourceStatus(resetSourceStatus())
+                            setIsResearching(false)
+
+                            setPendingOverage({
+                                overageCredits: errorData?.overageCredits ?? 0,
+                                overageCostPerCredit: errorData?.overageCostPerCredit ?? 0.5,
+                                overageCostTotal: errorData?.overageCostTotal ?? 0,
+                                currency: errorData?.currency ?? 'EUR',
+                                payload: {
+                                    jobId: avatar.job_id,
+                                    personaName: avatar.persona_name,
+                                    allowOverage: true,
+                                },
+                            })
+                            setShowOverageDialog(true)
+                            setRetryOverageAvatar(avatar)
+                            return null
+                        }
+
+                        throw new Error(errorData?.error || errorData?.message || 'Failed to start research')
                     }
 
                     const data = await response.json()
@@ -338,12 +348,19 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                                     setSelectedAvatar(null)
                                     setSelectedAvatarForDetails(null)
 
-                                    setSourceStatus(resetSourceStatus())
+                                    setSourceStatus({
+                                        webSearch: false,
+                                        amazonReviews: false,
+                                        redditDiscussions: false,
+                                        industryBlogs: false,
+                                        competitorAnalysis: false,
+                                        marketTrends: false,
+                                    })
 
                                     toast({
-                                        title: "Error",
-                                        description: "Failed to check job status. Please check your jobs page.",
-                                        variant: "destructive",
+                                        title: "Processing Taking Longer",
+                                        description: "Your job is still processing. This can take 5-8 minutes or more. Please check your jobs page for updates.",
+                                        variant: "default",
                                     })
                                     return
                                 }
@@ -400,20 +417,75 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                 } finally {
                     setIsResearching(false)
                 }
+            }
+
+            // Check usage limit in the background
+            try {
+                if (!opts?.skipUsageCheck) {
+                    const limitCheckResponse = await fetch(`/api/usage/check?type=deep_research`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${user?.email || ''}`
+                        }
+                    })
+
+                    if (!limitCheckResponse.ok) {
+                        const errorData = await limitCheckResponse.json()
+                        setIsCheckingLimit(false)
+                        setIsResearching(false)
+                        setPendingAvatar(null)
+                        setUsageLimitData({
+                            usageType: 'deep_research',
+                            currentUsage: errorData.currentUsage || 0,
+                            limit: errorData.limit || 0
+                        })
+                        setShowUsageLimitDialog(true)
+                        return // Don't proceed if limit check fails
+                    }
+
+                    const limitCheck = await limitCheckResponse.json()
+                    if (!limitCheck.allowed) {
+                        setIsCheckingLimit(false)
+                        setIsResearching(false)
+                        setPendingAvatar(null)
+                        setUsageLimitData({
+                            usageType: 'deep_research',
+                            currentUsage: limitCheck.currentUsage || 0,
+                            limit: limitCheck.limit || 0
+                        })
+                        setShowUsageLimitDialog(true)
+                        return // Don't proceed if limit is exceeded
+                    }
+
+                    // Limit check passed - show research loading modal
+                    setIsCheckingLimit(false)
+                    setPendingAvatar(null)
+                    setSelectedAvatar(avatar)
+                    setShowResearchLoading(true)
+                    setResearchProgress(0)
+                    setResearchStage(0)
+                    setCurrentJobId(null)
+
+                    // Reset source status
+                    setSourceStatus(resetSourceStatus())
+                }
+
+                await startResearch()
             } catch (limitError) {
-                // Error checking usage limit - don't show loading modal
-                toast({
-                    title: "Error",
-                    description: "Failed to check usage limit. Please try again.",
-                    variant: "destructive",
-                })
+                if (!opts?.skipUsageCheck) {
+                    // Error checking usage limit - don't show loading modal
+                    toast({
+                        title: "Error",
+                        description: "Failed to check usage limit. Please try again.",
+                        variant: "destructive",
+                    })
+                }
             }
         }
     }
 
     // No filtering needed - show all avatars for this job
     const filteredAvatars = avatars
-
 
     if (!user) {
         return (
@@ -719,6 +791,42 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                             </DialogFooter>
                         </>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showOverageDialog} onOpenChange={setShowOverageDialog}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Confirm Overage</DialogTitle>
+                        <DialogDescription>
+                            {pendingOverage
+                                ? `You don't have enough included credits for this job. The extra ${pendingOverage.overageCredits} credit${pendingOverage.overageCredits === 1 ? '' : 's'} will be charged as overage at ${pendingOverage.overageCostPerCredit.toFixed(2)} ${pendingOverage.currency} per credit (${pendingOverage.overageCostTotal.toFixed(2)} ${pendingOverage.currency} total) and added to your next invoice.`
+                                : "You don't have enough included credits for this job. The extra credits will be charged as overage and added to your next invoice."}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-2 pt-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setShowOverageDialog(false)
+                                setPendingOverage(null)
+                                setRetryOverageAvatar(null)
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={async () => {
+                                if (!retryOverageAvatar) return
+                                setShowOverageDialog(false)
+                                setPendingOverage(null)
+                                setRetryOverageAvatar(null)
+                                await handleStartResearch(retryOverageAvatar, { allowOverage: true, skipUsageCheck: true })
+                            }}
+                        >
+                            Confirm & Start Research
+                        </Button>
+                    </div>
                 </DialogContent>
             </Dialog>
 

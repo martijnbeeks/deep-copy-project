@@ -25,6 +25,7 @@ import { ContentViewerSkeleton } from "@/components/ui/skeleton-loaders";
 import { useJobPolling } from "@/hooks/use-job-polling";
 import { isProcessingStatus } from "@/lib/utils/job-status";
 import { internalApiClient } from "@/lib/clients/internal-client";
+import { isV2Job } from "@/lib/utils/v2-data-transformer";
 
 export default function ResultDetailPage({
   params,
@@ -170,6 +171,10 @@ export default function ResultDetailPage({
   // If this is a research job (has parent_job_id), use the parent, otherwise use current job ID
   const avatarsPageJobId = currentJob?.parent_job_id || params.id;
 
+  // Detect if this is a V2 job by checking target_approach field
+  // All deep research jobs should have target_approach = 'v2'
+  const isV2 = currentJob?.target_approach === 'v2';
+
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar />
@@ -180,21 +185,24 @@ export default function ResultDetailPage({
               <SidebarTrigger />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => router.push(`/avatars/${avatarsPageJobId}`)}
-                    className="flex items-center gap-2"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Back to Avatars
-                  </Button>
+                  {/* Hide 'Back to Avatars' button for V2 jobs */}
+                  {!isV2 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/avatars/${avatarsPageJobId}`)}
+                      className="flex items-center gap-2"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      Back to Avatars
+                    </Button>
+                  )}
                   <div className="flex items-center gap-4 flex-1 justify-center">
                     {currentJob && (
                       <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary">
                         <span className="text-sm font-medium flex items-center gap-2">
                           <span>{capitalizedTitle}</span>
-                          {selectedAvatarNames && (
+                          {selectedAvatarNames && !isV2 && (
                             <>
                               <span>•</span>
                               <span className="font-semibold">

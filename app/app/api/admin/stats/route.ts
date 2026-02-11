@@ -44,6 +44,29 @@ export async function GET(request: NextRequest) {
       ORDER BY count DESC
     `)
     
+    // Get usage analytics for all features
+    const usageAnalytics = await query(`
+      SELECT 
+        usage_type,
+        SUM(count) as total_usage,
+        COUNT(DISTINCT organization_id) as organizations_using
+      FROM organization_usage_tracking 
+      WHERE week_start_date >= CURRENT_DATE - INTERVAL '30 days'
+      GROUP BY usage_type
+      ORDER BY total_usage DESC
+    `)
+    
+    // Get current week usage for all features
+    const currentWeekUsage = await query(`
+      SELECT 
+        usage_type,
+        SUM(count) as current_week_usage
+      FROM organization_usage_tracking 
+      WHERE week_start_date >= CURRENT_DATE - INTERVAL '7 days'
+      GROUP BY usage_type
+      ORDER BY current_week_usage DESC
+    `)
+    
     return NextResponse.json({
       stats: {
         users: parseInt(usersCount.rows[0].count),
@@ -53,7 +76,9 @@ export async function GET(request: NextRequest) {
       },
       jobStatuses: jobStatuses.rows,
       recentJobs: recentJobs.rows,
-      templateCategories: templateCategories.rows
+      templateCategories: templateCategories.rows,
+      usageAnalytics: usageAnalytics.rows,
+      currentWeekUsage: currentWeekUsage.rows
     })
   } catch (error) {
     console.error('Error fetching database stats:', error)

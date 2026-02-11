@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdminAuth, createAuthResponse } from '@/lib/auth/admin-auth'
-import { 
-  getOrganizationUsageLimits, 
-  setOrganizationUsageLimits, 
-  resetOrganizationUsage,
-  getAllOrganizationsWithLimits 
+import {
+  getOrganizationUsageLimits,
+  setOrganizationUsageLimits,
+  getAllOrganizationsWithLimits,
+  getCurrentBillingPeriodForOrganization,
+  getUsedCreditsInPeriod,
+  getPlanCredits,
+  getAdminBonusCredits,
+  getTotalAvailableCredits,
+  getRemainingCredits,
+  updateAdminBonusCredits
 } from '@/lib/db/queries'
 import { handleApiError, createValidationErrorResponse } from '@/lib/middleware/error-handler'
-import { UsageType } from '@/lib/db/types'
 
 // GET limits and current usage for a specific organization
 export async function GET(
@@ -22,21 +27,33 @@ export async function GET(
   try {
     const organizationId = params.id
     const limits = await getOrganizationUsageLimits(organizationId)
-    
+
     if (!limits) {
       return createValidationErrorResponse('Organization not found', 404)
     }
 
-    // Get current usage from the all organizations query
     const allOrgs = await getAllOrganizationsWithLimits()
     const orgData = allOrgs.find(org => org.organization_id === organizationId)
+    const period = await getCurrentBillingPeriodForOrganization(organizationId)
+    const jobCreditsUsed = await getUsedCreditsInPeriod(organizationId, period.start)
+    
+    // Get new credit breakdown
+    const [planCredits, adminBonusCredits, totalAvailable, remainingCredits] = await Promise.all([
+      getPlanCredits(organizationId),
+      getAdminBonusCredits(organizationId),
+      getTotalAvailableCredits(organizationId),
+      getRemainingCredits(organizationId)
+    ])
 
     return NextResponse.json({
       organization_id: organizationId,
-      limits: {
-        deep_research_limit: limits.deep_research_limit,
-        pre_lander_limit: limits.pre_lander_limit,
-        static_ads_limit: limits.static_ads_limit
+      credits: {
+        plan_credits: planCredits,
+        admin_bonus_credits: adminBonusCredits,
+        total_available: totalAvailable,
+        used: jobCreditsUsed,
+        remaining: remainingCredits,
+        billing_period_end: period.end.toISOString()
       },
       usage: {
         deep_research: {
@@ -61,7 +78,7 @@ export async function GET(
   }
 }
 
-// PUT update limits for an organization
+// PUT update admin bonus credits for an organization
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -74,66 +91,21 @@ export async function PUT(
   try {
     const organizationId = params.id
     const body = await request.json()
-    const { deep_research_limit, pre_lander_limit, static_ads_limit } = body
+    const { admin_bonus_credits } = body
 
-    // Validate limits
-    if (deep_research_limit !== undefined && (typeof deep_research_limit !== 'number' || deep_research_limit < 0)) {
-      return createValidationErrorResponse('deep_research_limit must be a non-negative integer')
+    if (admin_bonus_credits !== undefined) {
+      if (typeof admin_bonus_credits !== 'number' || admin_bonus_credits < 0) {
+        return createValidationErrorResponse('admin_bonus_credits must be a non-negative integer')
+      }
     }
 
-    if (pre_lander_limit !== undefined && (typeof pre_lander_limit !== 'number' || pre_lander_limit < 0)) {
-      return createValidationErrorResponse('pre_lander_limit must be a non-negative integer')
-    }
-
-    if (static_ads_limit !== undefined && (typeof static_ads_limit !== 'number' || static_ads_limit < 0)) {
-      return createValidationErrorResponse('static_ads_limit must be a non-negative integer')
-    }
-
-    const updatedLimits = await setOrganizationUsageLimits(organizationId, {
-      deep_research_limit,
-      pre_lander_limit,
-      static_ads_limit
-    })
+    const updatedCredits = await updateAdminBonusCredits(organizationId, admin_bonus_credits)
 
     return NextResponse.json({
       success: true,
-      limits: updatedLimits
+      admin_bonus_credits: updatedCredits
     })
   } catch (error) {
     return handleApiError(error)
   }
 }
-
-// POST reset usage for an organization
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const authResult = await verifyAdminAuth(request)
-  if (authResult.error) {
-    return createAuthResponse(authResult.error)
-  }
-
-  try {
-    const organizationId = params.id
-    const body = await request.json()
-    const { usage_type } = body
-
-    // Validate usage_type if provided
-    if (usage_type && usage_type !== 'deep_research' && usage_type !== 'pre_lander' && usage_type !== 'static_ads') {
-      return createValidationErrorResponse('usage_type must be "deep_research", "pre_lander", or "static_ads"')
-    }
-
-    await resetOrganizationUsage(organizationId, usage_type as UsageType | undefined)
-
-    return NextResponse.json({
-      success: true,
-      message: usage_type 
-        ? `Usage reset for ${usage_type}` 
-        : 'All usage reset for organization'
-    })
-  } catch (error) {
-    return handleApiError(error)
-  }
-}
-

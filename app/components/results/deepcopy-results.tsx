@@ -43,9 +43,13 @@ import {
   DownloadCloud,
   Trash2,
   Zap,
+  Edit,
+  Copy,
+  Check,
+  Image as ImageIcon,
 } from "lucide-react";
 import JSZip from "jszip";
-import { useState, useEffect, useMemo, memo } from "react";
+import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -54,12 +58,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { JOB_CREDITS_BY_TYPE } from "@/lib/constants/job-credits";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
+  SelectSeparator,
 } from "@/components/ui/select";
 import { TemplatePreview } from "@/components/template-preview";
 import { useToast } from "@/hooks/use-toast";
@@ -75,15 +83,30 @@ import {
   Listicle,
   Advertorial,
   Angle,
+  MarketingAvatarV2,
 } from "@/lib/clients/deepcopy-client";
 import { internalApiClient } from "@/lib/clients/internal-client";
 import { Template } from "@/lib/db/types";
 import { logger } from "@/lib/utils/logger";
 import { capitalizeFirst } from "@/lib/utils/avatar-utils";
 import { GenerateStaticAds } from "@/components/results/generate-static-ads";
+import { isV2Job, transformV2ToExistingSchema, TransformedAvatar } from "@/lib/utils/v2-data-transformer";
+import { ExploreTemplatesDialogV2 } from "@/components/results/explore-templates-dialog-v2";
+import { V2AvatarTree } from "@/components/results/v2-avatar-tree";
+import { V2ResearchData } from "@/components/results/v2-research-data";
+import { PrelanderImageGenerationDialog } from "@/components/results/prelander-image-generation-dialog";
+import { TemplateImageGenerationDialog } from "@/components/results/template-image-generation-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { getAuthorizationHeader } from "@/lib/utils/client-auth"
+import { replaceTemplateImagesInHTML } from "@/lib/utils/template-image-replacer";
+import { ImageGenerationFloater } from "@/components/results/image-generation-floater";
+
+const NEW_TEMPLATE_IDS = ['AD0001', 'LD0001'] // New templates with image generation support
 
 interface DeepCopyResult extends MarketingAngleResult {
-  // This now matches the MarketingAngleResult interface from the API client
+  results: MarketingAngleResult["results"] & {
+    marketing_avatars?: MarketingAvatarV2[];
+  };
 }
 
 interface DeepCopyResultsProps {
@@ -277,6 +300,7 @@ function DeepCopyResultsComponent({
     timestamp?: string;
     templateId?: string;
     swipe_file_name?: string;
+    config_data?: any;
   }>>([]);
   const [templatesLoading, setTemplatesLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<{
@@ -287,6 +311,9 @@ function DeepCopyResultsComponent({
   } | null>(null);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
+  const [selectedAnglePredictions, setSelectedAnglePredictions] = useState<any[] | undefined>(undefined);
+  const [previewImageGenDialogOpen, setPreviewImageGenDialogOpen] = useState<{ [key: string]: boolean }>({});
+  const [showImageGenFloater, setShowImageGenFloater] = useState<{ [key: string]: boolean }>({});
 
   // Swipe file generation state - track multiple angles
   const [selectedAngle, setSelectedAngle] = useState<string | null>(null);
@@ -318,6 +345,7 @@ function DeepCopyResultsComponent({
   );
   const [isGeneratingRefined, setIsGeneratingRefined] = useState(false);
   const [selectedAngleFilter, setSelectedAngleFilter] = useState<string>("all");
+  const [selectedAvatarFilter, setSelectedAvatarFilter] = useState<string>("all");
 
   // Usage limit dialog state
   const [showUsageLimitDialog, setShowUsageLimitDialog] = useState(false);
@@ -331,6 +359,12 @@ function DeepCopyResultsComponent({
   const [openMarketingAngle, setOpenMarketingAngle] = useState<
     string | undefined
   >(undefined);
+  const [copiedTemplateId, setCopiedTemplateId] = useState<string | null>(null);
+
+  // V2 state management
+  const [isV2, setIsV2] = useState(false);
+  const [showExploreTemplatesV2, setShowExploreTemplatesV2] = useState(false);
+
   // Use TanStack Query for templates data
   const {
     data: availableTemplates = [],
@@ -338,34 +372,46 @@ function DeepCopyResultsComponent({
   } = useTemplates();
   const { toast } = useToast();
 
+
+  // Listen for template updates coming back from the editor window and refresh the page
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (
+        event.origin !== window.location.origin ||
+        !event.data ||
+        event.data.type !== "TEMPLATE_UPDATED"
+      ) {
+        return;
+      }
+
+      // Simplest robust behaviour: reload so all data and UI are in sync
+      window.location.reload();
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
   const fullResult = result.metadata?.full_result;
   // Use local database jobId instead of DeepCopy API job ID for API calls
   const originalJobId = jobId || result.metadata?.deepcopy_job_id;
 
+  // Detect V2 jobs and transform data if needed
+  useEffect(() => {
+    // First check if customerAvatars has V2 data
+    if (customerAvatars && customerAvatars.length > 0) {
+      setIsV2(isV2Job(customerAvatars));
+    }
+    // If customerAvatars is empty but fullResult has V2 structure, it's a V2 job
+    else if (fullResult?.results?.marketing_avatars) {
+      setIsV2(true);
+    }
+  }, [customerAvatars, fullResult]);
+
   // Memoize HTML processing function for iframes
   const createPreviewHTML = useMemo(() => {
     return (htmlContent: string) => {
-      const raw = htmlContent;
-      const hasRealImages =
-        /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(
-          raw
-        );
-      if (!hasRealImages) return raw;
-      const noOnError = raw
-        .replace(/\s+onerror="[^"]*"/gi, "")
-        .replace(/\s+onerror='[^']*'/gi, "");
-      const stripFallbackScripts = noOnError.replace(
-        /<script[\s\S]*?<\/script>/gi,
-        (block) => {
-          const lower = block.toLowerCase();
-          return lower.includes("handlebrokenimages") ||
-            lower.includes("createfallbackimage") ||
-            lower.includes("placehold.co")
-            ? ""
-            : block;
-        }
-      );
-      return stripFallbackScripts;
+      return htmlContent;
     };
   }, []);
 
@@ -396,20 +442,6 @@ function DeepCopyResultsComponent({
 </head>
 <body>
   ${createPreviewHTML(template.html)}
-  <script>
-    (function(){
-      function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }
-      function ph(img){ var alt=(img.getAttribute('alt')||'Image'); var text=encodeURIComponent(alt.replace(/[^a-zA-Z0-9\s]/g,'').substring(0,20)||'Image'); return 'https://placehold.co/600x400?text='+text; }
-      function apply(img){
-        if (isTrusted(img.src)) { img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); }; return; }
-        if (!img.complete || img.naturalWidth === 0) { img.src = ph(img); }
-        img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); };
-      }
-      function run(){ document.querySelectorAll('img').forEach(apply); }
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
-      setTimeout(run, 800);
-    })();
-  </script>
 </body>
 </html>`;
       return acc;
@@ -498,19 +530,31 @@ function DeepCopyResultsComponent({
 
     return templatesList.filter(
       (template) => {
-        // Direct match
-        if (template.angle === angleFilter) return true;
-
-        // Handle "Title: Description" format - check if description part matches
-        if (template.angle?.includes(": ")) {
-          const parts = template.angle.split(": ");
-          if (parts.length >= 2 && parts[1] === angleFilter) return true;
+        if (!template.angle) return false;
+        
+        // Normalize both for comparison
+        const templateAngle = template.angle.trim();
+        const filterAngle = angleFilter.trim();
+        
+        // Exact match (most reliable)
+        if (templateAngle === filterAngle) return true;
+        
+        // Handle "Title: Description" format - match by full string or description part
+        if (templateAngle.includes(": ")) {
+          const parts = templateAngle.split(": ");
+          if (parts.length >= 2) {
+            // Match by description part
+            if (parts[1].trim() === filterAngle) return true;
+            // Match by full string if filter is also "Title: Description"
+            if (filterAngle.includes(": ")) {
+              const filterParts = filterAngle.split(": ");
+              if (filterParts.length >= 2 && parts[1].trim() === filterParts[1].trim()) {
+                return true;
+              }
+            }
+          }
         }
-
-        // Partial matches (for backwards compatibility)
-        if (template.angle?.includes(angleFilter)) return true;
-        if (angleFilter.includes(template.angle || "")) return true;
-
+        
         return false;
       }
     );
@@ -538,7 +582,63 @@ function DeepCopyResultsComponent({
     });
   };
 
-  // Combined filter function for both angle and type
+  // Helper function to match template to avatar by angle (V2 only)
+  const getTemplateAvatarIndex = (
+    template: { angle?: string }
+  ): number | null => {
+    if (!isV2 || !template.angle || !fullResult?.results?.marketing_avatars) {
+      return null;
+    }
+
+    // Normalize template angle for comparison
+    const templateAngle = template.angle.trim();
+    
+    // Check each avatar to see if any of its angles match this template's angle
+    for (let i = 0; i < fullResult.results.marketing_avatars.length; i++) {
+      const avatarData = fullResult.results.marketing_avatars[i];
+      const angles = avatarData.angles?.generated_angles || [];
+
+      for (const angle of angles) {
+        // Build angle string EXACTLY as it was stored (matching v2-avatar-tree.tsx line 225-227)
+        const angleString = angle.angle_subtitle
+          ? `${angle.angle_title}: ${angle.angle_subtitle}`
+          : angle.angle_title;
+        
+        // Exact match only (normalized)
+        if (templateAngle === angleString.trim()) {
+          return i;
+        }
+      }
+    }
+    return null;
+  };
+
+  // Helper function to filter templates by avatar (V2 only)
+  const filterTemplatesByAvatar = (
+    templatesList: Array<{
+      id?: string;
+      name: string;
+      type: string;
+      html: string;
+      angle?: string;
+      timestamp?: string;
+      templateId?: string;
+      swipe_file_name?: string;
+    }>,
+    avatarFilter: string
+  ) => {
+    if (avatarFilter === "all" || !isV2) return templatesList;
+
+    const avatarIndex = parseInt(avatarFilter);
+    if (isNaN(avatarIndex)) return templatesList;
+
+    return templatesList.filter((template) => {
+      const templateAvatarIndex = getTemplateAvatarIndex(template);
+      return templateAvatarIndex === avatarIndex;
+    });
+  };
+
+  // Combined filter function for angle, type, and avatar
   const filterTemplates = (
     templatesList: Array<{
       id?: string;
@@ -551,147 +651,230 @@ function DeepCopyResultsComponent({
       swipe_file_name?: string;
     }>,
     angleFilter: string,
-    typeFilter: string
+    typeFilter: string,
+    avatarFilter: string = "all"
   ) => {
     let filtered = filterTemplatesByAngle(templatesList, angleFilter);
     filtered = filterTemplatesByType(filtered, typeFilter);
+    filtered = filterTemplatesByAvatar(filtered, avatarFilter);
     return filtered;
   };
 
-  // Load generated angles and templates from database on mount
-  useEffect(() => {
-    const loadData = async () => {
-      if (jobId) {
+  // Helper to make template names unique when there are multiple generations
+  const makeTemplateNameUnique = (
+    template: { 
+      name: string; 
+      timestamp?: string;
+      templateId?: string;
+      angle?: string;
+    },
+    allTemplates: Array<{ name: string; timestamp?: string; templateId?: string; angle?: string }>
+  ): string => {
+    // Count how many templates have the same base name (same templateId + angle)
+    const sameNameCount = allTemplates.filter(t => 
+      t.templateId === template.templateId && t.angle === template.angle
+    ).length
+    
+    // If there are multiple generations, add timestamp to distinguish them
+    if (sameNameCount > 1 && template.timestamp) {
+      const date = new Date(template.timestamp)
+      const timeStr = date.toLocaleString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      })
+      return `${template.name} (${timeStr})`
+    }
+    
+    return template.name
+  }
+
+  // Function to refresh templates and generated angles
+  const refreshTemplates = useCallback(async () => {
+    if (jobId) {
+      try {
+        // Load generated angles from database
         try {
-          // Load generated angles from database
-          try {
-            const angles = await internalApiClient.getGeneratedAngles(jobId);
-            setGeneratedAngles(new Set(angles));
-          } catch (error) {
-            logger.error("Failed to load generated angles:", error);
+          const angles = await internalApiClient.getGeneratedAngles(jobId);
+          setGeneratedAngles(new Set(angles));
+        } catch (error) {
+          logger.error("Failed to load generated angles:", error);
+        }
+
+        // Load templates from database
+        try {
+          const injectedTemplatesResponse =
+            (await internalApiClient.getInjectedTemplates(jobId)) as any;
+
+          // Handle different response formats
+          let injectedTemplates: any[] = [];
+          if (Array.isArray(injectedTemplatesResponse)) {
+            injectedTemplates = injectedTemplatesResponse;
+          } else if (
+            injectedTemplatesResponse?.templates &&
+            Array.isArray(injectedTemplatesResponse.templates)
+          ) {
+            injectedTemplates = injectedTemplatesResponse.templates;
+          } else if (
+            injectedTemplatesResponse?.data &&
+            Array.isArray(injectedTemplatesResponse.data)
+          ) {
+            injectedTemplates = injectedTemplatesResponse.data;
           }
 
-          // Load templates from database
-          try {
-            const injectedTemplatesResponse =
-              (await internalApiClient.getInjectedTemplates(jobId)) as any;
+          logger.log(
+            `📦 Initial load: Processed ${injectedTemplates.length} injected templates for job ${jobId}`
+          );
 
-            // Handle different response formats
-            let injectedTemplates: any[] = [];
-            if (Array.isArray(injectedTemplatesResponse)) {
-              injectedTemplates = injectedTemplatesResponse;
-            } else if (
-              injectedTemplatesResponse?.templates &&
-              Array.isArray(injectedTemplatesResponse.templates)
-            ) {
-              injectedTemplates = injectedTemplatesResponse.templates;
-            } else if (
-              injectedTemplatesResponse?.data &&
-              Array.isArray(injectedTemplatesResponse.data)
-            ) {
-              injectedTemplates = injectedTemplatesResponse.data;
-            }
+          if (injectedTemplates.length > 0) {
+            let templates = injectedTemplates.map((injected: any) => ({
+              id: injected.id,
+              name: `${injected.template_id} - ${injected.angle_name}`,
+              type: injected.template_id?.startsWith('L') ? 'Listicle' : injected.template_id?.startsWith('A') ? 'Advertorial' : "Marketing Angle",
+              html: injected.html_content,
+              angle: injected.angle_name,
+              templateId: injected.template_id,
+              timestamp: injected.created_at,
+              swipe_file_name: injected.swipe_file_name || undefined,
+              config_data: injected.config_data || undefined,
+            }));
 
-            logger.log(
-              `📦 Initial load: Processed ${injectedTemplates.length} injected templates for job ${jobId}`
-            );
+            // Make names unique for multiple generations of the same template
+            const templatesWithUniqueNames = templates.map(t => ({
+              ...t,
+              name: makeTemplateNameUnique(t, templates)
+            }))
 
-            if (injectedTemplates.length > 0) {
-              const templates = injectedTemplates.map((injected: any) => ({
-                id: injected.id,
-                name: `${injected.template_id} - ${injected.angle_name}`,
-                type: injected.template_id?.startsWith('L') ? 'Listicle' : injected.template_id?.startsWith('A') ? 'Advertorial' : "Marketing Angle",
-                html: injected.html_content,
-                angle: injected.angle_name,
-                templateId: injected.template_id,
-                timestamp: injected.created_at,
-                swipe_file_name: injected.swipe_file_name || undefined,
-              }));
+            // Sort by angle name, then by template ID, then by timestamp (newest first)
+            templatesWithUniqueNames.sort((a: any, b: any) => {
+              if (a.angle !== b.angle) {
+                return (a.angle || "").localeCompare(b.angle || "");
+              }
+              // Same angle - sort by template ID, then by timestamp (newest first)
+              if (a.templateId !== b.templateId) {
+                return (a.templateId || "").localeCompare(b.templateId || "");
+              }
+              // Same angle and template - newest first
+              if (a.timestamp && b.timestamp) {
+                return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+              }
+              return 0
+            });
 
-              // Sort by angle name and template ID
-              templates.sort((a: any, b: any) => {
+            // MERGE instead of replace: Keep existing templates and add new ones
+            setTemplates(prev => {
+              const existingMap = new Map<string, typeof templates[0]>()
+              // Add all existing templates to map, using ID as key
+              prev.forEach(t => {
+                if (t.id) {
+                  existingMap.set(t.id, t)
+                }
+              })
+
+              // Add/update with new templates (by ID)
+              templatesWithUniqueNames.forEach(t => {
+                if (t.id) {
+                  existingMap.set(t.id, t) // Will add new or update existing
+                }
+              })
+
+              const merged = Array.from(existingMap.values())
+              // Sort merged array
+              merged.sort((a: any, b: any) => {
                 if (a.angle !== b.angle) {
                   return (a.angle || "").localeCompare(b.angle || "");
                 }
-                return (a.templateId || "").localeCompare(b.templateId || "");
-              });
+                if (a.templateId !== b.templateId) {
+                  return (a.templateId || "").localeCompare(b.templateId || "");
+                }
+                if (a.timestamp && b.timestamp) {
+                  return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                }
+                return 0
+              })
 
-              setTemplates(templates);
+              return merged
+            })
 
-              // Update generatedAngles based on loaded templates
-              const uniqueAngles = new Set<string>();
-              templates.forEach((template) => {
-                if (template.angle) {
-                  // Extract the angle description part if it's in "Title: Description" format
-                  let angleDescription = template.angle;
-                  if (template.angle.includes(": ")) {
-                    const parts = template.angle.split(": ");
-                    if (parts.length >= 2) {
-                      angleDescription = parts[1];
-                    }
-                  }
-
-                  // Add the description part
-                  uniqueAngles.add(angleDescription);
-                  // Also add the full angle string for matching
-                  uniqueAngles.add(template.angle);
-
-                  // Find matching marketing angle to get the full "Title: Description" format
-                  if (fullResult?.results?.marketing_angles) {
-                    const matchingAngle = fullResult.results.marketing_angles.find((ma: any) => {
-                      if (typeof ma === "string") {
-                        return ma === angleDescription || ma === template.angle;
-                      }
-                      // Match by angle description
-                      if (ma.angle === angleDescription || ma.angle === template.angle) {
-                        return true;
-                      }
-                      return false;
-                    });
-
-                    // If we found a matching marketing angle, add it in "Title: Description" format
-                    if (matchingAngle && typeof matchingAngle === "object" && matchingAngle.title && matchingAngle.angle) {
-                      uniqueAngles.add(`${matchingAngle.title}: ${matchingAngle.angle}`);
-                    }
+            // Update generatedAngles based on loaded templates
+            const uniqueAngles = new Set<string>();
+            templates.forEach((template) => {
+              if (template.angle) {
+                // Extract the angle description part if it's in "Title: Description" format
+                let angleDescription = template.angle;
+                if (template.angle.includes(": ")) {
+                  const parts = template.angle.split(": ");
+                  if (parts.length >= 2) {
+                    angleDescription = parts[1];
                   }
                 }
-              });
 
-              // Add all unique angles to generatedAngles
-              if (uniqueAngles.size > 0) {
-                setGeneratedAngles((prev) => {
-                  const newSet = new Set(prev);
-                  uniqueAngles.forEach((angle) => newSet.add(angle));
-                  return newSet;
-                });
-                logger.log(
-                  `✅ Updated generatedAngles with ${uniqueAngles.size} angles from loaded templates`
-                );
+                // Add the description part
+                uniqueAngles.add(angleDescription);
+                // Also add the full angle string for matching
+                uniqueAngles.add(template.angle);
+
+                // Find matching marketing angle to get the full "Title: Description" format
+                if (fullResult?.results?.marketing_angles) {
+                  const matchingAngle = fullResult.results.marketing_angles.find((ma: any) => {
+                    if (typeof ma === "string") {
+                      return ma === angleDescription || ma === template.angle;
+                    }
+                    // Match by angle description
+                    if (ma.angle === angleDescription || ma.angle === template.angle) {
+                      return true;
+                    }
+                    return false;
+                  });
+
+                  // If we found a matching marketing angle, add it in "Title: Description" format
+                  if (matchingAngle && typeof matchingAngle === "object" && matchingAngle.title && matchingAngle.angle) {
+                    uniqueAngles.add(`${matchingAngle.title}: ${matchingAngle.angle}`);
+                  }
+                }
               }
+            });
 
-              logger.log(
-                `✅ Loaded ${templates.length} templates into UI for job ${jobId}`
-              );
-            } else {
-              setTemplates([]);
-            }
-          } catch (error) {
-            logger.error("Failed to load templates:", error);
-            setTemplates([]);
+            // Add all unique angles to generatedAngles
+            if (uniqueAngles.size > 0) {
+              setGeneratedAngles((prev) => {
+                const newSet = new Set(prev);
+                uniqueAngles.forEach((angle) => newSet.add(angle));
+                return newSet;
+              });
+            logger.log(
+              `✅ Updated generatedAngles with ${uniqueAngles.size} angles from loaded templates`
+            );
           }
-          // Always set loading to false after checking database
-          setTemplatesLoading(false);
+
+          logger.log(
+            `✅ Loaded ${templatesWithUniqueNames.length} templates into UI for job ${jobId}`
+          );
+          } else {
+            // DON'T clear templates if none found - might be a temporary issue
+            logger.log(`⚠️ No templates found in database for job ${jobId}, keeping existing templates`)
+          }
         } catch (error) {
-          logger.error("Error loading data from database:", error);
-          setTemplatesLoading(false);
+          logger.error("Failed to load templates:", error);
+          // DON'T clear templates on error - preserve existing state
         }
-      } else {
-        // If no jobId, still set loading to false
+        // Always set loading to false after checking database
+        setTemplatesLoading(false);
+      } catch (error) {
+        logger.error("Error loading data from database:", error);
         setTemplatesLoading(false);
       }
-    };
-    loadData();
-  }, [jobId]);
+    } else {
+      // If no jobId, still set loading to false
+      setTemplatesLoading(false);
+    }
+  }, [jobId, fullResult]);
+
+  // Load generated angles and templates from database on mount
+  useEffect(() => {
+    refreshTemplates();
+  }, [refreshTemplates]);
 
   // Poll swipe file status for a specific angle
   const pollSwipeFileStatus = async (swipeFileJobId: string, angle: string) => {
@@ -809,7 +992,7 @@ function DeepCopyResultsComponent({
               setTemplatesLoading(false);
 
               if (injectedTemplates.length > 0) {
-                const templates = injectedTemplates.map((injected: any) => ({
+                let templates = injectedTemplates.map((injected: any) => ({
                   id: injected.id,
                   name: `${injected.template_id} - ${injected.angle_name}`,
                   type: injected.template_id?.startsWith('L') ? 'Listicle' : injected.template_id?.startsWith('A') ? 'Advertorial' : "Injected Template",
@@ -818,18 +1001,32 @@ function DeepCopyResultsComponent({
                   templateId: injected.template_id,
                   timestamp: injected.created_at,
                   swipe_file_name: injected.swipe_file_name || undefined,
+                  config_data: injected.config_data || undefined,
                 }));
 
-                templates.sort((a: any, b: any) => {
+                // Make names unique for multiple generations
+                const templatesWithUniqueNames = templates.map(t => ({
+                  ...t,
+                  name: makeTemplateNameUnique(t, templates)
+                }))
+
+                // Sort
+                templatesWithUniqueNames.sort((a: any, b: any) => {
                   if (a.angle !== b.angle) {
                     return (a.angle || "").localeCompare(b.angle || "");
                   }
-                  return (a.templateId || "").localeCompare(b.templateId || "");
+                  if (a.templateId !== b.templateId) {
+                    return (a.templateId || "").localeCompare(b.templateId || "");
+                  }
+                  if (a.timestamp && b.timestamp) {
+                    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                  }
+                  return 0
                 });
 
                 // Update generatedAngles based on loaded templates
                 const uniqueAngles = new Set<string>();
-                templates.forEach((template) => {
+                templatesWithUniqueNames.forEach((template) => {
                   if (template.angle) {
                     // Extract the angle description part if it's in "Title: Description" format
                     let angleDescription = template.angle;
@@ -875,17 +1072,48 @@ function DeepCopyResultsComponent({
                   });
                 }
 
+                // MERGE instead of replace
+                setTemplates(prev => {
+                  const existingMap = new Map<string, typeof templates[0]>()
+                  // Add all existing templates
+                  prev.forEach(t => {
+                    if (t.id) {
+                      existingMap.set(t.id, t)
+                    }
+                  })
+
+                  // Add/update with new templates
+                  templatesWithUniqueNames.forEach(t => {
+                    if (t.id) {
+                      existingMap.set(t.id, t)
+                    }
+                  })
+
+                  const merged = Array.from(existingMap.values())
+                  merged.sort((a: any, b: any) => {
+                    if (a.angle !== b.angle) {
+                      return (a.angle || "").localeCompare(b.angle || "");
+                    }
+                    if (a.templateId !== b.templateId) {
+                      return (a.templateId || "").localeCompare(b.templateId || "");
+                    }
+                    if (a.timestamp && b.timestamp) {
+                      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                    }
+                    return 0
+                  })
+
+                  return merged
+                })
+
                 logger.log(
-                  `✅ Setting ${templates.length} templates in UI state`
+                  `✅ Setting ${templatesWithUniqueNames.length} templates in UI state`
                 );
-                setTemplates(templates);
               } else {
                 logger.log(
-                  `⚠️ No templates found in response for job ${jobId}. Response:`,
-                  injectedTemplatesResponse
+                  `⚠️ No templates found in response for job ${jobId}, keeping existing templates`
                 );
-                // Clear templates if none found
-                setTemplates([]);
+                // DON'T clear: setTemplates([]); // REMOVED
               }
             } catch (error) {
               logger.error("Error reloading templates:", error);
@@ -1075,13 +1303,15 @@ function DeepCopyResultsComponent({
                 // Pass the swipeResult as-is
                 const contentData = extractContentFromSwipeResult(
                   swipeResult,
-                  templateType
+                  templateType,
+                  templateId || undefined
                 );
 
                 // Inject content into the injectable template
                 const renderedHtml = injectContentIntoTemplate(
                   injectableTemplate,
-                  contentData
+                  contentData,
+                  templateId || undefined
                 );
 
                 templates.push({
@@ -1409,8 +1639,12 @@ function DeepCopyResultsComponent({
 
     // Delete from database in the background
     try {
+      const authHeaders = getAuthorizationHeader()
       const response = await fetch(`/api/templates/injected/${templateId}`, {
         method: 'DELETE',
+        headers: {
+          ...authHeaders,
+        },
       })
 
       if (!response.ok) {
@@ -1434,11 +1668,12 @@ function DeepCopyResultsComponent({
 
   const handleDownloadAll = async () => {
     try {
-      // Get filtered templates based on current filters (angle and type)
+      // Get filtered templates based on current filters (angle, type, and avatar)
       const templatesToDownload = filterTemplates(
         templates,
         selectedAngleFilter,
-        selectedTypeFilter
+        selectedTypeFilter,
+        selectedAvatarFilter
       );
 
       if (templatesToDownload.length === 0) {
@@ -1494,6 +1729,25 @@ function DeepCopyResultsComponent({
     }
   };
 
+  const handleCopyHTML = async (content: string, templateId: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedTemplateId(templateId);
+      setTimeout(() => setCopiedTemplateId(null), 2000);
+      toast({
+        title: "HTML copied",
+        description: "The HTML content has been copied to your clipboard.",
+      });
+    } catch (err) {
+      console.error('Failed to copy HTML:', err);
+      toast({
+        title: "Copy failed",
+        description: "Failed to copy HTML to clipboard.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleTemplateSelect = (templateId: string) => {
     logger.log("Template selected:", templateId);
     setSelectedTemplateForRefinement((prev) => {
@@ -1505,6 +1759,37 @@ function DeepCopyResultsComponent({
         return templateId;
       }
     });
+  };
+
+  // Helper function to find angle and avatar IDs from fullResult based on angle string
+  const findAngleAndAvatarIds = (angleString: string): { angleId: string | null; avatarId: string | null } => {
+    if (!fullResult?.results?.marketing_avatars) {
+      return { angleId: null, avatarId: null };
+    }
+
+    // Search through all avatars and their angles
+    for (const avatarData of fullResult.results.marketing_avatars) {
+      const angles = avatarData.angles?.generated_angles || [];
+      
+      for (const angle of angles) {
+        // Match angle by comparing the angle string
+        // Angle string can be in format "Title: Subtitle" or just "Title"
+        const angleMatchString = angle.angle_subtitle
+          ? `${angle.angle_title}: ${angle.angle_subtitle}`
+          : angle.angle_title;
+        
+        if (angleMatchString === angleString || angle.angle_title === angleString) {
+          // Found matching angle - extract IDs
+          const angleId = (angle as any).id || null;
+          // Avatar ID is in avatarData.avatar.id (based on V2 structure)
+          const avatarId = (avatarData.avatar as any)?.id || null;
+          
+          return { angleId, avatarId };
+        }
+      }
+    }
+
+    return { angleId: null, avatarId: null };
   };
 
   // Handler for generating refined template
@@ -1521,20 +1806,60 @@ function DeepCopyResultsComponent({
       return;
     }
 
+    // Find the correct angle and avatar IDs from fullResult
+    const { angleId, avatarId } = findAngleAndAvatarIds(angle);
+    
+    if (!angleId || !avatarId) {
+      toast({
+        title: "Error",
+        description: "Could not find angle or avatar IDs. Please try selecting the angle again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGeneratingRefined(true);
+
+    // Close modal and reset immediately for better UX
+    setShowTemplateModal(false);
+    setSelectedTemplateForRefinement(null);
+    setSelectedAngleForRefinement(null);
+    setTemplateModalStep(1);
+
+    // Add to generatingAngles immediately so skeleton loader appears right away
+    // Use a temporary jobId placeholder until we get the real one from the API
+    setGeneratingAngles((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(angle, "pending"); // Temporary placeholder
+      return newMap;
+    });
+
+    setAngleStatuses((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(angle, "SUBMITTING");
+      return newMap;
+    });
+
+    // Show success acknowledgment immediately
+    toast({
+      title: "Generation started",
+      description: "Your pre-lander is being generated. This may take a few minutes.",
+    });
+
     try {
-      // Call swipe-files/generate endpoint with original_job_id, select_angle, and swipe_file_ids array
+      // Call swipe-files/generate endpoint with original_job_id, angle_id, avatar_id, and swipe_file_ids array
       const data = (await internalApiClient.generateSwipeFiles({
         original_job_id: originalJobId,
-        select_angle: angle,
+        angle_id: angleId, // Use the actual angle ID, not the descriptive string
+        avatar_id: avatarId, // Use the actual avatar ID, not 'default'
         swipe_file_ids: templateIds, // Array of template IDs in format L00001, A00003, etc.
       })) as { jobId?: string };
 
-      // Track this angle as generating (similar to the swipe file generation flow)
+      // Update with the real jobId from the API response
       if (data.jobId) {
         setGeneratingAngles((prev) => {
           const newMap = new Map(prev);
-          newMap.set(angle, data.jobId!);
+          newMap.set(angle, data.jobId!); // Replace placeholder with real jobId
           return newMap;
         });
         setAngleStatuses((prev) => {
@@ -1545,22 +1870,97 @@ function DeepCopyResultsComponent({
 
         // Start polling for this specific angle
         pollSwipeFileStatus(data.jobId!, angle);
+      } else {
+        // If no jobId returned, remove from generating
+        setGeneratingAngles((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(angle);
+          return newMap;
+        });
+        setAngleStatuses((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(angle);
+          return newMap;
+        });
       }
+    } catch (error: any) {
+      // Handle intentional overage confirmation for swipe-file pre-landers
+      if (error.status === 402 && (error as any).code === "JOB_CREDITS_OVERAGE_CONFIRMATION_REQUIRED") {
+        // Show toast notification about overage
+        const overageCredits = (error as any).overageCredits ?? 0;
+        const overageCostTotal = (error as any).overageCostTotal ?? 0;
+        const currency = (error as any).currency ?? "EUR";
+        
+        toast({
+          title: "Overage Charges Apply",
+          description: `This job requires ${overageCredits} extra credit${overageCredits === 1 ? '' : 's'} (${overageCostTotal.toFixed(2)} ${currency}). Overage charges will be added to your next invoice.`,
+          variant: "default",
+        });
 
-      // Close modal and reset
-      setShowTemplateModal(false);
-      setSelectedTemplateForRefinement(null);
-      setSelectedAngleForRefinement(null);
-      setTemplateModalStep(1);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to generate pre-landers",
-        variant: "destructive",
-      });
+        // Automatically retry with allowOverage=true
+        try {
+          const retryData = await internalApiClient.generateSwipeFiles({
+            original_job_id: originalJobId,
+            angle_id: angleId,
+            avatar_id: avatarId,
+            swipe_file_ids: templateIds,
+            allowOverage: true,
+          }) as { jobId?: string };
+          
+          if (retryData.jobId) {
+            setGeneratingAngles(prev => {
+              const newMap = new Map(prev)
+              newMap.set(angle, retryData.jobId!)
+              return newMap
+            })
+            setAngleStatuses(prev => {
+              const newMap = new Map(prev)
+              newMap.set(angle, "SUBMITTED")
+              return newMap
+            })
+            pollSwipeFileStatus(retryData.jobId!, angle)
+          }
+        } catch (retryError: any) {
+          toast({
+            title: "Error",
+            description: retryError.message || "Failed to generate pre-landers",
+            variant: "destructive",
+          });
+        }
+
+        // Clear generating state for this angle since job was not created
+        setGeneratingAngles((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(angle);
+          return newMap;
+        });
+        setAngleStatuses((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(angle);
+          return newMap;
+        });
+      } else {
+        // Remove from generatingAngles on error
+        setGeneratingAngles((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(angle);
+          return newMap;
+        });
+        setAngleStatuses((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(angle);
+          return newMap;
+        });
+
+        toast({
+          title: "Error",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Failed to generate pre-landers",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsGeneratingRefined(false);
     }
@@ -1576,9 +1976,43 @@ function DeepCopyResultsComponent({
   };
 
   return (
-    <div className="space-y-8 min-h-full">
+    <>
+      <div className="space-y-6 min-h-full">
+      {/* V2 Research Data */}
+      {isV2 && fullResult && (
+        <V2ResearchData fullResult={fullResult} />
+      )}
+
+      {/* V2 Avatar Tree */}
+      {isV2 && (() => {
+        // Use customerAvatars if available, otherwise transform from fullResult
+        let avatarsToDisplay: TransformedAvatar[] | undefined = customerAvatars as TransformedAvatar[] | undefined;
+
+        if ((!avatarsToDisplay || avatarsToDisplay.length === 0) && (fullResult as DeepCopyResult)?.results?.marketing_avatars) {
+          // Transform V2 data on-the-fly
+          avatarsToDisplay = transformV2ToExistingSchema(fullResult);
+        }
+
+        return avatarsToDisplay && avatarsToDisplay.length > 0 ? (
+          <V2AvatarTree
+            avatars={avatarsToDisplay}
+            jobId={originalJobId}
+            title="Customer Avatars & Marketing Angles"
+            description="Deep research identified these customer avatars with their associated marketing angles"
+            generatedAngles={generatedAngles}
+            onGenerationStart={(angle) => updateGeneratingAngle(angle, "optimistic-loading")}
+            onGenerationComplete={(angle) => {
+              if (angle) removeGeneratingAngle(angle);
+              refreshTemplates();
+            }}
+            onGenerationError={(angle) => removeGeneratingAngle(angle)}
+            offerBrief={fullResult?.results?.offer_brief}
+          />
+        ) : null;
+      })()}
+
       {/* Offer Brief */}
-      {fullResult?.results?.offer_brief && (
+      {!isV2 && fullResult?.results?.offer_brief && (
         <div className="mb-12">
           <Accordion type="single" collapsible>
             <AccordionItem value="offer-brief">
@@ -2507,12 +2941,26 @@ function DeepCopyResultsComponent({
                                                 );
 
                                                 try {
+                                                  // Find the correct angle and avatar IDs from fullResult
+                                                  const { angleId, avatarId } = findAngleAndAvatarIds(angleString);
+                                                  
+                                                  if (!angleId || !avatarId) {
+                                                    showError(
+                                                      new Error("Could not find angle or avatar IDs"),
+                                                      "Failed to generate pre-landers. Please try again."
+                                                    );
+                                                    removeGeneratingAngle(angleString);
+                                                    removeAngleStatus(angleString);
+                                                    return;
+                                                  }
+
                                                   const data =
                                                     (await internalApiClient.generateSwipeFiles(
                                                       {
                                                         original_job_id:
                                                           originalJobId,
-                                                        select_angle: angleString,
+                                                        angle_id: angleId, // Use the actual angle ID, not the descriptive string
+                                                        avatar_id: avatarId, // Use the actual avatar ID, not 'default'
                                                       }
                                                     )) as { jobId?: string };
 
@@ -2528,22 +2976,65 @@ function DeepCopyResultsComponent({
                                                       angleString
                                                     );
                                                   }
-                                                } catch (error) {
-                                                  logger.error(
-                                                    "Error generating pre-landers:",
-                                                    error
-                                                  );
-                                                  // Remove from generating map on error
-                                                  removeGeneratingAngle(
-                                                    angleString
-                                                  );
-                                                  removeAngleStatus(angleString);
+                                                } catch (error: any) {
+                                                  if (error.status === 402 && (error as any).code === "JOB_CREDITS_OVERAGE_CONFIRMATION_REQUIRED") {
+                                                    // Show toast notification about overage
+                                                    const overageCredits = (error as any).overageCredits ?? 0;
+                                                    const overageCostTotal = (error as any).overageCostTotal ?? 0;
+                                                    const currency = (error as any).currency ?? "EUR";
+                                                    
+                                                    toast({
+                                                      title: "Overage Charges Apply",
+                                                      description: `This job requires ${overageCredits} extra credit${overageCredits === 1 ? '' : 's'} (${overageCostTotal.toFixed(2)} ${currency}). Overage charges will be added to your next invoice.`,
+                                                      variant: "default",
+                                                    });
 
-                                                  // Show user-friendly error message
-                                                  showError(
-                                                    error,
-                                                    "Failed to generate pre-landers. Please try again."
-                                                  );
+                                                    // Automatically retry with allowOverage=true
+                                                    try {
+                                                      const retryData = await internalApiClient.generateSwipeFiles({
+                                                        original_job_id: originalJobId,
+                                                        angle_id: angleId,
+                                                        avatar_id: avatarId,
+                                                        allowOverage: true,
+                                                      }) as { jobId?: string };
+                                                      
+                                                      if (retryData.jobId) {
+                                                        updateGeneratingAngle(
+                                                          angleString,
+                                                          retryData.jobId
+                                                        );
+                                                        pollSwipeFileStatus(
+                                                          retryData.jobId,
+                                                          angleString
+                                                        );
+                                                      }
+                                                    } catch (retryError: any) {
+                                                      toast({
+                                                        title: "Error",
+                                                        description: retryError.message || "Failed to generate pre-landers",
+                                                        variant: "destructive",
+                                                      });
+                                                    }
+
+                                                    removeGeneratingAngle(angleString);
+                                                    removeAngleStatus(angleString);
+                                                  } else {
+                                                    logger.error(
+                                                      "Error generating pre-landers:",
+                                                      error
+                                                    );
+                                                    // Remove from generating map on error
+                                                    removeGeneratingAngle(
+                                                      angleString
+                                                    );
+                                                    removeAngleStatus(angleString);
+
+                                                    // Show user-friendly error message
+                                                    showError(
+                                                      error,
+                                                      "Failed to generate pre-landers. Please try again."
+                                                    );
+                                                  }
                                                 }
                                               }}
                                               disabled={
@@ -2590,7 +3081,7 @@ function DeepCopyResultsComponent({
       {fullResult?.results?.marketing_angles &&
         fullResult.results.marketing_angles.length > 0 && (
           <GenerateStaticAds
-            originalJobId={jobId}
+            originalJobId={jobId || ""}
             marketingAngles={fullResult.results.marketing_angles}
             selectedAvatar={customerAvatars?.[0] || null}
             foundationalDocText={fullResult?.results?.deep_research_output}
@@ -2763,17 +3254,39 @@ function DeepCopyResultsComponent({
 
                               // Clear selection
                               setSelectedAngle(null);
-                            } catch (error) {
-                              console.error('Error generating pre-landers:', error);
-                              // Remove from generating map on error
-                              setGeneratingAngles(prev => {
-                                const newMap = new Map(prev)
-                                newMap.delete(selectedAngle)
-                                return newMap
-                              })
+                            } catch (error: any) {
+                              if (error.status === 402 && (error as any).code === "JOB_CREDITS_OVERAGE_CONFIRMATION_REQUIRED") {
+                                setPendingSwipeOverage({
+                                  overageCredits: (error as any).overageCredits ?? 0,
+                                  overageCostPerCredit: (error as any).overageCostPerCredit ?? 0.5,
+                                  overageCostTotal: (error as any).overageCostTotal ?? 0,
+                                  currency: (error as any).currency ?? "EUR",
+                                  payload: {
+                                    original_job_id: originalJobId,
+                                    select_angle: selectedAngle,
+                                    allowOverage: true,
+                                  },
+                                  angleKey: selectedAngle,
+                                });
+                                setShowSwipeOverageDialog(true);
 
-                              // Show user-friendly error message
-                              showError(error, 'Failed to generate pre-landers. Please try again.');
+                                setGeneratingAngles(prev => {
+                                  const newMap = new Map(prev)
+                                  newMap.delete(selectedAngle)
+                                  return newMap
+                                })
+                              } else {
+                                console.error('Error generating pre-landers:', error);
+                                // Remove from generating map on error
+                                setGeneratingAngles(prev => {
+                                  const newMap = new Map(prev)
+                                  newMap.delete(selectedAngle)
+                                  return newMap
+                                })
+
+                                // Show user-friendly error message
+                                showError(error, 'Failed to generate pre-landers. Please try again.');
+                              }
                             } finally {
                               setIsGeneratingSwipeFiles(false);
                             }
@@ -2825,11 +3338,11 @@ function DeepCopyResultsComponent({
               <AccordionContent>
                 <div className="px-8 pb-8 border-t border-border/50 pt-6">
                   {templatesLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                      {Array.from({ length: 3 }).map((_, index) => (
+                    <div className="flex justify-center">
+                      {Array.from({ length: 1 }).map((_, index) => (
                         <Card
                           key={`skeleton-${index}`}
-                          className="group p-0 overflow-hidden transition-all duration-200 flex flex-col h-full border-border/50 animate-pulse-subtle"
+                          className="group p-0 overflow-hidden transition-all duration-200 flex flex-col h-full border-border/50 animate-pulse-subtle w-full max-w-md"
                         >
                           <CardContent className="p-0 flex flex-col flex-1 min-h-0">
                             {/* Preview Section Skeleton */}
@@ -2878,9 +3391,22 @@ function DeepCopyResultsComponent({
                   ) : templates.length === 0 && generatingAngles.size === 0 ? (
                     <div className="space-y-4">
                       <p className="text-sm text-muted-foreground mb-4">
-                        No templates generated yet. Select a marketing angle
-                        above to generate templates.
+                        No templates generated yet. {isV2 ? 'Click "Explore More Templates" below to get started.' : 'Select a marketing angle above to generate templates.'}
                       </p>
+                      {/* Explore More Templates Button for V2 jobs */}
+                      {isV2 && (
+                        <div className="mt-4">
+                          <Button
+                            onClick={() => setShowExploreTemplatesV2(true)}
+                            disabled={availableTemplatesLoading}
+                            size="lg"
+                            className="w-full"
+                          >
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Explore More Templates ({JOB_CREDITS_BY_TYPE.pre_lander} Credits per angle)
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -2909,52 +3435,9 @@ function DeepCopyResultsComponent({
                       )}
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h3 className="text-lg font-semibold">
+                          <h3 id="generated-prelanders" className="text-lg font-semibold">
                             Generated Pre-landers
                           </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {(() => {
-                              const filteredCount = filterTemplates(
-                                templates,
-                                selectedAngleFilter,
-                                selectedTypeFilter
-                              ).length;
-
-                              if (templates.length === 0) {
-                                return "No templates generated yet";
-                              }
-
-                              const parts: string[] = [];
-                              if (selectedAngleFilter !== "all") {
-                                // Get the title for the selected angle
-                                const selectedAngle =
-                                  fullResult?.results?.marketing_angles?.find(
-                                    (ma: any) => {
-                                      if (typeof ma === "string")
-                                        return ma === selectedAngleFilter;
-                                      return ma.angle === selectedAngleFilter;
-                                    }
-                                  );
-                                const angleTitle =
-                                  selectedAngle &&
-                                    typeof selectedAngle === "object"
-                                    ? selectedAngle.title
-                                    : selectedAngleFilter;
-                                parts.push(angleTitle);
-                              }
-                              if (selectedTypeFilter !== "all") {
-                                parts.push(formatFileType(selectedTypeFilter));
-                              }
-
-                              if (parts.length > 0) {
-                                return `${filteredCount} of ${templates.length
-                                  } template${templates.length !== 1 ? "s" : ""
-                                  } (${parts.join(", ")})`;
-                              }
-                              return `${templates.length} template${templates.length !== 1 ? "s" : ""
-                                } generated`;
-                            })()}
-                          </p>
                         </div>
                         <div className="flex items-center gap-3">
                           {/* Type Filter */}
@@ -2981,43 +3464,130 @@ function DeepCopyResultsComponent({
                             </div>
                           )}
                           {/* Angle Filter */}
-                          {templates.length > 0 &&
-                            (() => {
-                              // Only use angles from the API response (marketing_angles)
-                              // Don't create new entries from templates - only show original marketing angles
-                              const angleMap = new Map<
-                                string,
-                                { title: string; description: string }
-                              >();
+                          {(() => {
+                            // If V2 and avatar is selected, get angles from that avatar (no grouping needed)
+                            if (isV2 && selectedAvatarFilter !== "all" && fullResult?.results?.marketing_avatars) {
+                              const avatarIndex = parseInt(selectedAvatarFilter);
+                              if (!isNaN(avatarIndex) && fullResult.results.marketing_avatars[avatarIndex]) {
+                                const avatarData = fullResult.results.marketing_avatars[avatarIndex];
+                                const angles = avatarData.angles?.generated_angles || [];
+                                
+                                // Sort angles by overall_score (descending), preserving original data
+                                const sortedAngles = [...angles]
+                                  .map((angle: any) => ({
+                                    angle,
+                                    angleString: angle.angle_subtitle
+                                      ? `${angle.angle_title}: ${angle.angle_subtitle}`
+                                      : angle.angle_title
+                                  }))
+                                  .sort((a: any, b: any) => {
+                                    const scoreA = a.angle.overall_score ?? 0;
+                                    const scoreB = b.angle.overall_score ?? 0;
+                                    return scoreB - scoreA; // Descending order (highest score first)
+                                  });
 
-                              // Only add marketing angles from the API response
-                              fullResult?.results?.marketing_angles?.forEach(
-                                (angle: any) => {
-                                  if (
-                                    typeof angle === "object" &&
-                                    angle.title &&
-                                    angle.angle
-                                  ) {
-                                    // Use angle.angle (description) as the key for consistency
-                                    angleMap.set(angle.angle, {
-                                      title: angle.title,
-                                      description: angle.angle,
-                                    });
-                                  } else if (typeof angle === "string") {
-                                    // Handle string format marketing angles
-                                    angleMap.set(angle, {
-                                      title: angle,
-                                      description: angle,
-                                    });
-                                  }
+                                if (sortedAngles.length > 0) {
+                                  return (
+                                    <div className="w-[220px] min-w-0 max-w-[220px]">
+                                      <Select
+                                        value={selectedAngleFilter}
+                                        onValueChange={setSelectedAngleFilter}
+                                      >
+                                        <SelectTrigger className="!w-full !max-w-full [&_[data-slot=select-value]]:!max-w-[calc(220px-3rem)] [&_[data-slot=select-value]]:!truncate [&_[data-slot=select-value]]:!block [&_[data-slot=select-value]]:!min-w-0">
+                                          <Target className="h-4 w-4 mr-2 flex-shrink-0" />
+                                          <SelectValue placeholder="Filter by angle" />
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-[300px]">
+                                          <SelectItem value="all">
+                                            All Angles
+                                          </SelectItem>
+                                          {sortedAngles.map((item, index) => {
+                                            const angle = item.angleString;
+                                            // Handle "Title: Description" format
+                                            const displayText = angle.includes(": ") 
+                                              ? angle.split(": ")[0] 
+                                              : angle;
+                                            const truncated = displayText.length > 35
+                                              ? displayText.substring(0, 32) + "..."
+                                              : displayText;
+                                            
+                                            return (
+                                              <SelectItem key={angle} value={angle}>
+                                                <Badge
+                                                  variant="outline"
+                                                  className="text-xs font-semibold mr-2 bg-muted text-foreground border-border"
+                                                >
+                                                  #{index + 1}
+                                                </Badge>
+                                                {truncated}
+                                              </SelectItem>
+                                            );
+                                          })}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  );
                                 }
-                              );
+                              }
+                            } else if (isV2 && fullResult?.results?.marketing_avatars) {
+                              // V2 - group angles by avatar
+                              // Get avatars for display names
+                              let avatarsToDisplay: TransformedAvatar[] | undefined = customerAvatars as TransformedAvatar[] | undefined;
+                              if ((!avatarsToDisplay || avatarsToDisplay.length === 0) && (fullResult as DeepCopyResult)?.results?.marketing_avatars) {
+                                avatarsToDisplay = transformV2ToExistingSchema(fullResult as DeepCopyResult);
+                              }
 
-                              const angleEntries = Array.from(
-                                angleMap.entries()
-                              );
+                              // Sort avatars by intensity (highest first), preserving original index
+                              const sortedAvatarsWithData = [...fullResult.results.marketing_avatars]
+                                .map((avatarData: any, originalIndex: number) => ({
+                                  avatarData,
+                                  originalIndex,
+                                  intensity: avatarsToDisplay?.[originalIndex]?.v2_avatar_data?.overview?.intensity || 0
+                                }))
+                                .sort((a, b) => b.intensity - a.intensity); // Descending order (highest first)
 
-                              if (angleEntries.length > 0) {
+                              // Build grouped angles structure
+                              const groupedAngles: Array<{
+                                avatarIndex: number;
+                                avatarName: string;
+                                angles: Array<{ angleString: string; angleTitle: string }>;
+                              }> = [];
+
+                              sortedAvatarsWithData.forEach(({ avatarData, originalIndex }) => {
+                                const angles = avatarData.angles?.generated_angles || [];
+                                if (angles.length > 0) {
+                                  const avatarName = avatarsToDisplay?.[originalIndex]?.v2_avatar_data?.overview?.name || 
+                                                    avatarsToDisplay?.[originalIndex]?.persona_name || 
+                                                    avatarData.avatar?.name || 
+                                                    `Avatar ${originalIndex + 1}`;
+                                  
+                                  // Sort angles by overall_score (descending)
+                                  const sortedAngles = [...angles]
+                                    .sort((a: any, b: any) => {
+                                      const scoreA = a.overall_score ?? 0;
+                                      const scoreB = b.overall_score ?? 0;
+                                      return scoreB - scoreA; // Descending order (highest score first)
+                                    });
+
+                                  const angleList = sortedAngles.map((angle: any) => {
+                                    const angleString = angle.angle_subtitle
+                                      ? `${angle.angle_title}: ${angle.angle_subtitle}`
+                                      : angle.angle_title;
+                                    return {
+                                      angleString,
+                                      angleTitle: angle.angle_title
+                                    };
+                                  });
+
+                                  groupedAngles.push({
+                                    avatarIndex: originalIndex,
+                                    avatarName,
+                                    angles: angleList
+                                  });
+                                }
+                              });
+
+                              if (groupedAngles.length > 0) {
                                 return (
                                   <div className="w-[220px] min-w-0 max-w-[220px]">
                                     <Select
@@ -3028,43 +3598,157 @@ function DeepCopyResultsComponent({
                                         <Target className="h-4 w-4 mr-2 flex-shrink-0" />
                                         <SelectValue placeholder="Filter by angle" />
                                       </SelectTrigger>
-                                      <SelectContent>
+                                      <SelectContent className="max-h-[300px]">
                                         <SelectItem value="all">
                                           All Angles
                                         </SelectItem>
-                                        {angleEntries.map(
-                                          (
-                                            [description, { title }],
-                                            index: number
-                                          ) => {
-                                            // Truncate title if too long for display
-                                            const displayTitle =
-                                              title.length > 35
-                                                ? title.substring(0, 32) + "..."
-                                                : title;
-                                            return (
-                                              <SelectItem
-                                                key={description}
-                                                value={description}
-                                              >
-                                                <Badge
-                                                  variant="outline"
-                                                  className="text-xs font-semibold mr-2 bg-muted text-foreground border-border"
-                                                >
-                                                  #{index + 1}
-                                                </Badge>
-                                                {displayTitle}
-                                              </SelectItem>
-                                            );
-                                          }
-                                        )}
+                                        {groupedAngles.map((group, groupIndex) => (
+                                          <SelectGroup key={group.avatarIndex}>
+                                            {groupIndex > 0 && <SelectSeparator />}
+                                            <SelectLabel className="font-semibold text-xs text-muted-foreground">
+                                              {group.avatarName}
+                                            </SelectLabel>
+                                            {group.angles.map((angle, angleIndex) => {
+                                              const displayText = angle.angleString.includes(": ") 
+                                                ? angle.angleString.split(": ")[0] 
+                                                : angle.angleString;
+                                              const truncated = displayText.length > 35
+                                                ? displayText.substring(0, 32) + "..."
+                                                : displayText;
+                                              
+                                              return (
+                                                <SelectItem key={angle.angleString} value={angle.angleString}>
+                                                  <Badge
+                                                    variant="outline"
+                                                    className="text-xs font-semibold mr-2 bg-muted text-foreground border-border"
+                                                  >
+                                                    #{angleIndex + 1}
+                                                  </Badge>
+                                                  {truncated}
+                                                </SelectItem>
+                                              );
+                                            })}
+                                          </SelectGroup>
+                                        ))}
                                       </SelectContent>
                                     </Select>
                                   </div>
                                 );
                               }
-                              return null;
-                            })()}
+                            } else {
+                              // V1 - show all unique angles from templates (flat list)
+                              const uniqueAngles = Array.from(
+                                new Set(
+                                  templates
+                                    .map(t => t.angle)
+                                    .filter((angle): angle is string => !!angle)
+                                )
+                              );
+
+                              if (uniqueAngles.length > 0) {
+                                return (
+                                  <div className="w-[220px] min-w-0 max-w-[220px]">
+                                    <Select
+                                      value={selectedAngleFilter}
+                                      onValueChange={setSelectedAngleFilter}
+                                    >
+                                      <SelectTrigger className="!w-full !max-w-full [&_[data-slot=select-value]]:!max-w-[calc(220px-3rem)] [&_[data-slot=select-value]]:!truncate [&_[data-slot=select-value]]:!block [&_[data-slot=select-value]]:!min-w-0">
+                                        <Target className="h-4 w-4 mr-2 flex-shrink-0" />
+                                        <SelectValue placeholder="Filter by angle" />
+                                      </SelectTrigger>
+                                      <SelectContent className="max-h-[300px]">
+                                        <SelectItem value="all">
+                                          All Angles
+                                        </SelectItem>
+                                        {uniqueAngles.map((angle, index) => {
+                                          // Handle "Title: Description" format
+                                          const displayText = angle.includes(": ") 
+                                            ? angle.split(": ")[0] 
+                                            : angle;
+                                          const truncated = displayText.length > 35
+                                            ? displayText.substring(0, 32) + "..."
+                                            : displayText;
+                                          
+                                          return (
+                                            <SelectItem key={angle} value={angle}>
+                                              <Badge
+                                                variant="outline"
+                                                className="text-xs font-semibold mr-2 bg-muted text-foreground border-border"
+                                              >
+                                                #{index + 1}
+                                              </Badge>
+                                              {truncated}
+                                            </SelectItem>
+                                          );
+                                        })}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                );
+                              }
+                            }
+                            return null;
+                          })()}
+                          {/* Avatar Filter - Only for V2 */}
+                          {isV2 && (() => {
+                            // Get avatars from V2 data
+                            let avatarsToDisplay: TransformedAvatar[] | undefined = customerAvatars as TransformedAvatar[] | undefined;
+                            if ((!avatarsToDisplay || avatarsToDisplay.length === 0) && (fullResult as DeepCopyResult)?.results?.marketing_avatars) {
+                              avatarsToDisplay = transformV2ToExistingSchema(fullResult as DeepCopyResult);
+                            }
+
+                            if (avatarsToDisplay && avatarsToDisplay.length > 0) {
+                              // Sort avatars by intensity (highest first), preserving original index
+                              const sortedAvatars = [...avatarsToDisplay]
+                                .map((avatar, originalIndex) => ({
+                                  ...avatar,
+                                  _originalIndex: originalIndex
+                                }))
+                                .sort((a, b) => {
+                                  const aIntensity = a.v2_avatar_data?.overview?.intensity || 0;
+                                  const bIntensity = b.v2_avatar_data?.overview?.intensity || 0;
+                                  return bIntensity - aIntensity; // Descending order (highest first)
+                                });
+
+                              return (
+                                <div className="w-[200px] min-w-0 max-w-[200px]">
+                                  <Select
+                                    value={selectedAvatarFilter}
+                                    onValueChange={(value) => {
+                                      setSelectedAvatarFilter(value);
+                                      // Reset angle filter when avatar changes
+                                      setSelectedAngleFilter("all");
+                                    }}
+                                  >
+                                    <SelectTrigger className="!w-full !max-w-full [&_[data-slot=select-value]]:!max-w-[calc(200px-3rem)] [&_[data-slot=select-value]]:!truncate [&_[data-slot=select-value]]:!block [&_[data-slot=select-value]]:!min-w-0">
+                                      <User className="h-4 w-4 mr-2 flex-shrink-0" />
+                                      <SelectValue placeholder="Filter by avatar" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="all">All Avatars</SelectItem>
+                                      {sortedAvatars.map((avatar, displayIndex) => {
+                                        // Get avatar name from v2_avatar_data if available, otherwise use persona_name
+                                        const avatarName = avatar.v2_avatar_data?.overview?.name || avatar.persona_name || `Avatar ${avatar._originalIndex + 1}`;
+                                        
+                                        return (
+                                          <SelectItem key={avatar._originalIndex} value={avatar._originalIndex.toString()}>
+                                            <Badge
+                                              variant="outline"
+                                              className="text-xs font-semibold mr-2 bg-muted text-foreground border-border"
+                                            >
+                                              #{displayIndex + 1}
+                                            </Badge>
+                                            {avatarName}
+                                          </SelectItem>
+                                        );
+                                      })}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
                           {templates.length > 0 && (
                             <Button
                               variant="outline"
@@ -3081,11 +3765,12 @@ function DeepCopyResultsComponent({
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                         {/* Existing templates */}
                         {(() => {
-                          // Filter templates by selected angle and type
+                          // Filter templates by selected angle, type, and avatar
                           let filteredTemplates = filterTemplates(
                             templates,
                             selectedAngleFilter,
-                            selectedTypeFilter
+                            selectedTypeFilter,
+                            selectedAvatarFilter
                           );
 
                           // Sort templates by angle index to group same angles together and maintain order
@@ -3154,9 +3839,9 @@ function DeepCopyResultsComponent({
                             );
                           }
 
-                          return filteredTemplates.map((template, index) => (
+                          return filteredTemplates.map((template) => (
                             <Card
-                              key={`template-${index}`}
+                              key={template.id || `${template.angle}-${template.templateId}-${template.timestamp}`}
                               className="group p-0 overflow-hidden transition-all duration-200 flex flex-col h-full border-border/50 hover:border-primary/50"
                             >
                               <CardContent className="p-0 flex flex-col flex-1 min-h-0">
@@ -3164,8 +3849,7 @@ function DeepCopyResultsComponent({
                                 <div className="relative h-48 bg-background overflow-hidden border-b border-border/50">
                                   <div className="absolute inset-0 overflow-hidden">
                                     <iframe
-                                      key={`preview-${template.name}-${template.angle || ""
-                                        }-${index}`}
+                                      key={`preview-${template.id || template.name}-${template.angle || ""}`}
                                       srcDoc={
                                         templateIframeHTML[
                                         `${template.name}-${template.angle || ""
@@ -3331,12 +4015,97 @@ function DeepCopyResultsComponent({
 
                                   {/* Action Buttons */}
                                   <div className="flex gap-2 mt-4 pt-4 border-t border-border/50">
-                                    <Button
+                                    {/* Download Button - Commented out */}
+                                    {/* <Button
                                       variant="outline"
                                       size="sm"
                                       onClick={() => {
-                                        const blob = new Blob([template.html], {
-                                          type: "text/html",
+                                        const content = template.html;
+                                        // Check if content already has proper HTML structure with Tailwind
+                                        const hasTailwindCDN = /cdn\.tailwindcss\.com/i.test(content);
+                                        const hasDoctype = content.includes('<!DOCTYPE html>');
+                                        
+                                        let finalContent = content;
+                                        
+                                        // If content doesn't have proper structure or Tailwind, wrap it
+                                        if (!hasDoctype || !hasTailwindCDN) {
+                                          // Extract body content - handle both cases:
+                                          // 1. Proper HTML with <body> tag
+                                          // 2. Malformed HTML starting with <style> tag (backward compatible)
+                                          const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+                                          let bodyContent: string;
+                                          
+                                          if (bodyMatch) {
+                                            // Case 1: Has <body> tag - extract its content
+                                            bodyContent = bodyMatch[1];
+                                          } else {
+                                            // Case 2: No <body> tag - find content after <style> tag
+                                            const styleTagMatch = content.match(/<\/style>/i);
+                                            if (styleTagMatch && styleTagMatch.index !== undefined) {
+                                              // Content starts after </style> tag
+                                              bodyContent = content.substring(styleTagMatch.index + styleTagMatch[0].length).trim();
+                                            } else {
+                                              // No style tag either - look for first HTML element
+                                              const contentPatterns = [
+                                                /<div[^>]*>/i,
+                                                /<section[^>]*>/i,
+                                                /<header[^>]*>/i,
+                                                /<main[^>]*>/i,
+                                                /<article[^>]*>/i
+                                              ];
+                                              
+                                              let found = false;
+                                              for (const pattern of contentPatterns) {
+                                                const match = content.match(pattern);
+                                                if (match && match.index !== undefined) {
+                                                  bodyContent = content.substring(match.index).trim();
+                                                  found = true;
+                                                  break;
+                                                }
+                                              }
+                                              
+                                              if (!found) {
+                                                // Last resort: use whole content
+                                                bodyContent = content;
+                                              }
+                                            }
+                                          }
+                                          
+                                          // Extract existing stylesheets and scripts from head
+                                          const stylesheetLinks = content.match(/<link[^>]*rel\s*=\s*["']stylesheet["'][^>]*>/gi) || [];
+                                          const scriptTags = content.match(/<script[^>]*src\s*=\s*["']([^"']+)["'][^>]*><\/script>/gi) || [];
+                                          
+                                          // Extract inline CSS from <style> tags
+                                          const styleMatches = content.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+                                          const inlineCSS = styleMatches.map((m: string) => {
+                                            const cssMatch = m.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+                                            return cssMatch ? cssMatch[1] : '';
+                                          }).join('\n\n');
+                                          
+                                          // Extract title
+                                          const titleMatch = content.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+                                          const title = titleMatch ? titleMatch[1].replace(/<[^>]*>/g, '').trim() : 'Template';
+                                          
+                                          // Build proper HTML document
+                                          finalContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+${stylesheetLinks.map((link: string) => `  ${link}`).join('\n')}
+${scriptTags.filter((tag: string) => !tag.includes('tailwindcss')).map((tag: string) => `  ${tag}`).join('\n')}
+${inlineCSS ? `  <style>\n${inlineCSS}\n  </style>` : ''}
+</head>
+<body>
+${bodyContent}
+</body>
+</html>`;
+                                        }
+                                        
+                                        const blob = new Blob([finalContent], {
+                                          type: "text/html;charset=utf-8",
                                         });
                                         const url = URL.createObjectURL(blob);
                                         const a = document.createElement("a");
@@ -3353,8 +4122,53 @@ function DeepCopyResultsComponent({
                                     >
                                       <Download className="h-4 w-4 mr-2" />
                                       Download
+                                    </Button> */}
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        // template.html is already a complete HTML document
+                                        const templateKey = `${template.id || template.name}-${template.angle || ''}`;
+                                        handleCopyHTML(template.html, templateKey);
+                                      }}
+                                      className="flex-1"
+                                    >
+                                      {copiedTemplateId === `${template.id || template.name}-${template.angle || ''}` ? (
+                                        <>
+                                          <Check className="h-4 w-4 mr-2" />
+                                          Copied
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Copy className="h-4 w-4 mr-2" />
+                                          Copy
+                                        </>
+                                      )}
                                     </Button>
-                                    <Dialog>
+                                    {template.id && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          window.open(`/editor/${template.id}`, '_blank')
+                                        }}
+                                        className="flex-1"
+                                      >
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit
+                                      </Button>
+                                    )}
+                                    <Dialog
+                                      onOpenChange={(open) => {
+                                        const templateKey = `${template.name}-${template.angle || ''}`
+                                        // Show floater when preview opens for new templates
+                                        if (open && template.templateId && NEW_TEMPLATE_IDS.some(baseId => template.templateId?.startsWith(baseId))) {
+                                          setShowImageGenFloater(prev => ({ ...prev, [templateKey]: true }))
+                                        } else {
+                                          setShowImageGenFloater(prev => ({ ...prev, [templateKey]: false }))
+                                        }
+                                      }}
+                                    >
                                       <DialogTrigger asChild>
                                         <Button className="flex-1" size="sm">
                                           <Eye className="h-4 w-4 mr-2" />
@@ -3363,6 +4177,8 @@ function DeepCopyResultsComponent({
                                       </DialogTrigger>
                                       <DialogContent className="!max-w-[98vw] !max-h-[98vh] !w-[98vw] !h-[98vh] overflow-hidden p-2">
                                         <DialogHeader className="pb-2">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex-1">
                                           <DialogTitle className="text-xl font-bold">
                                             {getAngleTitle(
                                               template.angle,
@@ -3376,9 +4192,26 @@ function DeepCopyResultsComponent({
                                               ).toLocaleString()
                                               : "Generated"}
                                           </DialogDescription>
+                                            </div>
+                                          </div>
                                         </DialogHeader>
-                                        <div className="h-[calc(98vh-120px)] border rounded-lg bg-background overflow-auto">
+                                        <div className="h-[calc(98vh-120px)] border rounded-lg bg-background overflow-auto relative">
+                                          {/* Floating button for image generation */}
+                                          {showImageGenFloater[`${template.name}-${template.angle || ''}`] && (
+                                            <ImageGenerationFloater
+                                              onYes={() => {
+                                                const templateKey = `${template.name}-${template.angle || ''}`
+                                                setShowImageGenFloater(prev => ({ ...prev, [templateKey]: false }))
+                                                setPreviewImageGenDialogOpen(prev => ({ ...prev, [templateKey]: true }))
+                                              }}
+                                              onNo={() => {
+                                                const templateKey = `${template.name}-${template.angle || ''}`
+                                                setShowImageGenFloater(prev => ({ ...prev, [templateKey]: false }))
+                                              }}
+                                            />
+                                          )}
                                           <iframe
+                                            key={`preview-iframe-${template.name}-${template.angle || ''}-${template.html.substring(0, 50)}`}
                                             srcDoc={`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -3388,43 +4221,7 @@ function DeepCopyResultsComponent({
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-  ${(() => {
-                                                const raw = template.html;
-                                                const hasRealImages =
-                                                  /res\.cloudinary\.com|images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|\b)/i.test(
-                                                    raw
-                                                  );
-                                                if (!hasRealImages) return raw;
-                                                const noOnError = raw
-                                                  .replace(/\s+onerror="[^"]*"/gi, "")
-                                                  .replace(/\s+onerror='[^']*'/gi, "");
-                                                const stripFallbackScripts = noOnError.replace(
-                                                  /<script[\s\S]*?<\/script>/gi,
-                                                  (block) => {
-                                                    const lower = block.toLowerCase();
-                                                    return lower.includes("handlebrokenimages") ||
-                                                      lower.includes("createfallbackimage") ||
-                                                      lower.includes("placehold.co")
-                                                      ? ""
-                                                      : block;
-                                                  }
-                                                );
-                                                return stripFallbackScripts;
-                                              })()}
-  <script>
-    (function(){
-      function isTrusted(src){ return /res\\.cloudinary\\.com|images\\.unsplash\\.com|(\\.png|\\.jpe?g|\\.webp|\\.gif)(\\?|$)/i.test(src || ''); }
-      function ph(img){ var alt=(img.getAttribute('alt')||'Image'); var text=encodeURIComponent(alt.replace(/[^a-zA-Z0-9\s]/g,'').substring(0,20)||'Image'); return 'https://placehold.co/600x400?text='+text; }
-      function apply(img){
-        if (isTrusted(img.src)) { img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); }; return; }
-        if (!img.complete || img.naturalWidth === 0) { img.src = ph(img); }
-        img.onerror = function(){ this.onerror=null; if (!isTrusted(this.src)) this.src = ph(this); };
-      }
-      function run(){ document.querySelectorAll('img').forEach(apply); }
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
-      setTimeout(run, 800);
-    })();
-  </script>
+  ${template.html}
 </body>
 </html>`}
                                             className="w-full h-full"
@@ -3438,6 +4235,114 @@ function DeepCopyResultsComponent({
                                         </div>
                                       </DialogContent>
                                     </Dialog>
+
+                                    {(() => {
+                                      const templateKey = `${template.name}-${template.angle || ''}`
+                                      return (
+                                        <>
+                                          {template.templateId && NEW_TEMPLATE_IDS.some(baseId => template.templateId?.startsWith(baseId)) ? (
+                                            <TemplateImageGenerationDialog
+                                              isOpen={previewImageGenDialogOpen[templateKey] || false}
+                                              onClose={() => setPreviewImageGenDialogOpen(prev => ({ ...prev, [templateKey]: false }))}
+                                              templateId={template.templateId}
+                                              injectedTemplateId={template.id || ''}
+                                              configData={(template as any).config_data || {}}
+                                              onImagesGenerated={async (images) => {
+                                                // Replace images in HTML using utility function
+                                                let updatedHtml = template.html
+                                                updatedHtml = replaceTemplateImagesInHTML(updatedHtml, images, template.templateId)
+
+                                                // Save to database
+                                                if (template.id) {
+                                                  try {
+                                                    const authHeaders = getAuthorizationHeader()
+                                                    const response = await fetch(`/api/templates/injected/${template.id}`, {
+                                                      method: 'PATCH',
+                                                      headers: { 'Content-Type': 'application/json', ...authHeaders },
+                                                      body: JSON.stringify({ html: updatedHtml }),
+                                                    })
+                                                    
+                                                    if (!response.ok) {
+                                                      console.warn('Failed to save updated HTML to database')
+                                                    }
+                                                  } catch (error) {
+                                                    console.warn('Error saving updated HTML:', error)
+                                                  }
+                                                }
+
+                                                // Update the template's HTML in state
+                                                setTemplates((prev) =>
+                                                  prev.map((t) =>
+                                                    t.name === template.name && t.angle === template.angle
+                                                      ? { ...t, html: updatedHtml }
+                                                      : t
+                                                  )
+                                                )
+                                                toast({
+                                                  title: "Images generated",
+                                                  description: `Successfully generated ${images.length} image${images.length !== 1 ? "s" : ""}. Preview updated.`,
+                                                })
+                                              }}
+                                            />
+                                          ) : (
+                                          <PrelanderImageGenerationDialog
+                                            isOpen={previewImageGenDialogOpen[templateKey] || false}
+                                            onClose={() => setPreviewImageGenDialogOpen(prev => ({ ...prev, [templateKey]: false }))}
+                                            html={template.html}
+                                            jobId={jobId}
+                                            onImagesGenerated={(count, updatedHtml) => {
+                                              // Update the template's HTML in state
+                                              setTemplates((prev) =>
+                                                prev.map((t) =>
+                                                  t.name === template.name && t.angle === template.angle
+                                                    ? { ...t, html: updatedHtml }
+                                                    : t
+                                                )
+                                              )
+                                              toast({
+                                                title: "Images generated",
+                                                description: `Successfully generated ${count} image${count !== 1 ? "s" : ""}. Preview updated.`,
+                                              })
+                                            }}
+                                          />
+                                          )}
+                                        </>
+                                      )
+                                    })()}
+                                    {(() => {
+                                      // Calculate angleIndex for this template
+                                      let angleIndex = -1;
+                                      const templateAngle = template.angle;
+                                      if (
+                                        fullResult?.results?.marketing_angles &&
+                                        templateAngle
+                                      ) {
+                                        const matchingIndex =
+                                          fullResult.results.marketing_angles.findIndex(
+                                            (ma: any) => {
+                                              if (typeof ma === "string") {
+                                                return ma === templateAngle;
+                                              }
+                                              let templateAngleDesc = templateAngle;
+                                              if (templateAngle.includes(": ")) {
+                                                const parts = templateAngle.split(": ");
+                                                if (parts.length >= 2) {
+                                                  templateAngleDesc = parts[1];
+                                                }
+                                              }
+                                              return (
+                                                ma.angle === templateAngleDesc ||
+                                                ma.angle === templateAngle
+                                              );
+                                            }
+                                          );
+                                        if (matchingIndex >= 0) {
+                                          angleIndex = matchingIndex;
+                                        }
+                                      }
+
+                                      return null; // Image generation is now handled via dialog when viewing preview/editor
+                                    })()}
                                   </div>
                                 </div>
                               </CardContent>
@@ -3498,14 +4403,32 @@ function DeepCopyResultsComponent({
                       </div>
                       {/* Explore More Templates Button */}
                       <div className="mt-8">
+                        {!isV2 && (
+                          <div className="mb-4 p-4 bg-muted/50 border border-border rounded-lg">
+                            <p className="text-sm text-muted-foreground">
+                              <strong>Note:</strong> This is a V1 job. V1 jobs are now read-only. You can view and download existing content, but cannot generate new templates or ads. Please create a new V2 job for full functionality.
+                            </p>
+                          </div>
+                        )}
                         <Button
-                          onClick={handleExploreTemplates}
-                          disabled={availableTemplatesLoading}
+                          onClick={() => {
+                            if (isV2) {
+                              setShowExploreTemplatesV2(true);
+                            } else {
+                              // V1 flow - disabled for read-only
+                              toast({
+                                title: "V1 Job Read-Only",
+                                description: "V1 jobs are read-only. Please create a new V2 job to generate templates.",
+                                variant: "default",
+                              });
+                            }
+                          }}
+                          disabled={!isV2 || availableTemplatesLoading}
                           size="lg"
                           className="w-full"
                         >
                           <Sparkles className="h-4 w-4 mr-2" />
-                          Explore More Templates
+                          Explore More Templates ({JOB_CREDITS_BY_TYPE.pre_lander} Credits per angle)
                         </Button>
                       </div>
                     </div>
@@ -3516,6 +4439,27 @@ function DeepCopyResultsComponent({
           </AccordionItem>
         </Accordion>
       </div>
+
+      {/* Generated Static Ads */}
+      {(() => {
+        // Use same transformation logic as V2AvatarTree
+        let avatarsToDisplay: TransformedAvatar[] | undefined = customerAvatars as TransformedAvatar[] | undefined;
+
+        if ((!avatarsToDisplay || avatarsToDisplay.length === 0) && (fullResult as DeepCopyResult)?.results?.marketing_avatars) {
+          avatarsToDisplay = transformV2ToExistingSchema(fullResult as DeepCopyResult);
+        }
+
+        return (
+          <GenerateStaticAds
+            originalJobId={originalJobId || ""}
+            marketingAngles={avatarsToDisplay || []}
+            selectedAvatar={avatarsToDisplay && avatarsToDisplay.length > 0 ? avatarsToDisplay[0] : null}
+            foundationalDocText={fullResult?.results?.deep_research_prompt}
+            isV2={isV2}
+          />
+        );
+      })()}
+
 
       {/* Template Preview Modal */}
       <Dialog open={isTemplateModalOpen} onOpenChange={setIsTemplateModalOpen}>
@@ -3710,18 +4654,28 @@ function DeepCopyResultsComponent({
                               </p>
                             </div>
                           ) : (
-                            filteredTemplates.map((template: Template) => (
-                              <TemplatePreview
-                                key={template.id}
-                                template={template}
-                                isSelected={
-                                  selectedTemplateForRefinement === template.id
-                                }
-                                onClick={() =>
-                                  handleTemplateSelect(template.id)
-                                }
-                              />
-                            ))
+                            [...filteredTemplates]
+                              .sort((a, b) => {
+                                const scoreA = selectedAnglePredictions?.find((p: any) => p.template_id === a.id)?.overall_fit_score || 0;
+                                const scoreB = selectedAnglePredictions?.find((p: any) => p.template_id === b.id)?.overall_fit_score || 0;
+                                return scoreB - scoreA;
+                              })
+                              .map((template: Template) => {
+                                const prediction = selectedAnglePredictions?.find((p: any) => p.template_id === template.id);
+                                return (
+                                  <TemplatePreview
+                                    key={template.id}
+                                    template={template}
+                                    isSelected={
+                                      selectedTemplateForRefinement === template.id
+                                    }
+                                    onClick={() =>
+                                      handleTemplateSelect(template.id)
+                                    }
+                                    prediction={prediction}
+                                  />
+                                );
+                              })
                           )}
                         </div>
                       </>
@@ -3730,10 +4684,27 @@ function DeepCopyResultsComponent({
                   {selectedTemplateForRefinement && (
                     <div className="flex justify-end pt-2">
                       <Button
-                        onClick={() => setTemplateModalStep(2)}
-                        disabled={!selectedTemplateForRefinement}
+                        onClick={() => {
+                          // If angle is already selected (from ExploreTemplatesDialogV2), generate directly
+                          if (selectedAngleForRefinement) {
+                            handleGenerateRefinedTemplate(
+                              [selectedTemplateForRefinement],
+                              selectedAngleForRefinement
+                            );
+                          } else {
+                            // Otherwise, go to step 2 to select angle
+                            setTemplateModalStep(2);
+                          }
+                        }}
+                        disabled={
+                          !selectedTemplateForRefinement ||
+                          isGeneratingRefined ||
+                          (selectedAngleForRefinement ? generatingAngles.has(selectedAngleForRefinement) : false)
+                        }
                       >
-                        Continue with selected template
+                        {selectedAngleForRefinement
+                          ? "Generate Refined Pre-Lander"
+                          : "Continue with selected template"}
                       </Button>
                     </div>
                   )}
@@ -4011,11 +4982,12 @@ function DeepCopyResultsComponent({
                   disabled={
                     isGeneratingRefined ||
                     !selectedAngleForRefinement ||
-                    !selectedTemplateForRefinement
+                    !selectedTemplateForRefinement ||
+                    generatingAngles.has(selectedAngleForRefinement)
                   }
                   className="min-w-[180px]"
                 >
-                  {isGeneratingRefined ? (
+                  {isGeneratingRefined || generatingAngles.has(selectedAngleForRefinement || "") ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Generating...
@@ -4030,6 +5002,51 @@ function DeepCopyResultsComponent({
         </DialogContent>
       </Dialog>
 
+      {/* V2 Explore Templates Dialog */}
+      {isV2 && (() => {
+        // Use same transformation logic as V2AvatarTree
+        let avatarsToDisplay: TransformedAvatar[] | undefined = customerAvatars as TransformedAvatar[] | undefined;
+
+        if ((!avatarsToDisplay || avatarsToDisplay.length === 0) && (fullResult as DeepCopyResult)?.results?.marketing_avatars) {
+          avatarsToDisplay = transformV2ToExistingSchema(fullResult as DeepCopyResult);
+        }
+
+        return avatarsToDisplay && avatarsToDisplay.length > 0 ? (
+          <ExploreTemplatesDialogV2
+            open={showExploreTemplatesV2}
+            onOpenChange={setShowExploreTemplatesV2}
+            avatars={avatarsToDisplay}
+            onConfirm={(avatarIndex, angleIndices) => {
+              // Get selected avatar and angles
+              const avatar = avatarsToDisplay![avatarIndex];
+              const availableAngles = (avatar.marketing_angles as any[]) || avatar.v2_angles_data?.generated_angles || [];
+              const selectedAngles = angleIndices.map(i =>
+                availableAngles[i]
+              ).filter(Boolean);
+
+              // Close the V2 dialog
+              setShowExploreTemplatesV2(false);
+
+              // Open template selection modal with selected angles
+              // For now, we'll generate for the first selected angle
+              // TODO: Support multiple angle generation
+              if (selectedAngles.length > 0) {
+                const firstAngle = selectedAngles[0];
+                const angleString = `${firstAngle.angle_title}: ${firstAngle.angle_subtitle}`;
+
+                // Set the selected angle and open template modal at step 1 (template selection)
+                setSelectedAngleForRefinement(angleString);
+                // Capture predictions from the selected angle
+                setSelectedAnglePredictions(firstAngle.template_predictions?.predictions);
+                
+                setTemplateModalStep(1); // Start at template selection, skip angle selection
+                setShowTemplateModal(true);
+              }
+            }}
+          />
+        ) : null;
+      })()}
+
       {/* Usage Limit Dialog */}
       {usageLimitData && (
         <UsageLimitDialog
@@ -4041,6 +5058,7 @@ function DeepCopyResultsComponent({
         />
       )}
     </div>
+    </>
   );
 }
 

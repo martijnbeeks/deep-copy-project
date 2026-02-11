@@ -131,8 +131,121 @@ interface AvatarExtractionResult {
 
 interface SwipeFileGenerationRequest {
   original_job_id: string
-  select_angle: string
+  avatar_id: string
+  angle_id: string
   swipe_file_ids?: string[]
+}
+
+// V2 API Interfaces
+interface SubmitV2JobRequest {
+  sales_page_url: string
+  project_name: string
+  advertorial_type?: string
+  research_requirements?: string
+  gender?: string
+  location?: string
+}
+
+interface JobResultV2 {
+  project_name: string
+  timestamp_iso: string
+  job_id: string
+  api_version: string
+  results: {
+    research_page_analysis?: string
+    deep_research_prompt?: string
+    deep_research_output?: string
+    marketing_avatars?: MarketingAvatarV2[]
+    summary?: string
+  }
+}
+
+export interface MarketingAvatarV2 {
+  avatar: {
+    name: string
+    demographics: {
+      age_range: string
+      gender: string
+      occupation: string
+      income_level: string
+      location_type: string
+      family_situation: string
+      education_level: string
+      one_sentence_description: string
+    }
+    problem_experience: any
+    pain_dimensions: {
+      surface_pain: string
+      emotional_pain: string
+      social_pain: string
+      identity_pain: string
+      secret_pain: string
+      dominant_negative_emotion: string
+    }
+    desire_dimensions: {
+      surface_desire: string
+      emotional_desire: string
+      social_desire: string
+      identity_desire: string
+      secret_desire: string
+      dream_outcome: string
+    }
+    awareness: any
+    failed_solutions: any
+    objections: any
+    buying_psychology: any
+    info_comm: any
+    raw_language: any
+    strategic_summary: any
+  }
+  angles: {
+    avatar_name: string
+    generated_angles: MarketingAngleV2[]
+    top_3_angles: {
+      primary_angle: TopAngleV2
+      secondary_angle: TopAngleV2
+      test_angle: TopAngleV2
+    }
+  }
+  necessary_beliefs: string
+}
+
+export interface MarketingAngleV2 {
+  angle_title: string
+  angle_subtitle: string
+  angle_type: string
+  emotional_driver: string
+  risk_level: string
+  core_argument: string
+  target_age_range: string
+  target_audience: string
+  pain_points: string[]
+  desires: string[]
+  common_objections: string[]
+  failed_alternatives: string[]
+  pain_quotes: string[]
+  desire_quotes: string[]
+  objection_quotes: string[]
+  template_predictions?: {
+    predictions: Array<{
+      template_id: string
+      overall_fit_score: number
+      reasoning: string
+      audience_fit?: number
+      pain_point_fit?: number
+      tone_fit?: number
+    }>
+  }
+}
+
+interface TopAngleV2 {
+  name: string
+  angle_type: string
+  core_argument: string
+  why_selected: string
+  primary_hook: string
+  emotional_driver: string
+  risk_level: string
 }
 
 class DeepCopyClient {
@@ -237,6 +350,30 @@ class DeepCopyClient {
   async getSwipeFileResult(jobId: string): Promise<any> {
     return this.makeRequest(`swipe-files/${jobId}/result`)
   }
+
+  // V2 API Methods
+  async submitV2Research(data: SubmitV2JobRequest): Promise<SubmitJobResponse> {
+    const endpoint = isDevMode() ? 'dev/v2/jobs' : 'v2/jobs'
+    return this.makeRequest(endpoint, {
+      method: 'POST',
+      body: JSON.stringify({
+        sales_page_url: data.sales_page_url,
+        project_name: data.project_name,
+        advertorial_type: data.advertorial_type,
+        research_requirements: data.research_requirements,
+        gender: data.gender,
+        location: data.location
+      })
+    })
+  }
+
+  async getV2Status(jobId: string): Promise<JobStatusResponse> {
+    return this.makeRequest(`v2/jobs/${jobId}`)
+  }
+
+  async getV2Result(jobId: string): Promise<JobResultV2> {
+    return this.makeRequest(`v2/jobs/${jobId}/result`)
+  }
 }
 
 // Singleton instance
@@ -260,5 +397,7 @@ export type {
   AvatarExtractionRequest,
   AvatarExtractionResult,
   SwipeFileGenerationRequest,
-  Angle
+  Angle,
+  SubmitV2JobRequest,
+  JobResultV2
 }

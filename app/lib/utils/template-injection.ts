@@ -455,7 +455,7 @@ export function extractContentFromAngle(results: any, swipe: any, angleIndex: nu
 }
 
 // Extract content data from individual swipe result - EXACT field mapping
-export function extractContentFromSwipeResult(swipeResult: any, templateType: 'listicle' | 'advertorial'): ContentData {
+export function extractContentFromSwipeResult(swipeResult: any, templateType: 'listicle' | 'advertorial', templateId?: string): ContentData {
   // Parse the swipe result content - this contains the rich JSON data for this specific angle
   // Handle multiple formats:
   // 1. Wrapper with full_advertorial property (from swipe-files API: { full_advertorial: {...} })
@@ -490,6 +490,46 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
     swipeContent = swipeResult
   }
 
+  // Check if this is a new template format (AD0001, LD0001, etc.)
+  const isNewTemplate = templateId && (templateId.startsWith('AD') || templateId.startsWith('LD'))
+  
+  // NEW FORMAT: Direct mapping from full_advertorial structure
+  // Templates AD0001, AD0002, LD0001, etc. use direct structure matching
+  if (isNewTemplate && swipeContent.article?.headline && swipeContent.product?.name) {
+    // Return content in the format expected by new templates
+    // The template uses {{theme}}, {{article.headline}}, {{product.name}}, etc.
+    const newFormatContent: any = {
+      // Map to old format structure for compatibility, but also add new format at root
+      theme: swipeContent.theme || '',
+      site: swipeContent.site || {},
+      article: swipeContent.article || {},
+      product: swipeContent.product || {},
+      signOff: swipeContent.signOff || {},
+      reviews: swipeContent.reviews || {},
+      // Also include old format structure for backward compatibility
+      hero: {
+        headline: swipeContent.article?.headline || 'Transform Your Daily Routine',
+        subheadline: swipeContent.article?.subheadline || 'Discover the solution that thousands are already using',
+        image: swipeContent.article?.heroImage || 'https://placehold.co/600x400?text=Hero+Image',
+        imageAlt: 'Hero Image'
+      },
+      author: {
+        name: swipeContent.article?.authorName || 'Health Expert',
+        image: 'https://placehold.co/100x100?text=Author',
+        date: new Date().toLocaleDateString(),
+        verifiedIcon: 'https://placehold.co/20x20?text=✓'
+      },
+      product: {
+        name: swipeContent.product?.name || 'Premium Solution',
+        image: swipeContent.product?.image || 'https://placehold.co/400x400?text=Product+Image'
+      }
+    }
+    
+    // Return as ContentData (the [key: string]: any allows additional properties)
+    return newFormatContent as ContentData
+  }
+
+  // OLD FORMAT: Continue with existing extraction logic
   // Check if this is a Listicle or Advertorial structure (from swipe-files endpoint)
   const isListicle = swipeContent.title && swipeContent.listicles && Array.isArray(swipeContent.listicles)
   const isAdvertorial = swipeContent.title && swipeContent.subtitle && swipeContent.body
@@ -1392,6 +1432,36 @@ function getNestedValue(obj: any, path: string): any {
 }
 
 // Helper function to convert a value to string safely
+// Helper function to convert a value to JavaScript-compatible string (for new templates)
+// This produces valid JavaScript syntax that can be used in object literals
+function valueToJavaScriptString(value: any): string {
+  if (value === null || value === undefined) {
+    return 'null'
+  }
+  if (typeof value === 'string') {
+    // Escape quotes, backslashes, and newlines, then wrap in quotes
+    return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t')}"`
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  if (Array.isArray(value)) {
+    // Convert array to JavaScript array literal
+    const items = value.map(v => valueToJavaScriptString(v))
+    return `[${items.join(', ')}]`
+  }
+  if (typeof value === 'object') {
+    // Convert object to JavaScript object literal
+    const entries = Object.entries(value).map(([key, val]) => {
+      // Use quoted key if it's not a valid identifier
+      const jsKey = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key) ? key : `"${key}"`
+      return `${jsKey}: ${valueToJavaScriptString(val)}`
+    })
+    return `{${entries.join(', ')}}`
+  }
+  return '""'
+}
+
 function valueToString(value: any): string {
   if (value === null || value === undefined) {
     return ''
@@ -1423,7 +1493,7 @@ function valueToString(value: any): string {
   return ''
 }
 
-export function injectContentIntoTemplate(template: InjectableTemplate, content: ContentData): string {
+export function injectContentIntoTemplate(template: InjectableTemplate, content: ContentData, templateId?: string): string {
   try {
     let htmlContent = template.html_content
 
@@ -1432,14 +1502,24 @@ export function injectContentIntoTemplate(template: InjectableTemplate, content:
       return createFallbackTemplate(content)
     }
 
+    // Check if this is a new template format (AD0001, LD0001, etc.)
+    const isNewTemplate = templateId && (templateId.startsWith('AD') || templateId.startsWith('LD'))
+
     // STEP 1: Find ALL placeholders in the template using regex
-    // This makes the system future-proof - it will handle any placeholder the template uses
-    const placeholderRegex = /\{\{content\.([^}]+)\}\}/g
+    // New templates use {{field}} format, old templates use {{content.field}} format
+    const placeholderRegex = isNewTemplate 
+      ? /\{\{([^}]+)\}\}/g  // New: {{theme}}, {{article.headline}}, {{product.name}}
+      : /\{\{content\.([^}]+)\}\}/g  // Old: {{content.hero.headline}}
+    
     const foundPlaceholders = new Set<string>()
+    const placeholderFormats = new Map<string, string>() // Map fieldPath to full placeholder
     let match
     
     while ((match = placeholderRegex.exec(htmlContent)) !== null) {
-      foundPlaceholders.add(match[1]) // match[1] is the field path (e.g., "sidebar.title")
+      const fieldPath = match[1]
+      const fullPlaceholder = match[0] // The complete {{...}} placeholder
+      foundPlaceholders.add(fieldPath)
+      placeholderFormats.set(fieldPath, fullPlaceholder)
     }
     
     // STEP 2: Build replacements dynamically based on what's in the template AND what's in the content
@@ -1449,20 +1529,23 @@ export function injectContentIntoTemplate(template: InjectableTemplate, content:
     const replacements: { [key: string]: string } = {}
     
     for (const fieldPath of foundPlaceholders) {
-      const placeholder = `{{content.${fieldPath}}}`
+      const fullPlaceholder = placeholderFormats.get(fieldPath) || (isNewTemplate ? `{{${fieldPath}}}` : `{{content.${fieldPath}}}`)
       
       // Check if this field exists in the content object
       const value = getNestedValue(content, fieldPath)
       
       if (value !== undefined && value !== null) {
         // Field exists - convert to string and add to replacements
+        // Use JavaScript-compatible string conversion for new templates
         // Content is already sanitized from extractContentFromSwipeResult
-        const stringValue = valueToString(value)
-        replacements[placeholder] = stringValue
+        const stringValue = isNewTemplate 
+          ? valueToJavaScriptString(value)
+          : valueToString(value)
+        replacements[fullPlaceholder] = stringValue
       } else {
-        // Field doesn't exist in content - replace with empty string for cleaner output
-        // This prevents placeholders from appearing in the final HTML
-        replacements[placeholder] = ''
+        // Field doesn't exist in content - use appropriate empty value
+        // For new templates, use 'null', for old templates use empty string
+        replacements[fullPlaceholder] = isNewTemplate ? 'null' : ''
       }
     }
     
@@ -1473,25 +1556,12 @@ export function injectContentIntoTemplate(template: InjectableTemplate, content:
       htmlContent = htmlContent.replace(new RegExp(escapedPlaceholder, 'g'), value)
     }
 
-    // Comprehensive deduplication - remove ALL duplicate content
-    htmlContent = removeDuplicateContent(htmlContent, content)
-
-    // Additional aggressive deduplication
-    htmlContent = aggressiveDeduplication(htmlContent)
-
-
-    // Add image fallback handling to prevent broken image symbols
-    htmlContent = addImageFallbacks(htmlContent)
-
-    // Add CSS to hide broken images gracefully
-    htmlContent = addBrokenImageCSS(htmlContent)
-
-    // Add JavaScript to handle broken images dynamically
-    htmlContent = addBrokenImageJS(htmlContent)
-
-    // Disable all clickable links to prevent navigation
-    htmlContent = disableAllLinks(htmlContent)
-
+    // Return clean HTML without any post-processing modifications
+    // This preserves:
+    // - Original HTML structure and formatting
+    // - Placeholder.co images as-is
+    // - All href links (including #next-step)
+    // - Original CSS/JS in head section (including Tailwind CDN)
     return htmlContent
 
   } catch (error) {
