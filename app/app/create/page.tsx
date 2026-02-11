@@ -433,10 +433,10 @@ export default function CreatePage() {
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen bg-background overflow-hidden">
+      <div className="flex min-h-screen bg-background">
         <Sidebar />
-        <main className="flex-1 overflow-auto ml-16">
-          <div className="p-4 md:p-6 overflow-y-auto h-full">
+        <main className="flex-1 ml-16">
+          <div className="p-4 md:p-6">
             <div className="mb-4 md:mb-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -450,7 +450,7 @@ export default function CreatePage() {
 
             </div>
 
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto pb-8">
               <div className="space-y-8">
                 {/* Header Section */}
                 <div className="text-center space-y-2">
