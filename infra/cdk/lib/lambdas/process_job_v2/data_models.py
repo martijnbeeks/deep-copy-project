@@ -87,7 +87,7 @@ class AvatarOverview(BaseModel):
     """
     name: str = Field(
         ..., 
-        description="Descriptive name for this avatar (e.g., 'THE WORRIED SELF-MANAGER', 'THE BUSY MOM')"
+        description="Descriptive name for this avatar"
     )
     description: str = Field(
         ..., 
@@ -206,6 +206,10 @@ class DesireDimension(BaseModel):
     Desires organized by psychological dimension.
     Each dimension captures a different layer of what they want.
     """
+    surface: List[str] = Field(
+        default_factory=list,
+        description="Surface-level, physical, or practical desires"
+    )
     emotional: str = Field(
         ..., 
         description="How they want to FEEL. The emotional state they're seeking. Example: 'Feel confident and at peace about my eye health'"
