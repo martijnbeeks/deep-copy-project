@@ -17,7 +17,7 @@ const DeepCopyResults = dynamic(
 );
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Download, ArrowLeft } from "lucide-react";
+import { Download, ArrowLeft, FileText } from "lucide-react";
 import Link from "next/link";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { useJob } from "@/lib/hooks/use-jobs";
@@ -26,6 +26,7 @@ import { useJobPolling } from "@/hooks/use-job-polling";
 import { isProcessingStatus } from "@/lib/utils/job-status";
 import { internalApiClient } from "@/lib/clients/internal-client";
 import { isV2Job } from "@/lib/utils/v2-data-transformer";
+import { ReadOnlyForm } from "@/components/results/readonly-form";
 
 export default function ResultDetailPage({
   params,
@@ -45,6 +46,9 @@ export default function ResultDetailPage({
     total: number;
     selected: number;
   } | null>(null);
+
+  // State for read-only form dialog
+  const [showReadOnlyForm, setShowReadOnlyForm] = useState(false);
 
   // Use client-side polling for job status updates
   const { jobStatus, isPolling, attempts, maxAttempts } = useJobPolling({
@@ -185,18 +189,29 @@ export default function ResultDetailPage({
               <SidebarTrigger />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-4 flex-wrap">
-                  {/* Hide 'Back to Avatars' button for V2 jobs */}
-                  {!isV2 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => router.push(`/avatars/${avatarsPageJobId}`)}
-                      className="flex items-center gap-2"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      Back to Avatars
-                    </Button>
-                  )}
+                  {/* Left section - Navigation buttons */}
+                  <div className="flex items-center gap-2">
+                    {/* Hide 'Back to Avatars' button for V2 jobs */}
+                    {!isV2 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push(`/avatars/${avatarsPageJobId}`)}
+                        className="flex items-center gap-2"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back to Avatars
+                      </Button>
+                    )}
+                    {/* Show Project Details button for V2 jobs */}
+                    {isV2 && (
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary cursor-pointer hover:bg-primary/20 transition-colors"
+                           onClick={() => setShowReadOnlyForm(true)}>
+                        <FileText className="h-4 w-4" />
+                        <span className="text-sm font-medium">Project Details</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex items-center gap-4 flex-1 justify-center">
                     {currentJob && (
                       <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary">
@@ -247,6 +262,22 @@ export default function ResultDetailPage({
             />
           </div>
         </div>
+
+        {/* Read-only Form Dialog */}
+        {currentJob && (
+          <ReadOnlyForm
+            open={showReadOnlyForm}
+            onOpenChange={setShowReadOnlyForm}
+            formData={{
+              title: currentJob.title || "",
+              sales_page_url: currentJob.sales_page_url || "",
+              research_requirements: currentJob?.result?.metadata?.research_requirements || undefined,
+              gender: currentJob?.result?.metadata?.gender || undefined,
+              location: currentJob?.result?.metadata?.location || undefined,
+              advertorial_type: currentJob.advertorial_type || undefined,
+            }}
+          />
+        )}
       </main>
     </div>
   );
