@@ -523,12 +523,7 @@ export default function CreatePage() {
                       </div>
 
                       {/* V2 Research Options Section */}
-                      <div className="space-y-6">
-                        <div className="space-y-2">
-                          <h3 className="text-lg font-semibold text-foreground">Research Options</h3>
-                          <p className="text-sm text-muted-foreground">Optional fields to refine your research (AI will automatically discover avatars)</p>
-                        </div>
-
+                      <div className="space-y-6"> 
                         {/* Research Requirements */}
                         <div className="space-y-4">
                           <div className="space-y-2">
@@ -666,6 +661,8 @@ export default function CreatePage() {
       <Dialog open={showResearchLoading} onOpenChange={(open) => {
         if (!open) {
           setShowResearchLoading(false)
+          // Redirect to dashboard when user closes the modal
+          router.push('/dashboard')
         }
       }}>
         <DialogContent className="max-w-2xl border-border">
