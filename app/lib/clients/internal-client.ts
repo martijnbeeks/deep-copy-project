@@ -207,6 +207,7 @@ class InternalApiClient {
     avatar_id: string
     angle_id: string
     swipe_file_ids?: string[]
+    allowOverage?: boolean
   }) {
     return this.request('/api/swipe-files/generate', {
       method: 'POST',

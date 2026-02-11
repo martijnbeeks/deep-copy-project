@@ -154,3 +154,18 @@ export interface JobCreditEvent {
   user_email?: string | null
   job_created_at?: string | null
 }
+
+export interface EditableProductDetails {
+  product_name?: string;
+  product_format?: string;
+  price?: string;
+  subscription_price?: string;
+  guarantee?: string;
+  shipping?: string;
+  description?: string;
+  details?: string;
+  key_differentiator?: string;
+  compliance_notes?: string[];
+  is_confirmed?: boolean;
+  updated_at?: string;
+}

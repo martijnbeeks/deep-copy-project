@@ -1,5 +1,5 @@
 import { query } from './connection'
-import { User, Template, Job, Result, JobWithTemplate, JobWithResult, InjectableTemplate, InviteLink, Organization, OrganizationMember, UserRole, MemberStatus, InviteType, UsageType, OrganizationUsageLimits, OrganizationUsageTracking, JobCreditEvent } from './types'
+import { User, Template, Job, Result, JobWithTemplate, JobWithResult, InjectableTemplate, InviteLink, Organization, OrganizationMember, UserRole, MemberStatus, InviteType, UsageType, OrganizationUsageLimits, OrganizationUsageTracking, JobCreditEvent, EditableProductDetails } from './types'
 import bcrypt from 'bcryptjs'
 
 // User queries
@@ -2383,4 +2383,75 @@ export const getJobCreditEventsCount = async (
 
   const result = await query(sql, params)
   return parseInt(result.rows[0]?.count) || 0
+}
+
+// Editable Product Details queries
+export const getEditableProductDetails = async (jobId: string): Promise<EditableProductDetails | null> => {
+  const result = await query(
+    'SELECT editable_product_details FROM jobs WHERE id = $1',
+    [jobId]
+  )
+  const details = result.rows[0]?.editable_product_details
+  return details || null
+}
+
+export const updateEditableProductDetails = async (jobId: string, productDetails: EditableProductDetails): Promise<boolean> => {
+  const result = await query(
+    'UPDATE jobs SET editable_product_details = $2, updated_at = NOW() WHERE id = $1',
+    [jobId, JSON.stringify({ ...productDetails, updated_at: new Date().toISOString() })]
+  )
+  return (result.rowCount ?? 0) > 0
+}
+
+export const confirmEditableProductDetails = async (jobId: string): Promise<boolean> => {
+  const result = await query(
+    'UPDATE jobs SET editable_product_details = jsonb_set(editable_product_details, \'{is_confirmed}\', \'true\'), updated_at = NOW() WHERE id = $1',
+    [jobId]
+  )
+  return (result.rowCount ?? 0) > 0
+}
+
+// Automatically populate editable_product_details from V2 API response
+export const populateEditableProductDetailsFromV2 = async (jobId: string, v2Result: any): Promise<boolean> => {
+  try {
+    const offerBrief = v2Result?.results?.offer_brief;
+    const product = offerBrief?.product;
+    
+    if (!product) {
+      return false; // No product data in V2 response
+    }
+
+    const editableDetails: EditableProductDetails = {
+      product_name: product.name,
+      product_format: product.format,
+      price: product.price,
+      subscription_price: product.subscription_price,
+      guarantee: product.guarantee,
+      shipping: product.shipping,
+      description: product.description,
+      details: product.details,
+      key_differentiator: product.key_differentiator,
+      compliance_notes: product.compliance_notes,
+      is_confirmed: false,
+      updated_at: new Date().toISOString()
+    };
+
+    // Only update if editable_product_details is empty or null
+    const result = await query(
+      `UPDATE jobs 
+       SET editable_product_details = CASE 
+         WHEN editable_product_details IS NULL OR editable_product_details = '{}'::jsonb 
+         THEN $2 
+         ELSE editable_product_details 
+       END, 
+       updated_at = NOW() 
+       WHERE id = $1 AND (editable_product_details IS NULL OR editable_product_details = '{}'::jsonb)`,
+      [jobId, JSON.stringify(editableDetails)]
+    );
+    
+    return (result.rowCount ?? 0) > 0;
+  } catch (error) {
+    console.error('Error populating editable product details from V2:', error);
+    return false;
+  }
 }
