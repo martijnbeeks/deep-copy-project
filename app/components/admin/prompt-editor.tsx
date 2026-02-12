@@ -6,9 +6,9 @@ import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Save, X, CheckCircle, AlertCircle, RefreshCw, ChevronDown } from "lucide-react"
+import { Save, X, CheckCircle, AlertCircle, Info, RefreshCw } from "lucide-react"
 import { PromptWithVersions } from "@/components/admin/admin-types"
 import { PromptVersionHistory } from "@/components/admin/prompt-version-history"
 
@@ -191,43 +191,16 @@ export function PromptEditor({ prompt, onSave, onCancel }: PromptEditorProps) {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <style>{`
-        .prompt-placeholder-required {
-          background-color: rgba(34, 197, 94, 0.25);
-          border-radius: 2px;
-          padding: 0 1px;
-        }
-        .prompt-placeholder-extra {
-          background-color: rgba(59, 130, 246, 0.25);
-          border-radius: 2px;
-          padding: 0 1px;
-        }
-      `}</style>
-
-      {/* Header - fixed at top */}
-      <div className="flex items-center justify-between px-6 pt-5 pb-3 flex-shrink-0">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold truncate">{prompt.name}</h2>
-          <div className="flex items-center gap-2 mt-0.5">
-            <Badge variant="secondary" className="text-xs font-normal">{prompt.category}</Badge>
-            <code className="text-xs text-muted-foreground font-mono">{prompt.function_name}</code>
-            {validation.valid ? (
-              <Badge className="text-xs font-normal bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-0">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Valid
-              </Badge>
-            ) : (
-              <Badge variant="destructive" className="text-xs font-normal">
-                <AlertCircle className="h-3 w-3 mr-1" />
-                {validation.missingRequired.length > 0 ? `${validation.missingRequired.length} missing` : ""}
-                {validation.missingRequired.length > 0 && validation.extra.length > 0 ? ", " : ""}
-                {validation.extra.length > 0 ? `${validation.extra.length} unknown` : ""}
-              </Badge>
-            )}
-          </div>
+    <div className="space-y-6 max-h-full overflow-y-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between pb-4 border-b">
+        <div>
+          <h2 className="text-lg font-semibold">Edit Prompt: {prompt.name}</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {prompt.category} &middot; {prompt.function_name}
+          </p>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={onCancel} className="h-8">
             <X className="h-3.5 w-3.5 mr-1.5" />
             Cancel
@@ -248,150 +221,247 @@ export function PromptEditor({ prompt, onSave, onCancel }: PromptEditorProps) {
         </div>
       </div>
 
-      {/* Collapsible metadata */}
-      <div className="px-6 flex-shrink-0">
-        <Collapsible>
-          <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors py-1">
-            <ChevronDown className="h-3 w-3" />
-            Details & Parameters
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="rounded-lg border bg-muted/30 p-3 mt-1 mb-2">
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="min-w-0">
-                  <p className="text-muted-foreground mb-0.5">Required Parameters</p>
-                  <div className="flex flex-wrap gap-1">
-                    {requiredParams.length > 0 ? (
-                      requiredParams.map((p) => (
-                        <Badge key={p} variant="outline" className="text-xs font-normal font-mono">
-                          {`{${p}}`}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-muted-foreground">None</span>
-                    )}
-                  </div>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-muted-foreground mb-0.5">Dates</p>
-                  <p className="font-medium">Created {formatDate(prompt.created_at)} &middot; Updated {formatDate(prompt.updated_at)}</p>
-                </div>
-              </div>
+      {/* Metadata */}
+      <div className="rounded-lg border bg-muted/30 p-4">
+        <div className="grid grid-cols-2 gap-4 text-xs">
+          <div className="min-w-0">
+            <p className="text-muted-foreground mb-1">Name</p>
+            <p className="font-medium truncate">{prompt.name}</p>
+          </div>
+          <div className="min-w-0">
+            <p className="text-muted-foreground mb-1">Category</p>
+            <Badge variant="secondary" className="text-xs font-normal">
+              {prompt.category}
+            </Badge>
+          </div>
+          <div className="min-w-0">
+            <p className="text-muted-foreground mb-1">Function</p>
+            <code className="font-mono text-xs bg-background border px-1.5 py-0.5 rounded block truncate">
+              {prompt.function_name}
+            </code>
+          </div>
+          <div className="min-w-0">
+            <p className="text-muted-foreground mb-1">Required Parameters</p>
+            <div className="flex flex-wrap gap-1">
+              {requiredParams.length > 0 ? (
+                requiredParams.map((p) => (
+                  <Badge key={p} variant="outline" className="text-xs font-normal font-mono">
+                    {`{${p}}`}
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-muted-foreground">None</span>
+              )}
             </div>
-          </CollapsibleContent>
-        </Collapsible>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4 text-xs mt-3 pt-3 border-t">
+          <div>
+            <p className="text-muted-foreground mb-1">Created</p>
+            <p className="font-medium">{formatDate(prompt.created_at)}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground mb-1">Updated</p>
+            <p className="font-medium">{formatDate(prompt.updated_at)}</p>
+          </div>
+        </div>
       </div>
 
-      {/* Tabs - fills remaining space */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 min-h-0 flex flex-col px-6 pb-4">
-        <TabsList className="bg-muted/50 h-9 flex-shrink-0">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="bg-muted/50 h-9">
           <TabsTrigger value="editor" className="text-xs">Editor</TabsTrigger>
           <TabsTrigger value="versions" className="text-xs">Version History ({prompt.versions.length})</TabsTrigger>
           <TabsTrigger value="preview" className="text-xs">Preview</TabsTrigger>
         </TabsList>
 
-        {/* Editor Tab - flex layout, Monaco fills available space */}
-        <TabsContent value="editor" className="flex-1 min-h-0 flex flex-col gap-3 mt-3 data-[state=inactive]:hidden">
-          {/* Validation status bar */}
-          {!validation.valid && (
-            <div className="flex-shrink-0 rounded-md bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 px-3 py-2">
-              <div className="flex items-center gap-2 text-xs">
-                <AlertCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400 flex-shrink-0" />
-                <span className="text-red-800 dark:text-red-300 font-medium">Cannot save:</span>
-                {validation.missingRequired.length > 0 && (
-                  <span className="text-red-700 dark:text-red-400">
-                    Missing: {validation.missingRequired.map(p => `{${p}}`).join(", ")}
-                  </span>
-                )}
-                {validation.extra.length > 0 && (
-                  <span className="text-red-700 dark:text-red-400">
-                    Unknown: {validation.extra.map(p => `{${p}}`).join(", ")}
-                  </span>
-                )}
-              </div>
+        {/* Editor Tab */}
+        <TabsContent value="editor" className="space-y-4">
+          {/* Monaco editor */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-medium">Prompt Content</Label>
+              <span className="text-xs text-muted-foreground">
+                {content.length.toLocaleString()} characters
+              </span>
             </div>
-          )}
-
-          {/* Monaco editor - takes all available space */}
-          <div className="flex-1 min-h-0 rounded-md border overflow-hidden">
-            <Editor
-              height="100%"
-              defaultLanguage="plaintext"
-              theme={resolvedTheme === "dark" ? "vs-dark" : "vs"}
-              value={content}
-              onChange={(value) => setContent(value ?? "")}
-              onMount={handleEditorMount}
-              options={{
-                fontSize: 12,
-                fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                minimap: { enabled: false },
-                wordWrap: "on",
-                lineNumbers: "on",
-                scrollBeyondLastLine: false,
-                padding: { top: 8, bottom: 8 },
-                renderWhitespace: "none",
-                overviewRulerLanes: 0,
-                hideCursorInOverviewRuler: true,
-                overviewRulerBorder: false,
-                automaticLayout: true,
-              }}
-            />
-          </div>
-
-          {/* Placeholder badges + Notes - fixed at bottom */}
-          <div className="flex-shrink-0 space-y-2">
-            {(validation.foundRequired.length > 0 || validation.extra.length > 0) && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-xs text-muted-foreground">Placeholders:</span>
-                {validation.foundRequired.map((p) => (
-                  <Badge key={p} className="text-xs font-normal font-mono bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-0 py-0">
-                    {`{${p}}`}
-                  </Badge>
-                ))}
-                {validation.extra.map((p) => (
-                  <Badge key={p} className="text-xs font-normal font-mono bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-0 py-0">
-                    {`{${p}}`}
-                  </Badge>
-                ))}
-                {validation.missingRequired.map((p) => (
-                  <Badge key={p} variant="destructive" className="text-xs font-normal font-mono py-0">
-                    {`{${p}}`}
-                  </Badge>
-                ))}
-                <span className="text-xs text-muted-foreground ml-1">{content.length.toLocaleString()} chars</span>
-              </div>
-            )}
-            <div className="flex gap-2">
-              <Textarea
-                value={notes}
-                onChange={(e) => {
-                  if (e.target.value.length <= 500) {
-                    setNotes(e.target.value)
-                  }
+            <div className="rounded-md border overflow-hidden">
+              <style>{`
+                .prompt-placeholder-required {
+                  background-color: rgba(34, 197, 94, 0.25);
+                  border-radius: 2px;
+                  padding: 0 1px;
+                }
+                .prompt-placeholder-extra {
+                  background-color: rgba(59, 130, 246, 0.25);
+                  border-radius: 2px;
+                  padding: 0 1px;
+                }
+              `}</style>
+              <Editor
+                height="600px"
+                defaultLanguage="plaintext"
+                theme={resolvedTheme === "dark" ? "vs-dark" : "vs"}
+                value={content}
+                onChange={(value) => setContent(value ?? "")}
+                onMount={handleEditorMount}
+                options={{
+                  fontSize: 12,
+                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                  minimap: { enabled: false },
+                  wordWrap: "on",
+                  lineNumbers: "on",
+                  scrollBeyondLastLine: false,
+                  padding: { top: 8, bottom: 8 },
+                  renderWhitespace: "none",
+                  overviewRulerLanes: 0,
+                  hideCursorInOverviewRuler: true,
+                  overviewRulerBorder: false,
+                  automaticLayout: true,
                 }}
-                placeholder="Version notes (optional)..."
-                rows={1}
-                className="text-sm resize-none flex-1"
               />
             </div>
+          </div>
+
+          {/* Validation panel */}
+          <div className="rounded-lg border p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium">Placeholder Validation</h4>
+              {validation.valid ? (
+                <Badge className="text-xs font-normal bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-0">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Valid
+                </Badge>
+              ) : (
+                <Badge variant="destructive" className="text-xs font-normal">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  Invalid placeholders
+                </Badge>
+              )}
+            </div>
+
+            {/* Help text for variable format */}
+            <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3">
+              <div className="flex gap-2">
+                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-blue-800 dark:text-blue-300">
+                  <p className="font-medium mb-1">Variable Format</p>
+                  <p className="text-blue-700 dark:text-blue-400">
+                    Variables must be wrapped in curly braces: <code className="bg-blue-100 dark:bg-blue-900/50 px-1 py-0.5 rounded font-mono">{"{variable_name}"}</code>
+                  </p>
+                  <p className="mt-1 text-blue-600 dark:text-blue-500">
+                    Example: <code className="bg-blue-100 dark:bg-blue-900/50 px-1 py-0.5 rounded font-mono">Hello {"{user_name}"}, your order {"{order_id}"} is ready.</code>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {!validation.valid && (
+              <div className="rounded-md bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-3">
+                <div className="flex gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-red-800 dark:text-red-300">
+                    <p className="font-medium">Cannot save: Placeholder validation failed</p>
+                    {validation.missingRequired.length > 0 && (
+                      <p className="mt-1 text-red-700 dark:text-red-400">
+                        Missing: {validation.missingRequired.map(p => `{${p}}`).join(", ")}
+                      </p>
+                    )}
+                    {validation.extra.length > 0 && (
+                      <p className="mt-1 text-red-700 dark:text-red-400">
+                        Unknown: {validation.extra.map(p => `{${p}}`).join(", ")}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {validation.foundRequired.length > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+                  Found Required
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {validation.foundRequired.map((p) => (
+                    <Badge key={p} className="text-xs font-normal font-mono bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-0">
+                      {`{${p}}`}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {validation.missingRequired.length > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3 text-red-600 dark:text-red-400" />
+                  Missing Required
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {validation.missingRequired.map((p) => (
+                    <Badge key={p} variant="destructive" className="text-xs font-normal font-mono">
+                      {`{${p}}`}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {validation.extra.length > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+                  <Info className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                  Extra Placeholders
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {validation.extra.map((p) => (
+                    <Badge key={p} className="text-xs font-normal font-mono bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-0">
+                      {`{${p}}`}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-medium">Version Notes (optional)</Label>
+              <span className="text-xs text-muted-foreground">{notes.length}/500</span>
+            </div>
+            <Textarea
+              value={notes}
+              onChange={(e) => {
+                if (e.target.value.length <= 500) {
+                  setNotes(e.target.value)
+                }
+              }}
+              placeholder="Describe what changed in this version..."
+              rows={3}
+              className="text-sm resize-none"
+            />
           </div>
         </TabsContent>
 
         {/* Version History Tab */}
-        <TabsContent value="versions" className="flex-1 min-h-0 overflow-y-auto mt-3 data-[state=inactive]:hidden">
+        <TabsContent value="versions">
           <PromptVersionHistory prompt={prompt} onRestore={handleRestore} />
         </TabsContent>
 
         {/* Preview Tab */}
-        <TabsContent value="preview" className="flex-1 min-h-0 overflow-y-auto mt-3 data-[state=inactive]:hidden">
+        <TabsContent value="preview" className="space-y-4">
           <div className="rounded-lg border bg-muted/30 p-4">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-medium">Formatted Preview</h4>
-              <Badge variant="outline" className="text-xs font-normal">
-                {validation.found.length} placeholders
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs font-normal">
+                  {validation.found.length} placeholders
+                </Badge>
+              </div>
             </div>
-            <div className="rounded-md bg-background p-4 border">
+            <div className="rounded-md bg-background p-4 max-h-[500px] overflow-auto border">
               <pre className="text-xs font-mono whitespace-pre-wrap break-words">
                 {highlightPlaceholdersWithValidation(content, requiredParams)}
               </pre>
