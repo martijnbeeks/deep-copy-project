@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { RefreshCw, CheckCircle, AlertCircle, Users, FileText, Database, Plus, Trash2, Upload, Eye, LogOut, Briefcase, Copy, Building2 } from "lucide-react"
+import { RefreshCw, CheckCircle, AlertCircle, Users, FileText, Database, Plus, Trash2, Upload, Eye, LogOut, Briefcase, Copy, Building2, Search, Code } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { toast } from "@/hooks/use-toast"
 import { TemplateEditor } from "@/components/admin/template-editor"
@@ -23,6 +23,8 @@ import { useTemplates } from "@/lib/hooks/use-templates"
 import { TemplatePreview } from "@/components/template-preview"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { Template } from "@/lib/db/types"
+import { PromptWithVersions } from "@/components/admin/admin-types"
+import { PromptEditor } from "@/components/admin/prompt-editor"
 
 interface UserOrganization {
   id: string
@@ -114,6 +116,14 @@ export default function AdminPage() {
   const [waitlistEntries, setWaitlistEntries] = useState<WaitlistEntry[]>([])
   const [loadingWaitlist, setLoadingWaitlist] = useState(false)
 
+  // Prompts state
+  const [prompts, setPrompts] = useState<PromptWithVersions[]>([])
+  const [selectedPrompt, setSelectedPrompt] = useState<PromptWithVersions | null>(null)
+  const [promptsLoading, setPromptsLoading] = useState(false)
+  const [promptEditorOpen, setPromptEditorOpen] = useState(false)
+  const [selectedPromptCategory, setSelectedPromptCategory] = useState("all")
+  const [promptSearchQuery, setPromptSearchQuery] = useState("")
+
   // Template grid view state
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [currentPage, setCurrentPage] = useState(1)
@@ -180,6 +190,13 @@ export default function AdminPage() {
   useEffect(() => {
     setCurrentPage(1)
   }, [selectedCategory])
+
+  // Reload prompts when prompt category filter changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadPrompts()
+    }
+  }, [selectedPromptCategory])
 
   // Load waitlist entries
   const loadWaitlistEntries = async () => {
@@ -272,8 +289,9 @@ export default function AdminPage() {
         setInviteLinks(inviteLinksData.invite_links || [])
       }
 
-      // Load waitlist entries
+      // Load waitlist entries and prompts
       await loadWaitlistEntries()
+      await loadPrompts()
     } catch (error) {
       console.error('Error loading data:', error)
       toast({
@@ -292,7 +310,86 @@ export default function AdminPage() {
     // We can use queryClient if needed, but for now just reloading data is fine
   }
 
+  // Load prompts
+  const loadPrompts = async () => {
+    setPromptsLoading(true)
+    try {
+      const categoryParam = selectedPromptCategory !== 'all' ? `?category=${selectedPromptCategory}` : ''
+      const response = await fetch(`/api/admin/prompts${categoryParam}`, { headers: getAuthHeaders() })
+      if (response.ok) {
+        const data = await response.json()
+        setPrompts(data.prompts || [])
+      } else {
+        console.error('Failed to load prompts')
+        toast({
+          title: "Error",
+          description: "Failed to load prompts",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Error loading prompts:', error)
+    } finally {
+      setPromptsLoading(false)
+    }
+  }
 
+  const handleSelectPrompt = async (promptId: string) => {
+    try {
+      const response = await fetch(`/api/admin/prompts/${promptId}`, { headers: getAuthHeaders() })
+      if (response.ok) {
+        const data = await response.json()
+        const promptWithVersions: PromptWithVersions = {
+          ...data.prompt,
+          versions: data.versions || [],
+          latest_version: data.latest_version
+        }
+        setSelectedPrompt(promptWithVersions)
+        setPromptEditorOpen(true)
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load prompt details",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to load prompt",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleSavePromptVersion = async (promptId: string, content: string, notes: string) => {
+    const response = await fetch('/api/admin/prompts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify({ promptId, content, notes })
+    })
+
+    if (response.ok) {
+      toast({
+        title: "Success",
+        description: "Prompt version created successfully"
+      })
+      setPromptEditorOpen(false)
+      setSelectedPrompt(null)
+      loadPrompts()
+    } else {
+      const error = await response.json()
+      toast({
+        title: "Error",
+        description: error.error || "Failed to save prompt",
+        variant: "destructive"
+      })
+      throw new Error(error.error || "Failed to save prompt")
+    }
+  }
 
   // Template management
   const handleTemplateFile = (file: File) => {
@@ -916,6 +1013,7 @@ export default function AdminPage() {
             <TabsTrigger value="templates" className="text-xs">Templates</TabsTrigger>
             <TabsTrigger value="injectable-templates" className="text-xs">Injectable</TabsTrigger>
             <TabsTrigger value="jobs" className="text-xs">Jobs</TabsTrigger>
+            <TabsTrigger value="prompts" className="text-xs">Prompts</TabsTrigger>
             <TabsTrigger value="invite-links" className="text-xs">Waitlist & Invites</TabsTrigger>
             <TabsTrigger value="usage-limits" className="text-xs">Limits</TabsTrigger>
           </TabsList>
@@ -1200,6 +1298,162 @@ export default function AdminPage() {
                     </p>
                   </div>
                 )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Prompts Tab */}
+          <TabsContent value="prompts" className="space-y-4">
+            <div className="rounded-lg border bg-card">
+              <div className="flex items-center justify-between p-4 border-b">
+                <div>
+                  <h3 className="text-sm font-semibold">LLM Prompts</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Manage and version control LLM prompts</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select value={selectedPromptCategory} onValueChange={(value) => {
+                    setSelectedPromptCategory(value)
+                  }}>
+                    <SelectTrigger className="w-44 h-8 text-xs">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="process_job_v2">process_job_v2</SelectItem>
+                      <SelectItem value="write_swipe">write_swipe</SelectItem>
+                      <SelectItem value="image_gen_process">image_gen_process</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      value={promptSearchQuery}
+                      onChange={(e) => setPromptSearchQuery(e.target.value)}
+                      placeholder="Search prompts..."
+                      className="h-8 w-52 pl-8 text-xs"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={loadPrompts}
+                    className="h-8"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Stats */}
+              {prompts.length > 0 && (
+                <div className="px-4 py-3 border-b bg-muted/20">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary" className="text-xs font-normal">
+                      Total: {prompts.length}
+                    </Badge>
+                    {Object.entries(
+                      prompts.reduce((acc, p) => {
+                        acc[p.category] = (acc[p.category] || 0) + 1
+                        return acc
+                      }, {} as Record<string, number>)
+                    ).map(([cat, count]) => (
+                      <Badge key={cat} variant="outline" className="text-xs font-normal">
+                        {cat}: {count}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="p-6">
+                {promptsLoading ? (
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="h-40 bg-muted/20 rounded-lg animate-pulse" />
+                    ))}
+                  </div>
+                ) : (() => {
+                  const filteredPrompts = prompts.filter(p => {
+                    const q = promptSearchQuery.toLowerCase()
+                    if (!q) return true
+                    return (
+                      p.name.toLowerCase().includes(q) ||
+                      p.function_name.toLowerCase().includes(q) ||
+                      (p.description?.toLowerCase().includes(q) ?? false)
+                    )
+                  })
+
+                  // Group prompts by category
+                  const groupedPrompts = filteredPrompts.reduce((acc, p) => {
+                    if (!acc[p.category]) acc[p.category] = []
+                    acc[p.category].push(p)
+                    return acc
+                  }, {} as Record<string, PromptWithVersions[]>)
+
+                  const sortedCategories = Object.keys(groupedPrompts).sort()
+
+                  return filteredPrompts.length > 0 ? (
+                    <Accordion type="multiple" defaultValue={sortedCategories} className="w-full space-y-2">
+                      {sortedCategories.map((category) => (
+                        <AccordionItem key={category} value={category} className="border rounded-lg px-4">
+                          <AccordionTrigger className="hover:no-underline">
+                            <div className="flex items-center gap-2 flex-1">
+                              <Code className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-semibold">{category}</span>
+                              <Badge variant="outline" className="ml-2 text-xs font-normal">
+                                {groupedPrompts[category].length} {groupedPrompts[category].length === 1 ? 'prompt' : 'prompts'}
+                              </Badge>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 pt-2">
+                              {groupedPrompts[category].map((prompt) => (
+                                <div
+                                  key={prompt.id}
+                                  className="rounded-lg border bg-card hover:bg-muted/30 transition-colors cursor-pointer p-4"
+                                  onClick={() => handleSelectPrompt(prompt.id)}
+                                >
+                                  <div className="flex items-start justify-between mb-2">
+                                    <h4 className="text-sm font-medium truncate flex-1">{prompt.name}</h4>
+                                  </div>
+                                  {prompt.description && (
+                                    <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                                      {prompt.description}
+                                    </p>
+                                  )}
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-1.5">
+                                      <Code className="h-3 w-3 text-muted-foreground" />
+                                      <code className="text-xs font-mono text-muted-foreground truncate">
+                                        {prompt.function_name}
+                                      </code>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                      <span>
+                                        v{(prompt as PromptWithVersions & { latest_version_number?: number }).latest_version_number || prompt.latest_version?.version_number || 1}
+                                      </span>
+                                      <span>
+                                        {new Date(prompt.updated_at).toLocaleDateString('en-GB')}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  ) : (
+                    <div className="text-center py-12">
+                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-sm font-medium mb-2">No prompts found</h3>
+                      <p className="text-xs text-muted-foreground">
+                        {promptSearchQuery ? 'Try adjusting your search query' : 'No prompts available in this category'}
+                      </p>
+                    </div>
+                  )
+                })()}
               </div>
             </div>
           </TabsContent>
@@ -1662,6 +1916,26 @@ export default function AdminPage() {
                   onCancel={() => {
                     setTemplateEditorOpen(false)
                     setEditingTemplate(null)
+                  }}
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Prompt Editor Dialog */}
+        <Dialog open={promptEditorOpen} onOpenChange={setPromptEditorOpen}>
+          <DialogContent className="!max-w-[95vw] !w-[95vw] sm:!max-w-4xl max-h-[95vh] flex flex-col p-0 gap-0">
+            <div className="flex-1 min-h-0 flex flex-col">
+              {selectedPrompt && (
+                <PromptEditor
+                  prompt={selectedPrompt}
+                  onSave={async (content, notes) => {
+                    await handleSavePromptVersion(selectedPrompt.id, content, notes)
+                  }}
+                  onCancel={() => {
+                    setPromptEditorOpen(false)
+                    setSelectedPrompt(null)
                   }}
                 />
               )}

@@ -40,7 +40,18 @@
       "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project status)",
       "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project log --oneline -5)",
       "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project add .vercel/ .claude/settings.local.json)",
-      "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project commit -m \"$\\(cat <<''EOF''\nchore: add Vercel project config and update local settings\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project commit -m \"$\\(cat <<''EOF''\nchore: add Vercel project config and update local settings\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project add .vercel/)",
+      "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project commit -m \"$\\(cat <<''EOF''\nchore: add Vercel project config for deployment\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project remote get-url:*)",
+      "mcp__vercel__get_deployment_build_logs",
+      "mcp__vercel__list_teams",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npx eslint:*)",
+      "Bash(git show:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

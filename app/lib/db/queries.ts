@@ -1,4 +1,4 @@
-import { query } from './connection'
+import { query, withTransaction } from './connection'
 import { User, Template, Job, Result, JobWithTemplate, JobWithResult, InjectableTemplate, InviteLink, Organization, OrganizationMember, UserRole, MemberStatus, InviteType, UsageType, OrganizationUsageLimits, OrganizationUsageTracking, JobCreditEvent, EditableProductDetails } from './types'
 import bcrypt from 'bcryptjs'
 
@@ -2454,4 +2454,99 @@ export const populateEditableProductDetailsFromV2 = async (jobId: string, v2Resu
     console.error('Error populating editable product details from V2:', error);
     return false;
   }
+}
+
+// Prompt version queries
+export const getLatestPromptVersion = async (promptName: string) => {
+  const result = await query(`
+    SELECT pv.content, pv.placeholders, pv.version_number, p.name, p.category
+    FROM prompt_versions pv
+    JOIN prompts p ON p.id = pv.prompt_id
+    WHERE p.name = $1
+    ORDER BY pv.version_number DESC
+    LIMIT 1
+  `, [promptName])
+  return result.rows[0]
+}
+
+export function extractPlaceholders(content: string): string[] {
+  const regex = /\{([^}]+)\}/g
+  const matches = content.matchAll(regex)
+  const placeholders = Array.from(matches, m => m[1])
+  return [...new Set(placeholders)]
+}
+
+export function validatePlaceholders(content: string, requiredParams: string[]): {
+  valid: boolean
+  found: string[]
+  missing: string[]
+  extra: string[]
+} {
+  const found = extractPlaceholders(content)
+  const missing = requiredParams.filter(p => !found.includes(p))
+  const extra = found.filter(p => !requiredParams.includes(p))
+  return { valid: missing.length === 0 && extra.length === 0, found, missing, extra }
+}
+
+export const getAllPrompts = async (category?: string) => {
+  let sql = `
+    SELECT p.*, pv.version_number as latest_version_number
+    FROM prompts p
+    LEFT JOIN LATERAL (
+      SELECT version_number
+      FROM prompt_versions
+      WHERE prompt_id = p.id
+      ORDER BY version_number DESC
+      LIMIT 1
+    ) pv ON true
+  `
+  const params: string[] = []
+  if (category) {
+    sql += ' WHERE p.category = $1'
+    params.push(category)
+  }
+  sql += ' ORDER BY p.category, p.name'
+  const result = await query(sql, params)
+  return result.rows
+}
+
+export const getPromptById = async (id: string) => {
+  const result = await query('SELECT * FROM prompts WHERE id = $1', [id])
+  return result.rows[0] || null
+}
+
+export const getPromptVersions = async (promptId: string) => {
+  const result = await query(
+    'SELECT * FROM prompt_versions WHERE prompt_id = $1 ORDER BY version_number DESC',
+    [promptId]
+  )
+  return result.rows
+}
+
+export const createPromptVersion = async (
+  promptId: string,
+  content: string,
+  createdBy: string,
+  notes?: string
+) => {
+  return withTransaction(async (client) => {
+    await client.query('SELECT id FROM prompts WHERE id = $1 FOR UPDATE', [promptId])
+
+    const maxResult = await client.query(
+      'SELECT COALESCE(MAX(version_number), 0) as max_version FROM prompt_versions WHERE prompt_id = $1',
+      [promptId]
+    )
+    const nextVersion = parseInt(maxResult.rows[0].max_version, 10) + 1
+    const placeholders = extractPlaceholders(content)
+
+    const result = await client.query(
+      `INSERT INTO prompt_versions (prompt_id, version_number, content, placeholders, created_by, notes)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [promptId, nextVersion, content, JSON.stringify(placeholders), createdBy, notes || null]
+    )
+
+    await client.query('UPDATE prompts SET updated_at = NOW() WHERE id = $1', [promptId])
+
+    return result.rows[0]
+  })
 }
