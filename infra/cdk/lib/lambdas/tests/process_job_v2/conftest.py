@@ -33,6 +33,7 @@ from mock_responses import (  # noqa: E402
     make_avatar,
     make_marketing_angles,
     make_offer_brief,
+    make_page_analysis_quality_check,
     make_template_prediction_result,
     make_page_analysis,
     make_deep_research_output,
@@ -145,6 +146,7 @@ def mock_parse_structured(monkeypatch):
         Avatar,
         AvatarMarketingAngles,
         OfferBrief,
+        PageAnalysisQualityCheck,
     )
 
     def _parse_structured(self, prompt, response_format, subtask, model=None):
@@ -156,6 +158,8 @@ def mock_parse_structured(monkeypatch):
             return make_marketing_angles()
         elif response_format is OfferBrief:
             return make_offer_brief()
+        elif response_format is PageAnalysisQualityCheck:
+            return make_page_analysis_quality_check()
         else:
             # Fallback for unknown types (e.g., template prediction)
             return MagicMock()

@@ -15,9 +15,15 @@ from utils.image import (
 )
 from services.openai_service import OpenAIService
 from services.prompt_service import PromptService
+from data_models import PageAnalysisQualityCheck
 
 
 logger = logging.getLogger(__name__)
+
+
+class PageAnalysisQualityError(Exception):
+    """Raised when the sales page analysis fails quality checks."""
+    pass
 
 
 @dataclass
@@ -98,6 +104,36 @@ class AnalyzePageStep:
             )
             logger.info("GPT-5 Vision API call completed for research page analysis")
 
+            # Quality gate: check if the analysis contains meaningful product-specific info
+            quality_check = self._check_analysis_quality(analysis, sales_page_url)
+            if quality_check.overall_quality_score <= 2:
+                missing = []
+                if not quality_check.product_name_identified:
+                    missing.append("product name")
+                if not quality_check.product_type_identified:
+                    missing.append("product type")
+                if not quality_check.specific_claims_extracted:
+                    missing.append("specific claims")
+                if not quality_check.target_audience_identified:
+                    missing.append("target audience")
+                if not quality_check.price_or_offer_identified:
+                    missing.append("pricing/offer details")
+
+                error_msg = (
+                    f"Sales page analysis quality check failed for URL '{sales_page_url}'. "
+                    f"The page analysis did not extract enough product-specific information to proceed. "
+                    f"Issues: {quality_check.failure_reason}. "
+                    f"Missing: {', '.join(missing) if missing else 'N/A'}. "
+                    f"Please verify the URL is accessible, fully rendered, and contains visible product/sales content."
+                )
+                logger.error(error_msg)
+                raise PageAnalysisQualityError(error_msg)
+
+            logger.info(
+                f"Page analysis quality check passed (score={quality_check.overall_quality_score}/5) "
+                f"for {sales_page_url}"
+            )
+
             return PageAnalysisResult(
                 analysis=analysis,
                 product_image=product_image_b64,
@@ -106,6 +142,36 @@ class AnalyzePageStep:
         except Exception as e:
             logger.error(f"Error analyzing research page: {e}")
             raise
+
+    def _check_analysis_quality(
+        self, analysis_text: str, sales_page_url: str
+    ) -> PageAnalysisQualityCheck:
+        """
+        Evaluate whether a page analysis contains meaningful product-specific information.
+
+        Args:
+            analysis_text: The vision analysis text to evaluate.
+            sales_page_url: The URL that was analyzed (for context).
+
+        Returns:
+            PageAnalysisQualityCheck with structured quality assessment.
+        """
+        prompt = (
+            "You are a quality evaluator for sales page analyses. "
+            "Below is an AI-generated analysis of a sales/product page. "
+            "Evaluate whether the analysis contains real, product-specific information "
+            "or is mostly generic/placeholder text that could apply to any page.\n\n"
+            f"URL analyzed: {sales_page_url}\n\n"
+            f"Analysis to evaluate:\n---\n{analysis_text}\n---\n\n"
+            "Rate each dimension and provide an overall quality score."
+        )
+
+        return self.openai_service.parse_structured(
+            prompt=prompt,
+            response_format=PageAnalysisQualityCheck,
+            subtask="process_job_v2.analyze_page_quality_check",
+            model="gpt-5-mini",
+        )
 
     def capture_product_image_only(self, sales_page_url: str) -> str:
         """

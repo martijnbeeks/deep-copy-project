@@ -22,6 +22,7 @@ from data_models import (
     IdentifiedAvatarList,
     MarketingAngle,
     OfferBrief,
+    PageAnalysisQualityCheck,
     PainDimension,
     QuoteWithSource,
     TemplatePredictionResult,
@@ -238,3 +239,16 @@ def make_library_summaries_json() -> dict:
             }
         ],
     }
+
+
+def make_page_analysis_quality_check(score: int = 4) -> PageAnalysisQualityCheck:
+    """Return a passing PageAnalysisQualityCheck instance."""
+    return PageAnalysisQualityCheck(
+        product_name_identified=True,
+        product_type_identified=True,
+        specific_claims_extracted=True,
+        target_audience_identified=True,
+        price_or_offer_identified=True,
+        overall_quality_score=score,
+        failure_reason="N/A",
+    )

@@ -40,6 +40,7 @@ def handler(event, _context):
 
     status = item.get("status", {}).get("S")
     api_version = item.get("apiVersion", {}).get("S")
+    error = item.get("error", {}).get("S")
 
     response_body = {
         "jobId": job_id,
@@ -47,6 +48,8 @@ def handler(event, _context):
     }
     if api_version:
         response_body["api_version"] = api_version
+    if error:
+        response_body["error"] = error
 
     return _response(200, response_body)
 

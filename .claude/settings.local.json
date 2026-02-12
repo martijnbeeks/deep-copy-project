@@ -29,7 +29,10 @@
       "Bash(bash tests/run_tests.sh:*)",
       "Bash(process_job_v2/.venv/bin/python -m pytest tests/process_job_v2/test_pipeline_e2e.py -x --tb=long)",
       "Bash(process_job_v2/.venv/bin/python -m pytest:*)",
-      "mcp__Neon__run_sql"
+      "mcp__Neon__run_sql",
+      "Bash(.venv/bin/python:*)",
+      "Bash(AWS_PROFILE=personal-cdk-dev process_job_v2/.venv/bin/python -m pytest:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

@@ -1305,3 +1305,33 @@ class ContentLibrarySummaries(BaseModel):
     generated_at: str = Field(..., description="ISO timestamp of generation")
     total_pages: int = Field(..., description="Number of pages in the library")
     summaries: List[LandingPageSummary] = Field(default_factory=list)
+
+
+# =============================================================================
+# PAGE ANALYSIS QUALITY CHECK
+# =============================================================================
+
+class PageAnalysisQualityCheck(BaseModel):
+    """Quality assessment of a sales page analysis."""
+    product_name_identified: bool = Field(
+        ..., description="Whether a specific product name was identified"
+    )
+    product_type_identified: bool = Field(
+        ..., description="Whether the product type/category was identified (e.g. supplement, course, software)"
+    )
+    specific_claims_extracted: bool = Field(
+        ..., description="Whether specific product claims or benefits were extracted (not generic advice)"
+    )
+    target_audience_identified: bool = Field(
+        ..., description="Whether a target audience or customer profile was identified"
+    )
+    price_or_offer_identified: bool = Field(
+        ..., description="Whether pricing, offer structure, or purchase details were identified"
+    )
+    overall_quality_score: int = Field(
+        ..., ge=1, le=5,
+        description="Overall quality score: 1=useless/generic, 2=mostly generic with some specifics, 3=adequate, 4=good, 5=excellent product-specific analysis"
+    )
+    failure_reason: str = Field(
+        ..., description="If score <= 2, explain what's missing or wrong. If score > 2, say 'N/A'"
+    )

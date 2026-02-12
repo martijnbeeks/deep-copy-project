@@ -1583,6 +1583,9 @@ components:
         api_version:
           type: string
           description: API version used to submit the job (e.g., 'v2')
+        error:
+          type: string
+          description: Error message when status is FAILED. Describes why the job failed (e.g., sales page analysis quality check failure).
     JobResult:
       type: object
       description: Structured JSON produced by the pipeline including rewritten advertorial content.
