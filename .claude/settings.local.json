@@ -32,7 +32,8 @@
       "mcp__Neon__run_sql",
       "Bash(.venv/bin/python:*)",
       "Bash(AWS_PROFILE=personal-cdk-dev process_job_v2/.venv/bin/python -m pytest:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(vercel:*)"
     ]
   }
 }
