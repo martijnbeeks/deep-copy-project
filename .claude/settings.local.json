@@ -33,7 +33,14 @@
       "Bash(.venv/bin/python:*)",
       "Bash(AWS_PROFILE=personal-cdk-dev process_job_v2/.venv/bin/python -m pytest:*)",
       "Bash(npx tsc:*)",
-      "Bash(vercel:*)"
+      "Bash(vercel:*)",
+      "mcp__vercel__list_deployments",
+      "mcp__vercel__list_projects",
+      "mcp__vercel__get_project",
+      "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project status)",
+      "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project log --oneline -5)",
+      "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project add .vercel/ .claude/settings.local.json)",
+      "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project commit -m \"$\\(cat <<''EOF''\nchore: add Vercel project config and update local settings\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }
