@@ -764,7 +764,7 @@ function DeepCopyResultsComponent({
 
             // MERGE instead of replace: Keep existing templates and add new ones
             setTemplates(prev => {
-              const existingMap = new Map<string, typeof templates[0]>()
+              const existingMap = new Map<string, { id?: string; name: string; type: string; html: string; angle?: string; timestamp?: string; templateId?: string; swipe_file_name?: string; config_data?: any; }>()
               // Add all existing templates to map, using ID as key
               prev.forEach(t => {
                 if (t.id) {
@@ -1074,7 +1074,7 @@ function DeepCopyResultsComponent({
 
                 // MERGE instead of replace
                 setTemplates(prev => {
-                  const existingMap = new Map<string, typeof templates[0]>()
+                  const existingMap = new Map<string, { id?: string; name: string; type: string; html: string; angle?: string; timestamp?: string; templateId?: string; swipe_file_name?: string; config_data?: any; }>()
                   // Add all existing templates
                   prev.forEach(t => {
                     if (t.id) {
@@ -1980,7 +1980,7 @@ function DeepCopyResultsComponent({
       <div className="space-y-6 min-h-full">
       {/* V2 Research Data */}
       {isV2 && fullResult && (
-        <V2ResearchData fullResult={fullResult} />
+        <V2ResearchData fullResult={fullResult} jobId={jobId || ''} />
       )}
 
       {/* V2 Avatar Tree */}
@@ -2940,19 +2940,20 @@ function DeepCopyResultsComponent({
                                                   "SUBMITTED"
                                                 );
 
+                                                // Find the correct angle and avatar IDs from fullResult
+                                                const { angleId, avatarId } = findAngleAndAvatarIds(angleString);
+                                                
+                                                if (!angleId || !avatarId) {
+                                                  showError(
+                                                    new Error("Could not find angle or avatar IDs"),
+                                                    "Failed to generate pre-landers. Please try again."
+                                                  );
+                                                  removeGeneratingAngle(angleString);
+                                                  removeAngleStatus(angleString);
+                                                  return;
+                                                }
+
                                                 try {
-                                                  // Find the correct angle and avatar IDs from fullResult
-                                                  const { angleId, avatarId } = findAngleAndAvatarIds(angleString);
-                                                  
-                                                  if (!angleId || !avatarId) {
-                                                    showError(
-                                                      new Error("Could not find angle or avatar IDs"),
-                                                      "Failed to generate pre-landers. Please try again."
-                                                    );
-                                                    removeGeneratingAngle(angleString);
-                                                    removeAngleStatus(angleString);
-                                                    return;
-                                                  }
 
                                                   const data =
                                                     (await internalApiClient.generateSwipeFiles(

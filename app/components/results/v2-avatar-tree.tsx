@@ -385,7 +385,6 @@ export function V2AvatarTree({
                         avatar_id: selectedAvatar?.v2_avatar_data?.id || selectedAvatar?.id,
                         angle_id: angle?.id,
                         swipe_file_ids: templateIds.length > 0 ? templateIds : undefined,
-                        allowOverage: true,
                     }) as any;
                     
                     const swipeFileJobId =
@@ -631,11 +630,11 @@ export function V2AvatarTree({
                                                                                     </div>
                                                                                     {/* Row 2: Problem Urgency, Purchasing Power, Saturation Level, Audience Size */}
                                                                                     <div className="col-span-2 flex items-center gap-4 flex-wrap">
-                                                                                        {avatarData?.problem_urgency !== undefined && (
+                                                                                        {/* {avatarData?.problem_urgency !== undefined && (
                                                                                             <div className="flex items-center gap-1.5">
                                                                                                 <AlertCircle className="h-3.5 w-3.5 text-red-500" />
                                                                                                 <div className="flex items-center gap-1">
-                                                                                                    <span className="text-xs font-medium text-white">
+                                                                                                    <span className="text-xs font-medium text-foreground">
                                                                                                         Problem Urgency: 
                                                                                                     </span>
                                                                                                     <span className="text-xs font-bold text-primary">
@@ -643,12 +642,12 @@ export function V2AvatarTree({
                                                                                                     </span>
                                                                                                 </div>
                                                                                             </div>
-                                                                                        )}
+                                                                                        )} */}
                                                                                         {avatarData?.purchasing_power !== undefined && (
                                                                                             <div className="flex items-center gap-1.5">
                                                                                                 <Wallet className="h-3.5 w-3.5 text-green-500" />
                                                                                                 <div className="flex items-center gap-1">
-                                                                                                    <span className="text-xs font-medium text-white">
+                                                                                                    <span className="text-xs font-medium text-foreground">
                                                                                                         Purchasing Power: 
                                                                                                     </span>
                                                                                                     <span className="text-xs font-bold text-primary">
@@ -661,7 +660,7 @@ export function V2AvatarTree({
                                                                                             <div className="flex items-center gap-1.5">
                                                                                                 <Users className="h-3.5 w-3.5 text-blue-500" />
                                                                                                 <div className="flex items-center gap-1">
-                                                                                                    <span className="text-xs font-medium text-white">
+                                                                                                    <span className="text-xs font-medium text-foreground">
                                                                                                         Saturation Level: 
                                                                                                     </span>
                                                                                                     <span className="text-xs font-bold text-primary">
@@ -674,7 +673,7 @@ export function V2AvatarTree({
                                                                                             <div className="flex items-center gap-1.5">
                                                                                                 <TrendingUp className="h-3.5 w-3.5 text-purple-500" />
                                                                                                 <div className="flex items-center gap-1">
-                                                                                                    <span className="text-xs font-medium text-white">
+                                                                                                    <span className="text-xs font-medium text-foreground">
                                                                                                         Audience Size: 
                                                                                                     </span>
                                                                                                     <span className="text-xs font-bold text-primary">

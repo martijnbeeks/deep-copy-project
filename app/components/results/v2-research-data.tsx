@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { MarkdownContent } from "@/components/results/markdown-content";
+import { EditableProductDetails } from "@/lib/db/types";
 import {
     FileText,
     Brain,
@@ -32,11 +35,13 @@ import {
     AlertTriangle,
     Layers,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Edit
 } from "lucide-react";
 
 interface V2ResearchDataProps {
     fullResult: any;
+    jobId: string;
 }
 
 // Component for expandable lists (max 2 items initially)
@@ -72,12 +77,18 @@ function ExpandableList({ items, uniqueKey }: { items: string[] | undefined; uni
     );
 }
 
-export function V2ResearchData({ fullResult }: V2ResearchDataProps) {
+export function V2ResearchData({ fullResult, jobId }: V2ResearchDataProps) {
     // Constants
     const TOTAL_SOPHISTICATION_LEVELS = 5; // Total number of sophistication levels (can be changed easily)
 
     // State for accordion sections
     const [openSections, setOpenSections] = useState<string[]>([]);
+    
+    // State for editable product details
+    const [isEditingProduct, setIsEditingProduct] = useState(false);
+    const [editableProductDetails, setEditableProductDetails] = useState<EditableProductDetails>({});
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveMessage, setSaveMessage] = useState('');
 
     // All section values
     const allSections = [
@@ -98,6 +109,98 @@ export function V2ResearchData({ fullResult }: V2ResearchDataProps) {
     const results = fullResult.results;
     const offerBrief = results.offer_brief;
     const marketingAvatars = results.marketing_avatars || [];
+
+    // Fetch editable product details on component mount
+    useEffect(() => {
+        const fetchEditableProductDetails = async () => {
+            try {
+                const response = await fetch(`/api/jobs/${jobId}/product-details`);
+                const data = await response.json();
+                if (data.editableProductDetails) {
+                    setEditableProductDetails(data.editableProductDetails);
+                }
+            } catch (error) {
+                console.error('Error fetching editable product details:', error);
+            }
+        };
+
+        if (jobId) {
+            fetchEditableProductDetails();
+        }
+    }, [jobId]);
+
+    // Handler to save product details
+    const handleSaveProductDetails = async () => {
+        setIsSaving(true);
+        setSaveMessage('');
+        
+        try {
+            const response = await fetch(`/api/jobs/${jobId}/product-details`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    productDetails: editableProductDetails
+                }),
+            });
+
+            if (response.ok) {
+                setSaveMessage('Product details saved successfully!');
+                setTimeout(() => setSaveMessage(''), 3000);
+                setIsEditingProduct(false); // Exit edit mode after successful save
+            } else {
+                setSaveMessage('Failed to save product details');
+            }
+        } catch (error) {
+            console.error('Error saving product details:', error);
+            setSaveMessage('Error saving product details');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Handler to cancel editing and reset to original data
+    const handleCancelProductDetails = () => {
+        // Reset editable product details to original data
+        if (offerBrief?.product) {
+            setEditableProductDetails({
+                product_name: offerBrief.product.name,
+                product_format: offerBrief.product.format,
+                price: offerBrief.product.price,
+                subscription_price: offerBrief.product.subscription_price,
+                guarantee: offerBrief.product.guarantee,
+                shipping: offerBrief.product.shipping,
+                description: offerBrief.product.description,
+                details: offerBrief.product.details,
+                key_differentiator: offerBrief.product.key_differentiator,
+                compliance_notes: offerBrief.product.compliance_notes,
+                is_confirmed: false,
+                updated_at: new Date().toISOString()
+            });
+        }
+        setIsEditingProduct(false);
+        setSaveMessage('');
+    };
+
+    // Handler to confirm product details
+    const handleConfirmProductDetails = async () => {
+        try {
+            const response = await fetch(`/api/jobs/${jobId}/product-details/confirm`, {
+                method: 'POST',
+            });
+
+            if (response.ok) {
+                setSaveMessage('Product details confirmed successfully!');
+                setTimeout(() => setSaveMessage(''), 3000);
+            } else {
+                setSaveMessage('Failed to confirm product details');
+            }
+        } catch (error) {
+            console.error('Error confirming product details:', error);
+            setSaveMessage('Error confirming product details');
+        }
+    };
 
     // Handler to close accordion when clicking on content (but not on interactive elements)
     const handleContentClick = (e: React.MouseEvent<HTMLDivElement>, sectionValue: string) => {
@@ -439,9 +542,80 @@ export function V2ResearchData({ fullResult }: V2ResearchDataProps) {
                                                     <SectionHeader icon={Package} title="Product Details" isAccordion />
                                                 </AccordionTrigger>
                                                 <AccordionContent
-                                                    className="p-6 space-y-6 cursor-pointer"
-                                                    onClick={(e) => handleContentClick(e, "section-product-details")}
+                                                    className="p-6 space-y-6"
                                                 >
+                                                    {/* Edit Controls */}
+                                                    <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
+                                                        <div className="flex items-center gap-2">
+                                                            <Edit className="h-4 w-4 text-primary" />
+                                                            <span className="text-sm font-medium text-foreground">
+                                                                {isEditingProduct ? 'Editing Product Details' : 'Product Details'}
+                                                            </span>
+                                                            {editableProductDetails.is_confirmed && (
+                                                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            {!isEditingProduct ? (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setIsEditingProduct(true);
+                                                                    }}
+                                                                    disabled={editableProductDetails.is_confirmed}
+                                                                >
+                                                                    <Edit className="h-4 w-4 mr-2" />
+                                                                    Edit
+                                                                </Button>
+                                                            ) : (
+                                                                <>
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleCancelProductDetails();
+                                                                        }}
+                                                                    >
+                                                                        Cancel
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="default"
+                                                                        size="sm"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleSaveProductDetails();
+                                                                        }}
+                                                                        disabled={isSaving}
+                                                                    >
+                                                                        {isSaving ? 'Saving...' : 'Save'}
+                                                                    </Button>
+                                                                </>
+                                                            )}
+                                                            {!isEditingProduct && !editableProductDetails.is_confirmed && Object.keys(editableProductDetails).length > 0 && (
+                                                                <Button
+                                                                    variant="default"
+                                                                    size="sm"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleConfirmProductDetails();
+                                                                    }}
+                                                                >
+                                                                    <CheckCircle className="h-4 w-4 mr-2" />
+                                                                    Confirm
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {saveMessage && (
+                                                        <div className={`p-3 rounded-lg text-sm ${saveMessage.includes('success') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                                                            {saveMessage}
+                                                        </div>
+                                                    )}
+
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                         {/* Product Name */}
                                                         <div className="space-y-3 p-4 rounded-lg bg-muted/20 border border-border/50">
@@ -450,10 +624,20 @@ export function V2ResearchData({ fullResult }: V2ResearchDataProps) {
                                                                 <h4 className="text-xs font-bold uppercase tracking-wide text-foreground">Product Name</h4>
                                                             </div>
                                                             <div className="text-sm text-foreground/80 leading-relaxed">
-                                                                {offerBrief.product?.name ? (
-                                                                    <span className="whitespace-pre-wrap">{offerBrief.product.name}</span>
+                                                                {isEditingProduct ? (
+                                                                    <Input
+                                                                        value={editableProductDetails.product_name || offerBrief.product?.name || ''}
+                                                                        onChange={(e) => setEditableProductDetails(prev => ({
+                                                                            ...prev,
+                                                                            product_name: e.target.value
+                                                                        }))}
+                                                                        placeholder="Enter product name"
+                                                                        className="text-sm"
+                                                                    />
                                                                 ) : (
-                                                                    <span className="text-muted-foreground/30 italic text-xs">N/A</span>
+                                                                    <span className="whitespace-pre-wrap">
+                                                                        {editableProductDetails.product_name || offerBrief.product?.name || 'N/A'}
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -465,10 +649,20 @@ export function V2ResearchData({ fullResult }: V2ResearchDataProps) {
                                                                 <h4 className="text-xs font-bold uppercase tracking-wide text-foreground">Format</h4>
                                                             </div>
                                                             <div className="text-sm text-foreground/80 leading-relaxed">
-                                                                {offerBrief.product?.format ? (
-                                                                    <span className="whitespace-pre-wrap">{offerBrief.product.format}</span>
+                                                                {isEditingProduct ? (
+                                                                    <Input
+                                                                        value={editableProductDetails.product_format || offerBrief.product?.format || ''}
+                                                                        onChange={(e) => setEditableProductDetails(prev => ({
+                                                                            ...prev,
+                                                                            product_format: e.target.value
+                                                                        }))}
+                                                                        placeholder="Enter format"
+                                                                        className="text-sm"
+                                                                    />
                                                                 ) : (
-                                                                    <span className="text-muted-foreground/30 italic text-xs">N/A</span>
+                                                                    <span className="whitespace-pre-wrap">
+                                                                        {editableProductDetails.product_format || offerBrief.product?.format || 'N/A'}
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -483,7 +677,19 @@ export function V2ResearchData({ fullResult }: V2ResearchDataProps) {
                                                                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Price</span>
                                                             </div>
                                                             <div className="text-sm font-medium text-foreground">
-                                                                {offerBrief.product?.price || 'N/A'}
+                                                                {isEditingProduct ? (
+                                                                    <Input
+                                                                        value={editableProductDetails.price || offerBrief.product?.price || ''}
+                                                                        onChange={(e) => setEditableProductDetails(prev => ({
+                                                                            ...prev,
+                                                                            price: e.target.value
+                                                                        }))}
+                                                                        placeholder="Enter price"
+                                                                        className="text-sm"
+                                                                    />
+                                                                ) : (
+                                                                    editableProductDetails.price || offerBrief.product?.price || 'N/A'
+                                                                )}
                                                             </div>
                                                         </div>
 
@@ -494,7 +700,19 @@ export function V2ResearchData({ fullResult }: V2ResearchDataProps) {
                                                                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subscription Price</span>
                                                             </div>
                                                             <div className="text-sm font-medium text-foreground">
-                                                                {offerBrief.product?.subscription_price || 'N/A'}
+                                                                {isEditingProduct ? (
+                                                                    <Input
+                                                                        value={editableProductDetails.subscription_price || offerBrief.product?.subscription_price || ''}
+                                                                        onChange={(e) => setEditableProductDetails(prev => ({
+                                                                            ...prev,
+                                                                            subscription_price: e.target.value
+                                                                        }))}
+                                                                        placeholder="Enter subscription price"
+                                                                        className="text-sm"
+                                                                    />
+                                                                ) : (
+                                                                    editableProductDetails.subscription_price || offerBrief.product?.subscription_price || 'N/A'
+                                                                )}
                                                             </div>
                                                         </div>
 
@@ -505,7 +723,19 @@ export function V2ResearchData({ fullResult }: V2ResearchDataProps) {
                                                                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Guarantee</span>
                                                             </div>
                                                             <div className="text-sm font-medium text-foreground">
-                                                                {offerBrief.product?.guarantee || 'N/A'}
+                                                                {isEditingProduct ? (
+                                                                    <Input
+                                                                        value={editableProductDetails.guarantee || offerBrief.product?.guarantee || ''}
+                                                                        onChange={(e) => setEditableProductDetails(prev => ({
+                                                                            ...prev,
+                                                                            guarantee: e.target.value
+                                                                        }))}
+                                                                        placeholder="Enter guarantee"
+                                                                        className="text-sm"
+                                                                    />
+                                                                ) : (
+                                                                    editableProductDetails.guarantee || offerBrief.product?.guarantee || 'N/A'
+                                                                )}
                                                             </div>
                                                         </div>
 
@@ -516,7 +746,19 @@ export function V2ResearchData({ fullResult }: V2ResearchDataProps) {
                                                                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Shipping</span>
                                                             </div>
                                                             <div className="text-sm font-medium text-foreground">
-                                                                {offerBrief.product?.shipping || 'N/A'}
+                                                                {isEditingProduct ? (
+                                                                    <Input
+                                                                        value={editableProductDetails.shipping || offerBrief.product?.shipping || ''}
+                                                                        onChange={(e) => setEditableProductDetails(prev => ({
+                                                                            ...prev,
+                                                                            shipping: e.target.value
+                                                                        }))}
+                                                                        placeholder="Enter shipping"
+                                                                        className="text-sm"
+                                                                    />
+                                                                ) : (
+                                                                    editableProductDetails.shipping || offerBrief.product?.shipping || 'N/A'
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -527,10 +769,20 @@ export function V2ResearchData({ fullResult }: V2ResearchDataProps) {
                                                             <h4 className="text-xs font-bold uppercase tracking-wide text-foreground">Description</h4>
                                                         </div>
                                                         <div className="text-sm text-foreground/80 leading-relaxed">
-                                                            {offerBrief.product?.description ? (
-                                                                <span className="whitespace-pre-wrap">{offerBrief.product.description}</span>
+                                                            {isEditingProduct ? (
+                                                                <Textarea
+                                                                    value={editableProductDetails.description || offerBrief.product?.description || ''}
+                                                                    onChange={(e) => setEditableProductDetails(prev => ({
+                                                                        ...prev,
+                                                                        description: e.target.value
+                                                                    }))}
+                                                                    placeholder="Enter description"
+                                                                    className="text-sm min-h-[100px]"
+                                                                />
                                                             ) : (
-                                                                <span className="text-muted-foreground/30 italic text-xs">N/A</span>
+                                                                <span className="whitespace-pre-wrap">
+                                                                    {editableProductDetails.description || offerBrief.product?.description || 'N/A'}
+                                                                </span>
                                                             )}
                                                         </div>
                                                     </div>
@@ -541,10 +793,20 @@ export function V2ResearchData({ fullResult }: V2ResearchDataProps) {
                                                             <h4 className="text-xs font-bold uppercase tracking-wide text-foreground">Details</h4>
                                                         </div>
                                                         <div className="text-sm text-foreground/80 leading-relaxed">
-                                                            {offerBrief.product?.details ? (
-                                                                <span className="whitespace-pre-wrap">{offerBrief.product.details}</span>
+                                                            {isEditingProduct ? (
+                                                                <Textarea
+                                                                    value={editableProductDetails.details || offerBrief.product?.details || ''}
+                                                                    onChange={(e) => setEditableProductDetails(prev => ({
+                                                                        ...prev,
+                                                                        details: e.target.value
+                                                                    }))}
+                                                                    placeholder="Enter details"
+                                                                    className="text-sm min-h-[100px]"
+                                                                />
                                                             ) : (
-                                                                <span className="text-muted-foreground/30 italic text-xs">N/A</span>
+                                                                <span className="whitespace-pre-wrap">
+                                                                    {editableProductDetails.details || offerBrief.product?.details || 'N/A'}
+                                                                </span>
                                                             )}
                                                         </div>
                                                     </div>
@@ -556,10 +818,20 @@ export function V2ResearchData({ fullResult }: V2ResearchDataProps) {
                                                             <h4 className="text-xs font-bold uppercase tracking-wide text-foreground">Key Differentiator</h4>
                                                         </div>
                                                         <div className="text-sm text-foreground/80 leading-relaxed">
-                                                            {offerBrief.product?.key_differentiator ? (
-                                                                <span className="whitespace-pre-wrap">{offerBrief.product.key_differentiator}</span>
+                                                            {isEditingProduct ? (
+                                                                <Textarea
+                                                                    value={editableProductDetails.key_differentiator || offerBrief.product?.key_differentiator || ''}
+                                                                    onChange={(e) => setEditableProductDetails(prev => ({
+                                                                        ...prev,
+                                                                        key_differentiator: e.target.value
+                                                                    }))}
+                                                                    placeholder="Enter key differentiator"
+                                                                    className="text-sm min-h-[100px]"
+                                                                />
                                                             ) : (
-                                                                <span className="text-muted-foreground/30 italic text-xs">N/A</span>
+                                                                <span className="whitespace-pre-wrap">
+                                                                    {editableProductDetails.key_differentiator || offerBrief.product?.key_differentiator || 'N/A'}
+                                                                </span>
                                                             )}
                                                         </div>
                                                     </div>
@@ -569,14 +841,33 @@ export function V2ResearchData({ fullResult }: V2ResearchDataProps) {
                                                             <ShieldAlert className="h-4 w-4 text-red-500" />
                                                             <h4 className="text-xs font-bold uppercase tracking-wide text-foreground">Compliance Notes</h4>
                                                         </div>
-                                                        {offerBrief.product?.compliance_notes && offerBrief.product.compliance_notes.length > 0 ? (
-                                                            <ul className="list-disc list-inside text-sm text-foreground/80 space-y-1">
-                                                                {offerBrief.product.compliance_notes.map((note: string, idx: number) => (
-                                                                    <li key={idx}>{note}</li>
-                                                                ))}
-                                                            </ul>
+                                                        {isEditingProduct ? (
+                                                            <Textarea
+                                                                value={Array.isArray(editableProductDetails.compliance_notes) 
+                                                                    ? editableProductDetails.compliance_notes.join('\n') 
+                                                                    : editableProductDetails.compliance_notes || ''}
+                                                                onChange={(e) => setEditableProductDetails(prev => ({
+                                                                    ...prev,
+                                                                    compliance_notes: e.target.value.split('\n').filter(note => note.trim())
+                                                                }))}
+                                                                placeholder="Enter compliance notes (one per line)"
+                                                                className="text-sm min-h-[100px]"
+                                                            />
                                                         ) : (
-                                                            <span className="text-muted-foreground/30 italic text-xs">No compliance notes available</span>
+                                                            (() => {
+                                                                const notes = Array.isArray(editableProductDetails.compliance_notes) 
+                                                                    ? editableProductDetails.compliance_notes 
+                                                                    : (editableProductDetails.compliance_notes || offerBrief.product?.compliance_notes || []);
+                                                                return notes && notes.length > 0 ? (
+                                                                    <ul className="list-disc list-inside text-sm text-foreground/80 space-y-1">
+                                                                        {notes.map((note: string, idx: number) => (
+                                                                            <li key={idx}>{note}</li>
+                                                                        ))}
+                                                                    </ul>
+                                                                ) : (
+                                                                    <span className="text-muted-foreground/30 italic text-xs">No compliance notes available</span>
+                                                                );
+                                                            })()
                                                         )}
                                                     </div>
                                                 </AccordionContent>

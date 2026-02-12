@@ -50,13 +50,19 @@ const JobCard = memo(function JobCard({
   onKeyDown,
   getStatusBadge
 }: JobCardProps) {
+  const isCompleted = job.status?.toLowerCase() === 'completed';
+  
   return (
     <div
       role="button"
-      tabIndex={0}
-      className="group relative cursor-pointer rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all h-[240px] md:h-[260px] flex flex-col overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-      onClick={() => onClick(job.id, job)}
-      onKeyDown={(e) => onKeyDown(e, job.id, job)}
+      tabIndex={isCompleted ? 0 : -1}
+      className={`group relative rounded-lg border border-border bg-card transition-all h-[240px] md:h-[260px] flex flex-col overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+        isCompleted 
+          ? 'cursor-pointer hover:border-primary/50 hover:shadow-md' 
+          : 'cursor-not-allowed opacity-60'
+      }`}
+      onClick={() => isCompleted && onClick(job.id, job)}
+      onKeyDown={(e) => isCompleted && onKeyDown(e, job.id, job)}
       aria-label={`View project ${job.title}`}
     >
       {/* Preview Area */}

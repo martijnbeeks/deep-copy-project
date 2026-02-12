@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getJobsByUserId, createJob, updateJobStatus, createResult, updateJobScreenshot } from '@/lib/db/queries'
+import { getJobsByUserId, createJob, updateJobStatus, createResult, updateJobScreenshot, populateEditableProductDetailsFromV2 } from '@/lib/db/queries'
 import { deepCopyClient } from '@/lib/clients/deepcopy-client'
 import { requireAuth, createAuthErrorResponse } from '@/lib/auth/user-auth'
 import { handleApiError, createSuccessResponse, createValidationErrorResponse } from '@/lib/middleware/error-handler'
@@ -130,7 +130,12 @@ export async function POST(request: NextRequest) {
       avatars: [], // Will be populated from V2 results
       execution_id: deepCopyJobId,
       custom_id: deepCopyJobId, // Use DeepCopy job ID as the primary key
-      screenshot: undefined // No screenshot in V2 flow
+      screenshot: undefined, // No screenshot in V2 flow
+      // Store V2 form fields
+      research_requirements: research_requirements || undefined,
+      target_gender: gender || undefined,
+      target_location: location || undefined,
+      form_advertorial_type: advertorial_type || 'Listicle'
     })
 
     // Update job status to processing
@@ -220,6 +225,9 @@ async function storeV2JobResults(localJobId: string, result: any, deepCopyJobId:
       api_version: sanitizedResult.api_version || 'v2',
       generated_at: new Date().toISOString()
     })
+
+    // Automatically populate editable product details from V2 response
+    await populateEditableProductDetailsFromV2(localJobId, sanitizedResult)
 
   } catch (error) {
     logger.error('Error storing V2 job results:', error)

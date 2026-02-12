@@ -103,12 +103,13 @@ interface MarketingAngleV2 {
 interface MarketingAngleCardV2Props {
     angle: MarketingAngleV2;
     index: number;
-    avatarBasedNumber?: number;
+    avatarBasedNumber?: string;
     isGenerated: boolean;
     isGenerating: boolean;
     onGenerate: () => void;
     onRegenerate: () => void;
     offerBrief?: any;
+    medal?: 1 | 2 | 3 | undefined;
 }
 
 export function MarketingAngleCardV2({
@@ -119,7 +120,8 @@ export function MarketingAngleCardV2({
     isGenerating,
     onGenerate,
     onRegenerate,
-    offerBrief
+    offerBrief,
+    medal
 }: MarketingAngleCardV2Props) {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -255,12 +257,12 @@ export function MarketingAngleCardV2({
                                 </div>
                                 {angle.angle_mechanism && (
                                     <div className="mt-2">
-                                        <span className="text-xs font-medium text-white">Mechanism: </span>
+                                        <span className="text-xs font-medium text-foreground">Mechanism: </span>
                                         <span className="text-sm font-medium text-gray-400">{angle.angle_mechanism}</span>
                                     </div>
                                 )}
                                 <div className="mt-1">
-                                    <span className="text-xs font-medium text-white">Outcome: </span>
+                                    <span className="text-xs font-medium text-foreground">Outcome: </span>
                                     <span className="text-sm font-medium text-gray-400">{angle.angle_subtitle}</span>
                                 </div>
                                 
@@ -273,7 +275,7 @@ export function MarketingAngleCardV2({
                                             <div className="flex items-center gap-1.5">
                                                 <AlertCircle className="h-3.5 w-3.5 text-red-500" />
                                                 <div className="flex items-center gap-1">
-                                                    <span className="text-xs font-medium text-white">
+                                                    <span className="text-xs font-medium text-foreground">
                                                         Problem Urgency: 
                                                     </span>
                                                     <span className="text-xs font-bold text-primary">
@@ -286,7 +288,7 @@ export function MarketingAngleCardV2({
                                             <div className="flex items-center gap-1.5">
                                                 <Sparkles className="h-3.5 w-3.5 text-purple-500" />
                                                 <div className="flex items-center gap-1">
-                                                    <span className="text-xs font-medium text-white">
+                                                    <span className="text-xs font-medium text-foreground">
                                                         Novelty: 
                                                     </span>
                                                     <span className="text-xs font-bold text-primary">
@@ -299,7 +301,7 @@ export function MarketingAngleCardV2({
                                             <div className="flex items-center gap-1.5">
                                                 <CheckCircle className="h-3.5 w-3.5 text-green-500" />
                                                 <div className="flex items-center gap-1">
-                                                    <span className="text-xs font-medium text-white">
+                                                    <span className="text-xs font-medium text-foreground">
                                                         Proof Strength: 
                                                     </span>
                                                     <span className="text-xs font-bold text-primary">
@@ -312,7 +314,7 @@ export function MarketingAngleCardV2({
                                             <div className="flex items-center gap-1.5">
                                                 <Target className="h-3.5 w-3.5 text-blue-500" />
                                                 <div className="flex items-center gap-1">
-                                                    <span className="text-xs font-medium text-white">
+                                                    <span className="text-xs font-medium text-foreground">
                                                         Avatar Fit: 
                                                     </span>
                                                     <span className="text-xs font-bold text-primary">
@@ -325,7 +327,7 @@ export function MarketingAngleCardV2({
                                             <div className="flex items-center gap-1.5">
                                                 <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
                                                 <div className="flex items-center gap-1">
-                                                    <span className="text-xs font-medium text-white">
+                                                    <span className="text-xs font-medium text-foreground">
                                                         LTV Potential: 
                                                     </span>
                                                     <span className="text-xs font-bold text-primary">
@@ -338,7 +340,7 @@ export function MarketingAngleCardV2({
                                             <div className="flex items-center gap-1.5">
                                                 <Users className="h-3.5 w-3.5 text-orange-500" />
                                                 <div className="flex items-center gap-1">
-                                                    <span className="text-xs font-medium text-white">
+                                                    <span className="text-xs font-medium text-foreground">
                                                         Saturation: 
                                                     </span>
                                                     <span className="text-xs font-bold text-primary">
@@ -351,7 +353,7 @@ export function MarketingAngleCardV2({
                                             <div className="flex items-center gap-1.5">
                                                 <Droplets className="h-3.5 w-3.5 text-blue-500" />
                                                 <div className="flex items-center gap-1">
-                                                    <span className="text-xs font-medium text-white">
+                                                    <span className="text-xs font-medium text-foreground">
                                                         Saturation: 
                                                     </span>
                                                     <span className="text-xs font-bold text-primary">

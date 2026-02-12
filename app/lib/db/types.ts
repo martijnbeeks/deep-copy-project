@@ -35,6 +35,11 @@ export interface Job {
   created_at: string
   updated_at: string
   completed_at?: string
+  // V2 form fields
+  research_requirements?: string
+  target_gender?: string
+  target_location?: string
+  form_advertorial_type?: string
   // Avatar job fields
   parent_job_id?: string
   avatar_persona_name?: string
@@ -148,4 +153,19 @@ export interface JobCreditEvent {
   user_name?: string | null
   user_email?: string | null
   job_created_at?: string | null
+}
+
+export interface EditableProductDetails {
+  product_name?: string;
+  product_format?: string;
+  price?: string;
+  subscription_price?: string;
+  guarantee?: string;
+  shipping?: string;
+  description?: string;
+  details?: string;
+  key_differentiator?: string;
+  compliance_notes?: string[];
+  is_confirmed?: boolean;
+  updated_at?: string;
 }

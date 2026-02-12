@@ -1,5 +1,5 @@
 import { query } from './connection'
-import { User, Template, Job, Result, JobWithTemplate, JobWithResult, InjectableTemplate, InviteLink, Organization, OrganizationMember, UserRole, MemberStatus, InviteType, UsageType, OrganizationUsageLimits, OrganizationUsageTracking, JobCreditEvent } from './types'
+import { User, Template, Job, Result, JobWithTemplate, JobWithResult, InjectableTemplate, InviteLink, Organization, OrganizationMember, UserRole, MemberStatus, InviteType, UsageType, OrganizationUsageLimits, OrganizationUsageTracking, JobCreditEvent, EditableProductDetails } from './types'
 import bcrypt from 'bcryptjs'
 
 // User queries
@@ -68,11 +68,16 @@ export const createJob = async (jobData: {
   avatar_persona_name?: string
   is_avatar_job?: boolean
   screenshot?: string
+  // V2 form fields
+  research_requirements?: string
+  target_gender?: string
+  target_location?: string
+  form_advertorial_type?: string
 }): Promise<Job> => {
   if (jobData.custom_id) {
     // Use custom ID (DeepCopy job ID) as the primary key
     const result = await query(
-      'INSERT INTO jobs (id, user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id, parent_job_id, avatar_persona_name, is_avatar_job, screenshot) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *',
+      'INSERT INTO jobs (id, user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id, parent_job_id, avatar_persona_name, is_avatar_job, screenshot, research_requirements, target_gender, target_location, form_advertorial_type) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *',
       [
         jobData.custom_id,
         jobData.user_id,
@@ -87,14 +92,18 @@ export const createJob = async (jobData: {
         jobData.parent_job_id || null,
         jobData.avatar_persona_name || null,
         jobData.is_avatar_job || false,
-        jobData.screenshot || null // screenshot from avatar extraction (product_image)
+        jobData.screenshot || null, // screenshot from avatar extraction (product_image)
+        jobData.research_requirements || null,
+        jobData.target_gender || null,
+        jobData.target_location || null,
+        jobData.form_advertorial_type || null
       ]
     )
     return result.rows[0]
   } else {
     // Use default UUID generation
     const result = await query(
-      'INSERT INTO jobs (user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id, parent_job_id, avatar_persona_name, is_avatar_job, screenshot) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *',
+      'INSERT INTO jobs (user_id, title, brand_info, sales_page_url, template_id, advertorial_type, target_approach, avatars, execution_id, parent_job_id, avatar_persona_name, is_avatar_job, screenshot, research_requirements, target_gender, target_location, form_advertorial_type) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *',
       [
         jobData.user_id,
         jobData.title,
@@ -108,7 +117,11 @@ export const createJob = async (jobData: {
         jobData.parent_job_id || null,
         jobData.avatar_persona_name || null,
         jobData.is_avatar_job || false,
-        jobData.screenshot || null // screenshot from avatar extraction (product_image)
+        jobData.screenshot || null, // screenshot from avatar extraction (product_image)
+        jobData.research_requirements || null,
+        jobData.target_gender || null,
+        jobData.target_location || null,
+        jobData.form_advertorial_type || null
       ]
     )
     return result.rows[0]
@@ -2370,4 +2383,75 @@ export const getJobCreditEventsCount = async (
 
   const result = await query(sql, params)
   return parseInt(result.rows[0]?.count) || 0
+}
+
+// Editable Product Details queries
+export const getEditableProductDetails = async (jobId: string): Promise<EditableProductDetails | null> => {
+  const result = await query(
+    'SELECT editable_product_details FROM jobs WHERE id = $1',
+    [jobId]
+  )
+  const details = result.rows[0]?.editable_product_details
+  return details || null
+}
+
+export const updateEditableProductDetails = async (jobId: string, productDetails: EditableProductDetails): Promise<boolean> => {
+  const result = await query(
+    'UPDATE jobs SET editable_product_details = $2, updated_at = NOW() WHERE id = $1',
+    [jobId, JSON.stringify({ ...productDetails, updated_at: new Date().toISOString() })]
+  )
+  return (result.rowCount ?? 0) > 0
+}
+
+export const confirmEditableProductDetails = async (jobId: string): Promise<boolean> => {
+  const result = await query(
+    'UPDATE jobs SET editable_product_details = jsonb_set(editable_product_details, \'{is_confirmed}\', \'true\'), updated_at = NOW() WHERE id = $1',
+    [jobId]
+  )
+  return (result.rowCount ?? 0) > 0
+}
+
+// Automatically populate editable_product_details from V2 API response
+export const populateEditableProductDetailsFromV2 = async (jobId: string, v2Result: any): Promise<boolean> => {
+  try {
+    const offerBrief = v2Result?.results?.offer_brief;
+    const product = offerBrief?.product;
+    
+    if (!product) {
+      return false; // No product data in V2 response
+    }
+
+    const editableDetails: EditableProductDetails = {
+      product_name: product.name,
+      product_format: product.format,
+      price: product.price,
+      subscription_price: product.subscription_price,
+      guarantee: product.guarantee,
+      shipping: product.shipping,
+      description: product.description,
+      details: product.details,
+      key_differentiator: product.key_differentiator,
+      compliance_notes: product.compliance_notes,
+      is_confirmed: false,
+      updated_at: new Date().toISOString()
+    };
+
+    // Only update if editable_product_details is empty or null
+    const result = await query(
+      `UPDATE jobs 
+       SET editable_product_details = CASE 
+         WHEN editable_product_details IS NULL OR editable_product_details = '{}'::jsonb 
+         THEN $2 
+         ELSE editable_product_details 
+       END, 
+       updated_at = NOW() 
+       WHERE id = $1 AND (editable_product_details IS NULL OR editable_product_details = '{}'::jsonb)`,
+      [jobId, JSON.stringify(editableDetails)]
+    );
+    
+    return (result.rowCount ?? 0) > 0;
+  } catch (error) {
+    console.error('Error populating editable product details from V2:', error);
+    return false;
+  }
 }
