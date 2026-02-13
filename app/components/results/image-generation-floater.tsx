@@ -15,7 +15,7 @@ export function ImageGenerationFloater({ onYes, onNo }: ImageGenerationFloaterPr
   if (!isVisible) return null
 
   return (
-    <div className="fixed top-4 right-4 z-50 bg-background border rounded-lg shadow-lg p-4 max-w-xs">
+    <div className="fixed top-4 right-4 z-50 bg-background border rounded-lg shadow-lg p-4 max-w-xs mr-8">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
           <ImageIcon className="h-4 w-4 text-primary" />
