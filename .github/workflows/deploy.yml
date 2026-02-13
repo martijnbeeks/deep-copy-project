@@ -41,4 +41,6 @@ jobs:
 
       - name: Deploy CDK Stack
         working-directory: ./infra/cdk
+        env:
+          BUILDX_NO_DEFAULT_ATTESTATIONS: "1"
         run: npx cdk deploy --all --require-approval never
