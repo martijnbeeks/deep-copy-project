@@ -543,7 +543,7 @@ export default function CreatePage() {
                                 }}
                                 aria-label="Remove URL"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
                             </div>
                           ))}
@@ -551,7 +551,7 @@ export default function CreatePage() {
                             type="button"
                             variant="outline"
                             className="w-full sm:w-auto"
-                            disabled={isLoading}
+                            disabled={isLoading || formData.sales_page_urls.length >= 3}
                             onClick={() => setFormData((prev) => ({ ...prev, sales_page_urls: [...prev.sales_page_urls, ""] }))}
                           >
                             <Plus className="h-4 w-4 mr-2" />

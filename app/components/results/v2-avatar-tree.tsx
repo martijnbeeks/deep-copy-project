@@ -573,7 +573,7 @@ export function V2AvatarTree({
                                                                                             {avatarData?.overview?.name || avatar.persona_name}
                                                                                         </h4>
                                                                                     </div>
-                                                                                    <div className="text-xs font-medium text-muted-foreground">
+                                                                                    <div className="text-xs font-bold text-primary px-2 py-0.5 rounded-md bg-primary/5 border border-primary/10">
                                                                                         {angles.length} {angles.length === 1 ? 'Angle' : 'Angles'}
                                                                                     </div>
                                                                                 </div>
@@ -625,7 +625,7 @@ export function V2AvatarTree({
                                                                                             className="flex-shrink-0 h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                                                                         >
                                                                                             <Eye className="h-3.5 w-3.5" />
-                                                                                            View Avatar Information
+                                                                                            More Info
                                                                                         </Button>
                                                                                     </div>
                                                                                     {/* Row 2: Problem Urgency, Purchasing Power, Saturation Level, Audience Size */}
