@@ -31,6 +31,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 const MemoizedSalesPagePreview = memo(SalesPagePreview)
 MemoizedSalesPagePreview.displayName = "MemoizedSalesPagePreview"
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+
 // Job Card Component Props
 interface JobCardProps {
   job: JobWithTemplate
@@ -51,8 +53,9 @@ const JobCard = memo(function JobCard({
   getStatusBadge
 }: JobCardProps) {
   const isCompleted = job.status?.toLowerCase() === 'completed';
+  const isProcessing = isProcessingStatus(job.status);
   
-  return (
+  const cardContent = (
     <div
       role="button"
       tabIndex={isCompleted ? 0 : -1}
@@ -122,7 +125,22 @@ const JobCard = memo(function JobCard({
         </div>
       </div>
     </div>
-  )
+  );
+
+  if (isProcessing) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {cardContent}
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          You will be notified when done!
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return cardContent;
 })
 
 JobCard.displayName = "JobCard"
