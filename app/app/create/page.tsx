@@ -27,6 +27,7 @@ import { UsageLimitDialog } from "@/components/ui/usage-limit-dialog"
 import { getAuthToken, getUserEmail } from "@/lib/utils/client-auth"
 import { JOB_CREDITS_BY_TYPE } from "@/lib/constants/job-credits"
 import { useBillingStore } from "@/stores/billing-store"
+import { useNotificationsStore } from "@/stores/notifications-store"
 
 interface CustomerAvatar {
   persona_name: string
@@ -288,6 +289,18 @@ export default function CreatePage() {
               setResearchProgress(100)
               setSourceStatus(completeSourceStatus())
 
+              // Add notification so the bell badge shows immediately on redirect
+              const notifStore = useNotificationsStore.getState()
+              notifStore.addNotification({
+                jobId: createdJob.id,
+                title: formData.title || 'Job',
+                jobType: 'deep_research',
+                completedAt: new Date().toISOString(),
+                resultPath: `/results/${createdJob.id}`,
+              })
+              // Don't toast — user already saw the loading screen
+              notifStore.markToastShown(createdJob.id)
+
               // Wait a moment then redirect to results
               setTimeout(() => {
                 setShowResearchLoading(false)
@@ -308,8 +321,8 @@ export default function CreatePage() {
                 setErrors({})
                 setGeneralError(null)
 
-                // Redirect to results page
-                router.push(`/results/${createdJob.id}`)
+                // Redirect to dashboard — notification bell will show when results are ready
+                router.push('/dashboard')
               }, 1000)
               return
             } else if (status === 'failed' || status === 'failure') {
