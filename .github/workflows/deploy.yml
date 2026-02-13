@@ -34,8 +34,11 @@ jobs:
           role-to-assume: arn:aws:iam::613663743323:role/DeepCopy-GitHubDeployRole
           aws-region: eu-west-1
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
+
       - name: Deploy CDK Stack
-        env:
-          BUILDX_NO_DEFAULT_ATTESTATIONS: 1
         working-directory: ./infra/cdk
         run: npx cdk deploy --all --require-approval never
