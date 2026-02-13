@@ -48,6 +48,7 @@ import {
 import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { internalApiClient } from "@/lib/clients/internal-client";
+import { getAvatarBasedNumber } from "@/lib/utils/avatar-utils";
 import { MarketingAngleCardV2 } from "./marketing-angle-card-v2";
 import { TemplateSelectionModal } from "./template-selection-modal";
 
@@ -470,12 +471,6 @@ export function V2AvatarTree({
         }
     };
 
-    // Helper function to generate avatar-based numbering (1a, 1b, 1c... for first avatar, 2a, 2b... for second avatar, etc.)
-    const getAvatarBasedNumber = (avatarIndex: number, angleIndex: number) => {
-        const avatarNumber = avatarIndex + 1;
-        const angleLetter = String.fromCharCode(97 + angleIndex); // 97 = 'a' in ASCII
-        return `${avatarNumber}${angleLetter}`;
-    };
 
     const handleSkipTemplates = () => {
         if (pendingAngle) {

@@ -711,8 +711,8 @@ export function TemplateImageGenerationDialog({
             <div className="pt-16">
               <DialogHeader>
                 <DialogTitle>Generate AI Images for Template</DialogTitle>
-                <DialogDescription>
-                  Generate AI images for all image placeholders in this template. Upload a product image to continue.
+                <DialogDescription className="text-primary">
+                  Upload a clear image of your product with a clean background
                 </DialogDescription>
               </DialogHeader>
         
