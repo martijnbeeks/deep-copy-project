@@ -32,10 +32,12 @@ export async function POST(request: NextRequest) {
     const {
       title,
       sales_page_url,
+      sales_page_urls,
       research_requirements,
       gender,
       location,
       advertorial_type,
+      target_product_name,
       allowOverage
     } = await request.json()
 
@@ -43,9 +45,18 @@ export async function POST(request: NextRequest) {
       return createValidationErrorResponse('Title is required')
     }
 
-    if (!sales_page_url) {
-      return createValidationErrorResponse('Sales page URL is required')
+    // Accept either sales_page_urls (array) or legacy sales_page_url (single)
+    const urls: string[] = Array.isArray(sales_page_urls) && sales_page_urls.length > 0
+      ? sales_page_urls.filter((u: string) => typeof u === 'string' && u.trim())
+      : typeof sales_page_url === 'string' && sales_page_url.trim()
+        ? [sales_page_url.trim()]
+        : []
+
+    if (urls.length === 0) {
+      return createValidationErrorResponse('At least one sales page URL is required')
     }
+
+    const firstUrl = urls[0]
 
     const authResult = await requireAuth(request)
     if (authResult.error) {
@@ -98,12 +109,13 @@ export async function POST(request: NextRequest) {
     let deepCopyJobId: string
     try {
       const v2Payload = {
-        sales_page_url: sales_page_url,
+        sales_page_urls: urls,
         project_name: title,
         advertorial_type: advertorial_type || 'Listicle',
         research_requirements: research_requirements || undefined,
         gender: gender || undefined,
-        location: location || undefined
+        location: location || undefined,
+        ...(target_product_name && { target_product_name })
       }
 
       const deepCopyResponse = await deepCopyClient.submitV2Research(v2Payload)
@@ -123,7 +135,7 @@ export async function POST(request: NextRequest) {
       user_id: user.id,
       title,
       brand_info: '', // Not used in V2
-      sales_page_url,
+      sales_page_url: firstUrl, // Store first URL for display; full list sent to backend
       template_id: undefined, // No template selection at creation
       advertorial_type: advertorial_type || 'advertorial', // Default type for database constraint
       target_approach: 'v2', // Mark as V2 job
