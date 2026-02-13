@@ -13,5 +13,6 @@ __pycache__
 .env
 *.txt
 !**/lambdas/**/content/*.txt
+!**/tests/requirements-test.txt
 .venv/
 **/lambdas/**/.venv/

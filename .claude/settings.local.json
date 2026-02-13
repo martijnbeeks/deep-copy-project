@@ -58,7 +58,22 @@
       "Bash(ln:*)",
       "Bash(for:*)",
       "Bash(do)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(node_modules/.bin/tsc:*)",
+      "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-lambda-sync diff app/lib/clients/internal-client.ts)",
+      "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-lambda-sync diff --stat)",
+      "Bash(npx next lint)",
+      "Bash(tests/process_job_v2/../../../process_job_v2/.venv/bin/python -m pytest tests/process_job_v2/test_postgres_notifier.py -v)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh run view:*)",
+      "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project log --oneline --all -- infra/cdk/lib/lambdas/tests/requirements-test.txt)",
+      "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project diff feature/feedback-ui -- infra/cdk/lib/lambdas/tests/requirements-test.txt)",
+      "Bash(git check-ignore:*)",
+      "Bash(git -C /Users/martijnbeeks/Development/Personal/deep-copy/deep-copy-project add -f infra/cdk/lib/lambdas/tests/requirements-test.txt)"
     ]
   }
 }
