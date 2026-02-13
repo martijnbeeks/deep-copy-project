@@ -13,6 +13,7 @@ from utils.logging_config import setup_logging
 from services.aws import get_secrets, configure_from_secrets, update_job_status, save_json_to_s3, download_image_to_b64
 from services.gemini_service import GeminiService
 from services.cloudflare_service import CloudflareService
+from services.klaviyo_service import KlaviyoEmailService
 
 logger = setup_logging(__name__)
 
@@ -48,6 +49,17 @@ def lambda_handler(event: dict, context) -> dict:
     
     gemini_service = GeminiService()
     cloudflare_service = CloudflareService()
+
+    # Initialize Klaviyo service (non-fatal if key missing)
+    klaviyo_service = None
+    try:
+        klaviyo_key = secrets.get("KLAVIYO_API_KEY", "").strip()
+        if klaviyo_key:
+            klaviyo_service = KlaviyoEmailService(klaviyo_key)
+        else:
+            logger.warning("KLAVIYO_API_KEY missing; email notifications disabled")
+    except Exception as e:
+        logger.warning("Failed to initialize KlaviyoEmailService: %s", e)
     
     # Get config
     results_bucket = os.environ.get("RESULTS_BUCKET")
@@ -158,7 +170,15 @@ def lambda_handler(event: dict, context) -> dict:
             "resultKey": result_key,
             "imageCount": len(images),
         })
-        
+
+        # Send email notification if requested
+        notification_email = event.get("notification_email")
+        if notification_email and klaviyo_service:
+            try:
+                klaviyo_service.send_prelander_images_completed_email(notification_email, job_id)
+            except Exception as e:
+                logger.warning("Email notification failed: %s", e)
+
         return {
             "statusCode": 200,
             "body": json.dumps(results)

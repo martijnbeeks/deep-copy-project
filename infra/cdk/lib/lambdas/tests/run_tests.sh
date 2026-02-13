@@ -23,12 +23,13 @@ for lambda in process_job_v2 image_gen_process write_swipe prelander_image_gen; 
   echo "=== Testing $lambda ==="
   echo ""
   VENV_PYTHON="$LAMBDAS_DIR/$lambda/.venv/bin/python"
-  if [ ! -x "$VENV_PYTHON" ]; then
-    echo "ERROR: No venv found at $VENV_PYTHON — skipping $lambda"
-    EXIT_CODE=1
-    continue
+  if [ -x "$VENV_PYTHON" ]; then
+    PYTHON="$VENV_PYTHON"
+  else
+    PYTHON="$(command -v python3 || command -v python)"
+    echo "No venv found at $VENV_PYTHON — using system Python: $PYTHON"
   fi
-  "$VENV_PYTHON" -m pytest "$TESTS_DIR/$lambda/" -v --timeout=60 --tb=short || EXIT_CODE=1
+  "$PYTHON" -m pytest "$TESTS_DIR/$lambda/" -v --timeout=60 --tb=short || EXIT_CODE=1
 done
 
 echo ""

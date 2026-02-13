@@ -46,6 +46,7 @@ from pipeline.steps.product_detection import detect_product_in_image
 from pipeline.steps.image_matching import match_angles_to_images
 from pipeline.steps.image_generation import generate_image_openai, generate_image_nano_banana
 from services.prompt_service import PromptService
+from services.klaviyo_service import KlaviyoEmailService
 
 logger = setup_logging(__name__)
 
@@ -70,6 +71,17 @@ class ImageGenOrchestrator:
         if not db_url:
             raise RuntimeError("DATABASE_URL not found in secrets. Cannot load prompts from DB.")
         self.prompt_service = PromptService(db_url, "image_gen_process")
+
+        # Initialize Klaviyo service (non-fatal if key missing)
+        self.klaviyo_service = None
+        try:
+            klaviyo_key = self.secrets.get("KLAVIYO_API_KEY", "").strip()
+            if klaviyo_key:
+                self.klaviyo_service = KlaviyoEmailService(klaviyo_key)
+            else:
+                logger.warning("KLAVIYO_API_KEY missing; email notifications disabled")
+        except Exception as e:
+            logger.warning("Failed to initialize KlaviyoEmailService: %s", e)
 
         # Config params
         self.results_bucket = os.environ.get("RESULTS_BUCKET")
@@ -459,6 +471,13 @@ class ImageGenOrchestrator:
             save_json_to_s3(self.results_bucket, result_key, result_payload)
 
             update_job_status(job_id, "COMPLETED_IMAGE_GEN")
+
+            notification_email = event.get("notification_email")
+            if notification_email and self.klaviyo_service:
+                try:
+                    self.klaviyo_service.send_image_gen_completed_email(notification_email, job_id)
+                except Exception as e:
+                    logger.warning("Email notification failed: %s", e)
 
             return {
                 "statusCode": 200,

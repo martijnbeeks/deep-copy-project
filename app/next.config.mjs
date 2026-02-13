@@ -8,7 +8,9 @@ const nextConfig = {
   },
   images: {
     unoptimized: false, // Enable image optimization for better caching (works for local images too)
-    domains: ['imagedelivery.net'], // Allow external images from ImageDelivery
+    remotePatterns: [
+      { protocol: 'https', hostname: 'imagedelivery.net' },
+    ],
   },
   // Disable caching in development
   ...(process.env.NODE_ENV === 'development' && {

@@ -27,6 +27,7 @@ from pipeline.steps.template_prediction import TemplatePredictionStep
 from services.template_prediction_service import LibrarySummariesCache
 from services.prompt_service import PromptService
 from services.cloudflare_service import CloudflareService
+from services.klaviyo_service import KlaviyoEmailService
 
 
 logger = logging.getLogger(__name__)
@@ -45,6 +46,7 @@ class PipelineConfig:
     location: Optional[str] = None
     research_requirements: Optional[str] = None
     target_product_name: Optional[str] = None
+    notification_email: Optional[str] = None
     dev_mode: bool = False
     api_version: str = "v2"
 
@@ -128,6 +130,17 @@ class PipelineOrchestrator:
                 logger.warning("Cloudflare credentials missing; product_image will remain base64")
         except Exception as e:
             logger.warning("Failed to initialize CloudflareService: %s", e)
+
+        # Initialize Klaviyo service (non-fatal if key missing)
+        self.klaviyo_service = None
+        try:
+            klaviyo_key = self.aws_services.secrets.get("KLAVIYO_API_KEY", "").strip()
+            if klaviyo_key:
+                self.klaviyo_service = KlaviyoEmailService(klaviyo_key)
+            else:
+                logger.warning("KLAVIYO_API_KEY missing; email notifications disabled")
+        except Exception as e:
+            logger.warning("Failed to initialize KlaviyoEmailService: %s", e)
     
     def _set_usage_context(self, config: PipelineConfig) -> None:
         """
@@ -176,11 +189,20 @@ class PipelineOrchestrator:
             
             # Update status
             self.aws_services.update_job_status(
-                config.job_id, 
-                "SUCCEEDED", 
+                config.job_id,
+                "SUCCEEDED",
                 {"resultPrefix": f"s3://{config.s3_bucket}/projects/{config.project_name}/"}
             )
-            
+
+            # Send email notification if requested
+            if config.notification_email and self.klaviyo_service:
+                try:
+                    self.klaviyo_service.send_job_completed_email(
+                        config.notification_email, config.project_name, config.job_id
+                    )
+                except Exception as e:
+                    logger.warning("Email notification failed (dev mode): %s", e)
+
             return PipelineResult(
                 success=True,
                 status_code=200,
@@ -434,13 +456,22 @@ class PipelineOrchestrator:
             logger.info("Pipeline completed successfully")
             try:
                 self.aws_services.update_job_status(
-                    config.job_id, 
-                    "SUCCEEDED", 
+                    config.job_id,
+                    "SUCCEEDED",
                     {"resultPrefix": f"s3://{config.s3_bucket}/projects/{config.project_name}/"}
                 )
             except Exception:
                 pass
-            
+
+            # Send email notification if requested
+            if config.notification_email and self.klaviyo_service:
+                try:
+                    self.klaviyo_service.send_job_completed_email(
+                        config.notification_email, config.project_name, config.job_id
+                    )
+                except Exception as e:
+                    logger.warning("Email notification failed: %s", e)
+
             return PipelineResult(
                 success=True,
                 status_code=200,
@@ -498,6 +529,7 @@ def create_config_from_event(event: Dict[str, Any], s3_bucket_default: str) -> P
         location=event.get("location"),
         research_requirements=event.get("research_requirements"),
         target_product_name=event.get("target_product_name"),
+        notification_email=event.get("notification_email"),
         dev_mode=event.get("dev_mode") == "true",
         api_version=event.get("api_version") or os.environ.get("API_VERSION") or "v2"
     )

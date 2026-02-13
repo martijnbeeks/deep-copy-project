@@ -144,6 +144,7 @@ interface SubmitV2JobRequest {
   research_requirements?: string
   gender?: string
   location?: string
+  notification_email?: string
 }
 
 interface JobResultV2 {
@@ -362,7 +363,8 @@ class DeepCopyClient {
         advertorial_type: data.advertorial_type,
         research_requirements: data.research_requirements,
         gender: data.gender,
-        location: data.location
+        location: data.location,
+        notification_email: data.notification_email
       })
     })
   }
