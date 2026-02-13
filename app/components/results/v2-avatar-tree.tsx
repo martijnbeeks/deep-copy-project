@@ -372,7 +372,7 @@ export function V2AvatarTree({
                 
                 toast({
                     title: "Overage Charges Apply",
-                    description: `This job requires ${overageCredits} extra credit${overageCredits === 1 ? '' : 's'} (${overageCostTotal.toFixed(2)} ${currency}). Overage charges will be added to your next invoice.`,
+                    description: `This job requires ${overageCredits} extra credit${overageCredits === 1 ? '' : 's'}. Overage charges will be added to your next invoice.`,
                     variant: "default",
                 });
 

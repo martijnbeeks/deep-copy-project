@@ -19,7 +19,7 @@ export function ImageGenerationFloater({ onYes, onNo }: ImageGenerationFloaterPr
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
           <ImageIcon className="h-4 w-4 text-primary" />
-          <p className="text-sm font-medium">Generate images for this prelander?</p>
+          <p className="text-sm font-medium">Generate images for this pre-lander?</p>
         </div>
       </div>
       <div className="flex gap-2">
