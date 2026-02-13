@@ -112,7 +112,7 @@ if __name__ == "__main__":
         raise Exception("Failed to load JOB_EVENT_JSON")
     
     # Set defaults for local execution
-    event["dev_mode"] = "false"
+    event["dev_mode"] = "true"
     event["RESULTS_BUCKET"] = os.environ.get(
         "RESULTS_BUCKET", 
         "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih"
@@ -124,6 +124,7 @@ if __name__ == "__main__":
         "https://naxir.co/products/steadystrap"
     )
     event["job_id"] = os.environ.get("JOB_ID") or event.get("job_id") or str(uuid.uuid4())
+    event["notification_email"] = "martijn.beeks@gmail.com"
     
     result = run_pipeline(event, None)
     print(json.dumps(result, indent=2))

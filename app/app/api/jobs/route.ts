@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       gender,
       location,
       advertorial_type,
+      notification_email,
       allowOverage
     } = await request.json()
 
@@ -103,7 +104,8 @@ export async function POST(request: NextRequest) {
         advertorial_type: advertorial_type || 'Listicle',
         research_requirements: research_requirements || undefined,
         gender: gender || undefined,
-        location: location || undefined
+        location: location || undefined,
+        notification_email: notification_email || undefined
       }
 
       const deepCopyResponse = await deepCopyClient.submitV2Research(v2Payload)

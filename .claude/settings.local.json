@@ -51,7 +51,14 @@
       "Bash(npx eslint:*)",
       "Bash(git show:*)",
       "Bash(git ls-tree:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "mcp__Neon__list_projects",
+      "mcp__Neon__describe_project",
+      "WebFetch(domain:www.deepcopy.co)",
+      "Bash(ln:*)",
+      "Bash(for:*)",
+      "Bash(do)",
+      "Bash(done)"
     ]
   }
 }
