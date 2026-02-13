@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
-import { LayoutDashboard, LogOut, PenTool, Loader2, FileText, Sun, Moon, Building2, User as UserIcon, Coins } from "lucide-react"
+import { LayoutDashboard, LogOut, PenTool, Loader2, FileText, Sun, Moon, Building2, User as UserIcon, Coins, Bell } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
@@ -10,6 +10,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Sidebar as UISidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"
 import { useBillingStore } from "@/stores/billing-store"
+import { useNotificationsStore, selectUnseenCount } from "@/stores/notifications-store"
 import { Zap } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 
@@ -22,6 +23,8 @@ const baseNavigation = [
 export function Sidebar() {
   const { user, logout, isAdmin } = useAuthStore()
   const { currentUsage, creditLimit, fetchBillingStatus, isLoading: isBillingLoading } = useBillingStore()
+  const unseenCount = useNotificationsStore(selectUnseenCount)
+  const togglePanel = useNotificationsStore((s) => s.togglePanel)
   const pathname = usePathname()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
@@ -182,6 +185,22 @@ export function Sidebar() {
                     {user?.name || user?.email || "Account"}
                   </span>
                 </button>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={togglePanel}>
+                <div className="relative flex-shrink-0">
+                  <Bell className="h-5 w-5" />
+                  {mounted && unseenCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1">
+                      {unseenCount > 99 ? '99+' : unseenCount}
+                    </span>
+                  )}
+                </div>
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
+                  Notifications
+                </span>
               </SidebarMenuButton>
             </SidebarMenuItem>
 

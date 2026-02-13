@@ -66,6 +66,11 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
         // Clear persisted storage
         localStorage.removeItem('auth-storage')
+        // Clear notifications for this user
+        try {
+          const { useNotificationsStore } = require('@/stores/notifications-store')
+          useNotificationsStore.getState().syncUserContext(null)
+        } catch {}
       },
 
       refreshAdminStatus: async () => {
