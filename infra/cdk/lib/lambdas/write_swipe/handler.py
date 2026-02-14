@@ -3,7 +3,19 @@ AWS Lambda handler for write_swipe.
 """
 import json
 import logging
+import os
+
+import sentry_sdk
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
+
 from pipeline.orchestrator import SwipeGenerationOrchestrator
+
+sentry_sdk.init(
+    dsn=os.environ.get("SENTRY_DSN", ""),
+    integrations=[AwsLambdaIntegration()],
+    traces_sample_rate=0.1,
+    environment=os.environ.get("ENVIRONMENT", "prod"),
+)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -20,6 +32,7 @@ def lambda_handler(event, context):
         return orchestrator.run(event)
     except Exception as e:
         logger.error(f"Handler failed: {e}")
+        sentry_sdk.capture_exception(e)
         return {'statusCode': 500, 'error': str(e)}
 
 if __name__ == "__main__":

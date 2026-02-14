@@ -14,7 +14,8 @@ RUN cd ${LAMBDA_TASK_ROOT} && \
       cloudflare>=4.0.0 \
       pillow>=10.0.0 \
       google-genai>=1.0.0 \
-      boto3>=1.26.0
+      boto3>=1.26.0 \
+      "sentry-sdk>=2.0.0"
 
 # Force rebuild by adding a timestamp
 RUN echo "Build timestamp: $(date)" > /tmp/build_timestamp
