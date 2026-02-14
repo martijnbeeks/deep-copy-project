@@ -39,7 +39,10 @@ DEPRECATED_FIELDS = {"customer_avatars", "persona", "age_range"}
 REQUIRED_FIELDS = {"sales_page_url", "project_name"}
 
 # Allowed optional fields for v2
-OPTIONAL_FIELDS = {"research_requirements", "gender", "location", "advertorial_type", "target_product_name", "notification_email", "callback_url"}
+OPTIONAL_FIELDS = {"research_requirements", "gender", "location", "advertorial_type", "target_product_name", "notification_email"}
+
+# callback_url is set by trusted callers only (Next.js frontend), not exposed as a public API field.
+# It is still forwarded to the processing Lambda if present in the body.
 
 
 def _response(status_code: int, body: dict) -> dict:

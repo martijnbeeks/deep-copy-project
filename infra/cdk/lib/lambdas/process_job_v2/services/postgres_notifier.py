@@ -12,6 +12,8 @@ import logging
 from typing import Optional
 from urllib.parse import urlparse, parse_qs
 
+ALLOWED_CALLBACK_PATH = "/api/webhooks/job-complete"
+
 import pg8000.native
 
 logger = logging.getLogger(__name__)
@@ -33,8 +35,6 @@ def _parse_database_url(database_url: str) -> dict:
     if sslmode and sslmode != "disable":
         import ssl
         ssl_context = ssl.create_default_context()
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
         params["ssl_context"] = ssl_context
 
     return params
@@ -138,6 +138,14 @@ class PostgresNotifier:
         import urllib.request
 
         try:
+            parsed = urlparse(callback_url)
+            if parsed.scheme != "https" or parsed.path != ALLOWED_CALLBACK_PATH:
+                logger.warning(
+                    "Callback URL rejected (scheme=%s path=%s): %s",
+                    parsed.scheme, parsed.path, callback_url,
+                )
+                return
+
             payload = json.dumps({
                 "jobId": job_id,
                 "status": status,

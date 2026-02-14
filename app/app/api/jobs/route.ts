@@ -99,9 +99,9 @@ export async function POST(request: NextRequest) {
     let deepCopyJobId: string
     try {
       // Build callback URL so Lambda can notify us when the job finishes
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : 'http://localhost:3000'
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL
+        || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+        || 'http://localhost:3000'
       const callbackUrl = `${appUrl}/api/webhooks/job-complete`
 
       const v2Payload = {

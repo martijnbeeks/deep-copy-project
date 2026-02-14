@@ -18,10 +18,12 @@ function verifySignature(payload: Buffer, signature: string): boolean {
     .createHmac('sha256', WEBHOOK_SECRET)
     .update(payload)
     .digest('hex')
-  return crypto.timingSafeEqual(
-    Buffer.from(expected, 'hex'),
-    Buffer.from(signature, 'hex'),
-  )
+  const expectedBuf = Buffer.from(expected, 'hex')
+  const signatureBuf = Buffer.from(signature, 'hex')
+  if (expectedBuf.length !== signatureBuf.length) {
+    return false
+  }
+  return crypto.timingSafeEqual(expectedBuf, signatureBuf)
 }
 
 export async function POST(request: NextRequest) {
@@ -105,8 +107,8 @@ export async function POST(request: NextRequest) {
 
         logger.log(`Webhook: job ${localJobId} completed successfully`)
       } catch (resultErr) {
+        // Don't mark as failed — the upstream job succeeded. Polling will retry result processing.
         logger.error(`Webhook: failed to fetch/store results for ${localJobId}:`, resultErr)
-        await updateJobStatus(localJobId, 'failed')
         return NextResponse.json(
           { error: 'Failed to process results' },
           { status: 500 },

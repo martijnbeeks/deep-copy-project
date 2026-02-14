@@ -204,7 +204,7 @@ class TestSendCallback:
         notifier = self._make_notifier()
         secret = "my-webhook-secret"
         notifier.send_callback(
-            "https://example.com/webhook", "job-456", "failed", secret,
+            "https://example.com/api/webhooks/job-complete", "job-456", "failed", secret,
         )
 
         req = mock_urlopen.call_args[0][0]
@@ -226,8 +226,26 @@ class TestSendCallback:
         notifier = self._make_notifier()
         # Should NOT raise
         notifier.send_callback(
-            "https://example.com/webhook", "job-789", "completed", "secret",
+            "https://example.com/api/webhooks/job-complete", "job-789", "completed", "secret",
         )
+
+    @patch("urllib.request.urlopen")
+    def test_send_callback_rejects_invalid_path(self, mock_urlopen):
+        """Callback URLs with wrong path should be silently rejected."""
+        notifier = self._make_notifier()
+        notifier.send_callback(
+            "https://evil.com/steal-data", "job-ssrf", "completed", "secret",
+        )
+        mock_urlopen.assert_not_called()
+
+    @patch("urllib.request.urlopen")
+    def test_send_callback_rejects_http(self, mock_urlopen):
+        """Callback URLs without HTTPS should be rejected."""
+        notifier = self._make_notifier()
+        notifier.send_callback(
+            "http://example.com/api/webhooks/job-complete", "job-http", "completed", "secret",
+        )
+        mock_urlopen.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
