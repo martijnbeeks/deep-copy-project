@@ -9,9 +9,18 @@ import json
 import os
 import uuid
 
+import sentry_sdk
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
+
 from utils.logging_config import setup_logging
 from pipeline.orchestrator import PipelineOrchestrator, PipelineConfig, create_config_from_event
 
+sentry_sdk.init(
+    dsn=os.environ.get("SENTRY_DSN", ""),
+    integrations=[AwsLambdaIntegration()],
+    traces_sample_rate=0.1,
+    environment=os.environ.get("ENVIRONMENT", "prod"),
+)
 
 # Initialize logging on module load
 logger = setup_logging()

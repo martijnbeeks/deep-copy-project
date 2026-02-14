@@ -186,8 +186,8 @@ def make_template_prediction_result(
             TemplateMatch(
                 template_id="A00001",
                 overall_fit_score=0.85,
-                audience_fit=0.9,
-                pain_point_fit=0.8,
+                format_fit=0.9,
+                persuasion_fit=0.8,
                 tone_fit=0.85,
                 reasoning="Good match for health-conscious audience",
             )
@@ -220,22 +220,25 @@ def make_deep_research_output() -> str:
 def make_library_summaries_json() -> dict:
     """Return a minimal library summaries JSON for S3 seeding."""
     return {
-        "version": "1.0",
+        "version": "2.0",
         "generated_at": "2025-01-01T00:00:00Z",
         "total_pages": 1,
         "summaries": [
             {
                 "id": "A00001",
                 "s3_key": "content_library/A00001.html",
-                "product_name": "Test Supplement",
-                "product_category": "supplement",
-                "short_description": "A health supplement landing page",
-                "target_audience": "Health-conscious adults",
-                "primary_pain_point": "Low energy",
-                "primary_benefit": "All-day energy",
+                "format_type": "advertorial",
+                "writing_perspective": "third_person",
+                "article_structure_flow": "hook -> problem -> mechanism -> social proof -> CTA",
+                "content_density": "medium",
                 "tone": "professional",
-                "keywords": ["energy", "supplement", "health"],
-                "price_point": "mid",
+                "energy_level": "moderate",
+                "persuasion_techniques": ["mechanism_explanation", "social_proof", "authority_citation"],
+                "emotional_approach": "curiosity_to_discovery",
+                "engagement_devices": ["expert_quotes", "statistics_callout", "before_after_comparison"],
+                "cta_style": "embedded_recurring",
+                "best_for_awareness_levels": ["problem_aware", "solution_aware"],
+                "best_for_angle_types": ["mechanism", "social_proof", "curiosity"],
             }
         ],
     }

@@ -127,14 +127,15 @@ interface SwipeFileGenerationRequest {
 
 // V2 API Interfaces
 interface SubmitV2JobRequest {
-  sales_page_url: string
+  /** One or more sales page URLs (sent as array to backend). */
+  sales_page_urls: string[]
   project_name: string
   advertorial_type?: string
   research_requirements?: string
   gender?: string
   location?: string
+  target_product_name?: string
   notification_email?: string
-  callback_url?: string
 }
 
 interface JobResultV2 {
@@ -222,8 +223,8 @@ export interface MarketingAngleV2 {
       template_id: string
       overall_fit_score: number
       reasoning: string
-      audience_fit?: number
-      pain_point_fit?: number
+      format_fit?: number
+      persuasion_fit?: number
       tone_fit?: number
     }>
   }
@@ -331,17 +332,19 @@ class DeepCopyClient {
   // V2 API Methods
   async submitV2Research(data: SubmitV2JobRequest): Promise<SubmitJobResponse> {
     const endpoint = isDevMode() ? 'dev/v2/jobs' : 'v2/jobs'
+    // Backend API expects sales_page_url (singular); use first URL from array
+    const sales_page_url = data.sales_page_urls?.[0] ?? ''
     return this.makeRequest(endpoint, {
       method: 'POST',
       body: JSON.stringify({
-        sales_page_url: data.sales_page_url,
+        sales_page_url,
         project_name: data.project_name,
         advertorial_type: data.advertorial_type,
         research_requirements: data.research_requirements,
         gender: data.gender,
         location: data.location,
-        notification_email: data.notification_email,
-        callback_url: data.callback_url,
+        ...(data.target_product_name && { target_product_name: data.target_product_name }),
+        notification_email: data.notification_email
       })
     })
   }

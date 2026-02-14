@@ -22,3 +22,12 @@ export const capitalizeFirst = (str: string): string => {
   if (!str) return str
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
+
+/**
+ * Get avatar-based numbering (1a, 1b, 1c... for first avatar, 2a, 2b... for second avatar, etc.)
+ */
+export const getAvatarBasedNumber = (avatarIndex: number, angleIndex: number): string => {
+  const avatarNumber = avatarIndex + 1;
+  const angleLetter = String.fromCharCode(97 + (angleIndex % 26)); // 97 = 'a' in ASCII. Using % 26 just in case.
+  return `${avatarNumber}${angleLetter}`;
+};

@@ -91,7 +91,10 @@ def parse_database_url(database_url: str) -> dict:
 
 def extract_placeholders_from_content(content: str) -> set[str]:
     """Extract all {placeholder} names from template content."""
-    return set(re.findall(r"\{([^}]+)\}", content))
+    # Strip escaped braces first to match str.format_map() behavior
+    cleaned = content.replace("{{", "").replace("}}", "")
+    # Only match valid Python identifiers (not JSON keys or other brace content)
+    return set(re.findall(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}", cleaned))
 
 
 def get_all_prompts() -> list[PromptRecord]:

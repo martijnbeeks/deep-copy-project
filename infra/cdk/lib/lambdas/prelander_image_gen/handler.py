@@ -9,11 +9,21 @@ import os
 import uuid
 from typing import Any, Dict, List, Optional
 
+import sentry_sdk
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
+
 from utils.logging_config import setup_logging
 from services.aws import get_secrets, configure_from_secrets, update_job_status, save_json_to_s3, download_image_to_b64
 from services.gemini_service import GeminiService
 from services.cloudflare_service import CloudflareService
 from services.klaviyo_service import KlaviyoEmailService
+
+sentry_sdk.init(
+    dsn=os.environ.get("SENTRY_DSN", ""),
+    integrations=[AwsLambdaIntegration()],
+    traces_sample_rate=0.1,
+    environment=os.environ.get("ENVIRONMENT", "prod"),
+)
 
 logger = setup_logging(__name__)
 
@@ -151,6 +161,7 @@ def lambda_handler(event: dict, context) -> dict:
                 
             except Exception as e:
                 logger.error("Failed to generate image for role %s: %s", role, e)
+                sentry_sdk.capture_exception(e)
                 # Continue with other images even if one fails
                 continue
         
@@ -186,6 +197,7 @@ def lambda_handler(event: dict, context) -> dict:
         
     except Exception as e:
         logger.error("Pipeline failed: %s", str(e), exc_info=True)
+        sentry_sdk.capture_exception(e)
         error_msg = str(e)
         update_job_status(job_id, "FAILED_PRELANDER_IMAGE_GEN", {"error": error_msg})
         

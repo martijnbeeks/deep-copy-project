@@ -27,6 +27,7 @@ dependencies = [
     "pytest>=9.0.2",
     "cloudflare>=4.0.0",
     "httpx",
+    "sentry-sdk>=2.0.0",
 ]
 
 [tool.setuptools]

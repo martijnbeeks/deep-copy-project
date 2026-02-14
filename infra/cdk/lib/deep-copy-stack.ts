@@ -83,6 +83,7 @@ export class DeepCopyStack extends Stack {
         LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
         ENVIRONMENT: 'prod',
         API_VERSION: 'v2',
+        SENTRY_DSN: 'https://f51ef0bfc242618e5b298aa60661e753@o4510738689425408.ingest.de.sentry.io/4510738713346128',
       },
     });
 
@@ -178,6 +179,7 @@ export class DeepCopyStack extends Stack {
         JOBS_TABLE_NAME: jobsTable.tableName,
         RESULTS_BUCKET: resultsBucket.bucketName,
         LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
+        SENTRY_DSN: 'https://f51ef0bfc242618e5b298aa60661e753@o4510738689425408.ingest.de.sentry.io/4510738713346128',
       },
     });
 
@@ -237,6 +239,7 @@ export class DeepCopyStack extends Stack {
         IMAGE_LIBRARY_PREFIX: 'image_library',
         IMAGE_DESCRIPTIONS_KEY: 'image_library/static-library-descriptions.json',
         SECRET_ID: 'deepcopy-secret-dev',
+        SENTRY_DSN: 'https://f51ef0bfc242618e5b298aa60661e753@o4510738689425408.ingest.de.sentry.io/4510738713346128',
       },
     });
     processImageGenLambda.addToRolePolicy(
@@ -293,6 +296,7 @@ export class DeepCopyStack extends Stack {
         RESULTS_BUCKET: resultsBucket.bucketName,
         LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
         SECRET_ID: 'deepcopy-secret-dev',
+        SENTRY_DSN: 'https://f51ef0bfc242618e5b298aa60661e753@o4510738689425408.ingest.de.sentry.io/4510738713346128',
       },
     });
     processPrelanderImagesLambda.addToRolePolicy(

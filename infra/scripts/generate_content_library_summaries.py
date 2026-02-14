@@ -53,29 +53,53 @@ class LandingPageSummary(BaseModel):
     """Summary of a single landing page from the content library."""
     id: str = Field(..., description="The landing page ID (e.g., 'A00001')")
     s3_key: str = Field(..., description="Full S3 key")
-    product_name: Optional[str] = Field(None, description="Detected product name")
-    product_category: Optional[str] = Field(
-        None,
-        description="Product category (e.g., 'supplement', 'course', 'software')"
-    )
-    short_description: str = Field(
+    format_type: str = Field(
         ...,
-        description="One-sentence description of the product/service"
+        description="Template format: 'advertorial', 'listicle', 'advertorial_pov', 'advertorial_authority'"
     )
-    target_audience: str = Field(..., description="Who this product targets")
-    primary_pain_point: str = Field(..., description="Main pain point addressed")
-    primary_benefit: str = Field(..., description="Main benefit/outcome promised")
+    writing_perspective: str = Field(
+        ...,
+        description="Narrative voice: 'first_person', 'third_person', 'second_person_direct', 'authority_expert'"
+    )
+    article_structure_flow: str = Field(
+        ...,
+        description="Narrative arc (e.g. 'personal story -> problem -> discovery -> mechanism -> social proof -> CTA')"
+    )
+    content_density: str = Field(
+        ...,
+        description="Content density: 'light', 'medium', 'dense'"
+    )
     tone: str = Field(
         ...,
-        description="Writing tone (e.g., 'urgent', 'professional', 'friendly')"
+        description="Writing tone (e.g., 'urgent', 'professional', 'friendly', 'conversational')"
     )
-    keywords: List[str] = Field(
+    energy_level: str = Field(
+        ...,
+        description="Energy level: 'calm_educational', 'moderate', 'high_energy_urgent', 'emotionally_intense'"
+    )
+    persuasion_techniques: List[str] = Field(
         default_factory=list,
-        description="Key terms/phrases from the page (5-10)"
+        description="3-5 persuasion techniques used"
     )
-    price_point: Optional[str] = Field(
-        None,
-        description="Price range if detectable ('low', 'mid', 'high', 'premium')"
+    emotional_approach: str = Field(
+        ...,
+        description="Emotional journey: 'fear_to_hope', 'frustration_to_relief', 'curiosity_to_discovery', etc."
+    )
+    engagement_devices: List[str] = Field(
+        default_factory=list,
+        description="3-5 engagement devices used"
+    )
+    cta_style: str = Field(
+        ...,
+        description="CTA style: 'soft_discovery', 'urgent_action', 'embedded_recurring', 'single_end'"
+    )
+    best_for_awareness_levels: List[str] = Field(
+        default_factory=list,
+        description="Best awareness levels: 'unaware', 'problem_aware', 'solution_aware', 'product_aware'"
+    )
+    best_for_angle_types: List[str] = Field(
+        default_factory=list,
+        description="Best angle types: 'mechanism', 'pain_lead', 'desire_lead', 'social_proof', 'fear_based', 'curiosity', 'contrarian', 'story'"
     )
     text_length: int = Field(..., description="Character count of extracted text")
     processed_at: str = Field(..., description="ISO timestamp of processing")
@@ -84,35 +108,59 @@ class LandingPageSummary(BaseModel):
 
 class LandingPageAnalysis(BaseModel):
     """Schema for Claude's structured output (without metadata fields)."""
-    product_name: Optional[str] = Field(None, description="Detected product name")
-    product_category: Optional[str] = Field(
-        None,
-        description="Product category (e.g., 'supplement', 'course', 'software')"
-    )
-    short_description: str = Field(
+    format_type: str = Field(
         ...,
-        description="One-sentence description of the product/service"
+        description="Template format: 'advertorial', 'listicle', 'advertorial_pov', 'advertorial_authority'"
     )
-    target_audience: str = Field(..., description="Who this product targets")
-    primary_pain_point: str = Field(..., description="Main pain point addressed")
-    primary_benefit: str = Field(..., description="Main benefit/outcome promised")
+    writing_perspective: str = Field(
+        ...,
+        description="Narrative voice: 'first_person', 'third_person', 'second_person_direct', 'authority_expert'"
+    )
+    article_structure_flow: str = Field(
+        ...,
+        description="Narrative arc (e.g. 'personal story -> problem -> discovery -> mechanism -> social proof -> CTA')"
+    )
+    content_density: str = Field(
+        ...,
+        description="Content density: 'light', 'medium', 'dense'"
+    )
     tone: str = Field(
         ...,
-        description="Writing tone (e.g., 'urgent', 'professional', 'friendly')"
+        description="Writing tone (e.g., 'urgent', 'professional', 'friendly', 'conversational')"
     )
-    keywords: List[str] = Field(
+    energy_level: str = Field(
+        ...,
+        description="Energy level: 'calm_educational', 'moderate', 'high_energy_urgent', 'emotionally_intense'"
+    )
+    persuasion_techniques: List[str] = Field(
         default_factory=list,
-        description="Key terms/phrases from the page (5-10)"
+        description="3-5 persuasion techniques from: emotional_storytelling, social_proof, authority_citation, urgency_scarcity, fear_of_inaction, mechanism_explanation, before_after, statistics_data, testimonials, expert_endorsement, contrarian_reveal, curiosity_gap"
     )
-    price_point: Optional[str] = Field(
-        None,
-        description="Price range if detectable ('low', 'mid', 'high', 'premium', 'unknown')"
+    emotional_approach: str = Field(
+        ...,
+        description="Emotional journey: 'fear_to_hope', 'frustration_to_relief', 'curiosity_to_discovery', etc."
+    )
+    engagement_devices: List[str] = Field(
+        default_factory=list,
+        description="3-5 engagement devices from: personal_anecdote, expert_quotes, customer_testimonials, before_after_comparison, faq_section, numbered_list, statistics_callout, embedded_cta, image_heavy, pull_quotes"
+    )
+    cta_style: str = Field(
+        ...,
+        description="CTA style: 'soft_discovery', 'urgent_action', 'embedded_recurring', 'single_end'"
+    )
+    best_for_awareness_levels: List[str] = Field(
+        default_factory=list,
+        description="Best awareness levels from: 'unaware', 'problem_aware', 'solution_aware', 'product_aware'"
+    )
+    best_for_angle_types: List[str] = Field(
+        default_factory=list,
+        description="Best angle types from: 'mechanism', 'pain_lead', 'desire_lead', 'social_proof', 'fear_based', 'curiosity', 'contrarian', 'story'"
     )
 
 
 class ContentLibrarySummaries(BaseModel):
     """Complete library of all landing page summaries."""
-    version: str = Field(default="1.0", description="Schema version")
+    version: str = Field(default="2.0", description="Schema version")
     generated_at: str = Field(..., description="ISO timestamp of generation")
     total_pages: int = Field(..., description="Number of pages processed")
     summaries: List[LandingPageSummary] = Field(default_factory=list)
@@ -122,14 +170,104 @@ class ContentLibrarySummaries(BaseModel):
 # HTML EXTRACTION
 # ============================================================================
 
+def _extract_config_text(html_content: str) -> Optional[str]:
+    """
+    Extract readable text from JS-based CONFIG templates (AD0001_POV, AD0001_AUTHORITY).
+
+    These templates store all content inside a <script>const CONFIG = {...}</script> block.
+    Extracts headline, subheadline, section headlines and body HTML from the CONFIG.
+    """
+    match = re.search(r'const\s+CONFIG\s*=\s*\{', html_content)
+    if not match:
+        return None
+
+    # Extract the CONFIG object text (from 'const CONFIG' to end of script)
+    config_start = match.start()
+    # Find the closing </script> after CONFIG
+    script_end = html_content.find('</script>', config_start)
+    if script_end == -1:
+        return None
+
+    config_text = html_content[config_start:script_end]
+
+    # Extract key fields using regex
+    parts = []
+
+    # Template comments tell us the template type
+    theme_match = re.search(r'THEME:\s*"([^"]*)"', config_text)
+    category_match = re.search(r'CATEGORY:\s*"([^"]*)"', config_text)
+    if category_match:
+        parts.append(f"Category: {category_match.group(1)}")
+
+    headline_match = re.search(r'HEADLINE:\s*"([^"]*)"', config_text)
+    if headline_match:
+        parts.append(f"Headline: {headline_match.group(1)}")
+
+    subheadline_match = re.search(r'SUBHEADLINE:\s*"([^"]*)"', config_text)
+    if subheadline_match:
+        parts.append(f"Subheadline: {subheadline_match.group(1)}")
+
+    author_match = re.search(r'AUTHOR_NAME:\s*"([^"]*)"', config_text)
+    if author_match:
+        parts.append(f"Author: {author_match.group(1)}")
+
+    # Extract section headlines and body content (SECTIONS format)
+    section_headlines = re.findall(r'headline:\s*"([^"]*)"', config_text)
+    for i, h in enumerate(section_headlines, 1):
+        parts.append(f"\nSection {i}: {h}")
+
+    # Extract body HTML from template literals (backtick strings)
+    body_blocks = re.findall(r'body:\s*`([^`]*)`', config_text)
+    for body in body_blocks:
+        clean = re.sub(r'<[^>]+>', ' ', body)
+        clean = re.sub(r'\s+', ' ', clean).strip()
+        if clean:
+            parts.append(clean)
+
+    # Extract body HTML from double-quoted strings (LD0001 listicle format)
+    body_quoted = re.findall(r'"body":\s*"((?:[^"\\]|\\.)*)"', config_text)
+    for body in body_quoted:
+        clean = re.sub(r'<[^>]+>', ' ', body)
+        clean = re.sub(r'\\n|\\r|\\t', ' ', clean)
+        clean = re.sub(r'\s+', ' ', clean).strip()
+        if clean:
+            parts.append(clean)
+
+    # Extract additional CONFIG fields common in listicle templates
+    for field in ['OPENING_HOOK', 'OPENING_BODY', 'SUB_HEADLINE', 'HERO_HEADLINE',
+                  'EXPERT_QUOTE', 'SOLUTION_INSIGHT', 'PRODUCT_INTRO',
+                  'PRODUCT_TAGLINE', 'FINAL_CTA_HEADLINE']:
+        field_match = re.search(rf'{field}:\s*"((?:[^"\\]|\\.)*)"', config_text)
+        if field_match:
+            clean = re.sub(r'<[^>]+>', ' ', field_match.group(1))
+            clean = re.sub(r'\s+', ' ', clean).strip()
+            if clean:
+                parts.append(f"{field}: {clean}")
+
+    # Also extract HTML comment instructions (template capabilities)
+    comments = re.findall(r'║\s*(.+?)\s*║', html_content[:3000])
+    if comments:
+        template_info = [c.strip() for c in comments if c.strip() and '⬇' not in c]
+        if template_info:
+            parts.append("\nTemplate capabilities: " + "; ".join(template_info[:10]))
+
+    result = "\n".join(parts)
+    return result.strip() if result.strip() else None
+
+
 def extract_clean_text_from_html(html_content: str) -> Optional[str]:
     """
     Extract clean, readable text from HTML content.
 
-    Follows the pattern from cdk/lib/lambdas/write_swipe/utils/html.py
+    Handles both regular HTML pages and JS-based CONFIG templates.
     """
     if not html_content:
         return None
+
+    # First, check for JS-based CONFIG templates
+    config_text = _extract_config_text(html_content)
+    if config_text and len(config_text) > 200:
+        return config_text
 
     try:
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -157,8 +295,11 @@ def extract_clean_text_from_html(html_content: str) -> Optional[str]:
         for selector in selectors:
             found = soup.select(selector)
             if found:
-                main_content = max(found, key=lambda x: len(x.get_text()))
-                break
+                candidate = max(found, key=lambda x: len(x.get_text()))
+                # Only use selector match if it has substantial text
+                if len(candidate.get_text().strip()) > 200:
+                    main_content = candidate
+                    break
 
         # Fallback to body or soup
         if not main_content:
@@ -178,7 +319,7 @@ def extract_clean_text_from_html(html_content: str) -> Optional[str]:
         lines = [line.strip() for line in text.split('\n')]
         text = '\n'.join(lines)
 
-        return text.strip()
+        return text.strip() if text.strip() else None
 
     except Exception as e:
         print(f"  WARNING: Error extracting text: {e}")
@@ -249,25 +390,57 @@ def save_library_to_s3(s3_client, bucket: str, library: ContentLibrarySummaries)
 # ============================================================================
 
 def get_landing_page_summary_prompt(content: str) -> str:
-    """Generate the prompt for landing page summarization."""
-    return f"""You are analyzing a landing page (advertorial/pre-lander) to create a concise summary for a content library. This library will be used to match new products to existing landing page templates.
+    """Generate the prompt for landing page style/format analysis."""
+    return f"""You are analyzing a landing page (advertorial/pre-lander) to create a STYLE AND FORMAT profile for a content library. This profile will be used to match the template's writing style to new avatar+angle combinations — NOT to match by product content.
 
-Extract the following information from this landing page text:
+IMPORTANT: Ignore what product is being sold. Focus entirely on HOW the page is written, structured, and persuades.
 
-1. **Product Name**: The name of the product or service being sold (if identifiable)
-2. **Product Category**: Category such as 'health supplement', 'digital course', 'SaaS tool', 'physical product', 'financial service', etc.
-3. **Short Description**: One sentence describing what this product/service is and does
-4. **Target Audience**: Who is this product for? Be specific about demographics and psychographics
-5. **Primary Pain Point**: The main problem, frustration, or desire this product addresses
-6. **Primary Benefit**: The main outcome or transformation promised
-7. **Tone**: The overall writing tone - choose from: 'urgent', 'professional', 'friendly', 'scientific', 'conversational', 'sensational', 'authoritative'
-8. **Keywords**: 5-10 key terms or phrases that characterize this landing page's content and style
-9. **Price Point**: If detectable from the content, categorize as:
-   - 'low' (under $50)
-   - 'mid' ($50-200)
-   - 'high' ($200-1000)
-   - 'premium' (over $1000)
-   - 'unknown' if not mentioned
+Analyze the following dimensions:
+
+1. **format_type**: The template format — choose ONE:
+   - 'advertorial' — third-person news/editorial style article
+   - 'listicle' — numbered list format (e.g., "5 Reasons Why...")
+   - 'advertorial_pov' — first-person personal story advertorial
+   - 'advertorial_authority' — expert/authority-driven advertorial
+
+2. **writing_perspective**: The narrative voice — choose ONE:
+   - 'first_person' — "I discovered...", personal narrative
+   - 'third_person' — "Studies show...", "Experts say..."
+   - 'second_person_direct' — "You need to...", "Are you tired of..."
+   - 'authority_expert' — "Dr. Smith reveals...", "According to research..."
+
+3. **article_structure_flow**: Describe the narrative arc as a flow, e.g.:
+   - "personal story -> problem -> discovery -> mechanism -> social proof -> CTA"
+   - "hook question -> list of tips -> product reveal -> testimonials -> CTA"
+
+4. **content_density**: How much content per section — choose ONE: 'light', 'medium', 'dense'
+
+5. **tone**: Overall writing tone — choose from: 'urgent', 'professional', 'friendly', 'scientific', 'conversational', 'sensational', 'authoritative'
+
+6. **energy_level**: Emotional intensity — choose ONE:
+   - 'calm_educational' — informative, measured
+   - 'moderate' — engaged but not pushy
+   - 'high_energy_urgent' — time-pressure, exclamation marks, urgency
+   - 'emotionally_intense' — strong emotional appeals, dramatic language
+
+7. **persuasion_techniques**: Choose 3-5 from this list:
+   emotional_storytelling, social_proof, authority_citation, urgency_scarcity, fear_of_inaction, mechanism_explanation, before_after, statistics_data, testimonials, expert_endorsement, contrarian_reveal, curiosity_gap
+
+8. **emotional_approach**: The emotional journey — e.g.:
+   'fear_to_hope', 'frustration_to_relief', 'curiosity_to_discovery', 'shame_to_empowerment', 'skepticism_to_trust'
+
+9. **engagement_devices**: Choose 3-5 from this list:
+   personal_anecdote, expert_quotes, customer_testimonials, before_after_comparison, faq_section, numbered_list, statistics_callout, embedded_cta, image_heavy, pull_quotes
+
+10. **cta_style**: How calls-to-action appear — choose ONE:
+    - 'soft_discovery' — "Learn more", subtle
+    - 'urgent_action' — "Order NOW before it's gone!"
+    - 'embedded_recurring' — CTAs throughout the article
+    - 'single_end' — one CTA at the end
+
+11. **best_for_awareness_levels**: Which audience awareness levels does this template style work best for? Choose 1-3 from: 'unaware', 'problem_aware', 'solution_aware', 'product_aware'
+
+12. **best_for_angle_types**: Which marketing angle types does this template style work best for? Choose 2-4 from: 'mechanism', 'pain_lead', 'desire_lead', 'social_proof', 'fear_based', 'curiosity', 'contrarian', 'story'
 
 Analyze the following landing page content:
 ---
@@ -321,15 +494,18 @@ def summarize_landing_page(
                 return LandingPageSummary(
                     id=page_id,
                     s3_key=s3_key,
-                    product_name=analysis.product_name,
-                    product_category=analysis.product_category,
-                    short_description=analysis.short_description,
-                    target_audience=analysis.target_audience,
-                    primary_pain_point=analysis.primary_pain_point,
-                    primary_benefit=analysis.primary_benefit,
+                    format_type=analysis.format_type,
+                    writing_perspective=analysis.writing_perspective,
+                    article_structure_flow=analysis.article_structure_flow,
+                    content_density=analysis.content_density,
                     tone=analysis.tone,
-                    keywords=analysis.keywords,
-                    price_point=analysis.price_point,
+                    energy_level=analysis.energy_level,
+                    persuasion_techniques=analysis.persuasion_techniques,
+                    emotional_approach=analysis.emotional_approach,
+                    engagement_devices=analysis.engagement_devices,
+                    cta_style=analysis.cta_style,
+                    best_for_awareness_levels=analysis.best_for_awareness_levels,
+                    best_for_angle_types=analysis.best_for_angle_types,
                     text_length=len(text_content),
                     processed_at=datetime.now(timezone.utc).isoformat(),
                     llm_model_used=model
@@ -439,7 +615,7 @@ def main():
             )
             if summary:
                 summaries.append(summary)
-                print(f"  OK: {summary.short_description[:70]}...")
+                print(f"  OK: {summary.format_type} / {summary.writing_perspective} / {summary.tone}")
             else:
                 print(f"  WARNING: Failed to generate summary")
 
