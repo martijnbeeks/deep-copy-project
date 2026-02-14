@@ -65,41 +65,6 @@ export class DeepCopyStack extends Stack {
     const lambdaImageRepublishMarker = 'manifest-v2-republish-2026-02-13';
 
     // AI Pipeline - Processing Lambda (Docker-based)
-    const processJobLambda = new lambda.DockerImageFunction(this, 'ProcessJobLambda', {
-      code: lambda.DockerImageCode.fromImageAsset(
-        path.join(__dirname, 'lambdas', 'process_job'),
-        {
-          platform: Platform.LINUX_AMD64,
-          extraHash: lambdaImageRepublishMarker,
-        }
-      ),
-      timeout: Duration.seconds(900), // 15 minutes for long-running pipeline
-      memorySize: 3008, // 3GB for Playwright + OpenAI + Anthropic
-      architecture: lambda.Architecture.X86_64,
-      environment: {
-        PLAYWRIGHT_BROWSERS_PATH: '/var/task/.playwright',
-        JOBS_TABLE_NAME: jobsTable.tableName,
-        RESULTS_BUCKET: resultsBucket.bucketName,
-        LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
-        ENVIRONMENT: 'prod',
-      },
-    });
-
-    // Grant access to secrets
-    processJobLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ['secretsmanager:GetSecretValue'],
-        resources: [secretArn],
-      }),
-    );
-    jobsTable.grantReadWriteData(processJobLambda);
-    resultsBucket.grantPut(processJobLambda);
-    resultsBucket.grantPutAcl(processJobLambda);
-    resultsBucket.grantRead(processJobLambda, 'content_library/*');
-    resultsBucket.grantRead(processJobLambda, 'projects/*'); // Allow reading pre-computed results
-    resultsBucket.grantRead(processJobLambda, 'results/*'); // Allow reading results for dev mode
-
-    // V2 AI Pipeline - Processing Lambda (Docker-based, separate from v1)
     const processJobLambdaV2 = new lambda.DockerImageFunction(this, 'ProcessJobV2Lambda', {
       code: lambda.DockerImageCode.fromImageAsset(
         path.join(__dirname, 'lambdas', 'process_job_v2'),
@@ -150,31 +115,12 @@ export class DeepCopyStack extends Stack {
         'extract_avatars',
         'image_gen_process',
         'prelander_image_gen',
-        'process_job',
         'process_job_v2',
         'write_swipe',
       ],
     });
 
-    // Small Lambda to submit jobs (Python version)
-    const submitLambda = new lambda.Function(this, 'SubmitJobLambda', {
-      runtime: lambda.Runtime.PYTHON_3_11,
-      timeout: Duration.seconds(10),
-      memorySize: 256,
-      handler: 'submit_job.handler',
-      code: pythonLambdasAsset,
-      environment: {
-        PROCESS_LAMBDA_NAME: processJobLambda.functionName,
-        JOBS_TABLE_NAME: jobsTable.tableName,
-        RESULTS_BUCKET: resultsBucket.bucketName,
-      },
-    });
-
-    // Permissions for submitter - invoke Lambda instead of ECS
-    processJobLambda.grantInvoke(submitLambda);
-    jobsTable.grantReadWriteData(submitLambda);
-
-    // V2 Submit Lambda with stricter validation (invokes V2 process lambda)
+    // Submit Lambda with stricter validation
     const submitLambdaV2 = new lambda.Function(this, 'SubmitJobV2Lambda', {
       runtime: lambda.Runtime.PYTHON_3_11,
       timeout: Duration.seconds(10),
@@ -485,27 +431,6 @@ export class DeepCopyStack extends Stack {
       resultsCacheTtl: Duration.seconds(60),
     });
 
-    const jobsRes = api.root.addResource('jobs');
-    jobsRes.addMethod('POST', new apigw.LambdaIntegration(submitLambda), {
-      authorizer: cognitoAuthorizer,
-      authorizationType: apigw.AuthorizationType.COGNITO,
-      authorizationScopes: ['https://deep-copy.api/write'],
-    });
-
-    const jobIdRes = jobsRes.addResource('{id}');
-    jobIdRes.addMethod('GET', new apigw.LambdaIntegration(getJobLambda), {
-      authorizer: cognitoAuthorizer,
-      authorizationType: apigw.AuthorizationType.COGNITO,
-      authorizationScopes: ['https://deep-copy.api/read'],
-    });
-
-    const jobResultRes = jobIdRes.addResource('result');
-    jobResultRes.addMethod('GET', new apigw.LambdaIntegration(getJobResultLambda), {
-      authorizer: cognitoAuthorizer,
-      authorizationType: apigw.AuthorizationType.COGNITO,
-      authorizationScopes: ['https://deep-copy.api/read'],
-    });
-
     // Swipe file generation endpoints
     const swipeFilesRes = api.root.addResource('swipe-files');
     const generateRes = swipeFilesRes.addResource('generate');
@@ -577,14 +502,6 @@ export class DeepCopyStack extends Stack {
 
     // Dev endpoints
     const devRes = api.root.addResource('dev');
-
-    // Dev jobs
-    const devJobsRes = devRes.addResource('jobs');
-    devJobsRes.addMethod('POST', new apigw.LambdaIntegration(submitLambda), {
-      authorizer: cognitoAuthorizer,
-      authorizationType: apigw.AuthorizationType.COGNITO,
-      authorizationScopes: ['https://deep-copy.api/write'],
-    });
 
     // Dev swipe files
     const devSwipeFilesRes = devRes.addResource('swipe-files');

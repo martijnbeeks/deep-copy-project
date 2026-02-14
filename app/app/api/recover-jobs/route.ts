@@ -88,12 +88,12 @@ async function checkJobStatus(job: { id: string; execution_id: string; status: s
     // Use the job ID directly as the DeepCopy job ID (since we now use DeepCopy job ID as primary key)
     const deepCopyJobId = job.id
     
-    const statusResponse = await deepCopyClient.getMarketingAngleStatus(deepCopyJobId)
-    
-    
+    const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
+
+
     if (statusResponse.status === 'SUCCEEDED') {
-      // Marketing angle completed - get results and store them
-      const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
+      // Job completed - get results and store them
+      const result = await deepCopyClient.getJobResult(deepCopyJobId)
       await storeJobResults(job.id, result, deepCopyJobId)
       await updateJobStatus(job.id, 'completed', 100)
       return 'completed'

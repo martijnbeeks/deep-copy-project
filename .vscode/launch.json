@@ -14,23 +14,6 @@
         },
 
         {
-            "name": "Debug jobs",
-            "type": "python",
-            "python": "${workspaceFolder}/infra/cdk/lib/lambdas/process_job/.venv/bin/python",
-            "request": "launch",
-            "program": "${workspaceFolder}/cdk/lib/lambdas/process_job/handler.py",
-            "args": ["run"],
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "cwd": "${workspaceFolder}/infra/cdk/lib/lambdas/process_job",
-            "env": {
-                "AWS_PROFILE": "personal-cdk-dev",
-                "JOB_EVENT_JSON": "{\"sales_page_url\": \"https://www.sciatiease.com/sciatiease.php\", \"project_name\": \"meritrelief\", \"swipe_file_id\": \"L00002\", \"advertorial_type\": \"Advertorial\", \"customer_avatars\": [{\"persona_name\": \"Active Senior\", \"description\": \"Retired professional who enjoys gardening and light exercise but struggles with chronic sciatic pain\", \"age_range\": \"60-75\", \"gender\": \"both\", \"key_buying_motivation\": \"Seeking non-invasive pain relief to maintain active lifestyle\"}, {\"persona_name\": \"Desk-Bound Professional\", \"description\": \"Office worker sitting 8+ hours daily experiencing lower back pain\", \"age_range\": \"30-45\", \"gender\": \"both\", \"key_buying_motivation\": \"Quick relief from work-related pain\"}]}",
-                "dev_mode": "false",
-                "RESULTS_BUCKET": "deepcopystack-resultsbucketa95a2103-zhwjflrlpfih"
-            }
-        },
-        {
             "name": "Debug jobs V2",
             "type": "python",
             "python": "${workspaceFolder}/infra/cdk/lib/lambdas/process_job_v2/.venv/bin/python",
