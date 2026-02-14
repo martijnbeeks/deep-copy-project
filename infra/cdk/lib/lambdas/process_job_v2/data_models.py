@@ -583,8 +583,8 @@ class MarketingAngle(BaseModel):
         description="The category of argument being made: mechanism, pain_lead, desire_lead, social_proof, fear_based, curiosity, contrarian, story"
     )
     angle_mechanism: Optional[str] = Field(
-        None, 
-        description="Explain the core mechanism or logic of this angle. Example: 'This formula uses the exact ingredients studied in AREDS2, so you can trust it without needing to decode proprietary blends. Max 100 words.'"
+        None,
+        description="One short sentence (max 15 words) summarizing the core mechanism or logic of this angle. Example: 'Uses AREDS2-studied ingredients so you can trust the formula.'"
     )
     emotional_driver: EmotionalDriver = Field(
         ..., 
