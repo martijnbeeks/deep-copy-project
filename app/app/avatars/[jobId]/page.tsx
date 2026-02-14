@@ -800,7 +800,7 @@ function JobAvatarsContent({ jobId }: { jobId: string }) {
                         <DialogTitle>Confirm Overage</DialogTitle>
                         <DialogDescription>
                             {pendingOverage
-                                ? `You don't have enough included credits for this job. The extra ${pendingOverage.overageCredits} credit${pendingOverage.overageCredits === 1 ? '' : 's'} will be charged as overage at ${pendingOverage.overageCostPerCredit.toFixed(2)} ${pendingOverage.currency} per credit (${pendingOverage.overageCostTotal.toFixed(2)} ${pendingOverage.currency} total) and added to your next invoice.`
+                                ? `You don't have enough included credits for this job. The extra ${pendingOverage.overageCredits} credit${pendingOverage.overageCredits === 1 ? '' : 's'} will be charged as overage and added to your next invoice.`
                                 : "You don't have enough included credits for this job. The extra credits will be charged as overage and added to your next invoice."}
                         </DialogDescription>
                     </DialogHeader>

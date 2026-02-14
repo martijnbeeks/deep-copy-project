@@ -88,7 +88,7 @@ import {
 import { internalApiClient } from "@/lib/clients/internal-client";
 import { Template } from "@/lib/db/types";
 import { logger } from "@/lib/utils/logger";
-import { capitalizeFirst } from "@/lib/utils/avatar-utils";
+import { capitalizeFirst, getAvatarBasedNumber } from "@/lib/utils/avatar-utils";
 import { GenerateStaticAds } from "@/components/results/generate-static-ads";
 import { isV2Job, transformV2ToExistingSchema, TransformedAvatar } from "@/lib/utils/v2-data-transformer";
 import { ExploreTemplatesDialogV2 } from "@/components/results/explore-templates-dialog-v2";
@@ -1949,7 +1949,7 @@ function DeepCopyResultsComponent({
         
         toast({
           title: "Overage Charges Apply",
-          description: `This job requires ${overageCredits} extra credit${overageCredits === 1 ? '' : 's'} (${overageCostTotal.toFixed(2)} ${currency}). Overage charges will be added to your next invoice.`,
+          description: `This job requires ${overageCredits} extra credit${overageCredits === 1 ? '' : 's'}. Overage charges will be added to your next invoice.`,
           variant: "default",
         });
 
@@ -3042,7 +3042,7 @@ function DeepCopyResultsComponent({
                                                     
                                                     toast({
                                                       title: "Overage Charges Apply",
-                                                      description: `This job requires ${overageCredits} extra credit${overageCredits === 1 ? '' : 's'} (${overageCostTotal.toFixed(2)} ${currency}). Overage charges will be added to your next invoice.`,
+                                                      description: `This job requires ${overageCredits} extra credit${overageCredits === 1 ? '' : 's'}. Overage charges will be added to your next invoice.`,
                                                       variant: "default",
                                                     });
 
@@ -3473,9 +3473,9 @@ function DeepCopyResultsComponent({
                           <Zap className="h-5 w-5 text-primary" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-foreground">
+                          {/* <p className="text-sm font-medium text-foreground">
                             Direct Export Integration is Coming..!
-                          </p>
+                          </p> */}
                           {/*<p className="text-xs text-muted-foreground mt-0.5">
                             We're working on a new feature to export your pre-landers directly to your favorite platforms.
                           </p>*/}
@@ -3946,8 +3946,27 @@ function DeepCopyResultsComponent({
                                     {(() => {
                                       // Find the matching marketing angle to get its index
                                       let angleIndex = -1;
+                                      let avatarBasedNumber = "";
                                       const templateAngle = template.angle;
-                                      if (
+
+                                      if (isV2 && fullResult?.results?.marketing_avatars && templateAngle) {
+                                        // V2 logic - find avatar and angle indices
+                                        for (let avIdx = 0; avIdx < fullResult.results.marketing_avatars.length; avIdx++) {
+                                          const avatar = fullResult.results.marketing_avatars[avIdx];
+                                          const angles = avatar.angles?.generated_angles || [];
+                                          const foundAngleIdx = angles.findIndex((a: any) => {
+                                            const angleFormatted = a.angle_subtitle 
+                                              ? `${a.angle_title}: ${a.angle_subtitle}` 
+                                              : a.angle_title;
+                                            return angleFormatted === templateAngle || a.angle_title === templateAngle;
+                                          });
+                                          if (foundAngleIdx !== -1) {
+                                            angleIndex = foundAngleIdx;
+                                            avatarBasedNumber = getAvatarBasedNumber(avIdx, foundAngleIdx);
+                                            break;
+                                          }
+                                        }
+                                      } else if (
                                         fullResult?.results?.marketing_angles &&
                                         templateAngle
                                       ) {
@@ -4026,15 +4045,10 @@ function DeepCopyResultsComponent({
                                                 <Target className="h-4 w-4 text-primary" />
                                               </div>
                                             )*/}
-                                            {angleIndex >= 0 && (
-                                              <Badge
-                                                variant="outline"
-                                                className="text-xs font-semibold bg-muted text-foreground border-border w-fit"
-                                              >
-                                                #{angleIndex + 1}
-                                              </Badge>
-                                            )}
                                             <h4 className="font-semibold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors flex-1">
+                                              <span className="text-lg font-bold text-primary">
+                                                {avatarBasedNumber ? `${avatarBasedNumber}. ` : (angleIndex >= 0 ? `${angleIndex + 1}. ` : '')}
+                                              </span>
                                               {getAngleTitle(
                                                 template.angle,
                                                 template.name
@@ -4440,8 +4454,7 @@ ${bodyContent}
                                     </div>
                                     {/* Title Skeleton */}
                                     <div className="flex items-center gap-2">
-                                      <div className="h-5 w-8 bg-muted rounded-full"></div>
-                                      <div className="h-6 w-3/4 bg-muted rounded"></div>
+                                      <div className="h-6 w-full bg-muted rounded"></div>
                                     </div>
                                     {/* Description Skeleton */}
                                     <div className="space-y-1.5">

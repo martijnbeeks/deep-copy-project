@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, AlertCircle, Info, Sparkles, CheckCircle, Globe } from "lucide-react"
+import { Loader2, AlertCircle, Info, Sparkles, CheckCircle, Globe, Plus, Trash2 } from "lucide-react"
 import { SiAmazon, SiReddit } from "react-icons/si"
 import { useRequireAuth } from "@/hooks/use-require-auth"
 import { useCreateMarketingAngle, useUpdateMarketingAngle } from "@/lib/hooks/use-jobs"
@@ -47,11 +47,12 @@ interface CustomerAvatar {
 
 interface PipelineFormData {
   title: string
-  sales_page_url: string
+  sales_page_urls: string[]
   research_requirements?: string
   gender?: string
   location?: string
   advertorial_type?: string
+  target_product_name?: string,
   notification_email?: string
 }
 
@@ -69,11 +70,12 @@ export default function CreatePage() {
 
   const [formData, setFormData] = useState<PipelineFormData>({
     title: "",
-    sales_page_url: "",
+    sales_page_urls: [""],
     research_requirements: "",
     gender: "",
     location: "",
     advertorial_type: "Listicle",
+    target_product_name: "",
     notification_email: "",
   })
   const [errors, setErrors] = useState<Partial<Record<keyof PipelineFormData, string>>>({})
@@ -115,8 +117,9 @@ export default function CreatePage() {
       return true
     }
 
-    // Sales page URL is required
-    if (!formData.sales_page_url.trim()) {
+    // At least one sales page URL is required
+    const urls = formData.sales_page_urls.filter((u) => u.trim())
+    if (urls.length === 0) {
       return true
     }
 
@@ -131,10 +134,14 @@ export default function CreatePage() {
     if (!data.title.trim()) {
       newErrors.title = "Project title is required"
     }
-    if (!data.sales_page_url.trim()) {
-      newErrors.sales_page_url = "Sales page URL is required"
-    } else if (!isValidUrl(data.sales_page_url)) {
-      newErrors.sales_page_url = "Please enter a valid URL"
+    const filledUrls = (data.sales_page_urls || []).filter((u: string) => u.trim())
+    if (filledUrls.length === 0) {
+      newErrors.sales_page_urls = "At least one sales page URL is required"
+    } else {
+      const invalidIdx = filledUrls.findIndex((u: string) => !isValidUrl(u.trim()))
+      if (invalidIdx !== -1) {
+        newErrors.sales_page_urls = "Please enter valid URLs (each must start with http:// or https://)"
+      }
     }
     // V2 fields are optional - no validation needed
     if (data.notification_email && data.notification_email.trim() && !isValidEmail(data.notification_email)) {
@@ -169,11 +176,12 @@ export default function CreatePage() {
         },
         body: JSON.stringify({
           title: formData.title,
-          sales_page_url: formData.sales_page_url,
+          sales_page_urls: formData.sales_page_urls.filter((u) => u.trim()).map((u) => u.trim()),
           research_requirements: formData.research_requirements || undefined,
           gender: formData.gender || undefined,
           location: formData.location || undefined,
           advertorial_type: formData.advertorial_type || 'Listicle',
+          target_product_name: formData.target_product_name?.trim() || undefined,
           notification_email: formData.notification_email || undefined,
           ...(opts?.allowOverage ? { allowOverage: true } : {}),
         }),
@@ -190,7 +198,7 @@ export default function CreatePage() {
           
           toast({
             title: "Overage Charges Apply",
-            description: `This job requires ${overageCredits} extra credit${overageCredits === 1 ? '' : 's'} (${overageCostTotal.toFixed(2)} ${currency}). Overage charges will be added to your next invoice.`,
+            description: `This job requires ${overageCredits} extra credit${overageCredits === 1 ? '' : 's'}. Overage charges will be added to your next invoice.`,
             variant: "default",
           });
 
@@ -318,11 +326,12 @@ export default function CreatePage() {
                 // Reset form
                 setFormData({
                   title: "",
-                  sales_page_url: "",
+                  sales_page_urls: [""],
                   research_requirements: "",
                   gender: "",
                   location: "",
                   advertorial_type: "Listicle",
+                  target_product_name: "",
                   notification_email: "",
                 })
                 setErrors({})
@@ -509,35 +518,70 @@ export default function CreatePage() {
                         )}
                       </div>
 
-                      {/* Sales Page URL Section */}
+                      {/* Sales Page URLs Section */}
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="sales_page_url" className="text-base font-semibold text-foreground">
-                            Current Sales Page URL <span className="text-destructive">*</span>
+                          <Label className="text-base font-semibold text-foreground">
+                            Sales Page URLs <span className="text-destructive">*</span>
                           </Label>
-                          <p className="text-sm text-muted-foreground">Provide the URL of your existing sales page</p>
+                          <p className="text-sm text-muted-foreground">Add one or more URLs of your existing sales pages</p>
                         </div>
-                        <Input
-                          id="sales_page_url"
-                          placeholder="https://example.com/current-page"
-                          value={formData.sales_page_url}
-                          onChange={(e) => {
-                            const newUrl = e.target.value
-                            setFormData((prev) => ({ ...prev, sales_page_url: newUrl }))
-
-                            // Show popup when valid URL is entered (only once)
-                            if (!hasSeenUrlPopup && isValidUrl(newUrl)) {
-                              setShowUrlPopup(true)
-                              setHasSeenUrlPopup(true)
-                            }
-                          }}
-                          disabled={isLoading}
-                          className={`h-12 text-base ${errors.sales_page_url ? "border-destructive focus-visible:ring-destructive" : "border-input focus-visible:ring-primary"}`}
-                        />
-                        {errors.sales_page_url && (
+                        <div className="space-y-3">
+                          {formData.sales_page_urls.map((url, index) => (
+                            <div key={index} className="flex gap-2 items-start">
+                              <Input
+                                id={`sales_page_url_${index}`}
+                                placeholder="https://example.com/current-page"
+                                value={url}
+                                onChange={(e) => {
+                                  const newVal = e.target.value
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    sales_page_urls: prev.sales_page_urls.map((u, i) => (i === index ? newVal : u)),
+                                  }))
+                                  if (errors.sales_page_urls) setErrors((prev) => ({ ...prev, sales_page_urls: undefined }))
+                                  if (!hasSeenUrlPopup && isValidUrl(newVal)) {
+                                    setShowUrlPopup(true)
+                                    setHasSeenUrlPopup(true)
+                                  }
+                                }}
+                                disabled={isLoading}
+                                className={`flex-1 h-12 text-base ${errors.sales_page_urls ? "border-destructive focus-visible:ring-destructive" : "border-input focus-visible:ring-primary"}`}
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-12 w-12 shrink-0"
+                                disabled={isLoading || formData.sales_page_urls.length <= 1}
+                                onClick={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    sales_page_urls: prev.sales_page_urls.filter((_, i) => i !== index),
+                                  }))
+                                  if (errors.sales_page_urls) setErrors((prev) => ({ ...prev, sales_page_urls: undefined }))
+                                }}
+                                aria-label="Remove URL"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full sm:w-auto"
+                            disabled={isLoading || formData.sales_page_urls.length >= 3}
+                            onClick={() => setFormData((prev) => ({ ...prev, sales_page_urls: [...prev.sales_page_urls, ""] }))}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add another URL
+                          </Button>
+                        </div>
+                        {errors.sales_page_urls && (
                           <p className="text-sm text-destructive flex items-center gap-2">
                             <AlertCircle className="h-4 w-4" />
-                            {errors.sales_page_url}
+                            {errors.sales_page_urls}
                           </p>
                         )}
                       </div>
@@ -563,6 +607,24 @@ export default function CreatePage() {
                               className="text-base"
                             />
                           </div>
+                        </div>
+
+                        {/* Target Product Name */}
+                        <div className="space-y-2">
+                          <Label htmlFor="target_product_name" className="text-base font-semibold text-foreground">
+                            Target Product Name (Optional)
+                          </Label>
+                          <p className="text-sm text-muted-foreground">Name of the product to focus research on</p>
+                          <Input
+                            id="target_product_name"
+                            placeholder="e.g., Premium Vitamin D3 Supplement"
+                            value={formData.target_product_name || ''}
+                            onChange={(e) => {
+                              setFormData((prev) => ({ ...prev, target_product_name: e.target.value }))
+                            }}
+                            disabled={isLoading}
+                            className="h-12 text-base"
+                          />
                         </div>
 
                         {/* Target Demographics */}

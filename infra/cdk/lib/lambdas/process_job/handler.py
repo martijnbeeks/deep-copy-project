@@ -21,6 +21,16 @@ import uuid
 import anthropic
 import time
 
+import sentry_sdk
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
+
+sentry_sdk.init(
+    dsn=os.environ.get("SENTRY_DSN", ""),
+    integrations=[AwsLambdaIntegration()],
+    traces_sample_rate=0.1,
+    environment=os.environ.get("ENVIRONMENT", "prod"),
+)
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional, Literal, Any, Dict, Union
 from pydantic import BaseModel, Field, ConfigDict, create_model
@@ -1142,6 +1152,7 @@ def run_pipeline(event, context):
         
     except Exception as e:
         logger.error(f"Error in lambda_handler: {e}")
+        sentry_sdk.capture_exception(e)
         # Attempt to mark job failed
         try:
             job_id = event.get("job_id") or os.environ.get("JOB_ID")

@@ -15,22 +15,12 @@ export function ImageGenerationFloater({ onYes, onNo }: ImageGenerationFloaterPr
   if (!isVisible) return null
 
   return (
-    <div className="fixed top-4 right-4 z-50 bg-background border rounded-lg shadow-lg p-4 max-w-xs">
+    <div className="fixed top-4 right-4 z-50 bg-background border rounded-lg shadow-lg p-4 max-w-xs mr-8">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
           <ImageIcon className="h-4 w-4 text-primary" />
-          <p className="text-sm font-medium">Generate images for this prelander?</p>
+          <p className="text-sm font-medium">Generate images for this pre-lander?</p>
         </div>
-        <button
-          onClick={() => {
-            setIsVisible(false)
-            onNo()
-          }}
-          className="text-muted-foreground hover:text-foreground transition-colors"
-          type="button"
-        >
-          <X className="h-3 w-3" />
-        </button>
       </div>
       <div className="flex gap-2">
         <Button
@@ -39,20 +29,9 @@ export function ImageGenerationFloater({ onYes, onNo }: ImageGenerationFloaterPr
             setIsVisible(false)
             onYes()
           }}
-          className="flex-1"
+          className="w-full"
         >
           Yes
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            setIsVisible(false)
-            onNo()
-          }}
-          className="flex-1"
-        >
-          No
         </Button>
       </div>
     </div>

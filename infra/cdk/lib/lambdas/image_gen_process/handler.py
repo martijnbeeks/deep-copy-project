@@ -9,8 +9,18 @@ import json
 import os
 import uuid
 
+import sentry_sdk
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
+
 from utils.logging_config import setup_logging
 from pipeline.orchestrator import ImageGenOrchestrator
+
+sentry_sdk.init(
+    dsn=os.environ.get("SENTRY_DSN", ""),
+    integrations=[AwsLambdaIntegration()],
+    traces_sample_rate=0.1,
+    environment=os.environ.get("ENVIRONMENT", "prod"),
+)
 
 # Initialize logging on module load
 logger = setup_logging()
@@ -48,6 +58,7 @@ def lambda_handler(event: dict, context) -> dict:
         return orchestrator.run(payload)
     except Exception as e:
         logger.error("Unhandled exception in lambda_handler: %s", e)
+        sentry_sdk.capture_exception(e)
         return {
             "statusCode": 500,
             "body": json.dumps({"error": str(e)})

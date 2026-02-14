@@ -23,6 +23,7 @@ dependencies = [
     "beautifulsoup4>=4.12.0",
     "pdf2image>=1.17.0",
     "perplexityai>=0.1.0",
+    "sentry-sdk>=2.0.0",
 ]
 
 [tool.setuptools]

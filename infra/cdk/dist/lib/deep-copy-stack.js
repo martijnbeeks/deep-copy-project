@@ -92,6 +92,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
                 RESULTS_BUCKET: resultsBucket.bucketName,
                 LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
                 ENVIRONMENT: 'prod',
+                SENTRY_DSN: 'https://f51ef0bfc242618e5b298aa60661e753@o4510738689425408.ingest.de.sentry.io/4510738713346128',
             },
         });
         // Grant access to secrets
@@ -121,6 +122,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
                 LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
                 ENVIRONMENT: 'prod',
                 API_VERSION: 'v2',
+                SENTRY_DSN: 'https://f51ef0bfc242618e5b298aa60661e753@o4510738689425408.ingest.de.sentry.io/4510738713346128',
             },
         });
         // Grant access to secrets for V2 Lambda
@@ -222,6 +224,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
                 JOBS_TABLE_NAME: jobsTable.tableName,
                 RESULTS_BUCKET: resultsBucket.bucketName,
                 LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
+                SENTRY_DSN: 'https://f51ef0bfc242618e5b298aa60661e753@o4510738689425408.ingest.de.sentry.io/4510738713346128',
             },
         });
         // Grant access to the same secret as the ECS pipeline
@@ -275,6 +278,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
                 IMAGE_LIBRARY_PREFIX: 'image_library',
                 IMAGE_DESCRIPTIONS_KEY: 'image_library/static-library-descriptions.json',
                 SECRET_ID: 'deepcopy-secret-dev',
+                SENTRY_DSN: 'https://f51ef0bfc242618e5b298aa60661e753@o4510738689425408.ingest.de.sentry.io/4510738713346128',
             },
         });
         processImageGenLambda.addToRolePolicy(new aws_cdk_lib_1.aws_iam.PolicyStatement({
@@ -326,6 +330,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
                 RESULTS_BUCKET: resultsBucket.bucketName,
                 LLM_USAGE_EVENTS_PREFIX: 'llm_usage_events',
                 SECRET_ID: 'deepcopy-secret-dev',
+                SENTRY_DSN: 'https://f51ef0bfc242618e5b298aa60661e753@o4510738689425408.ingest.de.sentry.io/4510738713346128',
             },
         });
         processPrelanderImagesLambda.addToRolePolicy(new aws_cdk_lib_1.aws_iam.PolicyStatement({

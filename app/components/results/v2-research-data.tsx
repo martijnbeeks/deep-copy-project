@@ -87,6 +87,7 @@ export function V2ResearchData({ fullResult, jobId }: V2ResearchDataProps) {
     // State for editable product details
     const [isEditingProduct, setIsEditingProduct] = useState(false);
     const [editableProductDetails, setEditableProductDetails] = useState<EditableProductDetails>({});
+    const [isLoadingProductDetails, setIsLoadingProductDetails] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState('');
 
@@ -116,11 +117,12 @@ export function V2ResearchData({ fullResult, jobId }: V2ResearchDataProps) {
             try {
                 const response = await fetch(`/api/jobs/${jobId}/product-details`);
                 const data = await response.json();
-                if (data.editableProductDetails) {
-                    setEditableProductDetails(data.editableProductDetails);
-                }
+                // Set the data even if it's null - this ensures we have the correct state
+                setEditableProductDetails(data.editableProductDetails || { is_confirmed: false });
             } catch (error) {
                 console.error('Error fetching editable product details:', error);
+            } finally {
+                setIsLoadingProductDetails(false);
             }
         };
 
@@ -193,6 +195,11 @@ export function V2ResearchData({ fullResult, jobId }: V2ResearchDataProps) {
             if (response.ok) {
                 setSaveMessage('Product details confirmed successfully!');
                 setTimeout(() => setSaveMessage(''), 3000);
+                // Update local state to reflect confirmation
+                setEditableProductDetails(prev => ({
+                    ...prev,
+                    is_confirmed: true
+                }));
             } else {
                 setSaveMessage('Failed to confirm product details');
             }
@@ -259,11 +266,24 @@ export function V2ResearchData({ fullResult, jobId }: V2ResearchDataProps) {
 
 
     // Helper for Section Headers to match wireframe style
-    const SectionHeader = ({ icon: Icon, title, className = "", isAccordion = false }: { icon: any, title: string, className?: string, isAccordion?: boolean }) => (
+    const SectionHeader = ({ 
+        icon: Icon, 
+        title, 
+        className = "", 
+        isAccordion = false, 
+        showIndicator = false 
+    }: { 
+        icon: any, 
+        title: string, 
+        className?: string, 
+        isAccordion?: boolean,
+        showIndicator?: boolean
+    }) => (
         <div className={`flex items-center gap-3 ${!isAccordion ? 'border-b border-border/60 bg-muted/20 px-6 py-4' : ''} ${className}`}>
             <Icon className="h-5 w-5 text-primary" />
-            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
                 {title}
+                {showIndicator && <AlertCircle className="h-4 w-4 text-red-500" />}
             </h3>
         </div>
     );
@@ -311,8 +331,11 @@ export function V2ResearchData({ fullResult, jobId }: V2ResearchDataProps) {
                                                 <FileText className="w-5 h-5 text-primary-foreground" />
                                             </div>
                                             <div>
-                                                <h2 className="text-2xl font-bold text-foreground">
+                                                <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
                                                     Market Overview
+                                                    {!isLoadingProductDetails && !editableProductDetails.is_confirmed && (
+                                                        <AlertCircle className="h-5 w-5 text-red-500" />
+                                                    )}
                                                 </h2>
                                                 <p className="text-sm text-muted-foreground">
                                                     Comprehensive market research, positioning strategy, and customer insights.
@@ -539,7 +562,12 @@ export function V2ResearchData({ fullResult, jobId }: V2ResearchDataProps) {
                                             {/* 2. PRODUCT DETAILS */}
                                             <AccordionItem value="section-product-details" className="border rounded-xl bg-card overflow-hidden shadow-sm border-border/60">
                                                 <AccordionTrigger className="px-6 py-4 bg-muted/20 hover:bg-muted/30 hover:no-underline transition-colors border-b border-border/60">
-                                                    <SectionHeader icon={Package} title="Product Details" isAccordion />
+                                                    <SectionHeader 
+                                                        icon={Package} 
+                                                        title="Product Details" 
+                                                        isAccordion 
+                                                        showIndicator={!isLoadingProductDetails && !editableProductDetails.is_confirmed}
+                                                    />
                                                 </AccordionTrigger>
                                                 <AccordionContent
                                                     className="p-6 space-y-6"
@@ -594,7 +622,7 @@ export function V2ResearchData({ fullResult, jobId }: V2ResearchDataProps) {
                                                                     </Button>
                                                                 </>
                                                             )}
-                                                            {!isEditingProduct && !editableProductDetails.is_confirmed && Object.keys(editableProductDetails).length > 0 && (
+                                                            {!isEditingProduct && !isLoadingProductDetails && !editableProductDetails.is_confirmed && (
                                                                 <Button
                                                                     variant="default"
                                                                     size="sm"
