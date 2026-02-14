@@ -2,7 +2,7 @@
 Submit Job V2 Lambda Handler
 
 This handler enforces the new v2 request format:
-- Required: sales_page_url, project_name
+- Required: project_name + at least one URL (sales_page_urls or sales_page_url)
 - Optional: research_requirements, gender, location, advertorial_type
 - Rejected: customer_avatars, persona, age_range (deprecated fields)
 
@@ -36,10 +36,10 @@ JOBS_TABLE_NAME = _required_env("JOBS_TABLE_NAME")
 DEPRECATED_FIELDS = {"customer_avatars", "persona", "age_range"}
 
 # Required fields for v2
-REQUIRED_FIELDS = {"sales_page_url", "project_name"}
+REQUIRED_FIELDS = {"project_name"}
 
 # Allowed optional fields for v2
-OPTIONAL_FIELDS = {"research_requirements", "gender", "location", "advertorial_type", "target_product_name", "notification_email"}
+OPTIONAL_FIELDS = {"research_requirements", "gender", "location", "advertorial_type", "target_product_name", "notification_email", "sales_page_url", "sales_page_urls"}
 
 
 def _response(status_code: int, body: dict) -> dict:
@@ -53,7 +53,11 @@ def _response(status_code: int, body: dict) -> dict:
 def _validate_request(body: dict) -> tuple[bool, str | None]:
     """
     Validate the v2 request body.
-    
+
+    Accepts either:
+      - sales_page_urls: list of 1-3 URLs (preferred)
+      - sales_page_url: single URL string (deprecated, normalized to list)
+
     Returns:
         (is_valid, error_message)
     """
@@ -61,23 +65,40 @@ def _validate_request(body: dict) -> tuple[bool, str | None]:
     deprecated_found = DEPRECATED_FIELDS.intersection(body.keys())
     if deprecated_found:
         return False, f"Deprecated fields not allowed in v2 API: {', '.join(sorted(deprecated_found))}"
-    
+
     # Check for required fields
     missing_required = REQUIRED_FIELDS - body.keys()
     if missing_required:
         return False, f"Missing required fields: {', '.join(sorted(missing_required))}"
-    
+
     # Validate required fields are not empty
     for field in REQUIRED_FIELDS:
         value = body.get(field)
         if not value or (isinstance(value, str) and not value.strip()):
             return False, f"Field '{field}' cannot be empty"
-    
-    # Validate URL format (basic check)
-    sales_page_url = body.get("sales_page_url", "")
-    if not sales_page_url.startswith(("http://", "https://")):
-        return False, "Field 'sales_page_url' must be a valid URL starting with http:// or https://"
-    
+
+    # Normalize URL fields: accept sales_page_urls (array) or sales_page_url (string)
+    sales_page_urls = body.get("sales_page_urls")
+    sales_page_url = body.get("sales_page_url")
+
+    if sales_page_urls and isinstance(sales_page_urls, list):
+        # Validate array length
+        if len(sales_page_urls) < 1 or len(sales_page_urls) > 3:
+            return False, "Field 'sales_page_urls' must contain 1-3 URLs"
+        # Validate each URL
+        for i, url in enumerate(sales_page_urls):
+            if not isinstance(url, str) or not url.strip():
+                return False, f"URL at index {i} in 'sales_page_urls' cannot be empty"
+            if not url.strip().startswith(("http://", "https://")):
+                return False, f"URL at index {i} in 'sales_page_urls' must start with http:// or https://"
+    elif sales_page_url and isinstance(sales_page_url, str) and sales_page_url.strip():
+        # Backward compat: normalize single URL to array
+        if not sales_page_url.startswith(("http://", "https://")):
+            return False, "Field 'sales_page_url' must be a valid URL starting with http:// or https://"
+        body["sales_page_urls"] = [sales_page_url]
+    else:
+        return False, "Either 'sales_page_urls' (array) or 'sales_page_url' (string) is required"
+
     return True, None
 
 

@@ -128,10 +128,12 @@ if __name__ == "__main__":
     )
     event["s3_bucket"] = os.environ.get("s3_bucket", event["RESULTS_BUCKET"])
     event["project_name"] = os.environ.get("project_name", "test")
-    event["sales_page_url"] = os.environ.get(
-        "sales_page_url", 
-        "https://naxir.co/products/steadystrap"
-    )
+    event["sales_page_urls"] = [
+        os.environ.get(
+            "sales_page_url",
+            "https://naxir.co/products/steadystrap"
+        )
+    ]
     event["job_id"] = os.environ.get("JOB_ID") or event.get("job_id") or str(uuid.uuid4())
     event["notification_email"] = "martijn.beeks@gmail.com"
     

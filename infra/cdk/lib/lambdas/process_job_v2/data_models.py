@@ -1175,32 +1175,36 @@ class OfferBrief(BaseModel):
 class CachedResearchData(BaseModel):
     """
     Cached output from Steps 1-3 (page analysis through deep research).
-    
-    Used to skip expensive Perplexity API calls when the same sales page URL
-    has been processed before 
+
+    Used to skip expensive Perplexity API calls when the same sales page URL(s)
+    have been processed before.
     """
     sales_page_url: str = Field(
-        ..., 
-        description="The original sales page URL that was analyzed"
+        default="",
+        description="The primary sales page URL (backward compat)"
+    )
+    sales_page_urls: List[str] = Field(
+        default_factory=list,
+        description="All sales page URLs that were analyzed"
     )
     research_page_analysis: str = Field(
-        ..., 
-        description="Output from Step 1: GPT-5 Vision analysis of the sales page"
+        ...,
+        description="Output from Step 1: GPT-5 Vision analysis of the sales page(s)"
     )
     deep_research_prompt: str = Field(
-        ..., 
+        ...,
         description="Output from Step 2: The prompt generated for deep research"
     )
     deep_research_output: str = Field(
-        ..., 
+        ...,
         description="Output from Step 3: The comprehensive research from Perplexity"
     )
     cached_at: str = Field(
-        ..., 
+        ...,
         description="ISO timestamp when this cache entry was created"
     )
     cache_version: str = Field(
-        default="1.0",
+        default="2.0",
         description="Version identifier for cache schema, used for invalidation"
     )
 

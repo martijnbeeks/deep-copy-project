@@ -29,10 +29,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const body = await request.json()
     const {
       title,
-      sales_page_url,
-      sales_page_urls,
       research_requirements,
       gender,
       location,
@@ -40,24 +39,28 @@ export async function POST(request: NextRequest) {
       target_product_name,
       notification_email,
       allowOverage
-    } = await request.json()
+    } = body
 
     if (!title) {
       return createValidationErrorResponse('Title is required')
     }
 
-    // Accept either sales_page_urls (array) or legacy sales_page_url (single)
-    const urls: string[] = Array.isArray(sales_page_urls) && sales_page_urls.length > 0
-      ? sales_page_urls.filter((u: string) => typeof u === 'string' && u.trim())
-      : typeof sales_page_url === 'string' && sales_page_url.trim()
-        ? [sales_page_url.trim()]
-        : []
-
-    if (urls.length === 0) {
-      return createValidationErrorResponse('At least one sales page URL is required')
+    // Normalize URL input: accept sales_page_urls (array) or sales_page_url (string)
+    let normalizedUrls: string[] = []
+    if (Array.isArray(body.sales_page_urls) && body.sales_page_urls.length > 0) {
+      normalizedUrls = body.sales_page_urls.filter((u: string) => typeof u === 'string' && u.trim())
+    } else if (body.sales_page_url && typeof body.sales_page_url === 'string' && body.sales_page_url.trim()) {
+      normalizedUrls = [body.sales_page_url]
     }
 
-    const firstUrl = urls[0]
+    if (normalizedUrls.length === 0) {
+      return createValidationErrorResponse('At least one sales page URL is required')
+    }
+    if (normalizedUrls.length > 3) {
+      return createValidationErrorResponse('Maximum 3 sales page URLs allowed')
+    }
+
+    const firstUrl = normalizedUrls[0]
 
     const authResult = await requireAuth(request)
     if (authResult.error) {
@@ -110,7 +113,7 @@ export async function POST(request: NextRequest) {
     let deepCopyJobId: string
     try {
       const v2Payload = {
-        sales_page_urls: urls,
+        sales_page_urls: normalizedUrls,
         project_name: title,
         advertorial_type: advertorial_type || 'Listicle',
         research_requirements: research_requirements || undefined,

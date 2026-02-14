@@ -133,19 +133,18 @@ class TestCacheHit:
         # Pre-seed research cache in S3
         s3 = boto3.client("s3", region_name=shared.AWS_REGION)
         sales_url = "https://example.com/cached-product"
-        # Mimic the cache key generation
-        from urllib.parse import urlparse
-        parsed = urlparse(sales_url.lower().rstrip("/"))
-        normalized = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
-        cache_key = hashlib.sha256(normalized.encode()).hexdigest()
+        # Use the multi-URL cache key (same as ResearchCacheService.get_multi_url_cache_key)
+        from services.cache import ResearchCacheService
+        cache_key = ResearchCacheService.get_multi_url_cache_key([sales_url])
 
         cache_data = {
             "sales_page_url": sales_url,
+            "sales_page_urls": [sales_url],
             "research_page_analysis": "Cached analysis text",
             "deep_research_prompt": "Cached prompt",
             "deep_research_output": "Cached deep research output",
             "cached_at": "2025-01-01T00:00:00Z",
-            "cache_version": "1.0",
+            "cache_version": "2.0",
         }
         s3.put_object(
             Bucket=shared.TEST_BUCKET,

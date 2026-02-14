@@ -127,7 +127,6 @@ interface SwipeFileGenerationRequest {
 
 // V2 API Interfaces
 interface SubmitV2JobRequest {
-  /** One or more sales page URLs (sent as array to backend). */
   sales_page_urls: string[]
   project_name: string
   advertorial_type?: string

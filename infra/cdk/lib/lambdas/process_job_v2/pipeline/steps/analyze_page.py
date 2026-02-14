@@ -5,8 +5,9 @@ Captures and analyzes a sales page using vision AI.
 """
 
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 
 from utils.image import (
     capture_page_screenshots,
@@ -188,3 +189,62 @@ class AnalyzePageStep:
         logger.info(f"Capturing product image only for: {sales_page_url}")
         screenshots = capture_page_screenshots(sales_page_url)
         return compress_to_base64(screenshots.product_image_bytes, max_size_mb=0.5)
+
+    def execute_multiple(self, sales_page_urls: List[str]) -> Tuple[str, str]:
+        """
+        Analyze one or more sales pages.
+
+        For a single URL, delegates to ``execute()``.
+        For multiple URLs, analyzes all in parallel using a thread pool,
+        then combines the analyses with labeled sections.
+
+        Args:
+            sales_page_urls: List of 1-3 URLs to analyze.
+
+        Returns:
+            Tuple of (combined_analysis, product_image_base64).
+            The product image comes from the first (primary) URL.
+
+        Raises:
+            PageAnalysisQualityError: If any URL fails the quality gate.
+            Exception: If any URL fails to be captured/analyzed.
+        """
+        if len(sales_page_urls) == 1:
+            result = self.execute(sales_page_urls[0])
+            return result.analysis, result.product_image
+
+        logger.info(f"Analyzing {len(sales_page_urls)} URLs in parallel")
+
+        results: Dict[str, PageAnalysisResult] = {}
+        errors: Dict[str, Exception] = {}
+
+        with ThreadPoolExecutor(max_workers=len(sales_page_urls)) as executor:
+            future_to_url = {
+                executor.submit(self.execute, url): url
+                for url in sales_page_urls
+            }
+            for future in as_completed(future_to_url):
+                url = future_to_url[future]
+                try:
+                    results[url] = future.result()
+                    logger.info(f"Completed analysis for: {url}")
+                except Exception as e:
+                    logger.error(f"Failed to analyze URL {url}: {e}")
+                    errors[url] = e
+
+        # Fail-fast: if any URL failed, raise the first error
+        if errors:
+            first_url = next(iter(errors))
+            raise errors[first_url]
+
+        # Combine analyses in original URL order with clear labels
+        combined_parts: List[str] = []
+        for i, url in enumerate(sales_page_urls, start=1):
+            combined_parts.append(f"=== URL {i}: {url} ===\n{results[url].analysis}")
+        combined_analysis = "\n\n".join(combined_parts)
+
+        # Use the first URL's product image as the primary
+        product_image = results[sales_page_urls[0]].product_image
+
+        logger.info(f"Combined analysis from {len(sales_page_urls)} URLs")
+        return combined_analysis, product_image

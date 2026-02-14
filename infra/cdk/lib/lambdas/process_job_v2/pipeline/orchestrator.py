@@ -38,7 +38,7 @@ DEV_MODE_SOURCE_JOB_ID = "70c7ec82-0abb-4126-a32f-7f376103f00a"
 @dataclass
 class PipelineConfig:
     """Configuration for pipeline execution."""
-    sales_page_url: str
+    sales_page_urls: List[str]
     s3_bucket: str
     project_name: str
     job_id: str
@@ -49,6 +49,16 @@ class PipelineConfig:
     notification_email: Optional[str] = None
     dev_mode: bool = False
     api_version: str = "v2"
+
+    @property
+    def primary_sales_page_url(self) -> str:
+        """Return the first (primary) sales page URL."""
+        return self.sales_page_urls[0]
+
+    @property
+    def sales_page_url(self) -> str:
+        """Backward-compatible alias for the primary URL."""
+        return self.primary_sales_page_url
 
 
 @dataclass
@@ -310,9 +320,11 @@ class PipelineOrchestrator:
             if config.dev_mode:
                 return self._handle_dev_mode(config)
             
-            # Check cache for deep research results
-            cached_research = self.cache_service.get_cached_research(config.sales_page_url, target_product_name=config.target_product_name)
-            
+            # Check cache for deep research results (multi-URL aware)
+            cached_research = self.cache_service.get_cached_research_multi(
+                config.sales_page_urls, target_product_name=config.target_product_name
+            )
+
             if cached_research:
                 # Cache HIT - use cached data and skip Steps 1-3
                 logger.info("Using cached research data - skipping Steps 1-3")
@@ -321,20 +333,20 @@ class PipelineOrchestrator:
                 deep_research_output = cached_research.deep_research_output
                 # Still capture product image (not cached — it's large base64 data)
                 logger.info("Capturing product image for cached research")
-                product_image = self.analyze_page_step.capture_product_image_only(config.sales_page_url)
+                product_image = self.analyze_page_step.capture_product_image_only(config.primary_sales_page_url)
             else:
                 # Cache MISS - execute Steps 1-3 and cache results
 
-                # Step 1: Analyze research page
-                logger.info("Step 1: Analyzing research page")
-                page_result = self.analyze_page_step.execute(config.sales_page_url)
-                research_page_analysis = page_result.analysis
-                product_image = page_result.product_image
+                # Step 1: Analyze research page(s)
+                logger.info(f"Step 1: Analyzing {len(config.sales_page_urls)} research page(s)")
+                research_page_analysis, product_image = self.analyze_page_step.execute_multiple(
+                    config.sales_page_urls
+                )
 
                 # Step 2: Create deep research prompt
                 logger.info("Step 2: Creating deep research prompt")
                 deep_research_prompt = self.deep_research_step.create_prompt(
-                    sales_page_url=config.sales_page_url,
+                    sales_page_urls=config.sales_page_urls,
                     research_page_analysis=research_page_analysis,
                     gender=config.gender,
                     location=config.location,
@@ -348,8 +360,8 @@ class PipelineOrchestrator:
 
                 # Save to cache for future runs
                 logger.info("Saving research results to cache")
-                self.cache_service.save_research_cache(
-                    sales_page_url=config.sales_page_url,
+                self.cache_service.save_research_cache_multi(
+                    sales_page_urls=config.sales_page_urls,
                     research_page_analysis=research_page_analysis,
                     deep_research_prompt=deep_research_prompt,
                     deep_research_output=deep_research_output,
@@ -510,18 +522,24 @@ class PipelineOrchestrator:
 def create_config_from_event(event: Dict[str, Any], s3_bucket_default: str) -> PipelineConfig:
     """
     Create PipelineConfig from Lambda event.
-    
+
     Args:
         event: Lambda event dictionary.
         s3_bucket_default: Default S3 bucket if not in event.
-        
+
     Returns:
         PipelineConfig instance.
     """
     job_id = event.get("job_id") or os.environ.get("JOB_ID") or str(uuid.uuid4())
-    
+
+    # Resolve sales_page_urls: prefer array, fall back to singular
+    sales_page_urls = event.get("sales_page_urls")
+    if not sales_page_urls:
+        single_url = event.get("sales_page_url") or os.environ.get("SALES_PAGE_URL", "")
+        sales_page_urls = [single_url] if single_url else []
+
     return PipelineConfig(
-        sales_page_url=event.get("sales_page_url") or os.environ.get("SALES_PAGE_URL", ""),
+        sales_page_urls=sales_page_urls,
         s3_bucket=event.get("s3_bucket", s3_bucket_default),
         project_name=event.get("project_name") or os.environ.get("PROJECT_NAME") or "default-project",
         job_id=job_id,
