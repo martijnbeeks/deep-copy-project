@@ -136,18 +136,11 @@ export async function PATCH(
       // Submit to DeepCopy API
       let deepCopyJobId: string
       try {
-        const marketingAnglePayload = {
-          title: title,
-          brand_info: brand_info || '',
+        const deepCopyResponse = await deepCopyClient.submitV2Research({
+          project_name: title,
           sales_page_url: sales_page_url || existingJob.sales_page_url || '',
-          target_approach: target_approach,
-          avatars: selectedAvatars.map((avatar: any) => ({
-            persona_name: avatar.persona_name,
-            is_researched: avatar.is_researched || true
-          }))
-        }
-
-        const deepCopyResponse = await deepCopyClient.submitMarketingAngle(marketingAnglePayload)
+          advertorial_type: target_approach,
+        })
         deepCopyJobId = deepCopyResponse.jobId
       } catch (apiError) {
         logger.error('❌ DeepCopy API Error:', apiError)
@@ -190,10 +183,10 @@ export async function PATCH(
 
       // Check initial status
       try {
-        const statusResponse = await deepCopyClient.getMarketingAngleStatus(deepCopyJobId)
+        const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
 
         if (statusResponse.status === 'SUCCEEDED') {
-          const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
+          const result = await deepCopyClient.getJobResult(deepCopyJobId)
           await createResult(marketingAngleId, '', {
             deepcopy_job_id: deepCopyJobId,
             full_result: result,
@@ -206,7 +199,7 @@ export async function PATCH(
           try {
             const { recordJobCreditEvent } = await import('@/lib/services/billing')
             const { JOB_CREDITS_BY_TYPE } = await import('@/lib/constants/job-credits')
-            await recordJobCreditEvent({ userId: authResult.user.id, jobId: marketingAngleId, jobType: 'pre_lander', credits: JOB_CREDITS_BY_TYPE.pre_lander })
+            await recordJobCreditEvent({ userId: authResult.user.id, jobId: marketingAngleId, jobType: 'deep_research', credits: JOB_CREDITS_BY_TYPE.deep_research })
           } catch (creditErr) {
             // don't fail the request
           }

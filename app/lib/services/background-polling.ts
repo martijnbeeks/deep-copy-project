@@ -87,11 +87,11 @@ export class BackgroundPollingService {
       try {
         pollCount++
 
-        const statusResponse = await deepCopyClient.getMarketingAngleStatus(deepCopyJobId)
+        const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
 
         if (statusResponse.status === 'SUCCEEDED') {
-          // Marketing angle completed - get results and store them
-          const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
+          // Job completed - get results and store them
+          const result = await deepCopyClient.getJobResult(deepCopyJobId)
           await this.storeJobResults(jobId, result, deepCopyJobId)
           await updateJobStatus(jobId, 'completed', 100)
 

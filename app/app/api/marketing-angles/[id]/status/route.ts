@@ -46,7 +46,7 @@ export async function GET(
     // Poll the DeepCopy API only if marketing angle is not completed
     let statusResponse
     try {
-      statusResponse = await deepCopyClient.getMarketingAngleStatus(deepCopyJobId)
+      statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
     } catch (apiError) {
       logger.error('❌ DeepCopy API Error in status check:', apiError)
       // If API call fails, return current database status instead of error
@@ -66,7 +66,7 @@ export async function GET(
       // Get results and store them first, before marking as completed
       try {
         logger.log(`🔄 Fetching results for marketing angle ${marketingAngleId}`)
-        const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
+        const result = await deepCopyClient.getJobResult(deepCopyJobId)
 
         logger.log(`🔄 Storing results for marketing angle ${marketingAngleId}`)
         await storeJobResults(marketingAngleId, result, deepCopyJobId)
@@ -80,7 +80,7 @@ export async function GET(
           if (jobRow.rows[0]) {
             const { recordJobCreditEvent } = await import('@/lib/services/billing')
             const { JOB_CREDITS_BY_TYPE } = await import('@/lib/constants/job-credits')
-            await recordJobCreditEvent({ userId: jobRow.rows[0].user_id, jobId: marketingAngleId, jobType: 'pre_lander', credits: JOB_CREDITS_BY_TYPE.pre_lander })
+            await recordJobCreditEvent({ userId: jobRow.rows[0].user_id, jobId: marketingAngleId, jobType: 'deep_research', credits: JOB_CREDITS_BY_TYPE.deep_research })
           }
         } catch (creditErr) {
           logger.error('Failed to record job credit event:', creditErr)
@@ -162,7 +162,7 @@ export async function GET(
 
             // Try to re-fetch and store results if they're missing
             try {
-              const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
+              const result = await deepCopyClient.getJobResult(deepCopyJobId)
               await storeJobResults(marketingAngleId, result, deepCopyJobId)
               logger.log('✅ Successfully re-fetched and stored missing results')
 

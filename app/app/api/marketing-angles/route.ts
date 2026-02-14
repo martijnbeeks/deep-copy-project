@@ -121,18 +121,11 @@ export async function POST(request: NextRequest) {
     // Submit marketing angle to DeepCopy API first to get the job ID using centralized client
     let deepCopyJobId: string
     try {
-      const marketingAnglePayload = {
-        title: title,
-        brand_info: brand_info || '',
+      const deepCopyResponse = await deepCopyClient.submitV2Research({
+        project_name: title,
         sales_page_url: sales_page_url || '',
-        target_approach: target_approach,
-        avatars: selectedAvatars.map((avatar: any) => ({
-          persona_name: avatar.persona_name,
-          is_researched: avatar.is_researched || true
-        }))
-      }
-
-      const deepCopyResponse = await deepCopyClient.submitMarketingAngle(marketingAnglePayload)
+        advertorial_type: target_approach,
+      })
       deepCopyJobId = deepCopyResponse.jobId
 
     } catch (apiError) {
@@ -167,11 +160,11 @@ export async function POST(request: NextRequest) {
 
     // Immediately check the marketing angle status to get initial progress
     try {
-      const statusResponse = await deepCopyClient.getMarketingAngleStatus(deepCopyJobId)
+      const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
 
       if (statusResponse.status === 'SUCCEEDED') {
         // Marketing angle completed immediately - get results and store them
-        const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
+        const result = await deepCopyClient.getJobResult(deepCopyJobId)
         await storeMarketingAngleResults(marketingAngle.id, result, deepCopyJobId)
         await updateJobStatus(marketingAngle.id, 'completed', 100)
 

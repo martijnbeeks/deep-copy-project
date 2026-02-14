@@ -23,7 +23,7 @@ info:
 
     echo "Token acquired: ${#ACCESS_TOKEN} chars"
 
-    # Submit a job
+    # Submit a v2 job
     curl -sS -X POST \
       -H "Authorization: Bearer $ACCESS_TOKEN" \
       -H "content-type: application/json" \
@@ -31,17 +31,15 @@ info:
         "sales_page_url": "https://try.meritrelief.com/",
         "project_name": "meritrelief",
         "advertorial_type": "Listicle",
-        "persona": "Health-conscious professionals",
-        "age_range": "30-45",
-        "gender": "female"
+        "gender": "Female"
       }' \
-      "${API_URL}jobs"
+      "${API_URL}v2/jobs"
 
-    # Get job status (replace with real jobId)
-    curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID"
+    # Get v2 job status (replace with real jobId)
+    curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}v2/jobs/YOUR_JOB_ID"
 
-    # Get job result JSON (404 until available)
-    curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}jobs/YOUR_JOB_ID/result"
+    # Get v2 job result JSON (404 until available)
+    curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" "${API_URL}v2/jobs/YOUR_JOB_ID/result"
     ```
 servers:
   - url: https://o5egokjpsl.execute-api.eu-west-1.amazonaws.com/prod/

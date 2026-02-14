@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db/connection'
 import { deepCopyClient } from '@/lib/clients/deepcopy-client'
 import { updateJobStatus, updateJobAvatars, createResult, updateJobScreenshot } from '@/lib/db/queries'
-import { storeJobResults } from '@/lib/utils/job-results'
 import { getInjectableTemplateForJob } from '@/lib/utils/job-results-helpers'
 import { handleApiError, createValidationErrorResponse, createSuccessResponse } from '@/lib/middleware/error-handler'
 import { logger } from '@/lib/utils/logger'
@@ -29,7 +28,6 @@ export async function GET(
     }
 
     const job = result.rows[0]
-    const isV2Job = job.target_approach === 'v2'
 
     // Use execution_id if available (jobs submitted to DeepCopy have this set),
     // otherwise use the job ID directly (for jobs created with DeepCopy job ID as primary key)
@@ -44,16 +42,10 @@ export async function GET(
 
     const dbStatus = currentJob.rows[0]
 
-    // Poll the DeepCopy API using the correct endpoint based on job type
+    // Poll the DeepCopy API for job status
     let statusResponse
     try {
-      if (isV2Job) {
-        // Use V2 API endpoint
-        statusResponse = await deepCopyClient.getV2Status(deepCopyJobId)
-      } else {
-        // Use V1 API endpoint
-        statusResponse = await deepCopyClient.getMarketingAngleStatus(deepCopyJobId)
-      }
+      statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
     } catch (apiError) {
       logger.error('❌ DeepCopy API Error in status check:', apiError)
       // If API call fails, return current database status instead of error
@@ -72,17 +64,10 @@ export async function GET(
     if (statusResponse.status === 'SUCCEEDED') {
       await updateJobStatus(jobId, 'completed', 100)
 
-      // Get results and store them using the correct method
+      // Get results and store them
       try {
-        if (isV2Job) {
-          // V2: Get results, transform avatars, and store
-          const result = await deepCopyClient.getV2Result(deepCopyJobId)
-          await storeV2JobResults(jobId, result, deepCopyJobId)
-        } else {
-          // V1: Store results as-is
-          const result = await deepCopyClient.getMarketingAngleResult(deepCopyJobId)
-          await storeJobResults(jobId, result, deepCopyJobId)
-        }
+        const result = await deepCopyClient.getJobResult(deepCopyJobId)
+        await storeV2JobResults(jobId, result, deepCopyJobId)
       } catch (resultError) {
         logger.error('❌ Error fetching/storing job results:', resultError)
         // Continue even if result fetching fails
@@ -90,11 +75,10 @@ export async function GET(
 
       // Record job credit event (event-based billing)
       try {
-        const jobRow = await query('SELECT user_id, is_avatar_job FROM jobs WHERE id = $1', [jobId])
+        const jobRow = await query('SELECT user_id FROM jobs WHERE id = $1', [jobId])
         if (jobRow.rows[0]) {
           const { recordJobCreditEvent } = await import('@/lib/services/billing')
-          // V2 jobs and avatar research jobs use deep_research credits; marketing angle completion uses pre_lander
-          const jobType = isV2Job || jobRow.rows[0].is_avatar_job ? 'deep_research' : 'pre_lander'
+          const jobType = 'deep_research'
           const credits = JOB_CREDITS_BY_TYPE[jobType]
           await recordJobCreditEvent({ userId: jobRow.rows[0].user_id, jobId, jobType, credits })
         }

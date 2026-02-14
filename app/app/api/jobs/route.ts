@@ -157,11 +157,11 @@ export async function POST(request: NextRequest) {
 
     // Immediately check the V2 job status to get initial progress
     try {
-      const statusResponse = await deepCopyClient.getV2Status(deepCopyJobId)
+      const statusResponse = await deepCopyClient.getJobStatus(deepCopyJobId)
 
       if (statusResponse.status === 'SUCCEEDED') {
         // V2 job completed immediately - get results and store them
-        const result = await deepCopyClient.getV2Result(deepCopyJobId)
+        const result = await deepCopyClient.getJobResult(deepCopyJobId)
         await storeV2JobResults(job.id, result, deepCopyJobId)
         await updateJobStatus(job.id, 'completed', 100)
 
@@ -249,20 +249,4 @@ async function storeV2JobResults(localJobId: string, result: any, deepCopyJobId:
   }
 }
 
-// Store job results in database (V1 - kept for backward compatibility)
-async function storeJobResults(localJobId: string, result: any, deepCopyJobId: string) {
-  try {
-    // Store the complete JSON result as metadata
-    await createResult(localJobId, '', {
-      deepcopy_job_id: deepCopyJobId,
-      full_result: result,
-      project_name: result.project_name,
-      timestamp_iso: result.timestamp_iso,
-      job_id: result.job_id,
-      generated_at: new Date().toISOString()
-    })
-  } catch (error) {
-    throw error
-  }
-}
 

@@ -31,17 +31,6 @@ interface CustomerAvatar {
   is_researched?: boolean
 }
 
-interface SubmitMarketingAngleRequest {
-  title: string
-  brand_info?: string
-  sales_page_url: string
-  target_approach: string
-  avatars?: {
-    persona_name: string
-    is_researched: boolean
-  }[]
-}
-
 interface SubmitJobResponse {
   jobId: string
   taskArn?: string
@@ -297,27 +286,13 @@ class DeepCopyClient {
     return responseData
   }
 
-  // Marketing Angle Jobs
-  async submitMarketingAngle(data: SubmitMarketingAngleRequest): Promise<SubmitJobResponse> {
-    const endpoint = isDevMode() ? 'dev/jobs' : 'jobs'
-    return this.makeRequest(endpoint, {
-      method: 'POST',
-      body: JSON.stringify({
-        title: data.title,
-        brand_info: data.brand_info || '',
-        sales_page_url: data.sales_page_url,
-        target_approach: data.target_approach,
-        avatars: data.avatars || []
-      })
-    })
+  // Job status & result (uses v2 endpoints - same underlying Lambda for all job types)
+  async getJobStatus(jobId: string): Promise<JobStatusResponse> {
+    return this.makeRequest(`v2/jobs/${jobId}`)
   }
 
-  async getMarketingAngleStatus(jobId: string): Promise<JobStatusResponse> {
-    return this.makeRequest(`jobs/${jobId}`)
-  }
-
-  async getMarketingAngleResult(jobId: string): Promise<MarketingAngleResult> {
-    return this.makeRequest(`jobs/${jobId}/result`)
+  async getJobResult(jobId: string): Promise<MarketingAngleResult> {
+    return this.makeRequest(`v2/jobs/${jobId}/result`)
   }
 
   // Avatar Extraction (follows async pattern like other jobs)
@@ -374,13 +349,6 @@ class DeepCopyClient {
     })
   }
 
-  async getV2Status(jobId: string): Promise<JobStatusResponse> {
-    return this.makeRequest(`v2/jobs/${jobId}`)
-  }
-
-  async getV2Result(jobId: string): Promise<JobResultV2> {
-    return this.makeRequest(`v2/jobs/${jobId}/result`)
-  }
 }
 
 // Singleton instance
@@ -392,7 +360,6 @@ export const deepCopyClient = new DeepCopyClient({
 })
 
 export type {
-  SubmitMarketingAngleRequest,
   SubmitJobResponse,
   JobStatusResponse,
   MarketingAngleResult,
