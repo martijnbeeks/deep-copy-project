@@ -28,6 +28,7 @@ from services.template_prediction_service import LibrarySummariesCache
 from services.prompt_service import PromptService
 from services.cloudflare_service import CloudflareService
 from services.klaviyo_service import KlaviyoEmailService
+from services.postgres_notifier import PostgresNotifier
 
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,7 @@ class PipelineConfig:
     research_requirements: Optional[str] = None
     target_product_name: Optional[str] = None
     notification_email: Optional[str] = None
+    callback_url: Optional[str] = None
     dev_mode: bool = False
     api_version: str = "v2"
 
@@ -100,6 +102,10 @@ class PipelineOrchestrator:
         if not db_url:
             raise RuntimeError("DATABASE_URL not found in secrets. Cannot load prompts from DB.")
         self.prompt_service = PromptService(db_url, "process_job_v2")
+
+        # Initialize PostgreSQL notifier (uses same DATABASE_URL)
+        self.postgres_notifier = PostgresNotifier(db_url)
+        self._webhook_secret = self.aws_services.secrets.get("WEBHOOK_SECRET", "")
 
         # Initialize pipeline steps
         self.analyze_page_step = AnalyzePageStep(self.openai_service, prompt_service=self.prompt_service)
@@ -202,6 +208,13 @@ class PipelineOrchestrator:
                     )
                 except Exception as e:
                     logger.warning("Email notification failed (dev mode): %s", e)
+
+            # Update PostgreSQL + callback (dev mode)
+            self.postgres_notifier.notify_completed(config.job_id)
+            if config.callback_url and self._webhook_secret:
+                self.postgres_notifier.send_callback(
+                    config.callback_url, config.job_id, "completed", self._webhook_secret,
+                )
 
             return PipelineResult(
                 success=True,
@@ -472,6 +485,15 @@ class PipelineOrchestrator:
                 except Exception as e:
                     logger.warning("Email notification failed: %s", e)
 
+            # Update PostgreSQL directly (non-fatal)
+            self.postgres_notifier.notify_completed(config.job_id)
+
+            # Send webhook callback to trigger result processing
+            if config.callback_url and self._webhook_secret:
+                self.postgres_notifier.send_callback(
+                    config.callback_url, config.job_id, "completed", self._webhook_secret,
+                )
+
             return PipelineResult(
                 success=True,
                 status_code=200,
@@ -488,7 +510,7 @@ class PipelineOrchestrator:
             
         except Exception as e:
             logger.error(f"Error in pipeline execution: {e}")
-            
+
             # Attempt to mark job failed
             try:
                 self.aws_services.update_job_status(
@@ -496,7 +518,16 @@ class PipelineOrchestrator:
                 )
             except Exception:
                 pass
-            
+
+            # Update PostgreSQL directly (non-fatal)
+            self.postgres_notifier.notify_failed(config.job_id)
+
+            # Send webhook callback to notify frontend of failure
+            if config.callback_url and self._webhook_secret:
+                self.postgres_notifier.send_callback(
+                    config.callback_url, config.job_id, "failed", self._webhook_secret,
+                )
+
             return PipelineResult(
                 success=False,
                 status_code=500,
@@ -530,6 +561,7 @@ def create_config_from_event(event: Dict[str, Any], s3_bucket_default: str) -> P
         research_requirements=event.get("research_requirements"),
         target_product_name=event.get("target_product_name"),
         notification_email=event.get("notification_email"),
+        callback_url=event.get("callback_url"),
         dev_mode=event.get("dev_mode") == "true",
         api_version=event.get("api_version") or os.environ.get("API_VERSION") or "v2"
     )

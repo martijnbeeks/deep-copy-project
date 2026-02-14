@@ -98,6 +98,12 @@ export async function POST(request: NextRequest) {
     // Submit V2 unified research to DeepCopy API
     let deepCopyJobId: string
     try {
+      // Build callback URL so Lambda can notify us when the job finishes
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : 'http://localhost:3000'
+      const callbackUrl = `${appUrl}/api/webhooks/job-complete`
+
       const v2Payload = {
         sales_page_url: sales_page_url,
         project_name: title,
@@ -105,7 +111,8 @@ export async function POST(request: NextRequest) {
         research_requirements: research_requirements || undefined,
         gender: gender || undefined,
         location: location || undefined,
-        notification_email: notification_email || undefined
+        notification_email: notification_email || undefined,
+        callback_url: callbackUrl,
       }
 
       const deepCopyResponse = await deepCopyClient.submitV2Research(v2Payload)

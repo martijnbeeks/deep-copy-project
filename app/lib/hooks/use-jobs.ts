@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { JobWithTemplate, JobWithResult } from '@/lib/db/types'
 import { internalApiClient } from '@/lib/clients/internal-client'
 import { POLLING_INTERVALS } from '@/lib/constants/polling'
+import { isProcessingStatus } from '@/lib/utils/job-status'
 
 // Query keys
 export const marketingAngleKeys = {
@@ -25,7 +26,14 @@ export function useMarketingAngles(filters?: { status?: string; search?: string 
     refetchOnMount: true, // Always refetch when component mounts (but show cached data immediately)
     refetchOnWindowFocus: true, // Refetch when window regains focus
     placeholderData: (previousData) => previousData, // Show cached data immediately while refetching in background
-    // GlobalPollingProvider handles polling for processing jobs
+    // Auto-refetch every 5s when any job is still processing.
+    // The Lambda updates PostgreSQL directly on completion, so this
+    // just re-reads our own DB — no external API calls involved.
+    refetchInterval: (query) => {
+      const data = query.state.data as JobWithTemplate[] | undefined
+      const hasProcessing = data?.some(job => isProcessingStatus(job.status))
+      return hasProcessing ? POLLING_INTERVALS.SIMPLE_POLLING : false
+    },
   })
 }
 
