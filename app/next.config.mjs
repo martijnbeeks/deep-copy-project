@@ -1,3 +1,5 @@
+import { withSentryConfig } from "@sentry/nextjs";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
@@ -48,4 +50,11 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  org: "deepcopy",
+  project: "4510738713346128",
+  widenClientFileUpload: true,
+  disableLogger: true,
+  hideSourceMaps: true,
+})

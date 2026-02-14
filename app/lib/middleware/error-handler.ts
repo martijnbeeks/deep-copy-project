@@ -3,6 +3,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 import { logger } from '@/lib/utils/logger'
 
 export interface ApiError {
@@ -16,6 +17,7 @@ export interface ApiError {
  */
 export function handleApiError(error: unknown): NextResponse {
   logger.error('API Error:', error)
+  Sentry.captureException(error)
 
   let message = 'An unexpected error occurred'
   let status = 500
