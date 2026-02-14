@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
       location,
       advertorial_type,
       target_product_name,
+      notification_email,
       allowOverage
     } = await request.json()
 
@@ -115,7 +116,8 @@ export async function POST(request: NextRequest) {
         research_requirements: research_requirements || undefined,
         gender: gender || undefined,
         location: location || undefined,
-        ...(target_product_name && { target_product_name })
+        ...(target_product_name && { target_product_name }),
+        notification_email: notification_email || undefined
       }
 
       const deepCopyResponse = await deepCopyClient.submitV2Research(v2Payload)

@@ -131,6 +131,10 @@ def handler(event, _context):
     target_product_name = body.get("target_product_name")
     if target_product_name:
         payload["target_product_name"] = target_product_name
+
+    notification_email = body.get("notification_email")
+    if notification_email:
+        payload["notification_email"] = notification_email
     
     try:
         _lambda.invoke(

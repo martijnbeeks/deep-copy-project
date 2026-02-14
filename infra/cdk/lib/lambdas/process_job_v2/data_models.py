@@ -76,7 +76,7 @@ class StageOfSophistication(BaseModel):
     )
     rationale: Optional[str] = Field(
         None,
-        description="Why this level fits (signals from ads, competitors, buyer skepticism).",
+        description="Why this level fits (signals from ads, competitors, buyer skepticism). Use sentence case, NOT all caps.",
     )
 
 
@@ -86,12 +86,12 @@ class AvatarOverview(BaseModel):
     High-level summary card that appears at the top of the avatar sheet.
     """
     name: str = Field(
-        ..., 
-        description="Descriptive name for this avatar"
+        ...,
+        description="Descriptive name for this avatar. Use Title Case (e.g., 'Medically Vulnerable Seeker'), NOT all caps."
     )
     description: str = Field(
-        ..., 
-        description="One-sentence description of who they are, their situation, and what makes them unique. Example: 'A 55-75 year old who noticed early vision changes and wants to act before it gets worse — but needs proof before they'll trust any product.'"
+        ...,
+        description="One-sentence description of who they are, their situation, and what makes them unique. Use sentence case, NOT all caps. Example: 'A 55-75 year old who noticed early vision changes and wants to act before it gets worse — but needs proof before they'll trust any product.'"
     )
     market_size: MarketSize = Field(
         ..., 
@@ -115,16 +115,16 @@ class AvatarOverview(BaseModel):
         description="Schwartz awareness stage: unaware, problem aware, solution aware, product aware, or most aware"
     )
     awareness_level_description: str = Field(
-        ..., 
-        description="Brief explanation of why they are at this awareness level and what they know or don't know about the problem and solutions. Max. 10 words.'"
+        ...,
+        description="Brief explanation of why they are at this awareness level and what they know or don't know about the problem and solutions. Use sentence case, NOT all caps. Max. 10 words.'"
     )
     competition_level: CompetitionLevel = Field(
         ..., 
         description="How heavily competitors are already targeting this avatar: low (untapped), medium (some competition), high (saturated)"
     )
     one_line_hook: str = Field(
-        ..., 
-        description="A headline or opening line that would immediately grab THIS avatar's attention. Example: 'The eye supplement that shows you exactly what's inside — because you're tired of proprietary blend labels.'"
+        ...,
+        description="A headline or opening line that would immediately grab THIS avatar's attention. Use sentence case, NOT all caps. Example: 'The eye supplement that shows you exactly what's inside — because you're tired of proprietary blend labels.'"
     )
 
 
@@ -169,12 +169,12 @@ class AvatarProblemExperience(BaseModel):
         description="Current severity of their problem: 'Early stage', 'Early to Moderate', 'Moderate', 'Severe', 'Crisis'"
     )
     trigger_event: str = Field(
-        ..., 
-        description="The specific moment that made them start actively searching for a solution. Write as a quote or specific event. Example: 'Doctor mentioned early signs of AMD at last eye exam.'"
+        ...,
+        description="The specific moment that made them start actively searching for a solution. Write as a quote or specific event. Use sentence case, NOT all caps. Example: 'Doctor mentioned early signs of AMD at last eye exam.'"
     )
     daily_life_impact: List[str] = Field(
         default_factory=list,
-        description="Specific ways this problem affects their everyday activities. List each impact as a bullet point. Examples: ['Struggles with screen time — eyes tire faster', 'Avoids night driving when possible', 'Holds phone and books further away', 'Difficulty reading menus in dim restaurants']"
+        description="Specific ways this problem affects their everyday activities. List each impact as a bullet point. Use sentence case, NOT all caps. Examples: ['Struggles with screen time — eyes tire faster', 'Avoids night driving when possible', 'Holds phone and books further away', 'Difficulty reading menus in dim restaurants']"
     )
 
 
@@ -185,19 +185,19 @@ class PainDimension(BaseModel):
     """
     surface: List[str] = Field(
         default_factory=list,
-        description="Surface-level, physical, or practical pain points — the problem as they describe it in literal terms. Examples: ['Blurry vision when reading', 'Eye strain after screen time', 'Trouble in dim lighting']"
+        description="Surface-level, physical, or practical pain points — the problem as they describe it in literal terms. Use sentence case, NOT all caps. Examples: ['Blurry vision when reading', 'Eye strain after screen time', 'Trouble in dim lighting']"
     )
     emotional: List[str] = Field(
         default_factory=list,
-        description="Emotional pain — the feelings this problem creates (fear, frustration, shame, anger). Examples: ['Anxiety about AMD/cataracts', 'Fear of losing independence', 'Frustration at not knowing what actually works']"
+        description="Emotional pain — the feelings this problem creates (fear, frustration, shame, anger). Use sentence case, NOT all caps. Examples: ['Anxiety about AMD/cataracts', 'Fear of losing independence', 'Frustration at not knowing what actually works']"
     )
     identity: List[str] = Field(
         default_factory=list,
-        description="Identity pain — how this conflicts with who they believe they are. Write as quotes or self-statements. Examples: ['\"I\\'ve always been sharp and independent\"', '\"I\\'m not ready to be old\"']"
+        description="Identity pain — how this conflicts with who they believe they are. Write as quotes or self-statements. Use sentence case, NOT all caps. Examples: ['\"I\\'ve always been sharp and independent\"', '\"I\\'m not ready to be old\"']"
     )
     secret: List[str] = Field(
         default_factory=list,
-        description="Secret pain — what they won't say out loud but feel deeply. The fears they keep private. Examples: ['Terrified of going blind', 'Scared of being a burden']"
+        description="Secret pain — what they won't say out loud but feel deeply. The fears they keep private. Use sentence case, NOT all caps. Examples: ['Terrified of going blind', 'Scared of being a burden']"
     )
 
 
@@ -208,27 +208,27 @@ class DesireDimension(BaseModel):
     """
     surface: List[str] = Field(
         default_factory=list,
-        description="Surface-level, physical, or practical desires"
+        description="Surface-level, physical, or practical desires. Use sentence case, NOT all caps."
     )
     emotional: str = Field(
-        ..., 
-        description="How they want to FEEL. The emotional state they're seeking. Example: 'Feel confident and at peace about my eye health'"
+        ...,
+        description="How they want to FEEL. The emotional state they're seeking. Use sentence case, NOT all caps. Example: 'Feel confident and at peace about my eye health'"
     )
     social: str = Field(
-        ..., 
-        description="How they want to be SEEN by others. Their desired social perception. Example: 'Be seen as sharp and capable — not \"getting old\" or declining'"
+        ...,
+        description="How they want to be SEEN by others. Their desired social perception. Use sentence case, NOT all caps. Example: 'Be seen as sharp and capable — not \"getting old\" or declining'"
     )
     identity: str = Field(
-        ..., 
-        description="Who they want to BECOME. The identity they aspire to. Write as a self-statement. Example: '\"I\\'m proactive about health, not reactive\"'"
+        ...,
+        description="Who they want to BECOME. The identity they aspire to. Write as a self-statement. Use sentence case, NOT all caps. Example: '\"I\\'m proactive about health, not reactive\"'"
     )
     secret: str = Field(
-        ..., 
-        description="The deeper want they might not admit publicly. Example: 'Just want to keep reading to my grandchildren'"
+        ...,
+        description="The deeper want they might not admit publicly. Use sentence case, NOT all caps. Example: 'Just want to keep reading to my grandchildren'"
     )
     dream_outcome: str = Field(
-        ..., 
-        description="If this problem was completely solved, what does their life look like? Paint the picture. Example: 'Clear, comfortable vision for decades — without constant worry'"
+        ...,
+        description="If this problem was completely solved, what does their life look like? Paint the picture. Use sentence case, NOT all caps. Example: 'Clear, comfortable vision for decades — without constant worry'"
     )
 
 
@@ -254,16 +254,16 @@ class AvatarPainDesire(BaseModel):
 class FailedSolutionItem(BaseModel):
     """A single failed solution with analysis of why it failed and our opportunity."""
     solution_tried: str = Field(
-        ..., 
-        description="What they tried. Be specific about the product/approach. Examples: 'Store-brand AREDS2', 'Basic lutein from Amazon', 'Blue light glasses'"
+        ...,
+        description="What they tried. Be specific about the product/approach. Use sentence case, NOT all caps. Examples: 'Store-brand AREDS2', 'Basic lutein from Amazon', 'Blue light glasses'"
     )
     why_it_failed: str = Field(
-        ..., 
-        description="Why it didn't work FOR THEM — in their words or from their perspective. Examples: '\"Proprietary blend\" — can\\'t verify doses', 'No results after 3 months', 'Only addresses screens, not root'"
+        ...,
+        description="Why it didn't work FOR THEM — in their words or from their perspective. Use sentence case, NOT all caps. Examples: '\"Proprietary blend\" — can\\'t verify doses', 'No results after 3 months', 'Only addresses screens, not root'"
     )
     our_opportunity: str = Field(
-        ..., 
-        description="How our product/solution addresses this specific failure. Examples: 'Full ingredient transparency', 'Clinical doses + multi-action formula', 'Inside-out nutrition approach'"
+        ...,
+        description="How our product/solution addresses this specific failure. Use sentence case, NOT all caps. Examples: 'Full ingredient transparency', 'Clinical doses + multi-action formula', 'Inside-out nutrition approach'"
     )
 
 
@@ -292,12 +292,12 @@ class AvatarObjectionsBuying(BaseModel):
     Their objections, buying psychology, and decision triggers.
     """
     primary_objection: str = Field(
-        ..., 
-        description="The #1 reason they would NOT buy — their biggest concern. Write as a quote. Example: '\"Is this actually clinically proven or just marketing hype?\"'"
+        ...,
+        description="The #1 reason they would NOT buy — their biggest concern. Write as a quote. Use sentence case, NOT all caps. Example: '\"Is this actually clinically proven or just marketing hype?\"'"
     )
     hidden_objection: str = Field(
-        ..., 
-        description="What they're REALLY worried about but won't say out loud. Write as a quote. Example: '\"What if I waste money AGAIN on something that doesn\\'t work?\"'"
+        ...,
+        description="What they're REALLY worried about but won't say out loud. Write as a quote. Use sentence case, NOT all caps. Example: '\"What if I waste money AGAIN on something that doesn\\'t work?\"'"
     )
     decision_style: str = Field(
         ..., 
@@ -309,19 +309,19 @@ class AvatarObjectionsBuying(BaseModel):
     )
     what_makes_them_buy: List[str] = Field(
         default_factory=list,
-        description="Specific triggers or proof points that would make them buy. Examples: ['Third-party lab verification', 'Clear clinical study cites', '60-90 day money-back', 'Doctor endorsement']"
+        description="Specific triggers or proof points that would make them buy. Use sentence case, NOT all caps. Examples: ['Third-party lab verification', 'Clear clinical study cites', '60-90 day money-back', 'Doctor endorsement']"
     )
     what_makes_them_walk: List[str] = Field(
         default_factory=list,
-        description="Dealbreakers that would make them immediately leave. Examples: ['\"Proprietary blend\" labels', 'Overhyped language (\"miracle\")', 'No clear refund policy', 'No independent reviews']"
+        description="Dealbreakers that would make them immediately leave. Use sentence case, NOT all caps. Examples: ['\"Proprietary blend\" labels', 'Overhyped language (\"miracle\")', 'No clear refund policy', 'No independent reviews']"
     )
 
 
 class QuoteWithSource(BaseModel):
     """A direct quote from research with its source."""
     quote: str = Field(
-        ..., 
-        description="The exact quote from research. Include quotation marks. Example: '\"I'm scared I won't be able to read to my grandchildren.\"'"
+        ...,
+        description="The exact quote from research. Include quotation marks. Use sentence case, NOT all caps. Example: '\"I'm scared I won't be able to read to my grandchildren.\"'"
     )
     source: str = Field(
         ..., 
@@ -348,11 +348,11 @@ class AvatarRawLanguage(BaseModel):
     )
     words_they_use: List[str] = Field(
         default_factory=list,
-        description="Words and phrases THEY use to describe the problem/solution. Use their vocabulary in copy. Examples: ['eye health', 'vision support', 'macular health']"
+        description="Words and phrases THEY use to describe the problem/solution. Use their vocabulary in copy. Use sentence case, NOT all caps. Examples: ['eye health', 'vision support', 'macular health']"
     )
     words_they_avoid: List[str] = Field(
         default_factory=list,
-        description="Words that turn them off or feel wrong. AVOID these in copy. Examples: ['miracle', 'cure', 'guaranteed results']"
+        description="Words that turn them off or feel wrong. AVOID these in copy. Use sentence case, NOT all caps. Examples: ['miracle', 'cure', 'guaranteed results']"
     )
 
 
@@ -376,8 +376,8 @@ class Avatar(BaseModel):
     )
 
     short_description: str = Field(
-        ..., 
-        description="Short description of the avatar"
+        ...,
+        description="Short description of the avatar. Use sentence case, NOT all caps."
     )
 
     age: str = Field(
@@ -516,8 +516,8 @@ class Avatar(BaseModel):
 
 class IdentifiedAvatar(BaseModel):
     """A potential customer avatar identified from research."""
-    name: str = Field(..., description="Name of the avatar (e.g., 'Busy Mom').")
-    description: str = Field(..., description="Brief description of who they are and why they are a good fit.")
+    name: str = Field(..., description="Name of the avatar (e.g., 'Busy Mom'). Use Title Case, NOT all caps.")
+    description: str = Field(..., description="Brief description of who they are and why they are a good fit. Use sentence case, NOT all caps.")
 
 
 class IdentifiedAvatarList(BaseModel):
@@ -583,8 +583,8 @@ class MarketingAngle(BaseModel):
         description="The category of argument being made: mechanism, pain_lead, desire_lead, social_proof, fear_based, curiosity, contrarian, story"
     )
     angle_mechanism: Optional[str] = Field(
-        None, 
-        description="Explain the core mechanism or logic of this angle. Example: 'This formula uses the exact ingredients studied in AREDS2, so you can trust it without needing to decode proprietary blends. Max 100 words.'"
+        None,
+        description="One short sentence (max 15 words) summarizing the core mechanism or logic of this angle. Example: 'Uses AREDS2-studied ingredients so you can trust the formula.'"
     )
     emotional_driver: EmotionalDriver = Field(
         ..., 
@@ -808,7 +808,7 @@ class StageOfSophistication(BaseModel):
     )
     rationale: Optional[str] = Field(
         None,
-        description="Why this level fits (signals from ads, competitors, buyer skepticism).",
+        description="Why this level fits (signals from ads, competitors, buyer skepticism). Use sentence case, NOT all caps.",
     )
 
 
@@ -1221,17 +1221,17 @@ class TemplateMatch(BaseModel):
         le=1.0,
         description="Overall match score from 0.0 to 1.0"
     )
-    audience_fit: float = Field(
+    format_fit: float = Field(
         ...,
         ge=0.0,
         le=1.0,
-        description="How well the template's target audience matches the avatar"
+        description="How well the template's format/structure serves this avatar+angle"
     )
-    pain_point_fit: float = Field(
+    persuasion_fit: float = Field(
         ...,
         ge=0.0,
         le=1.0,
-        description="How well the template's pain points align with the avatar/angle"
+        description="How well the template's persuasion techniques align with the angle"
     )
     tone_fit: float = Field(
         ...,
@@ -1273,35 +1273,59 @@ class LandingPageSummary(BaseModel):
     """Summary of a landing page template from the content library."""
     id: str = Field(..., description="The landing page ID (e.g., 'A00001')")
     s3_key: str = Field(..., description="Full S3 key")
-    product_name: Optional[str] = Field(None, description="Detected product name")
-    product_category: Optional[str] = Field(
-        None,
-        description="Product category (e.g., 'supplement', 'course', 'software')"
-    )
-    short_description: str = Field(
+    format_type: str = Field(
         ...,
-        description="One-sentence description of the product/service"
+        description="Template format: 'advertorial', 'listicle', 'advertorial_pov', 'advertorial_authority'"
     )
-    target_audience: str = Field(..., description="Who this product targets")
-    primary_pain_point: str = Field(..., description="Main pain point addressed")
-    primary_benefit: str = Field(..., description="Main benefit/outcome promised")
+    writing_perspective: str = Field(
+        ...,
+        description="Narrative voice: 'first_person', 'third_person', 'second_person_direct', 'authority_expert'"
+    )
+    article_structure_flow: str = Field(
+        ...,
+        description="Narrative arc (e.g. 'personal story -> problem -> discovery -> mechanism -> social proof -> CTA')"
+    )
+    content_density: str = Field(
+        ...,
+        description="Content density: 'light', 'medium', 'dense'"
+    )
     tone: str = Field(
         ...,
-        description="Writing tone (e.g., 'urgent', 'professional', 'friendly')"
+        description="Writing tone (e.g., 'urgent', 'professional', 'friendly', 'conversational')"
     )
-    keywords: List[str] = Field(
+    energy_level: str = Field(
+        ...,
+        description="Energy level: 'calm_educational', 'moderate', 'high_energy_urgent', 'emotionally_intense'"
+    )
+    persuasion_techniques: List[str] = Field(
         default_factory=list,
-        description="Key terms/phrases from the page (5-10)"
+        description="3-5 persuasion techniques used (e.g., emotional_storytelling, social_proof, authority_citation)"
     )
-    price_point: Optional[str] = Field(
-        None,
-        description="Price range if detectable ('low', 'mid', 'high', 'premium')"
+    emotional_approach: str = Field(
+        ...,
+        description="Emotional journey: 'fear_to_hope', 'frustration_to_relief', 'curiosity_to_discovery', etc."
+    )
+    engagement_devices: List[str] = Field(
+        default_factory=list,
+        description="3-5 engagement devices used (e.g., personal_anecdote, expert_quotes, before_after_comparison)"
+    )
+    cta_style: str = Field(
+        ...,
+        description="CTA style: 'soft_discovery', 'urgent_action', 'embedded_recurring', 'single_end'"
+    )
+    best_for_awareness_levels: List[str] = Field(
+        default_factory=list,
+        description="Best awareness levels: 'unaware', 'problem_aware', 'solution_aware', 'product_aware'"
+    )
+    best_for_angle_types: List[str] = Field(
+        default_factory=list,
+        description="Best angle types: 'mechanism', 'pain_lead', 'desire_lead', 'social_proof', 'fear_based', 'curiosity', 'contrarian', 'story'"
     )
 
 
 class ContentLibrarySummaries(BaseModel):
     """Complete library of all landing page summaries."""
-    version: str = Field(default="1.0", description="Schema version")
+    version: str = Field(default="2.0", description="Schema version")
     generated_at: str = Field(..., description="ISO timestamp of generation")
     total_pages: int = Field(..., description="Number of pages in the library")
     summaries: List[LandingPageSummary] = Field(default_factory=list)

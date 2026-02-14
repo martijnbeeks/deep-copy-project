@@ -39,7 +39,7 @@ DEPRECATED_FIELDS = {"customer_avatars", "persona", "age_range"}
 REQUIRED_FIELDS = {"sales_page_url", "project_name"}
 
 # Allowed optional fields for v2
-OPTIONAL_FIELDS = {"research_requirements", "gender", "location", "advertorial_type", "target_product_name"}
+OPTIONAL_FIELDS = {"research_requirements", "gender", "location", "advertorial_type", "target_product_name", "notification_email"}
 
 
 def _response(status_code: int, body: dict) -> dict:

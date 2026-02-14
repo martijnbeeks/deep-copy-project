@@ -18,6 +18,7 @@ from pipeline.steps.template_selection import select_swipe_files_template, load_
 from pipeline.steps.swipe_generation import rewrite_swipe_file
 from prompts import ImageStyle
 from services.prompt_service import PromptService
+from services.klaviyo_service import KlaviyoEmailService
 
 logger = setup_logging(__name__)
 
@@ -37,7 +38,18 @@ class SwipeGenerationOrchestrator:
         if not db_url:
             raise RuntimeError("DATABASE_URL not found in secrets. Cannot load prompts from DB.")
         self.prompt_service = PromptService(db_url, "write_swipe")
-        
+
+        # Initialize Klaviyo service (non-fatal if key missing)
+        self.klaviyo_service = None
+        try:
+            klaviyo_key = self.secrets.get("KLAVIYO_API_KEY", "").strip()
+            if klaviyo_key:
+                self.klaviyo_service = KlaviyoEmailService(klaviyo_key)
+            else:
+                logger.warning("KLAVIYO_API_KEY missing; email notifications disabled")
+        except Exception as e:
+            logger.warning("Failed to initialize KlaviyoEmailService: %s", e)
+
     def run(self, event: Dict[str, Any]) -> Dict[str, Any]:
         """
         Run the swipe generation pipeline.
@@ -75,6 +87,14 @@ class SwipeGenerationOrchestrator:
                  save_results_to_s3(bucket, target_key, mock_data)
                  
                  update_job_status(job_id, "SUCCEEDED", {"resultKey": target_key})
+
+                 notification_email = event.get("notification_email")
+                 if notification_email and self.klaviyo_service:
+                     try:
+                         self.klaviyo_service.send_swipe_completed_email(notification_email, job_id)
+                     except Exception as e:
+                         logger.warning("Email notification failed (dev mode): %s", e)
+
                  return {'statusCode': 200, 'message': 'Swipe file generation completed successfully (DEV MODE)'}
 
             # 1. Fetch Job Results (Inputs)
@@ -165,7 +185,14 @@ class SwipeGenerationOrchestrator:
             save_results_to_s3(os.environ.get("RESULTS_BUCKET"), s3_key_res, final_results)
             
             update_job_status(job_id, "SUCCEEDED", {"resultKey": s3_key_res})
-            
+
+            notification_email = event.get("notification_email")
+            if notification_email and self.klaviyo_service:
+                try:
+                    self.klaviyo_service.send_swipe_completed_email(notification_email, job_id)
+                except Exception as e:
+                    logger.warning("Email notification failed: %s", e)
+
             return {'statusCode': 200, 'message': 'Swipe file generation completed successfully'}
 
         except Exception as e:

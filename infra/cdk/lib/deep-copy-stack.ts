@@ -62,6 +62,7 @@ export class DeepCopyStack extends Stack {
     githubDeployRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess'));
 
     new CfnOutput(this, 'GitHubDeployRoleArn', { value: githubDeployRole.roleArn });
+    const lambdaImageRepublishMarker = 'manifest-v2-republish-2026-02-13';
 
     // AI Pipeline - Processing Lambda (Docker-based)
     const processJobLambda = new lambda.DockerImageFunction(this, 'ProcessJobLambda', {
@@ -69,6 +70,7 @@ export class DeepCopyStack extends Stack {
         path.join(__dirname, 'lambdas', 'process_job'),
         {
           platform: Platform.LINUX_AMD64,
+          extraHash: lambdaImageRepublishMarker,
         }
       ),
       timeout: Duration.seconds(900), // 15 minutes for long-running pipeline
@@ -103,6 +105,7 @@ export class DeepCopyStack extends Stack {
         path.join(__dirname, 'lambdas', 'process_job_v2'),
         {
           platform: Platform.LINUX_AMD64,
+          extraHash: lambdaImageRepublishMarker,
         }
       ),
       timeout: Duration.seconds(900), // 15 minutes for long-running pipeline
@@ -219,6 +222,7 @@ export class DeepCopyStack extends Stack {
         path.join(__dirname, 'lambdas', 'write_swipe'),
         {
           platform: Platform.LINUX_AMD64,
+          extraHash: lambdaImageRepublishMarker,
         }
       ),
       timeout: Duration.seconds(600),
@@ -275,6 +279,7 @@ export class DeepCopyStack extends Stack {
     const processImageGenLambda = new lambda.DockerImageFunction(this, 'ProcessImageGenLambda', {
       code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, 'lambdas', 'image_gen_process'), {
         platform: Platform.LINUX_AMD64,
+        extraHash: lambdaImageRepublishMarker,
       }),
       timeout: Duration.seconds(900),
       memorySize: 3008,
@@ -332,6 +337,7 @@ export class DeepCopyStack extends Stack {
     const processPrelanderImagesLambda = new lambda.DockerImageFunction(this, 'ProcessPrelanderImagesLambda', {
       code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, 'lambdas', 'prelander_image_gen'), {
         platform: Platform.LINUX_AMD64,
+        extraHash: lambdaImageRepublishMarker,
       }),
       timeout: Duration.seconds(600),
       memorySize: 3008,
@@ -652,5 +658,4 @@ export class DeepCopyStack extends Stack {
     new CfnOutput(this, 'DeveloperUserName', { value: developerUser.userName });
   }
 }
-
 

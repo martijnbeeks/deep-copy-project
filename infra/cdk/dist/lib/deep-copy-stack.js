@@ -67,7 +67,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
             assumedBy: new aws_cdk_lib_1.aws_iam.WebIdentityPrincipal(githubProvider.openIdConnectProviderArn, {
                 StringEquals: {
                     'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
-                    'token.actions.githubusercontent.com:sub': 'repo:martijnbeeks/deep-copy-infra:ref:refs/heads/main',
+                    'token.actions.githubusercontent.com:sub': 'repo:martijnbeeks/deep-copy-project:ref:refs/heads/main',
                 },
             }),
             description: 'Role assumed by GitHub Actions to deploy the stack',
@@ -76,10 +76,12 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
         // Grant administrative permissions for CDK deployment
         githubDeployRole.addManagedPolicy(aws_cdk_lib_1.aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess'));
         new aws_cdk_lib_1.CfnOutput(this, 'GitHubDeployRoleArn', { value: githubDeployRole.roleArn });
+        const lambdaImageRepublishMarker = 'manifest-v2-republish-2026-02-13';
         // AI Pipeline - Processing Lambda (Docker-based)
         const processJobLambda = new aws_cdk_lib_1.aws_lambda.DockerImageFunction(this, 'ProcessJobLambda', {
             code: aws_cdk_lib_1.aws_lambda.DockerImageCode.fromImageAsset(path.join(__dirname, 'lambdas', 'process_job'), {
                 platform: aws_ecr_assets_1.Platform.LINUX_AMD64,
+                extraHash: lambdaImageRepublishMarker,
             }),
             timeout: aws_cdk_lib_1.Duration.seconds(900), // 15 minutes for long-running pipeline
             memorySize: 3008, // 3GB for Playwright + OpenAI + Anthropic
@@ -107,6 +109,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
         const processJobLambdaV2 = new aws_cdk_lib_1.aws_lambda.DockerImageFunction(this, 'ProcessJobV2Lambda', {
             code: aws_cdk_lib_1.aws_lambda.DockerImageCode.fromImageAsset(path.join(__dirname, 'lambdas', 'process_job_v2'), {
                 platform: aws_ecr_assets_1.Platform.LINUX_AMD64,
+                extraHash: lambdaImageRepublishMarker,
             }),
             timeout: aws_cdk_lib_1.Duration.seconds(900), // 15 minutes for long-running pipeline
             memorySize: 3008, // 3GB for Playwright + OpenAI + Anthropic
@@ -132,7 +135,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
         resultsBucket.grantRead(processJobLambdaV2, 'projects/*');
         resultsBucket.grantRead(processJobLambdaV2, 'results/*');
         resultsBucket.grantRead(processJobLambdaV2, 'cache/*');
-        // Shared asset for Python "thin" lambdas (submit/get-result). Exclude caches to keep asset staging reliable.
+        // Shared asset for Python "thin" lambdas (submit/get-result). Exclude caches and Docker-based lambda directories.
         const pythonLambdasAsset = aws_cdk_lib_1.aws_lambda.Code.fromAsset(path.join(__dirname, 'lambdas'), {
             exclude: [
                 '**/__pycache__/**',
@@ -141,6 +144,14 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
                 '**/.DS_Store',
                 '**/node_modules/**',
                 '**/dist/**',
+                '**/.venv/**',
+                // Exclude Docker-based lambda directories (they have their own DockerImageCode assets)
+                'extract_avatars',
+                'image_gen_process',
+                'prelander_image_gen',
+                'process_job',
+                'process_job_v2',
+                'write_swipe',
             ],
         });
         // Small Lambda to submit jobs (Python version)
@@ -202,6 +213,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
         const processSwipeFileLambda = new aws_cdk_lib_1.aws_lambda.DockerImageFunction(this, 'ProcessSwipeFileLambda', {
             code: aws_cdk_lib_1.aws_lambda.DockerImageCode.fromImageAsset(path.join(__dirname, 'lambdas', 'write_swipe'), {
                 platform: aws_ecr_assets_1.Platform.LINUX_AMD64,
+                extraHash: lambdaImageRepublishMarker,
             }),
             timeout: aws_cdk_lib_1.Duration.seconds(600),
             memorySize: 3008, // 3GB for Anthropic + processing
@@ -251,6 +263,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
         const processImageGenLambda = new aws_cdk_lib_1.aws_lambda.DockerImageFunction(this, 'ProcessImageGenLambda', {
             code: aws_cdk_lib_1.aws_lambda.DockerImageCode.fromImageAsset(path.join(__dirname, 'lambdas', 'image_gen_process'), {
                 platform: aws_ecr_assets_1.Platform.LINUX_AMD64,
+                extraHash: lambdaImageRepublishMarker,
             }),
             timeout: aws_cdk_lib_1.Duration.seconds(900),
             memorySize: 3008,
@@ -303,6 +316,7 @@ class DeepCopyStack extends aws_cdk_lib_1.Stack {
         const processPrelanderImagesLambda = new aws_cdk_lib_1.aws_lambda.DockerImageFunction(this, 'ProcessPrelanderImagesLambda', {
             code: aws_cdk_lib_1.aws_lambda.DockerImageCode.fromImageAsset(path.join(__dirname, 'lambdas', 'prelander_image_gen'), {
                 platform: aws_ecr_assets_1.Platform.LINUX_AMD64,
+                extraHash: lambdaImageRepublishMarker,
             }),
             timeout: aws_cdk_lib_1.Duration.seconds(600),
             memorySize: 3008,

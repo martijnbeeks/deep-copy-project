@@ -20,13 +20,14 @@ import { ErrorBoundary } from "@/components/ui/error-boundary"
 // Avatar extraction removed - V2 handles this automatically
 import { useAutoPolling } from "@/hooks/use-auto-polling"
 import { useToast } from "@/hooks/use-toast"
-import { isValidUrl } from "@/lib/utils/validation"
+import { isValidUrl, isValidEmail } from "@/lib/utils/validation"
 import { logger } from "@/lib/utils/logger"
 import { INITIAL_SOURCE_STATUS, COMPLETED_SOURCE_STATUS, resetSourceStatus, completeSourceStatus, type SourceStatus } from "@/lib/constants/research-sources"
 import { UsageLimitDialog } from "@/components/ui/usage-limit-dialog"
 import { getAuthToken, getUserEmail } from "@/lib/utils/client-auth"
 import { JOB_CREDITS_BY_TYPE } from "@/lib/constants/job-credits"
 import { useBillingStore } from "@/stores/billing-store"
+import { useNotificationsStore } from "@/stores/notifications-store"
 
 interface CustomerAvatar {
   persona_name: string
@@ -51,7 +52,8 @@ interface PipelineFormData {
   gender?: string
   location?: string
   advertorial_type?: string
-  target_product_name?: string
+  target_product_name?: string,
+  notification_email?: string
 }
 
 // V2: No avatar helpers needed - avatars come from API response
@@ -74,6 +76,7 @@ export default function CreatePage() {
     location: "",
     advertorial_type: "Listicle",
     target_product_name: "",
+    notification_email: "",
   })
   const [errors, setErrors] = useState<Partial<Record<keyof PipelineFormData, string>>>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
@@ -141,6 +144,9 @@ export default function CreatePage() {
       }
     }
     // V2 fields are optional - no validation needed
+    if (data.notification_email && data.notification_email.trim() && !isValidEmail(data.notification_email)) {
+      newErrors.notification_email = "Please enter a valid email address"
+    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -176,6 +182,7 @@ export default function CreatePage() {
           location: formData.location || undefined,
           advertorial_type: formData.advertorial_type || 'Listicle',
           target_product_name: formData.target_product_name?.trim() || undefined,
+          notification_email: formData.notification_email || undefined,
           ...(opts?.allowOverage ? { allowOverage: true } : {}),
         }),
       })
@@ -296,6 +303,18 @@ export default function CreatePage() {
               setResearchProgress(100)
               setSourceStatus(completeSourceStatus())
 
+              // Add notification so the bell badge shows immediately on redirect
+              const notifStore = useNotificationsStore.getState()
+              notifStore.addNotification({
+                jobId: createdJob.id,
+                title: formData.title || 'Job',
+                jobType: 'deep_research',
+                completedAt: new Date().toISOString(),
+                resultPath: `/results/${createdJob.id}`,
+              })
+              // Don't toast — user already saw the loading screen
+              notifStore.markToastShown(createdJob.id)
+
               // Wait a moment then redirect to results
               setTimeout(() => {
                 setShowResearchLoading(false)
@@ -313,12 +332,13 @@ export default function CreatePage() {
                   location: "",
                   advertorial_type: "Listicle",
                   target_product_name: "",
+                  notification_email: "",
                 })
                 setErrors({})
                 setGeneralError(null)
 
-                // Redirect to results page
-                router.push(`/results/${createdJob.id}`)
+                // Redirect to dashboard — notification bell will show when results are ready
+                router.push('/dashboard')
               }, 1000)
               return
             } else if (status === 'failed' || status === 'failure') {
@@ -649,6 +669,32 @@ export default function CreatePage() {
                               className="h-12 text-base"
                             />
                           </div>
+                        </div>
+
+                        {/* Email Notification */}
+                        <div className="space-y-2">
+                          <Label htmlFor="notification_email" className="text-base font-semibold text-foreground">
+                            Email Notification (Optional)
+                          </Label>
+                          <p className="text-sm text-muted-foreground">Get notified by email when your research is ready</p>
+                          <Input
+                            id="notification_email"
+                            type="email"
+                            placeholder="you@example.com"
+                            value={formData.notification_email || ''}
+                            onChange={(e) => {
+                              setFormData((prev) => ({ ...prev, notification_email: e.target.value }))
+                              if (errors.notification_email) setErrors((prev) => ({ ...prev, notification_email: undefined }))
+                            }}
+                            disabled={isLoading}
+                            className={`h-12 text-base ${errors.notification_email ? "border-destructive focus-visible:ring-destructive" : "border-input focus-visible:ring-primary"}`}
+                          />
+                          {errors.notification_email && (
+                            <p className="text-sm text-destructive flex items-center gap-2">
+                              <AlertCircle className="h-4 w-4" />
+                              {errors.notification_email}
+                            </p>
+                          )}
                         </div>
 
                         {/* Advertorial Type */}

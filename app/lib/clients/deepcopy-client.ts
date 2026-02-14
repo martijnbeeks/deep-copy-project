@@ -146,6 +146,7 @@ interface SubmitV2JobRequest {
   gender?: string
   location?: string
   target_product_name?: string
+  notification_email?: string
 }
 
 interface JobResultV2 {
@@ -233,8 +234,8 @@ export interface MarketingAngleV2 {
       template_id: string
       overall_fit_score: number
       reasoning: string
-      audience_fit?: number
-      pain_point_fit?: number
+      format_fit?: number
+      persuasion_fit?: number
       tone_fit?: number
     }>
   }
@@ -367,7 +368,8 @@ class DeepCopyClient {
         research_requirements: data.research_requirements,
         gender: data.gender,
         location: data.location,
-        ...(data.target_product_name && { target_product_name: data.target_product_name })
+        ...(data.target_product_name && { target_product_name: data.target_product_name }),
+        notification_email: data.notification_email
       })
     })
   }

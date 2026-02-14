@@ -8,6 +8,8 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { QueryProvider } from "@/lib/providers/query-provider";
 import { GlobalPollingProvider } from "@/contexts/global-polling-context";
 import { Toaster } from "@/components/ui/toaster";
+import { NotificationBell } from "@/components/notifications/notification-bell";
+import { NotificationPopup } from "@/components/notifications/notification-popup";
 import { PageTransition } from "@/components/ui/page-transition";
 import { ThemeProvider } from "next-themes";
 import "./globals";
@@ -82,6 +84,8 @@ export default function RootLayout({
                     <PageTransition>
                       {children}
                     </PageTransition>
+                    <NotificationBell />
+                    <NotificationPopup />
                     <Toaster />
                   </GlobalPollingProvider>
                 </SidebarProvider>

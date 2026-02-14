@@ -18,8 +18,8 @@ export interface TemplatePreviewProps {
   prediction?: {
     overall_fit_score: number
     reasoning: string
-    audience_fit?: number
-    pain_point_fit?: number
+    format_fit?: number
+    persuasion_fit?: number
     tone_fit?: number
   }
 }
@@ -286,8 +286,8 @@ export function TemplatePreview({ template, isSelected, onClick, prediction }: T
           {/* Sub-scores */}
           <div className="grid grid-cols-3 gap-2">
             {[
-              { label: 'Audience', value: prediction.audience_fit },
-              { label: 'Pain', value: prediction.pain_point_fit },
+              { label: 'Format', value: prediction.format_fit },
+              { label: 'Persuasion', value: prediction.persuasion_fit },
               { label: 'Tone', value: prediction.tone_fit }
             ].map((metric, i) => (
               metric.value !== undefined && (

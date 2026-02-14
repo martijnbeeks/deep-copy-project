@@ -53,6 +53,27 @@ import { MarketingAngleCardV2 } from "./marketing-angle-card-v2";
 import { TemplateSelectionModal } from "./template-selection-modal";
 
 
+// Detect and fix ALL CAPS text from AI-generated content
+function normalizeCase(text: string): string {
+    if (!text || text.length < 2) return text;
+    const alpha = text.replace(/[^a-zA-Z]/g, '');
+    const upper = alpha.replace(/[^A-Z]/g, '');
+    if (alpha.length > 3 && upper.length / alpha.length > 0.7) {
+        return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+    }
+    return text;
+}
+
+function normalizeTitleCase(text: string): string {
+    if (!text || text.length < 2) return text;
+    const alpha = text.replace(/[^a-zA-Z]/g, '');
+    const upper = alpha.replace(/[^A-Z]/g, '');
+    if (alpha.length > 3 && upper.length / alpha.length > 0.7) {
+        return text.toLowerCase().replace(/(?:^|\s|[-/])\S/g, (c) => c.toUpperCase());
+    }
+    return text;
+}
+
 // Star component for displaying ratings
 function StarRating({ score, size = "sm" }: { score: number; size?: "sm" | "md" }) {
     const starSize = size === "sm" ? "h-3 w-3" : "h-4 w-4";
@@ -102,7 +123,7 @@ function ExpandableList({ items, uniqueKey }: { items: string[] | undefined; uni
         <div className="space-y-2">
             <ul className="list-disc list-inside text-sm text-foreground/80 space-y-1 marker:text-primary">
                 {displayItems.map((item, idx) => (
-                    <li key={idx}>{item}</li>
+                    <li key={idx}>{normalizeCase(item)}</li>
                 ))}
             </ul>
             {hasMore && (
@@ -565,7 +586,7 @@ export function V2AvatarTree({
                                                                                     <div className="flex items-center gap-2 flex-wrap">
                                                                                         <span className="text-lg font-bold text-primary">{avatarIndex + 1}.</span>
                                                                                         <h4 className="font-bold text-lg text-foreground">
-                                                                                            {avatarData?.overview?.name || avatar.persona_name}
+                                                                                            {normalizeTitleCase(avatarData?.overview?.name || avatar.persona_name || "")}
                                                                                         </h4>
                                                                                     </div>
                                                                                     <div className="text-xs font-bold text-primary px-2 py-0.5 rounded-md bg-primary/5 border border-primary/10">
@@ -574,7 +595,7 @@ export function V2AvatarTree({
                                                                                 </div>
                                                                                 {(avatarData?.overview?.description || avatar.description) && (
                                                                                     <p className="text-sm text-muted-foreground max-w-2xl">
-                                                                                        {avatarData?.overview?.description || avatar.description}
+                                                                                        {normalizeCase(avatarData?.overview?.description || avatar.description || "")}
                                                                                     </p>
                                                                                 )}
                                                                                 {/* 2-Row 2-Column Grid Layout */}
@@ -707,11 +728,11 @@ export function V2AvatarTree({
                                                                 <div>
                                                                     <DialogTitle className="text-xl font-bold flex items-center gap-2">
                                                                         <span className="text-lg font-bold text-primary">{avatarIndex + 1}.</span>
-                                                                        {avatarData?.overview?.name || avatar.persona_name}
+                                                                        {normalizeTitleCase(avatarData?.overview?.name || avatar.persona_name || "")}
                                                                     </DialogTitle>
                                                                     {(avatarData?.overview?.description || avatar.description) && (
                                                                         <p className="text-sm text-muted-foreground mt-1">
-                                                                            {avatarData?.overview?.description || avatar.description}
+                                                                            {normalizeCase(avatarData?.overview?.description || avatar.description || "")}
                                                                         </p>
                                                                     )}
                                                                 </div>
@@ -740,7 +761,7 @@ export function V2AvatarTree({
                                                                                     {/* Description Box */}
                                                                                     <div className="space-y-3 p-4 rounded-lg bg-muted/20 border border-border/50">
                                                                                         <div className="text-sm italic text-foreground/80 leading-relaxed">
-                                                                                            "{avatarData.overview.one_line_hook || avatarData.overview.description || "N/A"}"
+                                                                                            &ldquo;{normalizeCase(avatarData.overview.one_line_hook || avatarData.overview.description || "N/A")}&rdquo;
                                                                                         </div>
                                                                                     </div>
                                                                                     
@@ -752,7 +773,7 @@ export function V2AvatarTree({
                                                                                         </div>
                                                                                         <div className="text-sm font-medium text-foreground">{avatarData.overview.awareness_level || "N/A"}</div>
                                                                                         {avatarData.overview.awareness_level_description && (
-                                                                                            <div className="text-xs text-muted-foreground leading-relaxed pt-1">{avatarData.overview.awareness_level_description}</div>
+                                                                                            <div className="text-xs text-muted-foreground leading-relaxed pt-1">{normalizeCase(avatarData.overview.awareness_level_description)}</div>
                                                                                         )}
                                                                                     </div>
                                                                                     
@@ -766,7 +787,7 @@ export function V2AvatarTree({
                                                                                                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Market Sophistication</span>
                                                                                                     <span className="text-xs font-bold text-primary uppercase">{sophistication.level}</span>
                                                                                                 </div>
-                                                                                                <div className="text-xs text-muted-foreground leading-relaxed pt-1">{sophistication.rationale}</div>
+                                                                                                <div className="text-xs text-muted-foreground leading-relaxed pt-1">{normalizeCase(sophistication.rationale || "")}</div>
                                                                                             </div>
                                                                                         );
                                                                                     })()}
@@ -929,7 +950,7 @@ export function V2AvatarTree({
                                                                                         <div className="space-y-1.5 pt-2 border-t border-border/50">
                                                                                             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Trigger Event</p>
                                                                                             <div className="text-sm italic text-foreground/80 leading-relaxed">
-                                                                                                {avatarData.problem_experience.trigger_event}
+                                                                                                {normalizeCase(avatarData.problem_experience.trigger_event)}
                                                                                             </div>
                                                                                         </div>
                                                                                     )}
@@ -938,7 +959,7 @@ export function V2AvatarTree({
                                                                                             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Daily Life Impact</p>
                                                                                             <ul className="list-disc list-inside text-sm text-foreground/80 space-y-1 marker:text-primary">
                                                                                                 {avatarData.problem_experience.daily_life_impact.map((impact: string, idx: number) => (
-                                                                                                    <li key={idx}>{impact}</li>
+                                                                                                    <li key={idx}>{normalizeCase(impact)}</li>
                                                                                                 ))}
                                                                                             </ul>
                                                                                         </div>
@@ -987,7 +1008,7 @@ export function V2AvatarTree({
                                                                                                     Array.isArray(avatarData.pain_desire.desire.surface) ? (
                                                                                                         <ExpandableList items={avatarData.pain_desire.desire.surface} uniqueKey={`${avatarIndex}-surface-desire`} />
                                                                                                     ) : (
-                                                                                                        <span className="text-sm text-foreground/80 leading-relaxed">{avatarData.pain_desire.desire.surface}</span>
+                                                                                                        <span className="text-sm text-foreground/80 leading-relaxed">{normalizeCase(avatarData.pain_desire.desire.surface)}</span>
                                                                                                     )
                                                                                                 ) : (
                                                                                                     <span className="text-muted-foreground/30 italic text-xs">N/A</span>
@@ -1008,7 +1029,7 @@ export function V2AvatarTree({
                                                                                                     Array.isArray(avatarData.pain_desire.desire.emotional) ? (
                                                                                                         <ExpandableList items={avatarData.pain_desire.desire.emotional} uniqueKey={`${avatarIndex}-emotional-desire`} />
                                                                                                     ) : (
-                                                                                                        <span className="text-sm text-foreground/80 leading-relaxed">{avatarData.pain_desire.desire.emotional}</span>
+                                                                                                        <span className="text-sm text-foreground/80 leading-relaxed">{normalizeCase(avatarData.pain_desire.desire.emotional)}</span>
                                                                                                     )
                                                                                                 ) : (
                                                                                                     <span className="text-muted-foreground/30 italic text-xs">N/A</span>
@@ -1029,7 +1050,7 @@ export function V2AvatarTree({
                                                                                                     Array.isArray(avatarData.pain_desire.desire.identity) ? (
                                                                                                         <ExpandableList items={avatarData.pain_desire.desire.identity} uniqueKey={`${avatarIndex}-identity-desire`} />
                                                                                                     ) : (
-                                                                                                        <span className="text-sm text-foreground/80 leading-relaxed">{avatarData.pain_desire.desire.identity}</span>
+                                                                                                        <span className="text-sm text-foreground/80 leading-relaxed">{normalizeCase(avatarData.pain_desire.desire.identity)}</span>
                                                                                                     )
                                                                                                 ) : (
                                                                                                     <span className="text-muted-foreground/30 italic text-xs">N/A</span>
@@ -1050,7 +1071,7 @@ export function V2AvatarTree({
                                                                                                     Array.isArray(avatarData.pain_desire.desire.secret) ? (
                                                                                                         <ExpandableList items={avatarData.pain_desire.desire.secret} uniqueKey={`${avatarIndex}-secret-desire`} />
                                                                                                     ) : (
-                                                                                                        <span className="text-sm text-foreground/80 leading-relaxed">{avatarData.pain_desire.desire.secret}</span>
+                                                                                                        <span className="text-sm text-foreground/80 leading-relaxed">{normalizeCase(avatarData.pain_desire.desire.secret)}</span>
                                                                                                     )
                                                                                                 ) : (
                                                                                                     <span className="text-muted-foreground/30 italic text-xs">N/A</span>
@@ -1063,7 +1084,7 @@ export function V2AvatarTree({
                                                                                     {avatarData.pain_desire.dominant_emotion && (
                                                                                         <div className="bg-muted/20 border-t border-border/50 p-4 px-6 flex items-center gap-2">
                                                                                             <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Dominant Emotion:</span>
-                                                                                            <span className="text-sm font-medium text-foreground">{avatarData.pain_desire.dominant_emotion}</span>
+                                                                                            <span className="text-sm font-medium text-foreground">{normalizeCase(avatarData.pain_desire.dominant_emotion)}</span>
                                                                                         </div>
                                                                                     )}
                                                                                 </div>
@@ -1101,13 +1122,13 @@ export function V2AvatarTree({
                                                                                             {avatarData.failed_solutions.solutions.map((sol: any, idx: number) => (
                                                                                                 <div key={idx} className="grid grid-cols-[1fr_1.2fr_1.2fr] hover:bg-muted/5 transition-colors">
                                                                                                     <div className="px-5 py-4 border-r border-border/50">
-                                                                                                        <p className="text-sm font-medium text-foreground leading-relaxed">{sol.solution_tried || "N/A"}</p>
+                                                                                                        <p className="text-sm font-medium text-foreground leading-relaxed">{normalizeCase(sol.solution_tried || "N/A")}</p>
                                                                                                     </div>
                                                                                                     <div className="px-5 py-4 border-r border-border/50">
-                                                                                                        <p className="text-sm text-foreground/80 leading-relaxed">{sol.why_it_failed || "N/A"}</p>
+                                                                                                        <p className="text-sm text-foreground/80 leading-relaxed">{normalizeCase(sol.why_it_failed || "N/A")}</p>
                                                                                                     </div>
                                                                                                     <div className="px-5 py-4">
-                                                                                                        <p className="text-sm text-foreground/90 font-medium leading-relaxed">{sol.our_opportunity || "N/A"}</p>
+                                                                                                        <p className="text-sm text-foreground/90 font-medium leading-relaxed">{normalizeCase(sol.our_opportunity || "N/A")}</p>
                                                                                                     </div>
                                                                                                 </div>
                                                                                             ))}
@@ -1131,7 +1152,7 @@ export function V2AvatarTree({
                                                                                                 <Shield className="h-4 w-4 text-blue-500" />
                                                                                                 <h4 className="text-xs font-bold uppercase tracking-wide text-foreground">Current Coping</h4>
                                                                                             </div>
-                                                                                            <div className="text-sm text-foreground/80 leading-relaxed">{avatarData.failed_solutions.current_coping}</div>
+                                                                                            <div className="text-sm text-foreground/80 leading-relaxed">{normalizeCase(avatarData.failed_solutions.current_coping)}</div>
                                                                                         </div>
                                                                                     )}
                                                                                     {avatarData.failed_solutions.belief_about_failure && (
@@ -1164,7 +1185,7 @@ export function V2AvatarTree({
                                                                                                 <h4 className="text-xs font-bold uppercase tracking-wide text-foreground">Primary Objection</h4>
                                                                                             </div>
                                                                                             <div className="text-sm italic text-foreground/80 leading-relaxed">
-                                                                                                {avatarData.objections_buying.primary_objection}
+                                                                                                {normalizeCase(avatarData.objections_buying.primary_objection)}
                                                                                             </div>
                                                                                         </div>
                                                                                     )}
@@ -1176,7 +1197,7 @@ export function V2AvatarTree({
                                                                                                 <h4 className="text-xs font-bold uppercase tracking-wide text-foreground">Hidden Objection</h4>
                                                                                             </div>
                                                                                             <div className="text-sm italic text-foreground/80 leading-relaxed">
-                                                                                                {avatarData.objections_buying.hidden_objection}
+                                                                                                {normalizeCase(avatarData.objections_buying.hidden_objection)}
                                                                                             </div>
                                                                                         </div>
                                                                                     )}
@@ -1226,7 +1247,7 @@ export function V2AvatarTree({
                                                                                                 {avatarData.objections_buying.what_makes_them_buy?.map((item: string, idx: number) => (
                                                                                                     <div key={idx} className="flex items-start gap-2">
                                                                                                         <span className="text-emerald-500 shrink-0">•</span>
-                                                                                                        <span className="text-sm text-foreground/80 leading-relaxed">{item}</span>
+                                                                                                        <span className="text-sm text-foreground/80 leading-relaxed">{normalizeCase(item)}</span>
                                                                                                     </div>
                                                                                                 ))}
                                                                                                 {!avatarData.objections_buying.what_makes_them_buy?.length && (
@@ -1238,7 +1259,7 @@ export function V2AvatarTree({
                                                                                                 {avatarData.objections_buying.what_makes_them_walk?.map((item: string, idx: number) => (
                                                                                                     <div key={idx} className="flex items-start gap-2">
                                                                                                         <span className="text-red-500 shrink-0">•</span>
-                                                                                                        <span className="text-sm text-foreground/80 leading-relaxed">{item}</span>
+                                                                                                        <span className="text-sm text-foreground/80 leading-relaxed">{normalizeCase(item)}</span>
                                                                                                     </div>
                                                                                                 ))}
                                                                                                 {!avatarData.objections_buying.what_makes_them_walk?.length && (
@@ -1274,7 +1295,7 @@ export function V2AvatarTree({
                                                                                                         <div className="flex items-start gap-2">
                                                                                                             <Quote className="h-3 w-3 text-muted-foreground mt-0.5 flex-shrink-0" />
                                                                                                             <div className="flex-1 space-y-1">
-                                                                                                                <div className="italic text-foreground/80 leading-relaxed">{q.quote}</div>
+                                                                                                                <div className="italic text-foreground/80 leading-relaxed">{normalizeCase(q.quote)}</div>
                                                                                                                 {q.source && <div className="text-xs text-muted-foreground">— {q.source}</div>}
                                                                                                             </div>
                                                                                                         </div>
@@ -1297,7 +1318,7 @@ export function V2AvatarTree({
                                                                                                         <div className="flex items-start gap-2">
                                                                                                             <Quote className="h-3 w-3 text-muted-foreground mt-0.5 flex-shrink-0" />
                                                                                                             <div className="flex-1 space-y-1">
-                                                                                                                <div className="italic text-foreground/80 leading-relaxed">{q.quote}</div>
+                                                                                                                <div className="italic text-foreground/80 leading-relaxed">{normalizeCase(q.quote)}</div>
                                                                                                                 {q.source && <div className="text-xs text-muted-foreground">— {q.source}</div>}
                                                                                                             </div>
                                                                                                         </div>
@@ -1320,7 +1341,7 @@ export function V2AvatarTree({
                                                                                                         <div className="flex items-start gap-2">
                                                                                                             <Quote className="h-3 w-3 text-muted-foreground mt-0.5 flex-shrink-0" />
                                                                                                             <div className="flex-1 space-y-1">
-                                                                                                                <div className="italic text-foreground/80 leading-relaxed">{q.quote}</div>
+                                                                                                                <div className="italic text-foreground/80 leading-relaxed">{normalizeCase(q.quote)}</div>
                                                                                                                 {q.source && <div className="text-xs text-muted-foreground">— {q.source}</div>}
                                                                                                             </div>
                                                                                                         </div>

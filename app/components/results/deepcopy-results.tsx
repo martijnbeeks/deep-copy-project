@@ -314,6 +314,7 @@ function DeepCopyResultsComponent({
   const [selectedAnglePredictions, setSelectedAnglePredictions] = useState<any[] | undefined>(undefined);
   const [previewImageGenDialogOpen, setPreviewImageGenDialogOpen] = useState<{ [key: string]: boolean }>({});
   const [showImageGenFloater, setShowImageGenFloater] = useState<{ [key: string]: boolean }>({});
+  const [activeImageJobs, setActiveImageJobs] = useState<Set<string>>(new Set()); // injected_template_ids with active jobs
 
   // Swipe file generation state - track multiple angles
   const [selectedAngle, setSelectedAngle] = useState<string | null>(null);
@@ -390,6 +391,61 @@ function DeepCopyResultsComponent({
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
+  // On load: check for pending image jobs, trigger server-side recovery, show indicators
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkAndRecover = async () => {
+      try {
+        const response = await fetch('/api/image-jobs/active');
+        if (!response.ok || cancelled) return;
+
+        const data = await response.json();
+        const activeIds: string[] = data.activeTemplateIds || [];
+
+        if (activeIds.length > 0 && !cancelled) {
+          setActiveImageJobs(new Set(activeIds));
+
+          // Server is now polling these jobs to completion.
+          // Wait and then check again until all jobs are done.
+          const waitForCompletion = async () => {
+            while (!cancelled) {
+              await new Promise(resolve => setTimeout(resolve, 15000));
+              if (cancelled) break;
+
+              try {
+                const checkResponse = await fetch('/api/image-jobs/active');
+                if (!checkResponse.ok || cancelled) break;
+
+                const checkData = await checkResponse.json();
+                const remaining: string[] = checkData.activeTemplateIds || [];
+
+                if (remaining.length === 0) {
+                  // All jobs done — refresh to show updated images
+                  setActiveImageJobs(new Set());
+                  setTimeout(() => window.location.reload(), 2000);
+                  break;
+                } else {
+                  setActiveImageJobs(new Set(remaining));
+                }
+              } catch {
+                break;
+              }
+            }
+          };
+
+          waitForCompletion();
+        }
+      } catch {
+        // Silently fail — table might not exist
+      }
+    };
+
+    checkAndRecover();
+
+    return () => { cancelled = true; };
   }, []);
 
   const fullResult = result.metadata?.full_result;
@@ -3873,6 +3929,15 @@ function DeepCopyResultsComponent({
                                       )}`}
                                     />
                                   </div>
+                                  {/* Active image generation indicator */}
+                                  {template.id && activeImageJobs.has(template.id) && (
+                                    <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-primary/90 to-primary/70 px-3 py-2">
+                                      <div className="flex items-center gap-2 text-primary-foreground">
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        <span className="text-xs font-medium">Generating images...</span>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
 
                                 {/* Content Section */}

@@ -853,18 +853,30 @@ export default function EditorPage({ params }: { params: { templateId: string } 
                                 throw new Error(error.error || 'Failed to save template')
                             }
                             
-                            // Refetch template to get the latest version and reload editor
-                            await refetchTemplate()
-                            
                             toast({
-                                title: "Images updated",
-                                description: `Updated ${images.length} image${images.length !== 1 ? "s" : ""} and saved to database.`,
+                                title: "Images updated & saved",
+                                description: `Generated ${images.length} image${images.length !== 1 ? "s" : ""}. Closing editor...`,
                             })
+
+                            // Notify parent window (results page) to refresh templates
+                            try {
+                                if (window.opener && !window.opener.closed) {
+                                    window.opener.postMessage(
+                                        { type: 'TEMPLATE_UPDATED', injectedTemplateId: params.templateId },
+                                        window.location.origin
+                                    )
+                                }
+                            } catch (e) {
+                                // Ignore cross-origin errors
+                            }
+
+                            // Close editor after showing toast for ~1.5 seconds
+                            setTimeout(() => window.close(), 1500)
                         } catch (error) {
                             console.error('Failed to save updated HTML:', error)
                             toast({
-                                title: "Images updated in editor",
-                                description: `Updated ${images.length} image${images.length !== 1 ? "s" : ""} but failed to save.`,
+                                title: "Save failed",
+                                description: `Images were generated but failed to save. Please try again.`,
                                 variant: "destructive",
                             })
                         }

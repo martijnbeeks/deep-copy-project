@@ -505,6 +505,35 @@ export function TemplateImageGenerationDialog({
         throw new Error("No job ID returned from server")
       }
 
+      // Save job to database for background polling (non-blocking)
+      try {
+        if (user?.id) {
+          const trackResponse = await fetch('/api/image-jobs/track', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...authHeaders,
+            },
+            body: JSON.stringify({
+              external_job_id: jobId,
+              injected_template_id: injectedTemplateId,
+              user_id: user.id,
+              prompts: allPrompts
+            })
+          })
+
+          if (trackResponse.ok) {
+            const trackData = await trackResponse.json()
+            logger.info(`Started tracking image job ${jobId} in background, local ID: ${trackData.localJobId}`)
+          } else {
+            throw new Error('Failed to track job')
+          }
+        }
+      } catch (error) {
+        logger.error('Failed to track image job in background:', error)
+        // Continue anyway - dialog will still work with foreground polling
+      }
+
       // Job is now submitted - switch to generation view
       setIsJobSubmitted(true)
       setJobStartTime(Date.now())
@@ -647,7 +676,7 @@ export function TemplateImageGenerationDialog({
         open={isOpen}
         onOpenChange={(open) => {
           if (showOverageDialog) return
-          if (!isGenerating && !isJobSubmitted) onClose()
+          if (!open) onClose()
         }}
       >
         <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">

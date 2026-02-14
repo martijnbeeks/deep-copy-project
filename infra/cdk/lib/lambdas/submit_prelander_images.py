@@ -126,6 +126,8 @@ def handler(event, _context):
     except ClientError as e:
         return _response(500, {"error": f"DynamoDB error: {e.response['Error'].get('Message', str(e))}"})
 
+    notification_email = body.get("notification_email")
+
     lambda_payload = {
         "job_id": job_id,
         "templateId": template_id,
@@ -135,6 +137,9 @@ def handler(event, _context):
         "result_prefix": result_prefix,
         "dev_mode": dev_mode,
     }
+
+    if notification_email:
+        lambda_payload["notification_email"] = notification_email
 
     try:
         _lambda.invoke(
