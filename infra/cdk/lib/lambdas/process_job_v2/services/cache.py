@@ -18,7 +18,7 @@ from data_models import CachedResearchData
 logger = logging.getLogger(__name__)
 
 # Current cache schema version - increment this to invalidate old caches
-CACHE_VERSION = "1.0"
+CACHE_VERSION = "2.0"
 
 
 class ResearchCacheService:
@@ -84,6 +84,28 @@ class ResearchCacheService:
         if target_product_name:
             normalized = normalized + "|" + target_product_name
         return hashlib.sha256(normalized.encode('utf-8')).hexdigest()
+
+    @staticmethod
+    def get_multi_url_cache_key(sales_page_urls: list, target_product_name: Optional[str] = None) -> str:
+        """
+        Generate a deterministic cache key from multiple sales page URLs.
+
+        URLs are sorted alphabetically before hashing so order doesn't matter.
+
+        Args:
+            sales_page_urls: List of sales page URLs.
+            target_product_name: Optional product name that changes the research prompt.
+
+        Returns:
+            SHA256 hash string.
+        """
+        normalized_urls = sorted(
+            ResearchCacheService.normalize_url(url) for url in sales_page_urls
+        )
+        combined = "\n".join(normalized_urls)
+        if target_product_name:
+            combined = combined + "|" + target_product_name
+        return hashlib.sha256(combined.encode('utf-8')).hexdigest()
     
     def _get_cache_path(self, cache_key: str) -> str:
         """
@@ -165,31 +187,120 @@ class ResearchCacheService:
         """
         cache_key = self.get_cache_key(sales_page_url, target_product_name=target_product_name)
         cache_path = self._get_cache_path(cache_key)
-        
+
         try:
             cache_data = CachedResearchData(
                 sales_page_url=sales_page_url,
+                sales_page_urls=[sales_page_url],
                 research_page_analysis=research_page_analysis,
                 deep_research_prompt=deep_research_prompt,
                 deep_research_output=deep_research_output,
                 cached_at=datetime.now(timezone.utc).isoformat(),
                 cache_version=CACHE_VERSION
             )
-            
+
             body = json.dumps(cache_data.model_dump(), ensure_ascii=False, indent=2)
-            
+
             self.s3_client.put_object(
                 Bucket=self.s3_bucket,
                 Key=cache_path,
                 Body=body,
                 ContentType='application/json'
             )
-            
+
             logger.info(
                 f"Saved research cache for URL: {sales_page_url} "
                 f"(key: {cache_key[:16]}...)"
             )
-            
+
         except Exception as e:
             # Log but don't fail the pipeline - caching is optional
             logger.error(f"Error saving cache for URL {sales_page_url}: {e}")
+
+    def get_cached_research_multi(
+        self, sales_page_urls: list, target_product_name: Optional[str] = None
+    ) -> Optional[CachedResearchData]:
+        """
+        Retrieve cached research data for multiple sales page URLs.
+
+        Args:
+            sales_page_urls: List of sales page URLs to look up.
+            target_product_name: Optional product name included in cache key.
+
+        Returns:
+            CachedResearchData if cache hit, None if cache miss.
+        """
+        cache_key = self.get_multi_url_cache_key(sales_page_urls, target_product_name=target_product_name)
+        cache_path = self._get_cache_path(cache_key)
+
+        try:
+            logger.info(f"Checking multi-URL cache for {len(sales_page_urls)} URLs")
+            logger.debug(f"Cache key: {cache_key}, path: {cache_path}")
+
+            response = self.s3_client.get_object(Bucket=self.s3_bucket, Key=cache_path)
+            cache_data = json.loads(response['Body'].read().decode('utf-8'))
+            cached_research = CachedResearchData(**cache_data)
+
+            if cached_research.cache_version != CACHE_VERSION:
+                logger.info(
+                    f"Cache version mismatch: {cached_research.cache_version} != {CACHE_VERSION}. "
+                    "Treating as cache miss."
+                )
+                return None
+
+            logger.info(f"Cache HIT for multi-URL (cached at: {cached_research.cached_at})")
+            return cached_research
+
+        except self.s3_client.exceptions.NoSuchKey:
+            logger.info(f"Cache MISS for multi-URL (key not found)")
+            return None
+        except Exception as e:
+            logger.warning(f"Error reading multi-URL cache: {e}")
+            return None
+
+    def save_research_cache_multi(
+        self,
+        sales_page_urls: list,
+        research_page_analysis: str,
+        deep_research_prompt: str,
+        deep_research_output: str,
+        target_product_name: Optional[str] = None,
+    ) -> None:
+        """
+        Save research data to the cache for multiple URLs.
+
+        Args:
+            sales_page_urls: List of sales page URLs that were analyzed.
+            research_page_analysis: Combined output from page analysis step.
+            deep_research_prompt: The generated research prompt.
+            deep_research_output: Output from deep research step.
+            target_product_name: Optional product name included in cache key.
+        """
+        cache_key = self.get_multi_url_cache_key(sales_page_urls, target_product_name=target_product_name)
+        cache_path = self._get_cache_path(cache_key)
+
+        try:
+            cache_data = CachedResearchData(
+                sales_page_url=sales_page_urls[0],
+                sales_page_urls=sales_page_urls,
+                research_page_analysis=research_page_analysis,
+                deep_research_prompt=deep_research_prompt,
+                deep_research_output=deep_research_output,
+                cached_at=datetime.now(timezone.utc).isoformat(),
+                cache_version=CACHE_VERSION,
+            )
+
+            body = json.dumps(cache_data.model_dump(), ensure_ascii=False, indent=2)
+            self.s3_client.put_object(
+                Bucket=self.s3_bucket,
+                Key=cache_path,
+                Body=body,
+                ContentType='application/json',
+            )
+
+            logger.info(
+                f"Saved multi-URL research cache for {len(sales_page_urls)} URLs "
+                f"(key: {cache_key[:16]}...)"
+            )
+        except Exception as e:
+            logger.error(f"Error saving multi-URL cache: {e}")

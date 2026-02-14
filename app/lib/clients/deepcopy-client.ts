@@ -138,7 +138,6 @@ interface SwipeFileGenerationRequest {
 
 // V2 API Interfaces
 interface SubmitV2JobRequest {
-  /** One or more sales page URLs (sent as array to backend). */
   sales_page_urls: string[]
   project_name: string
   advertorial_type?: string
@@ -357,12 +356,10 @@ class DeepCopyClient {
   // V2 API Methods
   async submitV2Research(data: SubmitV2JobRequest): Promise<SubmitJobResponse> {
     const endpoint = isDevMode() ? 'dev/v2/jobs' : 'v2/jobs'
-    // Backend API expects sales_page_url (singular); use first URL from array
-    const sales_page_url = data.sales_page_urls?.[0] ?? ''
     return this.makeRequest(endpoint, {
       method: 'POST',
       body: JSON.stringify({
-        sales_page_url,
+        sales_page_urls: data.sales_page_urls,
         project_name: data.project_name,
         advertorial_type: data.advertorial_type,
         research_requirements: data.research_requirements,

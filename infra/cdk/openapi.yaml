@@ -1427,14 +1427,25 @@ components:
   schemas:
     SubmitJobV2Request:
       type: object
-      description: Request body for V2 jobs endpoint (general research flow)
-      required: [sales_page_url, project_name]
+      description: |
+        Request body for V2 jobs endpoint (general research flow).
+        Provide either `sales_page_urls` (array, 1-3 URLs) or `sales_page_url` (single URL, deprecated).
+      required: [project_name]
       additionalProperties: false
       properties:
+        sales_page_urls:
+          type: array
+          description: URLs to analyze (1-3). Preferred over sales_page_url.
+          minItems: 1
+          maxItems: 3
+          items:
+            type: string
+            format: uri
         sales_page_url:
           type: string
           format: uri
-          description: URL to the sales page to analyze (required)
+          description: "DEPRECATED: Use sales_page_urls instead. Single URL to analyze."
+          deprecated: true
         project_name:
           type: string
           description: Name of the project (required)
@@ -1455,7 +1466,7 @@ components:
           type: string
           description: Optional product name to use consistently across all pipeline outputs
       example:
-        sales_page_url: "https://try.meritrelief.com/"
+        sales_page_urls: ["https://try.meritrelief.com/", "https://competitor.com/product"]
         project_name: "meritrelief"
         advertorial_type: "Listicle"
         research_requirements: "Focus on natural ingredients"

@@ -5,7 +5,7 @@ Creates and executes comprehensive market research using Perplexity.
 """
 
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from services.perplexity_service import PerplexityService
 from services.prompt_service import PromptService
@@ -35,30 +35,40 @@ class DeepResearchStep:
     
     def create_prompt(
         self,
-        sales_page_url: str,
-        research_page_analysis: str,
+        sales_page_url: Optional[str] = None,
+        research_page_analysis: str = "",
         gender: Optional[str] = None,
         location: Optional[str] = None,
         research_requirements: Optional[str] = None,
         language_of_output: str = "English",
         target_product_name: Optional[str] = None,
+        sales_page_urls: Optional[List[str]] = None,
     ) -> str:
         """
         Create a comprehensive research prompt.
-        
+
         Args:
-            sales_page_url: URL of the sales page being researched.
+            sales_page_url: Single URL (deprecated, use sales_page_urls).
             research_page_analysis: Analysis output from the page analysis step.
             gender: Target gender (optional).
             location: Target location/market (optional).
             research_requirements: Additional research requirements (optional).
             language_of_output: Language for the research output.
-            
+            target_product_name: Optional product name.
+            sales_page_urls: List of URLs being researched (preferred).
+
         Returns:
             Formatted research prompt string.
         """
+        # Build the URL text for the prompt template placeholder
+        urls = sales_page_urls or ([sales_page_url] if sales_page_url else [])
+        if len(urls) == 1:
+            url_text = urls[0]
+        else:
+            url_text = "\n".join(f"  - URL {i}: {url}" for i, url in enumerate(urls, start=1))
+
         kwargs = dict(
-            sales_page_url=sales_page_url,
+            sales_page_url=url_text,
             gender=gender if gender else "Not specified",
             location=location if location else "Not specified",
             research_requirements=research_requirements if research_requirements else "None",
