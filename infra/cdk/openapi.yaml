@@ -3245,7 +3245,7 @@ components:
     TemplateMatch:
       type: object
       description: "A single template match with scoring dimensions"
-      required: [template_id, overall_fit_score, audience_fit, pain_point_fit, tone_fit, reasoning]
+      required: [template_id, overall_fit_score, format_fit, persuasion_fit, tone_fit, reasoning]
       properties:
         template_id:
           type: string
@@ -3256,18 +3256,18 @@ components:
           minimum: 0.0
           maximum: 1.0
           description: "Overall match score from 0.0 to 1.0"
-        audience_fit:
+        format_fit:
           type: number
           format: float
           minimum: 0.0
           maximum: 1.0
-          description: "How well the template's target audience matches the avatar"
-        pain_point_fit:
+          description: "How well the template's format/structure serves this avatar+angle"
+        persuasion_fit:
           type: number
           format: float
           minimum: 0.0
           maximum: 1.0
-          description: "How well the template's pain points align with the avatar/angle"
+          description: "How well the template's persuasion techniques align with the angle"
         tone_fit:
           type: number
           format: float

@@ -887,9 +887,9 @@ def get_template_prediction_prompt(
     Returns:
         Formatted prompt string for template prediction.
     """
-    return f"""You are matching a marketing avatar and angle to pre-lander landing page templates.
+    return f"""You are matching a marketing avatar and angle to pre-lander landing page templates based on STYLE and FORMAT fit — NOT product content.
 
-Your task is to score each available template on how well it matches the avatar and angle, then return the top matches.
+Templates are reusable across any product. What matters is whether the template's writing style, narrative structure, and persuasion approach serve the given avatar+angle combination well.
 
 ## Avatar Profile:
 {avatar_summary}
@@ -897,33 +897,40 @@ Your task is to score each available template on how well it matches the avatar 
 ## Marketing Angle:
 {angle_summary}
 
-## Available Landing Page Templates:
+## Available Landing Page Templates (Style Profiles):
 {library_summaries}
 
 ## Scoring Instructions:
 
 Score each template on these dimensions (0.0 to 1.0):
 
-1. **audience_fit**: How well does the template's target audience match the avatar?
-   - Consider demographics, psychographics, and identities
-   - 1.0 = Perfect match (same audience profile)
-   - 0.5 = Partial overlap
-   - 0.0 = Completely different audience
+1. **format_fit** (weight: 0.40): How well does the template's format and structure serve this avatar+angle?
+   - Consider: Does the writing_perspective match the angle type? (e.g., first_person POV works well for story-based angles, authority_expert for mechanism angles)
+   - Consider: Does the content_density match the avatar's awareness level? (unaware audiences need denser content to educate; product_aware audiences need lighter, more direct content)
+   - Consider: Does the article_structure_flow support the angle's emotional journey?
+   - 1.0 = Format is ideal for this avatar+angle combination
+   - 0.5 = Format is workable but not optimal
+   - 0.0 = Format would actively work against the angle's goals
 
-2. **pain_point_fit**: How well do the template's pain points align with the avatar and angle?
-   - Consider primary pain point, emotional drivers, and problem framing
-   - 1.0 = Same core pain being addressed
-   - 0.5 = Related pain or same category
-   - 0.0 = Unrelated pain points
+2. **persuasion_fit** (weight: 0.40): How well do the template's persuasion techniques and emotional approach align with the angle?
+   - Consider: Do the persuasion_techniques match the angle's emotional_driver? (e.g., fear_of_inaction for fear-based angles, emotional_storytelling for story angles)
+   - Consider: Does the emotional_approach match the angle's emotional journey?
+   - Consider: Do the engagement_devices support the avatar's needs? (e.g., expert_quotes for skeptical audiences, personal_anecdote for empathy-driven angles)
+   - Consider: Does the cta_style match the angle's risk_level? (soft_discovery for low-risk, urgent_action for high-risk)
+   - 1.0 = Persuasion approach perfectly supports this angle
+   - 0.5 = Some techniques align, others are neutral
+   - 0.0 = Persuasion approach would undermine the angle
 
-3. **tone_fit**: How well does the template's writing tone match the angle's approach?
-   - Consider tone (urgent, professional, friendly, etc.) and emotional driver
-   - 1.0 = Identical tone and emotional approach
+3. **tone_fit** (weight: 0.20): How well does the template's tone and energy level match the angle's approach?
+   - Consider: tone, energy_level, and the angle's emotional_driver
+   - 1.0 = Identical tone and energy match
    - 0.5 = Compatible but different intensity
-   - 0.0 = Conflicting tones
+   - 0.0 = Conflicting tones that would confuse the reader
+
+Also check best_for_awareness_levels and best_for_angle_types as strong signals — if the avatar's awareness level or the angle type appears in these lists, that's a significant positive indicator.
 
 Calculate **overall_fit_score** as:
-(audience_fit * 0.40) + (pain_point_fit * 0.40) + (tone_fit * 0.20)
+(format_fit * 0.40) + (persuasion_fit * 0.40) + (tone_fit * 0.20)
 
 ## Output Requirements:
 
@@ -931,10 +938,10 @@ Return the top 5 templates ranked by overall_fit_score (highest first).
 For each template, provide:
 - template_id
 - overall_fit_score
-- audience_fit
-- pain_point_fit
+- format_fit
+- persuasion_fit
 - tone_fit
-- reasoning (2-3 sentences explaining why this template matches)
+- reasoning (2-3 sentences explaining why this template's STYLE fits the avatar+angle, focusing on structural and persuasion alignment)
 
 Use the structured output tool to return your analysis.
 """

@@ -232,8 +232,8 @@ export interface MarketingAngleV2 {
       template_id: string
       overall_fit_score: number
       reasoning: string
-      audience_fit?: number
-      pain_point_fit?: number
+      format_fit?: number
+      persuasion_fit?: number
       tone_fit?: number
     }>
   }

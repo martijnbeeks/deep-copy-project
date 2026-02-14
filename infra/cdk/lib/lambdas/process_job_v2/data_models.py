@@ -1221,17 +1221,17 @@ class TemplateMatch(BaseModel):
         le=1.0,
         description="Overall match score from 0.0 to 1.0"
     )
-    audience_fit: float = Field(
+    format_fit: float = Field(
         ...,
         ge=0.0,
         le=1.0,
-        description="How well the template's target audience matches the avatar"
+        description="How well the template's format/structure serves this avatar+angle"
     )
-    pain_point_fit: float = Field(
+    persuasion_fit: float = Field(
         ...,
         ge=0.0,
         le=1.0,
-        description="How well the template's pain points align with the avatar/angle"
+        description="How well the template's persuasion techniques align with the angle"
     )
     tone_fit: float = Field(
         ...,
@@ -1273,35 +1273,59 @@ class LandingPageSummary(BaseModel):
     """Summary of a landing page template from the content library."""
     id: str = Field(..., description="The landing page ID (e.g., 'A00001')")
     s3_key: str = Field(..., description="Full S3 key")
-    product_name: Optional[str] = Field(None, description="Detected product name")
-    product_category: Optional[str] = Field(
-        None,
-        description="Product category (e.g., 'supplement', 'course', 'software')"
-    )
-    short_description: str = Field(
+    format_type: str = Field(
         ...,
-        description="One-sentence description of the product/service"
+        description="Template format: 'advertorial', 'listicle', 'advertorial_pov', 'advertorial_authority'"
     )
-    target_audience: str = Field(..., description="Who this product targets")
-    primary_pain_point: str = Field(..., description="Main pain point addressed")
-    primary_benefit: str = Field(..., description="Main benefit/outcome promised")
+    writing_perspective: str = Field(
+        ...,
+        description="Narrative voice: 'first_person', 'third_person', 'second_person_direct', 'authority_expert'"
+    )
+    article_structure_flow: str = Field(
+        ...,
+        description="Narrative arc (e.g. 'personal story -> problem -> discovery -> mechanism -> social proof -> CTA')"
+    )
+    content_density: str = Field(
+        ...,
+        description="Content density: 'light', 'medium', 'dense'"
+    )
     tone: str = Field(
         ...,
-        description="Writing tone (e.g., 'urgent', 'professional', 'friendly')"
+        description="Writing tone (e.g., 'urgent', 'professional', 'friendly', 'conversational')"
     )
-    keywords: List[str] = Field(
+    energy_level: str = Field(
+        ...,
+        description="Energy level: 'calm_educational', 'moderate', 'high_energy_urgent', 'emotionally_intense'"
+    )
+    persuasion_techniques: List[str] = Field(
         default_factory=list,
-        description="Key terms/phrases from the page (5-10)"
+        description="3-5 persuasion techniques used (e.g., emotional_storytelling, social_proof, authority_citation)"
     )
-    price_point: Optional[str] = Field(
-        None,
-        description="Price range if detectable ('low', 'mid', 'high', 'premium')"
+    emotional_approach: str = Field(
+        ...,
+        description="Emotional journey: 'fear_to_hope', 'frustration_to_relief', 'curiosity_to_discovery', etc."
+    )
+    engagement_devices: List[str] = Field(
+        default_factory=list,
+        description="3-5 engagement devices used (e.g., personal_anecdote, expert_quotes, before_after_comparison)"
+    )
+    cta_style: str = Field(
+        ...,
+        description="CTA style: 'soft_discovery', 'urgent_action', 'embedded_recurring', 'single_end'"
+    )
+    best_for_awareness_levels: List[str] = Field(
+        default_factory=list,
+        description="Best awareness levels: 'unaware', 'problem_aware', 'solution_aware', 'product_aware'"
+    )
+    best_for_angle_types: List[str] = Field(
+        default_factory=list,
+        description="Best angle types: 'mechanism', 'pain_lead', 'desire_lead', 'social_proof', 'fear_based', 'curiosity', 'contrarian', 'story'"
     )
 
 
 class ContentLibrarySummaries(BaseModel):
     """Complete library of all landing page summaries."""
-    version: str = Field(default="1.0", description="Schema version")
+    version: str = Field(default="2.0", description="Schema version")
     generated_at: str = Field(..., description="ISO timestamp of generation")
     total_pages: int = Field(..., description="Number of pages in the library")
     summaries: List[LandingPageSummary] = Field(default_factory=list)
