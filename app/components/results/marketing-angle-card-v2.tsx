@@ -270,7 +270,7 @@ export function MarketingAngleCardV2({
                                 {(angle.angle_problem_urgency !== undefined || angle.novelty !== undefined || 
                                   angle.proof_strength !== undefined || angle.avatar_fit !== undefined || 
                                   angle.ltv_potential !== undefined || angle.saturation_level !== undefined) && (
-                                    <div className="flex items-center gap-4 flex-wrap mt-2">
+                                    <div className="grid grid-cols-3 gap-y-2 gap-x-4 mt-3">
                                         {angle.angle_problem_urgency !== undefined && (
                                             <div className="flex items-center gap-1.5">
                                                 <AlertCircle className="h-3.5 w-3.5 text-red-500" />
@@ -380,7 +380,7 @@ export function MarketingAngleCardV2({
                             className="flex-shrink-0 h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
                         >
                             <Eye className="h-3.5 w-3.5" />
-                            View Angle Information
+                            More Info
                         </Button>
                     </div>
                     {/* Status badges positioned at bottom-right */}
@@ -571,7 +571,7 @@ export function MarketingAngleCardV2({
                                         <BarChart3 className="h-4 w-4 text-primary" />
                                         <h4 className="text-xs font-bold uppercase tracking-wide text-foreground">Scoring Metrics</h4>
                                     </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-3 gap-4">
                                         {angle.overall_score !== undefined && (
                                             <div className="space-y-2 p-4 rounded-lg bg-muted/20 border border-border/50">
                                                 <div className="flex items-center gap-2">

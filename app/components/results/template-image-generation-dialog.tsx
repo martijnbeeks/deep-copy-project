@@ -645,7 +645,7 @@ export function TemplateImageGenerationDialog({
             <DialogTitle>Confirm Overage</DialogTitle>
             <DialogDescription>
               {pendingOverage
-                ? `You don't have enough included credits for this job. The extra ${pendingOverage.overageCredits} credit${pendingOverage.overageCredits === 1 ? '' : 's'} will be charged as overage at ${pendingOverage.overageCostPerCredit.toFixed(2)} ${pendingOverage.currency} per credit (${pendingOverage.overageCostTotal.toFixed(2)} ${pendingOverage.currency} total) and added to your next invoice.`
+                ? `You don't have enough included credits for this job. The extra ${pendingOverage.overageCredits} credit${pendingOverage.overageCredits === 1 ? '' : 's'} will be charged as overage and added to your next invoice.`
                 : "You don't have enough included credits for this job. The extra credits will be charged as overage and added to your next invoice."}
             </DialogDescription>
           </DialogHeader>
@@ -740,8 +740,8 @@ export function TemplateImageGenerationDialog({
             <div className="pt-16">
               <DialogHeader>
                 <DialogTitle>Generate AI Images for Template</DialogTitle>
-                <DialogDescription>
-                  Generate AI images for all image placeholders in this template. Upload a product image to continue.
+                <DialogDescription className="text-primary">
+                  Upload a clear image of your product with a clean background
                 </DialogDescription>
               </DialogHeader>
         

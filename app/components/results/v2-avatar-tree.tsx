@@ -48,6 +48,7 @@ import {
 import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { internalApiClient } from "@/lib/clients/internal-client";
+import { getAvatarBasedNumber } from "@/lib/utils/avatar-utils";
 import { MarketingAngleCardV2 } from "./marketing-angle-card-v2";
 import { TemplateSelectionModal } from "./template-selection-modal";
 
@@ -392,7 +393,7 @@ export function V2AvatarTree({
                 
                 toast({
                     title: "Overage Charges Apply",
-                    description: `This job requires ${overageCredits} extra credit${overageCredits === 1 ? '' : 's'} (${overageCostTotal.toFixed(2)} ${currency}). Overage charges will be added to your next invoice.`,
+                    description: `This job requires ${overageCredits} extra credit${overageCredits === 1 ? '' : 's'}. Overage charges will be added to your next invoice.`,
                     variant: "default",
                 });
 
@@ -491,12 +492,6 @@ export function V2AvatarTree({
         }
     };
 
-    // Helper function to generate avatar-based numbering (1a, 1b, 1c... for first avatar, 2a, 2b... for second avatar, etc.)
-    const getAvatarBasedNumber = (avatarIndex: number, angleIndex: number) => {
-        const avatarNumber = avatarIndex + 1;
-        const angleLetter = String.fromCharCode(97 + angleIndex); // 97 = 'a' in ASCII
-        return `${avatarNumber}${angleLetter}`;
-    };
 
     const handleSkipTemplates = () => {
         if (pendingAngle) {
@@ -594,7 +589,7 @@ export function V2AvatarTree({
                                                                                             {normalizeTitleCase(avatarData?.overview?.name || avatar.persona_name || "")}
                                                                                         </h4>
                                                                                     </div>
-                                                                                    <div className="text-xs font-medium text-muted-foreground">
+                                                                                    <div className="text-xs font-bold text-primary px-2 py-0.5 rounded-md bg-primary/5 border border-primary/10">
                                                                                         {angles.length} {angles.length === 1 ? 'Angle' : 'Angles'}
                                                                                     </div>
                                                                                 </div>
@@ -646,7 +641,7 @@ export function V2AvatarTree({
                                                                                             className="flex-shrink-0 h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                                                                         >
                                                                                             <Eye className="h-3.5 w-3.5" />
-                                                                                            View Avatar Information
+                                                                                            More Info
                                                                                         </Button>
                                                                                     </div>
                                                                                     {/* Row 2: Problem Urgency, Purchasing Power, Saturation Level, Audience Size */}
