@@ -204,13 +204,18 @@ Desires: {', '.join(angle.desires[:5])}
         for s in summaries.summaries:
             template_list.append({
                 "id": s.id,
-                "product_category": s.product_category,
-                "short_description": s.short_description,
-                "target_audience": s.target_audience,
-                "primary_pain_point": s.primary_pain_point,
-                "primary_benefit": s.primary_benefit,
+                "format_type": s.format_type,
+                "writing_perspective": s.writing_perspective,
+                "article_structure_flow": s.article_structure_flow,
+                "content_density": s.content_density,
                 "tone": s.tone,
-                "keywords": s.keywords[:5],
+                "energy_level": s.energy_level,
+                "persuasion_techniques": s.persuasion_techniques,
+                "emotional_approach": s.emotional_approach,
+                "engagement_devices": s.engagement_devices,
+                "cta_style": s.cta_style,
+                "best_for_awareness_levels": s.best_for_awareness_levels,
+                "best_for_angle_types": s.best_for_angle_types,
             })
         return json.dumps(template_list, indent=2)
 
