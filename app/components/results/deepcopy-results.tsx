@@ -3467,19 +3467,19 @@ function DeepCopyResultsComponent({
                   ) : (
                     <div className="space-y-4">
                       {/* Coming Soon Feature Banner */}
-                      <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-4 flex items-center justify-center gap-3">
+                      {/*<div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-4 flex items-center justify-center gap-3">
                         <div className="flex-shrink-0">
                           <Zap className="h-5 w-5 text-primary" />
                         </div>
                         <div className="flex-1">
-                          {/* <p className="text-sm font-medium text-foreground">
+                           <p className="text-sm font-medium text-foreground">
                             Direct Export Integration is Coming..!
-                          </p> */}
-                          {/*<p className="text-xs text-muted-foreground mt-0.5">
+                          </p> 
+                          <p className="text-xs text-muted-foreground mt-0.5">
                             We're working on a new feature to export your pre-landers directly to your favorite platforms.
-                          </p>*/}
+                          </p>
                         </div>
-                      </div>
+                      </div>*/}
 
                       {generatingAngles.size > 0 && (
                         <div className="text-center py-2">
@@ -3821,6 +3821,31 @@ function DeepCopyResultsComponent({
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                         {/* Existing templates */}
                         {(() => {
+                          // Create mapping of original avatar index to display index (sorted by intensity)
+                          // This ensures pre-lander numbering matches Customer Avatars and Avatar Filter
+                          const avatarIndexMapping = new Map<number, number>();
+                          if (isV2 && fullResult?.results?.marketing_avatars) {
+                            // Get avatars for intensity data
+                            let avatarsToDisplay: TransformedAvatar[] | undefined = customerAvatars as TransformedAvatar[] | undefined;
+                            if ((!avatarsToDisplay || avatarsToDisplay.length === 0) && (fullResult as DeepCopyResult)?.results?.marketing_avatars) {
+                              avatarsToDisplay = transformV2ToExistingSchema(fullResult as DeepCopyResult);
+                            }
+
+                            // Sort avatars by intensity (highest first), preserving original index
+                            const sortedAvatarsWithData = [...fullResult.results.marketing_avatars]
+                              .map((avatarData: any, originalIndex: number) => ({
+                                avatarData,
+                                originalIndex,
+                                intensity: avatarsToDisplay?.[originalIndex]?.v2_avatar_data?.overview?.intensity || 0
+                              }))
+                              .sort((a, b) => b.intensity - a.intensity); // Descending order (highest first)
+
+                            // Create mapping: originalIndex -> displayIndex
+                            sortedAvatarsWithData.forEach((item, displayIndex) => {
+                              avatarIndexMapping.set(item.originalIndex, displayIndex);
+                            });
+                          }
+
                           // Filter templates by selected angle, type, and avatar
                           let filteredTemplates = filterTemplates(
                             templates,
@@ -3829,55 +3854,99 @@ function DeepCopyResultsComponent({
                             selectedAvatarFilter
                           );
 
-                          // Sort templates by angle index to group same angles together and maintain order
+                          // Sort templates by avatar and angle to maintain proper order
                           filteredTemplates = [...filteredTemplates].sort(
                             (a, b) => {
-                              // Helper to find angle index in marketing_angles array
-                              const getAngleIndex = (
-                                templateAngle: string | undefined
-                              ): number => {
-                                if (
-                                  !templateAngle ||
-                                  !fullResult?.results?.marketing_angles
-                                )
-                                  return 999;
+                              if (isV2 && fullResult?.results?.marketing_avatars) {
+                                // V2 sorting: Sort by avatar display index, then by angle index within avatar
+                                const getAvatarAndAngleIndex = (templateAngle: string | undefined): { avatarDisplayIndex: number; angleIndex: number } => {
+                                  if (!templateAngle) return { avatarDisplayIndex: 999, angleIndex: 999 };
 
-                                return fullResult.results.marketing_angles.findIndex(
-                                  (ma: any) => {
-                                    if (typeof ma === "string") {
-                                      return ma === templateAngle;
+                                  // Find which avatar and angle this template belongs to
+                                  for (let avIdx = 0; avIdx < fullResult.results.marketing_avatars.length; avIdx++) {
+                                    const avatar = fullResult.results.marketing_avatars[avIdx];
+                                    const angles = avatar.angles?.generated_angles || [];
+                                    const foundAngleIdx = angles.findIndex((angle: any) => {
+                                      const angleFormatted = angle.angle_subtitle 
+                                        ? `${angle.angle_title}: ${angle.angle_subtitle}` 
+                                        : angle.angle_title;
+                                      return angleFormatted === templateAngle || angle.angle_title === templateAngle;
+                                    });
+                                    
+                                    if (foundAngleIdx !== -1) {
+                                      // Get display index from mapping
+                                      const avatarDisplayIndex = avatarIndexMapping.get(avIdx) ?? avIdx;
+                                      return { avatarDisplayIndex, angleIndex: foundAngleIdx };
                                     }
-                                    // Extract description from template.angle if it's in "Title: Description" format
-                                    let templateAngleDesc = templateAngle;
-                                    if (templateAngle.includes(": ")) {
-                                      const parts = templateAngle.split(": ");
-                                      if (parts.length >= 2) {
-                                        templateAngleDesc = parts[1];
-                                      }
-                                    }
-                                    return (
-                                      ma.angle === templateAngleDesc ||
-                                      ma.angle === templateAngle
-                                    );
                                   }
-                                );
-                              };
+                                  return { avatarDisplayIndex: 999, angleIndex: 999 };
+                                };
 
-                              const indexA = getAngleIndex(a.angle);
-                              const indexB = getAngleIndex(b.angle);
+                                const posA = getAvatarAndAngleIndex(a.angle);
+                                const posB = getAvatarAndAngleIndex(b.angle);
 
-                              // First sort by angle index (to maintain #1, #2, #3 order)
-                              if (indexA !== indexB) {
-                                // If not found, put at end (999)
-                                if (indexA === -1) return 1;
-                                if (indexB === -1) return -1;
-                                return indexA - indexB;
+                                // First sort by avatar display index
+                                if (posA.avatarDisplayIndex !== posB.avatarDisplayIndex) {
+                                  return posA.avatarDisplayIndex - posB.avatarDisplayIndex;
+                                }
+
+                                // Then sort by angle index within the avatar
+                                if (posA.angleIndex !== posB.angleIndex) {
+                                  return posA.angleIndex - posB.angleIndex;
+                                }
+
+                                // If same avatar and angle, sort by templateId for consistency
+                                const idA = a.templateId || "";
+                                const idB = b.templateId || "";
+                                return idA.localeCompare(idB);
+                              } else {
+                                // V1 sorting: Sort by angle index in marketing_angles array
+                                const getAngleIndex = (
+                                  templateAngle: string | undefined
+                                ): number => {
+                                  if (
+                                    !templateAngle ||
+                                    !fullResult?.results?.marketing_angles
+                                  )
+                                    return 999;
+
+                                  return fullResult.results.marketing_angles.findIndex(
+                                    (ma: any) => {
+                                      if (typeof ma === "string") {
+                                        return ma === templateAngle;
+                                      }
+                                      // Extract description from template.angle if it's in "Title: Description" format
+                                      let templateAngleDesc = templateAngle;
+                                      if (templateAngle.includes(": ")) {
+                                        const parts = templateAngle.split(": ");
+                                        if (parts.length >= 2) {
+                                          templateAngleDesc = parts[1];
+                                        }
+                                      }
+                                      return (
+                                        ma.angle === templateAngleDesc ||
+                                        ma.angle === templateAngle
+                                      );
+                                    }
+                                  );
+                                };
+
+                                const indexA = getAngleIndex(a.angle);
+                                const indexB = getAngleIndex(b.angle);
+
+                                // First sort by angle index (to maintain #1, #2, #3 order)
+                                if (indexA !== indexB) {
+                                  // If not found, put at end (999)
+                                  if (indexA === -1) return 1;
+                                  if (indexB === -1) return -1;
+                                  return indexA - indexB;
+                                }
+
+                                // If same angle index, sort by templateId for consistency
+                                const idA = a.templateId || "";
+                                const idB = b.templateId || "";
+                                return idA.localeCompare(idB);
                               }
-
-                              // If same angle index, sort by templateId for consistency
-                              const idA = a.templateId || "";
-                              const idB = b.templateId || "";
-                              return idA.localeCompare(idB);
                             }
                           );
 
@@ -3961,7 +4030,9 @@ function DeepCopyResultsComponent({
                                           });
                                           if (foundAngleIdx !== -1) {
                                             angleIndex = foundAngleIdx;
-                                            avatarBasedNumber = getAvatarBasedNumber(avIdx, foundAngleIdx);
+                                            // Use display index from mapping instead of original index
+                                            const displayIndex = avatarIndexMapping.get(avIdx) ?? avIdx;
+                                            avatarBasedNumber = getAvatarBasedNumber(displayIndex, foundAngleIdx);
                                             break;
                                           }
                                         }
