@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,13 +9,14 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Plus, Trash2, Users, Building2 } from "lucide-react"
+import { Plus, Trash2, Users, Building2, Activity } from "lucide-react"
 import { useAdminUsers, useCreateAdminUser, useDeleteAdminUser } from "./admin-hooks"
 import { createUserSchema } from "@/lib/validation/admin-schemas"
 import { useToast } from "@/hooks/use-toast"
 import type { User, UserOrganization } from "./admin-types"
 
 export function AdminUsersTab() {
+  const router = useRouter()
   const { data: users = [], isLoading } = useAdminUsers()
   const createUserMutation = useCreateAdminUser()
   const deleteUserMutation = useDeleteAdminUser()
@@ -54,6 +56,10 @@ export function AdminUsersTab() {
       return
     }
     await deleteUserMutation.mutateAsync(userId)
+  }
+
+  const handleViewActivityLog = (userId: string) => {
+    router.push(`/admin/users/${userId}/activity-log`)
   }
 
   // Group users by organization
@@ -239,16 +245,27 @@ export function AdminUsersTab() {
                               {new Date(user.created_at).toLocaleDateString()}
                             </p>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteUser(user.id)}
-                            disabled={deleteUserMutation.isPending}
-                            className="h-7 w-7 p-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                            aria-label={`Delete user ${user.name}`}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewActivityLog(user.id)}
+                              className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700"
+                              aria-label={`View activity log for ${user.name}`}
+                            >
+                              <Activity className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteUser(user.id)}
+                              disabled={deleteUserMutation.isPending}
+                              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                              aria-label={`Delete user ${user.name}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </div>
                       )
                     })}
@@ -280,16 +297,27 @@ export function AdminUsersTab() {
                             {new Date(user.created_at).toLocaleDateString()}
                           </p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteUser(user.id)}
-                          disabled={deleteUserMutation.isPending}
-                          className="h-7 w-7 p-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                          aria-label={`Delete user ${user.name}`}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewActivityLog(user.id)}
+                            className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700"
+                            aria-label={`View activity log for ${user.name}`}
+                          >
+                            <Activity className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteUser(user.id)}
+                            disabled={deleteUserMutation.isPending}
+                            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                            aria-label={`Delete user ${user.name}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>

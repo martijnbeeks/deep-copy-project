@@ -2550,3 +2550,144 @@ export const createPromptVersion = async (
     return result.rows[0]
   })
 }
+
+// ==================== ACTIVITY LOG ====================
+
+export interface ActivityLogItem {
+  id: string
+  user_id: string
+  job_type: 'deep_research' | 'pre_lander_images' | 'template_images' | 'static_ads' | 'avatar_research'
+  title?: string
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  created_at: string
+  updated_at: string
+  completed_at?: string
+  request_body: Record<string, any>
+  output?: Record<string, any>
+  error_message?: string
+  metadata?: Record<string, any>
+}
+
+export const getUserActivityLog = async (userId: string, limit = 100): Promise<ActivityLogItem[]> => {
+  // Main jobs (deep research, marketing angles, avatar research)
+  const mainJobsQuery = `
+    SELECT 
+      j.id,
+      j.user_id,
+      j.title,
+      j.status,
+      j.created_at,
+      j.updated_at,
+      j.completed_at,
+      j.research_requirements,
+      j.target_gender,
+      j.target_location,
+      j.form_advertorial_type,
+      j.advertorial_type,
+      j.target_approach,
+      j.brand_info,
+      j.sales_page_url,
+      j.avatar_persona_name,
+      j.parent_job_id,
+      j.is_avatar_job,
+      r.metadata as result_metadata,
+      CASE 
+        WHEN j.parent_job_id IS NOT NULL THEN 'avatar_research'
+        WHEN j.target_approach = 'v2' THEN 'deep_research'
+        ELSE 'static_ads'
+      END as job_type
+    FROM jobs j
+    LEFT JOIN results r ON j.id = r.job_id
+    WHERE j.user_id = $1
+  `
+
+  // Image generation jobs
+  const imageJobsQuery = `
+    SELECT 
+      ig.id,
+      ig.user_id,
+      NULL as title,
+      ig.status,
+      ig.created_at,
+      ig.updated_at,
+      ig.completed_at,
+      ig.prompts as request_data,
+      ig.result_images,
+      ig.error_message,
+      ig.injected_template_id,
+      'pre_lander_images' as job_type
+    FROM image_generation_jobs ig
+    WHERE ig.user_id = $1
+  `
+
+  // Execute both queries
+  const [mainJobsResult, imageJobsResult] = await Promise.all([
+    query(mainJobsQuery, [userId]),
+    query(imageJobsQuery, [userId])
+  ])
+
+  // Transform main jobs
+  const mainJobs = mainJobsResult.rows.map(row => {
+    const requestBody: Record<string, any> = {
+      title: row.title,
+      brand_info: row.brand_info,
+      sales_page_url: row.sales_page_url
+    }
+
+    // Add V2 form fields if present
+    if (row.research_requirements) requestBody.research_requirements = row.research_requirements
+    if (row.target_gender) requestBody.target_gender = row.target_gender
+    if (row.target_location) requestBody.target_location = row.target_location
+    if (row.form_advertorial_type) requestBody.form_advertorial_type = row.form_advertorial_type
+    if (row.advertorial_type) requestBody.advertorial_type = row.advertorial_type
+    if (row.target_approach) requestBody.target_approach = row.target_approach
+    if (row.avatar_persona_name) requestBody.avatar_persona_name = row.avatar_persona_name
+
+    return {
+      id: row.id,
+      user_id: row.user_id,
+      job_type: row.job_type,
+      title: row.title,
+      status: row.status,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      completed_at: row.completed_at,
+      request_body: requestBody,
+      output: row.result_metadata ? {
+        full_result: row.result_metadata.full_result,
+        project_name: row.result_metadata.project_name,
+        generated_at: row.result_metadata.generated_at
+      } : undefined,
+      metadata: {
+        parent_job_id: row.parent_job_id,
+        is_avatar_job: row.is_avatar_job,
+        avatar_persona_name: row.avatar_persona_name
+      }
+    }
+  })
+
+  // Transform image generation jobs
+  const imageJobs = imageJobsResult.rows.map(row => ({
+    id: row.id,
+    user_id: row.user_id,
+    job_type: 'pre_lander_images' as const,
+    title: `Image Generation (${row.injected_template_id})`,
+    status: row.status,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    completed_at: row.completed_at,
+    request_body: row.request_data || {},
+    output: row.result_images || undefined,
+    error_message: row.error_message,
+    metadata: {
+      injected_template_id: row.injected_template_id
+    }
+  }))
+
+  // Combine and sort by created_at desc
+  const allActivities = [...mainJobs, ...imageJobs]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, limit)
+
+  return allActivities
+}
