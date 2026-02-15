@@ -135,6 +135,7 @@ interface SubmitV2JobRequest {
   location?: string
   target_product_name?: string
   notification_email?: string
+  callback_url?: string
 }
 
 interface JobResultV2 {
@@ -341,7 +342,8 @@ class DeepCopyClient {
         gender: data.gender,
         location: data.location,
         ...(data.target_product_name && { target_product_name: data.target_product_name }),
-        notification_email: data.notification_email
+        notification_email: data.notification_email,
+        callback_url: data.callback_url,
       })
     })
   }

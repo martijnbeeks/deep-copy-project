@@ -41,6 +41,9 @@ REQUIRED_FIELDS = {"project_name"}
 # Allowed optional fields for v2
 OPTIONAL_FIELDS = {"research_requirements", "gender", "location", "advertorial_type", "target_product_name", "notification_email", "sales_page_url", "sales_page_urls"}
 
+# callback_url is set by trusted callers only (Next.js frontend), not exposed as a public API field.
+# It is still forwarded to the processing Lambda if present in the body.
+
 
 def _response(status_code: int, body: dict) -> dict:
     return {

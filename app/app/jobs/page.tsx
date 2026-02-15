@@ -5,7 +5,6 @@ import { useJobsStore } from "@/stores/jobs-store"
 import { useSidebar } from "@/contexts/sidebar-context"
 import { useMarketingAngles, useInvalidateMarketingAngles } from "@/lib/hooks/use-jobs"
 import { useAutoPolling } from "@/hooks/use-auto-polling"
-import { useSimplePolling } from "@/hooks/use-simple-polling"
 import { Job } from "@/lib/db/types"
 import { isProcessingStatus } from "@/lib/utils/job-status"
 import { Sidebar, SidebarTrigger } from "@/components/dashboard/sidebar"
@@ -40,11 +39,8 @@ export default function MarketingAnglesPage() {
   })
   const invalidateMarketingAngles = useInvalidateMarketingAngles()
 
-  // Use auto-polling for processing jobs (hits DeepCopy API directly)
+  // Use auto-polling for processing jobs
   const { processingJobsCount } = useAutoPolling()
-
-  // Use simple polling for processing marketing angles (hits DeepCopy API directly)
-  const { isPolling } = useSimplePolling(marketingAngles)
 
   // Early return if not authenticated to prevent skeleton loader
   if (!isReady) {
