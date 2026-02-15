@@ -408,6 +408,7 @@ export function V2AvatarTree({
                         avatar_id: selectedAvatar?.v2_avatar_data?.id || selectedAvatar?.id,
                         angle_id: angle?.id,
                         swipe_file_ids: templateIds.length > 0 ? templateIds : undefined,
+                        allowOverage: true,
                     }) as any;
                     
                     const swipeFileJobId =
