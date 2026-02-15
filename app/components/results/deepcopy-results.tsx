@@ -86,6 +86,7 @@ import {
   MarketingAvatarV2,
 } from "@/lib/clients/deepcopy-client";
 import { internalApiClient } from "@/lib/clients/internal-client";
+import { submitPreLanderGeneration } from "@/lib/services/prelander-generation";
 import { Template } from "@/lib/db/types";
 import { logger } from "@/lib/utils/logger";
 import { capitalizeFirst, getAvatarBasedNumber } from "@/lib/utils/avatar-utils";
@@ -1952,119 +1953,44 @@ function DeepCopyResultsComponent({
     });
 
     try {
-      // Call swipe-files/generate endpoint with original_job_id, angle_id, avatar_id, and swipe_file_ids array
-      const data = (await internalApiClient.generateSwipeFiles({
+      const { jobId } = await submitPreLanderGeneration({
         original_job_id: originalJobId,
-        angle_id: angleId, // Use the actual angle ID, not the descriptive string
-        avatar_id: avatarId, // Use the actual avatar ID, not 'default'
-        swipe_file_ids: templateIds, // Array of template IDs in format L00001, A00003, etc.
-      })) as { jobId?: string };
+        avatar_id: avatarId,
+        angle_id: angleId,
+        swipe_file_ids: templateIds,
+        toast,
+      });
 
-      // Update with the real jobId from the API response
-      if (data.jobId) {
-        setGeneratingAngles((prev) => {
-          const newMap = new Map(prev);
-          newMap.set(angle, data.jobId!); // Replace placeholder with real jobId
-          return newMap;
-        });
-        setAngleStatuses((prev) => {
-          const newMap = new Map(prev);
-          newMap.set(angle, "SUBMITTED");
-          return newMap;
-        });
-
-        // Start polling for this specific angle
-        pollSwipeFileStatus(data.jobId!, angle);
-      } else {
-        // If no jobId returned, remove from generating
-        setGeneratingAngles((prev) => {
-          const newMap = new Map(prev);
-          newMap.delete(angle);
-          return newMap;
-        });
-        setAngleStatuses((prev) => {
-          const newMap = new Map(prev);
-          newMap.delete(angle);
-          return newMap;
-        });
-      }
+      setGeneratingAngles((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(angle, jobId);
+        return newMap;
+      });
+      setAngleStatuses((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(angle, "SUBMITTED");
+        return newMap;
+      });
+      pollSwipeFileStatus(jobId, angle);
     } catch (error: any) {
-      // Handle intentional overage confirmation for swipe-file pre-landers
-      if (error.status === 402 && (error as any).code === "JOB_CREDITS_OVERAGE_CONFIRMATION_REQUIRED") {
-        // Show toast notification about overage
-        const overageCredits = (error as any).overageCredits ?? 0;
-        const overageCostTotal = (error as any).overageCostTotal ?? 0;
-        const currency = (error as any).currency ?? "EUR";
-        
-        toast({
-          title: "Overage Charges Apply",
-          description: `This job requires ${overageCredits} extra credit${overageCredits === 1 ? '' : 's'}. Overage charges will be added to your next invoice.`,
-          variant: "default",
-        });
-
-        // Automatically retry with allowOverage=true
-        try {
-          const retryData = await internalApiClient.generateSwipeFiles({
-            original_job_id: originalJobId,
-            angle_id: angleId,
-            avatar_id: avatarId,
-            swipe_file_ids: templateIds,
-            allowOverage: true,
-          }) as { jobId?: string };
-          
-          if (retryData.jobId) {
-            setGeneratingAngles(prev => {
-              const newMap = new Map(prev)
-              newMap.set(angle, retryData.jobId!)
-              return newMap
-            })
-            setAngleStatuses(prev => {
-              const newMap = new Map(prev)
-              newMap.set(angle, "SUBMITTED")
-              return newMap
-            })
-            pollSwipeFileStatus(retryData.jobId!, angle)
-          }
-        } catch (retryError: any) {
-          toast({
-            title: "Error",
-            description: retryError.message || "Failed to generate pre-landers",
-            variant: "destructive",
-          });
-          // Only remove generating state if retry FAILED
-          setGeneratingAngles((prev) => {
-            const newMap = new Map(prev);
-            newMap.delete(angle);
-            return newMap;
-          });
-          setAngleStatuses((prev) => {
-            const newMap = new Map(prev);
-            newMap.delete(angle);
-            return newMap;
-          });
-        }
-      } else {
-        // Remove from generatingAngles on error
-        setGeneratingAngles((prev) => {
-          const newMap = new Map(prev);
-          newMap.delete(angle);
-          return newMap;
-        });
-        setAngleStatuses((prev) => {
-          const newMap = new Map(prev);
-          newMap.delete(angle);
-          return newMap;
-        });
-
-        toast({
-          title: "Error",
-          description:
-            error instanceof Error
-              ? error.message
-              : "Failed to generate pre-landers",
-          variant: "destructive",
-        });
-      }
+      setGeneratingAngles((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(angle);
+        return newMap;
+      });
+      setAngleStatuses((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(angle);
+        return newMap;
+      });
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to generate pre-landers",
+        variant: "destructive",
+      });
     } finally {
       setIsGeneratingRefined(false);
     }

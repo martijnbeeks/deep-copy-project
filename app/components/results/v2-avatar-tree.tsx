@@ -49,6 +49,7 @@ import {
 import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { internalApiClient } from "@/lib/clients/internal-client";
+import { submitPreLanderGeneration } from "@/lib/services/prelander-generation";
 import { getAvatarBasedNumber } from "@/lib/utils/avatar-utils";
 import { MarketingAngleCardV2 } from "./marketing-angle-card-v2";
 import { TemplateSelectionModal } from "./template-selection-modal";
@@ -292,7 +293,6 @@ export function V2AvatarTree({
         }
 
         try {
-            // Extract avatar_id and angle_id from the data structures
             const avatarId = selectedAvatar?.v2_avatar_data?.id || selectedAvatar?.id;
             const angleId = angle?.id;
 
@@ -300,33 +300,19 @@ export function V2AvatarTree({
                 throw new Error('Missing avatar_id or angle_id. Please ensure you are using V2 job data.');
             }
 
-            const response = await internalApiClient.generateSwipeFiles({
+            const { jobId: swipeFileJobId } = await submitPreLanderGeneration({
                 original_job_id: jobId || "",
                 avatar_id: avatarId,
                 angle_id: angleId,
-                swipe_file_ids: templateIds.length > 0 ? templateIds : undefined
-            }) as any;
-
-            const swipeFileJobId =
-                response?.jobId ||
-                response?.job_id ||
-                response?.data?.jobId ||
-                response?.data?.job_id ||
-                response?.id ||
-                response?.execution_id ||
-                response?.data?.id ||
-                response?.data?.execution_id;
-
-            if (!swipeFileJobId) {
-                throw new Error(`Failed to start generation. No job ID received.`);
-            }
+                swipe_file_ids: templateIds.length > 0 ? templateIds : undefined,
+                toast,
+            });
 
             toast({
                 title: "Generation Started",
                 description: `Creating content for "${angle.angle_title}"...`,
             });
 
-            // Poll for status
             const pollInterval = setInterval(async () => {
                 try {
                     const statusRes = await internalApiClient.getSwipeFileStatus(swipeFileJobId) as any;
@@ -383,99 +369,6 @@ export function V2AvatarTree({
             }, 5000);
 
         } catch (error: any) {
-            console.error("Error generating swipe files:", error);
-            
-            // Handle overage confirmation (402)
-            if (error.status === 402 && (error as any).code === "JOB_CREDITS_OVERAGE_CONFIRMATION_REQUIRED") {
-                // Show toast notification about overage
-                const overageCredits = (error as any).overageCredits ?? 0;
-                const overageCostTotal = (error as any).overageCostTotal ?? 0;
-                const currency = (error as any).currency ?? "EUR";
-                
-                toast({
-                    title: "Overage Charges Apply",
-                    description: `This job requires ${overageCredits} extra credit${overageCredits === 1 ? '' : 's'}. Overage charges will be added to your next invoice.`,
-                    variant: "default",
-                });
-
-                // Set generating state again for retry
-                setGeneratingAngles(prev => new Set(prev).add(angleKey));
-                
-                // Automatically retry with allowOverage=true
-                try {
-                    const response = await internalApiClient.generateSwipeFiles({
-                        original_job_id: jobId || "",
-                        avatar_id: selectedAvatar?.v2_avatar_data?.id || selectedAvatar?.id,
-                        angle_id: angle?.id,
-                        swipe_file_ids: templateIds.length > 0 ? templateIds : undefined,
-                        allowOverage: true,
-                    }) as any;
-                    
-                    const swipeFileJobId =
-                        response?.jobId ||
-                        response?.job_id ||
-                        response?.data?.jobId ||
-                        response?.data?.job_id ||
-                        response?.id ||
-                        response?.execution_id ||
-                        response?.data?.id ||
-                        response?.data?.execution_id;
-
-                    if (swipeFileJobId) {
-                        // CRITICAL: Call onGenerationStart again to ensure parent's Map has the angle
-                        // This keeps the skeleton visible after the retry succeeds
-                        if (onGenerationStart) {
-                            onGenerationStart(angleString);
-                        }
-                        
-                        toast({
-                            title: "Generation Started",
-                            description: `Creating content...`,
-                        });
-
-                        const pollInterval = setInterval(async () => {
-                            try {
-                                const statusRes = await internalApiClient.getSwipeFileStatus(swipeFileJobId) as any;
-                                const status = statusRes.status || statusRes.data?.status;
-
-                                if (status === 'SUCCEEDED') {
-                                    clearInterval(pollInterval);
-                                    setGeneratingAngles(prev => {
-                                        const next = new Set(prev);
-                                        next.delete(angleKey);
-                                        return next;
-                                    });
-                                    if (onGenerationComplete) onGenerationComplete();
-                                } else if (status === 'FAILED') {
-                                    clearInterval(pollInterval);
-                                    setGeneratingAngles(prev => {
-                                        const next = new Set(prev);
-                                        next.delete(angleKey);
-                                        return next;
-                                    });
-                                    if (onGenerationError) onGenerationError("");
-                                }
-                            } catch (err) {
-                                console.error('Error polling:', err);
-                            }
-                        }, 5000);
-                    }
-                } catch (retryError: any) {
-                    toast({
-                        title: "Error",
-                        description: retryError.message || "Failed to generate pre-landers",
-                        variant: "destructive",
-                    });
-                    setGeneratingAngles(prev => {
-                        const next = new Set(prev);
-                        next.delete(angleKey);
-                        return next;
-                    });
-                }
-
-                return;
-            }
-
             toast({
                 title: "Generation Failed",
                 description: error.message || "Failed to start generation. Please try again.",
