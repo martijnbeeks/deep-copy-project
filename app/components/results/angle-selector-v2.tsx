@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Trophy, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AngleDetailModal } from "./angle-detail-modal";
 
 interface AngleSelectorV2Props {
     angles: any[];
@@ -17,6 +20,8 @@ interface AngleSelectorV2Props {
     ranking?: number[]; // ranking array from avatar data
 }
 
+
+
 export function AngleSelectorV2({
     angles,
     selectedAngles,
@@ -28,6 +33,10 @@ export function AngleSelectorV2({
     top3Angles,
     ranking
 }: AngleSelectorV2Props) {
+    const [openAngleModal, setOpenAngleModal] = useState<number | null>(null);
+
+
+
     // Sort angles by overall_score (descending), preserving original index
     const sortedAngles = [...angles]
         .map((angle: any, idx: number) => ({ ...angle, _originalIndex: idx }))
@@ -152,6 +161,18 @@ export function AngleSelectorV2({
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 flex-shrink-0">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenAngleModal(originalIndex);
+                                            }}
+                                            className="flex-shrink-0 h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                        >
+                                            <Eye className="h-3.5 w-3.5 mr-1" />
+                                            More Info
+                                        </Button>
                                         {isSelected && (
                                             <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                                                 Selected
@@ -164,6 +185,22 @@ export function AngleSelectorV2({
                     );
                 })}
             </div>
+
+            {/* Angle Details Modals */}
+            {sortedAngles.map((angle: any, displayIndex: number) => {
+                const originalIndex = angle._originalIndex !== undefined ? angle._originalIndex : displayIndex;
+                
+                return (
+                    <AngleDetailModal
+                        key={`modal-${originalIndex}`}
+                        angle={angle}
+                        index={displayIndex}
+                        isOpen={openAngleModal === originalIndex}
+                        onOpenChange={(isOpen) => !isOpen && setOpenAngleModal(null)}
+                        showActions={false}
+                    />
+                );
+            })}
         </div>
     );
 }

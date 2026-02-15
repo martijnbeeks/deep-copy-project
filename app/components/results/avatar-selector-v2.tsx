@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { User, Users, Zap } from "lucide-react";
+import { User, Users, Zap, Eye } from "lucide-react";
+import { AvatarDetailModal } from "./avatar-detail-modal";
 
 interface AvatarSelectorV2Props {
     avatars: any[];
@@ -54,6 +57,8 @@ export function AvatarSelectorV2({
     title = "Select Avatar",
     description = "Choose the customer avatar for your content"
 }: AvatarSelectorV2Props) {
+    const [openAvatarModal, setOpenAvatarModal] = useState<number | null>(null);
+
     // Sort avatars by intensity (highest first)
     const sortedAvatars = [...avatars].map((avatar, originalIndex) => ({
         ...avatar,
@@ -80,7 +85,7 @@ export function AvatarSelectorV2({
                     const originalIndex = avatar._originalIndex;
                     const isSelected = selectedAvatarIndex === originalIndex;
                     const avatarData = avatar.v2_avatar_data;
-                    const avatarName = avatarData?.overview?.name || avatar.persona_name || `Avatar ${index + 1}`;
+                    const avatarName = avatarData?.overview?.name || avatar.persona_name || `Avatar ${displayIndex + 1}`;
                     const avatarDescription = avatarData?.overview?.description || avatar.description || "";
                     const ageRange = avatarData?.demographics?.age_range || avatar.age_range || "";
                     const gender = avatarData?.demographics?.gender || avatar.gender || "";
@@ -154,6 +159,18 @@ export function AvatarSelectorV2({
                                                 })()}
                                             </div>
                                         </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenAvatarModal(originalIndex);
+                                            }}
+                                            className="flex-shrink-0 h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                        >
+                                            <Eye className="h-3.5 w-3.5 mr-1" />
+                                            More Info
+                                        </Button>
                                     </div>
                                 </div>
                             </div>
@@ -161,6 +178,21 @@ export function AvatarSelectorV2({
                     );
                 })}
             </div>
+
+            {/* Avatar Details Modals */}
+            {sortedAvatars.map((avatar, displayIndex) => {
+                const originalIndex = avatar._originalIndex;
+                
+                return (
+                    <AvatarDetailModal
+                        key={`modal-${originalIndex}`}
+                        avatar={avatar}
+                        index={displayIndex}
+                        isOpen={openAvatarModal === originalIndex}
+                        onOpenChange={(isOpen) => !isOpen && setOpenAvatarModal(null)}
+                    />
+                );
+            })}
         </div>
     );
 }
