@@ -1982,19 +1982,18 @@ function DeepCopyResultsComponent({
             description: retryError.message || "Failed to generate pre-landers",
             variant: "destructive",
           });
+          // Only remove generating state if retry FAILED
+          setGeneratingAngles((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(angle);
+            return newMap;
+          });
+          setAngleStatuses((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(angle);
+            return newMap;
+          });
         }
-
-        // Clear generating state for this angle since job was not created
-        setGeneratingAngles((prev) => {
-          const newMap = new Map(prev);
-          newMap.delete(angle);
-          return newMap;
-        });
-        setAngleStatuses((prev) => {
-          const newMap = new Map(prev);
-          newMap.delete(angle);
-          return newMap;
-        });
       } else {
         // Remove from generatingAngles on error
         setGeneratingAngles((prev) => {
@@ -3071,10 +3070,10 @@ function DeepCopyResultsComponent({
                                                         description: retryError.message || "Failed to generate pre-landers",
                                                         variant: "destructive",
                                                       });
+                                                      // Only remove generating state if retry FAILED
+                                                      removeGeneratingAngle(angleString);
+                                                      removeAngleStatus(angleString);
                                                     }
-
-                                                    removeGeneratingAngle(angleString);
-                                                    removeAngleStatus(angleString);
                                                   } else {
                                                     logger.error(
                                                       "Error generating pre-landers:",

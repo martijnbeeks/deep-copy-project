@@ -420,6 +420,12 @@ export function V2AvatarTree({
                         response?.data?.execution_id;
 
                     if (swipeFileJobId) {
+                        // CRITICAL: Call onGenerationStart again to ensure parent's Map has the angle
+                        // This keeps the skeleton visible after the retry succeeds
+                        if (onGenerationStart) {
+                            onGenerationStart(angleString);
+                        }
+                        
                         toast({
                             title: "Generation Started",
                             description: `Creating content...`,
