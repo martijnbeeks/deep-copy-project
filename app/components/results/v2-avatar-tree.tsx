@@ -244,11 +244,11 @@ export function V2AvatarTree({
         return descriptions[score] || { level: "Unknown", description: "" };
     };
 
-    // Sort avatars by intensity (highest first)
+    // Sort avatars by overall score (highest first)
     const sortedAvatars = [...avatars].sort((a, b) => {
-        const aIntensity = a.v2_avatar_data?.overview?.intensity || 0;
-        const bIntensity = b.v2_avatar_data?.overview?.intensity || 0;
-        return bIntensity - aIntensity; // Descending order (highest first)
+        const aScore = a.v2_avatar_data?.overall_score ?? 0;
+        const bScore = b.v2_avatar_data?.overall_score ?? 0;
+        return bScore - aScore; // Descending order (highest score first)
     });
 
     // Get the currently selected avatar's data

@@ -503,6 +503,55 @@ function DeepCopyResultsComponent({
       return acc;
     }, {} as Record<string, string>);
   }, [templates, createPreviewHTML]);
+ 
+  // Memoize avatar index mapping for consistent numbering across the UI
+  const avatarIndexMapping = useMemo(() => {
+    const mapping = new Map<number, number>();
+    if (isV2 && fullResult?.results?.marketing_avatars) {
+      // Get avatars for intensity data
+      let avatarsToDisplay: TransformedAvatar[] | undefined = customerAvatars as TransformedAvatar[] | undefined;
+      if ((!avatarsToDisplay || avatarsToDisplay.length === 0) && (fullResult as DeepCopyResult)?.results?.marketing_avatars) {
+        avatarsToDisplay = transformV2ToExistingSchema(fullResult as DeepCopyResult);
+      }
+
+      // Sort avatars by overall score (highest first), preserving original index
+      const sortedAvatarsWithData = [...fullResult.results.marketing_avatars]
+        .map((avatarData: any, originalIndex: number) => ({
+          avatarData,
+          originalIndex,
+          score: avatarsToDisplay?.[originalIndex]?.v2_avatar_data?.overall_score ?? 0
+        }))
+        .sort((a, b) => b.score - a.score);
+
+      // Create mapping: originalIndex -> displayIndex
+      sortedAvatarsWithData.forEach((item, displayIndex) => {
+        mapping.set(item.originalIndex, displayIndex);
+      });
+    }
+    return mapping;
+  }, [isV2, fullResult, customerAvatars]);
+
+  // Helper to get avatar and angle index for a template angle string
+  const getAvatarAndAngleIndex = useCallback((templateAngle: string | undefined): { avatarDisplayIndex: number; angleIndex: number } => {
+    if (!templateAngle || !fullResult?.results?.marketing_avatars) return { avatarDisplayIndex: 999, angleIndex: 999 };
+
+    for (let avIdx = 0; avIdx < fullResult.results.marketing_avatars.length; avIdx++) {
+      const avatar = fullResult.results.marketing_avatars[avIdx];
+      const angles = avatar.angles?.generated_angles || [];
+      const foundAngleIdx = angles.findIndex((angle: any) => {
+        const angleFormatted = angle.angle_subtitle 
+          ? `${angle.angle_title}: ${angle.angle_subtitle}` 
+          : angle.angle_title;
+        return angleFormatted === templateAngle || angle.angle_title === templateAngle;
+      });
+      
+      if (foundAngleIdx !== -1) {
+        const avatarDisplayIndex = avatarIndexMapping.get(avIdx) ?? avIdx;
+        return { avatarDisplayIndex, angleIndex: foundAngleIdx };
+      }
+    }
+    return { avatarDisplayIndex: 999, angleIndex: 999 };
+  }, [fullResult, avatarIndexMapping]);
 
   // Helper functions for Map state updates (DRY: used multiple times)
   const updateGeneratingAngle = (angleString: string, jobId: string) => {
@@ -3402,8 +3451,11 @@ function DeepCopyResultsComponent({
                         >
                           <CardContent className="p-0 flex flex-col flex-1 min-h-0">
                             {/* Preview Section Skeleton */}
-                            <div className="relative h-48 bg-muted overflow-hidden border-b border-border/50">
-                              <div className="absolute inset-0 bg-muted/50"></div>
+                            <div className="relative h-48 bg-background overflow-hidden border-b border-border/50 flex items-center justify-center">
+                              <div className="absolute inset-0 bg-muted/20"></div>
+                              <div className="relative z-10 flex flex-col items-center gap-2">
+                                <Loader2 className="h-8 w-8 text-primary/30 animate-spin" />
+                              </div>
                             </div>
                             {/* Content Section Skeleton */}
                             <div className="p-5 flex flex-col flex-1 min-h-0">
@@ -3411,15 +3463,26 @@ function DeepCopyResultsComponent({
                                 {/* Badges Skeleton */}
                                 <div className="flex items-center gap-2 flex-wrap justify-between mb-2">
                                   <div className="flex items-center gap-2">
-                                    <div className="h-5 w-16 bg-muted rounded-full"></div>
-                                    <div className="h-5 w-20 bg-muted rounded-full"></div>
+                                    <div className="h-5 w-20 bg-primary/10 rounded-full border border-primary/20"></div>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs font-semibold bg-primary/10 text-primary border-primary/20 w-fit h-5"
+                                    >
+                                      {formatFileType(getFileType(undefined, advertorialType))}
+                                    </Badge>
                                   </div>
-                                  <div className="h-6 w-6 bg-muted rounded"></div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    disabled
+                                    className="h-6 w-6 text-muted-foreground/30"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
                                 </div>
                                 {/* Title Skeleton */}
                                 <div className="flex items-center gap-2">
-                                  <div className="h-5 w-8 bg-muted rounded-full"></div>
-                                  <div className="h-6 w-3/4 bg-muted rounded"></div>
+                                  <div className="h-7 w-3/4 bg-muted rounded"></div>
                                 </div>
                                 {/* Description Skeleton */}
                                 <div className="space-y-1.5">
@@ -3427,17 +3490,39 @@ function DeepCopyResultsComponent({
                                   <div className="h-4 w-2/3 bg-muted rounded"></div>
                                 </div>
                                 {/* Date Skeleton */}
-                                <div className="flex items-center gap-1.5 pt-2">
+                                <div className="flex items-center gap-1.5 pt-2 opacity-50">
                                   <div className="h-3.5 w-3.5 bg-muted rounded"></div>
-                                  <div className="h-3.5 w-20 bg-muted rounded"></div>
-                                  <div className="h-3.5 w-3.5 bg-muted rounded ml-1"></div>
-                                  <div className="h-3.5 w-16 bg-muted rounded"></div>
+                                  <div className="h-3.5 w-24 bg-muted rounded"></div>
                                 </div>
                               </div>
                               {/* Action Buttons Skeleton */}
                               <div className="flex gap-2 mt-4 pt-4 border-t border-border/50">
-                                <div className="h-9 flex-1 bg-muted rounded"></div>
-                                <div className="h-9 flex-1 bg-muted rounded"></div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled
+                                  className="flex-1 opacity-50"
+                                >
+                                  <Copy className="h-4 w-4 mr-2" />
+                                  Copy
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled
+                                  className="flex-1 opacity-50"
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  disabled
+                                  className="flex-1 opacity-50"
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Preview
+                                </Button>
                               </div>
                             </div>
                           </CardContent>
@@ -3821,31 +3906,6 @@ function DeepCopyResultsComponent({
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                         {/* Existing templates */}
                         {(() => {
-                          // Create mapping of original avatar index to display index (sorted by intensity)
-                          // This ensures pre-lander numbering matches Customer Avatars and Avatar Filter
-                          const avatarIndexMapping = new Map<number, number>();
-                          if (isV2 && fullResult?.results?.marketing_avatars) {
-                            // Get avatars for intensity data
-                            let avatarsToDisplay: TransformedAvatar[] | undefined = customerAvatars as TransformedAvatar[] | undefined;
-                            if ((!avatarsToDisplay || avatarsToDisplay.length === 0) && (fullResult as DeepCopyResult)?.results?.marketing_avatars) {
-                              avatarsToDisplay = transformV2ToExistingSchema(fullResult as DeepCopyResult);
-                            }
-
-                            // Sort avatars by intensity (highest first), preserving original index
-                            const sortedAvatarsWithData = [...fullResult.results.marketing_avatars]
-                              .map((avatarData: any, originalIndex: number) => ({
-                                avatarData,
-                                originalIndex,
-                                intensity: avatarsToDisplay?.[originalIndex]?.v2_avatar_data?.overview?.intensity || 0
-                              }))
-                              .sort((a, b) => b.intensity - a.intensity); // Descending order (highest first)
-
-                            // Create mapping: originalIndex -> displayIndex
-                            sortedAvatarsWithData.forEach((item, displayIndex) => {
-                              avatarIndexMapping.set(item.originalIndex, displayIndex);
-                            });
-                          }
-
                           // Filter templates by selected angle, type, and avatar
                           let filteredTemplates = filterTemplates(
                             templates,
@@ -3859,29 +3919,6 @@ function DeepCopyResultsComponent({
                             (a, b) => {
                               if (isV2 && fullResult?.results?.marketing_avatars) {
                                 // V2 sorting: Sort by avatar display index, then by angle index within avatar
-                                const getAvatarAndAngleIndex = (templateAngle: string | undefined): { avatarDisplayIndex: number; angleIndex: number } => {
-                                  if (!templateAngle) return { avatarDisplayIndex: 999, angleIndex: 999 };
-
-                                  // Find which avatar and angle this template belongs to
-                                  for (let avIdx = 0; avIdx < fullResult.results.marketing_avatars.length; avIdx++) {
-                                    const avatar = fullResult.results.marketing_avatars[avIdx];
-                                    const angles = avatar.angles?.generated_angles || [];
-                                    const foundAngleIdx = angles.findIndex((angle: any) => {
-                                      const angleFormatted = angle.angle_subtitle 
-                                        ? `${angle.angle_title}: ${angle.angle_subtitle}` 
-                                        : angle.angle_title;
-                                      return angleFormatted === templateAngle || angle.angle_title === templateAngle;
-                                    });
-                                    
-                                    if (foundAngleIdx !== -1) {
-                                      // Get display index from mapping
-                                      const avatarDisplayIndex = avatarIndexMapping.get(avIdx) ?? avIdx;
-                                      return { avatarDisplayIndex, angleIndex: foundAngleIdx };
-                                    }
-                                  }
-                                  return { avatarDisplayIndex: 999, angleIndex: 999 };
-                                };
-
                                 const posA = getAvatarAndAngleIndex(a.angle);
                                 const posB = getAvatarAndAngleIndex(b.angle);
 
@@ -4019,22 +4056,10 @@ function DeepCopyResultsComponent({
 
                                       if (isV2 && fullResult?.results?.marketing_avatars && templateAngle) {
                                         // V2 logic - find avatar and angle indices
-                                        for (let avIdx = 0; avIdx < fullResult.results.marketing_avatars.length; avIdx++) {
-                                          const avatar = fullResult.results.marketing_avatars[avIdx];
-                                          const angles = avatar.angles?.generated_angles || [];
-                                          const foundAngleIdx = angles.findIndex((a: any) => {
-                                            const angleFormatted = a.angle_subtitle 
-                                              ? `${a.angle_title}: ${a.angle_subtitle}` 
-                                              : a.angle_title;
-                                            return angleFormatted === templateAngle || a.angle_title === templateAngle;
-                                          });
-                                          if (foundAngleIdx !== -1) {
-                                            angleIndex = foundAngleIdx;
-                                            // Use display index from mapping instead of original index
-                                            const displayIndex = avatarIndexMapping.get(avIdx) ?? avIdx;
-                                            avatarBasedNumber = getAvatarBasedNumber(displayIndex, foundAngleIdx);
-                                            break;
-                                          }
+                                        const { avatarDisplayIndex, angleIndex: foundAngleIdx } = getAvatarAndAngleIndex(templateAngle);
+                                        if (avatarDisplayIndex !== 999) {
+                                          angleIndex = foundAngleIdx;
+                                          avatarBasedNumber = getAvatarBasedNumber(avatarDisplayIndex, foundAngleIdx);
                                         }
                                       } else if (
                                         fullResult?.results?.marketing_angles &&
@@ -4500,54 +4525,112 @@ ${bodyContent}
                           ));
                         })()}
                         {/* Skeleton loaders for generating angles */}
-                        {Array.from({ length: generatingAngles.size }).map(
-                          (_, i) => (
-                            <Card
-                              key={`skeleton-generating-${i}`}
-                              className="group p-0 overflow-hidden transition-all duration-200 flex flex-col h-full border-border/50 animate-pulse-subtle"
-                            >
-                              <CardContent className="p-0 flex flex-col flex-1 min-h-0">
-                                {/* Preview Section Skeleton */}
-                                <div className="relative h-48 bg-muted overflow-hidden border-b border-border/50">
-                                  <div className="absolute inset-0 bg-muted/50"></div>
-                                </div>
-                                {/* Content Section Skeleton */}
-                                <div className="p-5 flex flex-col flex-1 min-h-0">
-                                  <div className="flex-1 space-y-2">
-                                    {/* Badges Skeleton */}
-                                    <div className="flex items-center gap-2 flex-wrap justify-between mb-2">
-                                      <div className="flex items-center gap-2">
-                                        <div className="h-5 w-16 bg-muted rounded-full"></div>
-                                        <div className="h-5 w-20 bg-muted rounded-full"></div>
+                        {Array.from(generatingAngles.entries()).map(
+                          ([angle, jobIdValue], i) => {
+                            const { avatarDisplayIndex, angleIndex } = getAvatarAndAngleIndex(angle);
+                            const avatarBasedNumber = avatarDisplayIndex !== 999 
+                              ? getAvatarBasedNumber(avatarDisplayIndex, angleIndex) 
+                              : null;
+                            const title = angle.includes(": ") ? angle.split(": ")[0] : "Generating...";
+                            const description = angle.includes(": ") ? angle.split(": ")[1] : angle;
+
+                            return (
+                              <Card
+                                key={`skeleton-generating-${angle}-${i}`}
+                                className="group p-0 overflow-hidden transition-all duration-200 flex flex-col h-full border-border/50 animate-pulse-subtle"
+                              >
+                                <CardContent className="p-0 flex flex-col flex-1 min-h-0">
+                                  {/* Preview Section Skeleton */}
+                                  <div className="relative h-48 bg-background overflow-hidden border-b border-border/50 flex items-center justify-center">
+                                    <div className="absolute inset-0 bg-muted/20"></div>
+                                    <div className="relative z-10 flex flex-col items-center gap-2 px-4 text-center">
+                                      <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                                      <span className="text-xs font-medium text-muted-foreground">Generating Pre-lander...</span>
+                                    </div>
+                                  </div>
+                                  {/* Content Section Skeleton */}
+                                  <div className="p-5 flex flex-col flex-1 min-h-0">
+                                    <div className="flex-1 space-y-2">
+                                      {/* Badges Skeleton */}
+                                      <div className="flex items-center gap-2 flex-wrap justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                          <Badge
+                                            variant="outline"
+                                            className="text-xs font-semibold bg-primary/10 text-primary border-primary/20 w-fit"
+                                          >
+                                            Generating...
+                                          </Badge>
+                                          <Badge
+                                            variant="outline"
+                                            className="text-xs font-semibold bg-primary/10 text-primary border-primary/20 w-fit"
+                                          >
+                                            {formatFileType(getFileType(undefined, advertorialType))}
+                                          </Badge>
+                                        </div>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          disabled
+                                          className="h-6 w-6 text-muted-foreground/30"
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
                                       </div>
-                                      <div className="h-6 w-6 bg-muted rounded"></div>
+                                      {/* Title */}
+                                      <div className="flex items-center gap-2">
+                                        <h4 className="font-semibold text-lg text-foreground line-clamp-2 transition-colors flex-1">
+                                          <span className="text-lg font-bold text-primary">
+                                            {avatarBasedNumber ? `${avatarBasedNumber}. ` : ''}
+                                          </span>
+                                          {title}
+                                        </h4>
+                                      </div>
+                                      {/* Description */}
+                                      <p className="text-sm text-muted-foreground line-clamp-2">
+                                        {description}
+                                      </p>
+                                      {/* Date Placeholder */}
+                                      <div className="flex items-center gap-1.5 pt-2 text-xs text-muted-foreground">
+                                        <Calendar className="h-3.5 w-3.5" />
+                                        <span>Just now</span>
+                                        <Clock className="h-3.5 w-3.5 ml-1" />
+                                        <span>Pending...</span>
+                                      </div>
                                     </div>
-                                    {/* Title Skeleton */}
-                                    <div className="flex items-center gap-2">
-                                      <div className="h-6 w-full bg-muted rounded"></div>
-                                    </div>
-                                    {/* Description Skeleton */}
-                                    <div className="space-y-1.5">
-                                      <div className="h-4 w-full bg-muted rounded"></div>
-                                      <div className="h-4 w-2/3 bg-muted rounded"></div>
-                                    </div>
-                                    {/* Date Skeleton */}
-                                    <div className="flex items-center gap-1.5 pt-2">
-                                      <div className="h-3.5 w-3.5 bg-muted rounded"></div>
-                                      <div className="h-3.5 w-20 bg-muted rounded"></div>
-                                      <div className="h-3.5 w-3.5 bg-muted rounded ml-1"></div>
-                                      <div className="h-3.5 w-16 bg-muted rounded"></div>
+                                    {/* Action Buttons (Disabled) */}
+                                    <div className="flex gap-2 mt-4 pt-4 border-t border-border/50">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled
+                                        className="flex-1 opacity-70"
+                                      >
+                                        <Copy className="h-4 w-4 mr-2" />
+                                        Copy
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled
+                                        className="flex-1 opacity-70"
+                                      >
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        disabled
+                                        className="flex-1 opacity-70"
+                                      >
+                                        <Eye className="h-4 w-4 mr-2" />
+                                        Preview
+                                      </Button>
                                     </div>
                                   </div>
-                                  {/* Action Buttons Skeleton */}
-                                  <div className="flex gap-2 mt-4 pt-4 border-t border-border/50">
-                                    <div className="h-9 flex-1 bg-muted rounded"></div>
-                                    <div className="h-9 flex-1 bg-muted rounded"></div>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          )
+                                </CardContent>
+                              </Card>
+                            );
+                          }
                         )}
                       </div>
                       {/* Explore More Templates Button */}
