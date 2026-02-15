@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { User, Users, Zap, Eye } from "lucide-react";
+import { User, Users, Award, Star, Eye } from "lucide-react";
 import { AvatarDetailModal } from "./avatar-detail-modal";
 
 interface AvatarSelectorV2Props {
@@ -15,40 +15,26 @@ interface AvatarSelectorV2Props {
     description?: string;
 }
 
-// Helper function to get red shade classes based on intensity (1-16)
-const getIntensityColorClasses = (intensity: number) => {
-    if (intensity <= 2) {
-        return {
-            icon: "text-red-400 dark:text-red-200",
-            text: "text-red-500 dark:text-red-300"
-        };
-    } else if (intensity <= 4) {
-        return {
-            icon: "text-red-500 dark:text-red-300",
-            text: "text-red-600 dark:text-red-400"
-        };
-    } else if (intensity <= 6) {
-        return {
-            icon: "text-red-600 dark:text-red-500",
-            text: "text-red-700 dark:text-red-600"
-        };
-    } else if (intensity <= 8) {
-        return {
-            icon: "text-red-700 dark:text-red-600",
-            text: "text-red-800 dark:text-red-700"
-        };
-    } else if (intensity <= 12) {
-        return {
-            icon: "text-red-800 dark:text-red-700",
-            text: "text-red-900 dark:text-red-800"
-        };
-    } else {
-        return {
-            icon: "text-red-900 dark:text-red-800",
-            text: "text-red-950 dark:text-red-900"
-        };
-    }
-};
+// Star component for displaying ratings
+function StarRating({ score, size = "sm" }: { score: number; size?: "sm" | "md" }) {
+    const starSize = size === "sm" ? "h-3 w-3" : "h-4 w-4";
+    const starColor = "text-amber-500";
+    
+    return (
+        <div className="flex items-center gap-0.5">
+            {[1, 2, 3, 4, 5].map((starNumber) => (
+                <Star
+                    key={starNumber}
+                    className={cn(
+                        starSize,
+                        starNumber <= score ? starColor : "text-gray-300 dark:text-gray-600"
+                    )}
+                    fill={starNumber <= score ? "currentColor" : "none"}
+                />
+            ))}
+        </div>
+    );
+}
 
 export function AvatarSelectorV2({
     avatars,
@@ -119,7 +105,7 @@ export function AvatarSelectorV2({
                                                         {avatarName}
                                                     </h4>
                                                 </div>
-                                                <div className="text-xs font-medium text-muted-foreground">
+                                                <div className="text-xs font-bold text-primary px-2 py-0.5 rounded-md bg-primary/5 border border-primary/10">
                                                     {angles.length} {angles.length === 1 ? 'Angle' : 'Angles'}
                                                 </div>
                                             </div>
@@ -128,49 +114,52 @@ export function AvatarSelectorV2({
                                                     {avatarDescription}
                                                 </p>
                                             )}
-                                            <div className="flex items-center gap-4 flex-wrap">
-                                                {ageRange && (
-                                                    <div className="flex items-center gap-1.5">
-                                                        <User className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                                                        <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                                                            {ageRange}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                {gender && (
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Users className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-                                                        <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
-                                                            {gender}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                {avatarData?.overview?.intensity !== undefined && (() => {
-                                                    const intensity = avatarData.overview.intensity;
-                                                    const colors = getIntensityColorClasses(intensity);
-                                                    return (
+                                            <div className="grid grid-cols-2 gap-4 w-full mt-2">
+                                                <div className="flex items-center gap-4 flex-wrap">
+                                                    {ageRange && (
                                                         <div className="flex items-center gap-1.5">
-                                                            <Zap className={cn("h-3.5 w-3.5", colors.icon)} />
-                                                            <span className={cn("text-xs font-medium", colors.text)}>
-                                                                Intensity: {intensity}
+                                                            <User className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                                            <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                                                                {ageRange}
                                                             </span>
                                                         </div>
-                                                    );
-                                                })()}
+                                                    )}
+                                                    {gender && (
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Users className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                                                            <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                                                                {gender}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {avatarData?.overall_score !== undefined && (
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Award className="h-3.5 w-3.5 text-amber-500" />
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                                                                    {avatarData.overall_score}/5
+                                                                </span>
+                                                                <StarRating score={avatarData.overall_score} size="sm" />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center justify-end">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setOpenAvatarModal(originalIndex);
+                                                        }}
+                                                        className="flex-shrink-0 h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                                    >
+                                                        <Eye className="h-3.5 w-3.5" />
+                                                        More Info
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setOpenAvatarModal(originalIndex);
-                                            }}
-                                            className="flex-shrink-0 h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                                        >
-                                            <Eye className="h-3.5 w-3.5 mr-1" />
-                                            More Info
-                                        </Button>
                                     </div>
                                 </div>
                             </div>
