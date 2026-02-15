@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Eye, FileText } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 // Update interface to include optional prediction data
 export interface TemplatePreviewProps {
@@ -73,6 +74,7 @@ export function TemplatePreview({ template, isSelected, onClick, prediction }: T
   const [isLoaded, setIsLoaded] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDialogClosing, setIsDialogClosing] = useState(false)
+  const [isReasoningExpanded, setIsReasoningExpanded] = useState(false)
 
   // Memoize the HTML processing function
   const createSmallPreviewHTML = useMemo(() => {
@@ -277,9 +279,24 @@ export function TemplatePreview({ template, isSelected, onClick, prediction }: T
           {prediction.reasoning && (
             <div className="bg-muted/30 rounded-md p-2 text-xs text-muted-foreground border border-border/50">
               <span className="font-semibold text-primary block mb-0.5 text-[10px] uppercase tracking-wider">Why we picked this:</span>
-              <p className="transition-all leading-relaxed">
+              <p className={cn(
+                "transition-all duration-200 leading-relaxed",
+                !isReasoningExpanded && "line-clamp-1"
+              )}>
                 {prediction.reasoning}
               </p>
+              {prediction.reasoning.length > 50 && (
+                <button
+                  type="button"
+                  className="text-[10px] text-primary hover:text-primary/80 font-semibold mt-1 flex items-center gap-0.5"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsReasoningExpanded(!isReasoningExpanded);
+                  }}
+                >
+                  {isReasoningExpanded ? "Show less" : "Show more"}
+                </button>
+              )}
             </div>
           )}
 
