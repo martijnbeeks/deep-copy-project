@@ -143,15 +143,28 @@ export function MarketingAngleCardV2({
                                                 </div>
                                             </div>
                                         )}
-                                        {angle.novelty !== undefined && (
+                                        {angle.ltv_potential !== undefined && (
                                             <div className="flex items-center gap-1.5">
-                                                <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+                                                <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
                                                 <div className="flex items-center gap-1">
                                                     <span className="text-xs font-medium text-foreground">
-                                                        Novelty: 
+                                                        LTV Potential: 
                                                     </span>
                                                     <span className="text-xs font-bold text-primary">
-                                                        {angle.novelty}/5
+                                                        {angle.ltv_potential}/5
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {angle.saturation && (
+                                            <div className="flex items-center gap-1.5">
+                                                <Droplets className="h-3.5 w-3.5 text-blue-500" />
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-xs font-medium text-foreground">
+                                                        Saturation: 
+                                                    </span>
+                                                    <span className="text-xs font-bold text-primary">
+                                                        {angle.saturation}/5
                                                     </span>
                                                 </div>
                                             </div>
@@ -182,20 +195,7 @@ export function MarketingAngleCardV2({
                                                 </div>
                                             </div>
                                         )}
-                                        {angle.ltv_potential !== undefined && (
-                                            <div className="flex items-center gap-1.5">
-                                                <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-                                                <div className="flex items-center gap-1">
-                                                    <span className="text-xs font-medium text-foreground">
-                                                        LTV Potential: 
-                                                    </span>
-                                                    <span className="text-xs font-bold text-primary">
-                                                        {angle.ltv_potential}/5
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {angle.saturation_level !== undefined && (
+                                        {/* {angle.saturation_level !== undefined && (
                                             <div className="flex items-center gap-1.5">
                                                 <Users className="h-3.5 w-3.5 text-orange-500" />
                                                 <div className="flex items-center gap-1">
@@ -207,16 +207,16 @@ export function MarketingAngleCardV2({
                                                     </span>
                                                 </div>
                                             </div>
-                                        )}
-                                        {angle.saturation && (
+                                        )} */}
+                                        {angle.novelty !== undefined && (
                                             <div className="flex items-center gap-1.5">
-                                                <Droplets className="h-3.5 w-3.5 text-blue-500" />
+                                                <Sparkles className="h-3.5 w-3.5 text-purple-500" />
                                                 <div className="flex items-center gap-1">
                                                     <span className="text-xs font-medium text-foreground">
-                                                        Saturation: 
+                                                        Novelty: 
                                                     </span>
                                                     <span className="text-xs font-bold text-primary">
-                                                        {angle.saturation}/5
+                                                        {angle.novelty}/5
                                                     </span>
                                                 </div>
                                             </div>
@@ -228,26 +228,13 @@ export function MarketingAngleCardV2({
                     </div>
                     
                     {/* View Angle Information Button */}
-                    <div className="flex justify-end mt-2">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setIsOpen(true);
-                            }}
-                            className="flex-shrink-0 h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                        >
-                            <Eye className="h-3.5 w-3.5" />
-                            More Info
-                        </Button>
-                    </div>
-                    {/* Status badges positioned at bottom-right */}
-                    {(isGenerated || isGenerating) && (
-                        <div className="flex justify-end mt-2">
-                            {isGenerated && (
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200/50 dark:border-green-800/50 shadow-sm">
-                                    <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" />
+                    <div className="flex items-center justify-end mt-2 gap-1">
+                        {/* Status badges positioned at bottom-right */}
+                        {(isGenerated || isGenerating) && (
+                            <div className="flex justify-end mt-2">
+                                {isGenerated && (
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200/50 dark:border-green-800/50 shadow-sm">
+                                        <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" />
                                     <span className="text-xs font-semibold text-green-700 dark:text-green-300">Generated</span>
                                 </div>
                             )}
@@ -259,7 +246,22 @@ export function MarketingAngleCardV2({
                             )}
                         </div>
                     )}
+                    <div className="flex items-center justify-end mt-2">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsOpen(true);
+                            }}
+                            className="flex-shrink-0 h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                            >
+                            <Eye className="h-3.5 w-3.5" />
+                            More Info
+                        </Button>
+                    </div>
                 </div>
+            </div>
             </Card>
 
             <AngleDetailModal
