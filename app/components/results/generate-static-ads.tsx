@@ -1507,7 +1507,7 @@ export function GenerateStaticAds({
             <div>
               <h3 className="text-lg font-semibold mb-2">Select Reference Images</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Select exactly {maxImages} reference images ({selectedAngles.size} {selectedAngles.size === 1 ? "angle" : "angles"} × 2 images per angle). You can upload custom images or choose from the gallery below.
+                Select up to {maxImages} reference images ({selectedAngles.size} {selectedAngles.size === 1 ? "angle" : "angles"} × 2 images per angle). You can upload custom images or choose from the gallery below. Image selection is optional - the backend will automatically generate reference images if none are selected.
               </p>
               <p className="text-xs text-muted-foreground mb-4">
                 Selected: {totalSelectedImages}/{maxImages} images ({selectedAngles.size} {selectedAngles.size === 1 ? "angle" : "angles"} × 2 images)
@@ -1621,8 +1621,8 @@ export function GenerateStaticAds({
               <Button variant="outline" onClick={() => setStep(2)}>
                 Back to Angles
               </Button>
-              <Button onClick={() => setStep(4)} disabled={totalSelectedImages !== maxImages}>
-                Next: Upload Product Image {totalSelectedImages !== maxImages && `(${totalSelectedImages}/${maxImages} selected)`}
+              <Button onClick={() => setStep(4)}>
+                Next: Upload Product Image {totalSelectedImages > 0 && `(${totalSelectedImages}/${maxImages} selected)`}
               </Button>
             </div>
           </div>
