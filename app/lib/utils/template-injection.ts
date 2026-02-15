@@ -503,7 +503,6 @@ export function extractContentFromSwipeResult(swipeResult: any, templateType: 'l
       theme: swipeContent.theme || '',
       site: swipeContent.site || {},
       article: swipeContent.article || {},
-      product: swipeContent.product || {},
       signOff: swipeContent.signOff || {},
       reviews: swipeContent.reviews || {},
       // Also include old format structure for backward compatibility
@@ -1539,7 +1538,7 @@ export function injectContentIntoTemplate(template: InjectableTemplate, content:
         // Use JavaScript-compatible string conversion for new templates
         // Content is already sanitized from extractContentFromSwipeResult
         const stringValue = isNewTemplate 
-          ? valueToJavaScriptString(value)
+          ? (value === '' && fieldPath.includes('image') ? 'null' : valueToJavaScriptString(value))
           : valueToString(value)
         replacements[fullPlaceholder] = stringValue
       } else {
